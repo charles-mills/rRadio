@@ -1,35 +1,45 @@
 -- Load the training messages from the separate file
-include("config.lua")
+include("skidnetworks_training/config.lua")
 
-local pdLocation = Vector(-9059, 10436, 64)  -- PD Entrance coords, update if needed
-local arrowMaterial = Material(AutoTrainingConfig.ArrowMaterial) -- Using a default icon for now
-local arrowSize = 64
-local arrowVisible = false
+local pdLocation = AutoTrainingConfig.PDLocation  -- Use the PD location from the config
+local arrowMaterial = Material(AutoTrainingConfig.ArrowMaterial)
+local arrowSize = AutoTrainingConfig.ArrowSize
+local removeDistance = AutoTrainingConfig.RemoveDistance or 200  -- Distance within which the icon will disappear
+local markerEnabled = false  -- Initially, the marker is disabled
+local hasPlayedSound = false  -- Flag to ensure the sound is played only once
 
 -- Function to calculate the screen position of the PD location
 local function CalculateMarkerPosition()
     local ply = LocalPlayer()
     if not IsValid(ply) then return nil, nil end
 
-    -- Ensure pdLocation is correct
-    if not pdLocation then return nil, nil end
+    local plyPos = ply:GetPos()
+    local distance = plyPos:Distance(pdLocation)
 
-    local screenPos = pdLocation:ToScreen()
+    print("Distance to PD:", distance)
 
-    -- Check if the screen position is off-screen
-    local x, y = screenPos.x, screenPos.y
-    if x < 0 or x > ScrW() or y < 0 or y > ScrH() then
+    -- Check if the player is within the removeDistance
+    if distance <= removeDistance then
+        print("You have arrived at the PD!")  -- Print a message in the chat
+        if not hasPlayedSound then
+            surface.PlaySound(AutoTrainingConfig.ArrivalSound)
+            hasPlayedSound = true  -- Ensure the sound only plays once
+        end
+        markerEnabled = false
         return nil, nil
     end
 
-    return x, y
+    local screenPos = pdLocation:ToScreen()
+    return screenPos.x, screenPos.y
 end
 
 -- Function to draw the marker on the player's screen
 local function DrawMarker()
-    if not arrowVisible then return end
+    if not markerEnabled then return end  -- Only draw if the marker is enabled
 
     local x, y = CalculateMarkerPosition()
+
+    -- If x or y is nil, don't draw the marker
     if not x or not y then return end
 
     -- Draw the marker
@@ -40,39 +50,13 @@ end
 
 hook.Add("HUDPaint", "DrawTrainingMarker", DrawMarker)
 
--- Menu for the training system
-local function OpenTrainingMenu()
-    local frame = vgui.Create("DFrame")
-    frame:SetSize(400, 200)
-    frame:Center()
-    frame:SetTitle(AutoTrainingConfig.FrameTitle)
-    frame:MakePopup()
-
-    local label = vgui.Create("DLabel", frame)
-    label:SetText(AutoTrainingConfig.WelcomeMessage)
-    label:Dock(TOP)
-    label:DockMargin(10, 10, 10, 10)
-    label:SetWrap(true)
-    label:SetAutoStretchVertical(true)
-
-    local startButton = vgui.Create("DButton", frame)
-    startButton:SetText(AutoTrainingConfig.GuideButtonText)
-    startButton:Dock(BOTTOM)
-    startButton:DockMargin(10, 10, 10, 10)
-    startButton.DoClick = function()
-        arrowVisible = true
-        frame:Close()
-    end
+-- Function to enable the marker
+local function EnableMarker()
+    markerEnabled = true
+    hasPlayedSound = false  -- Reset the sound flag when the marker is enabled
 end
 
--- Hook to display the menu when the player first spawns
-hook.Add("InitPostEntity", "ShowTrainingMenu", function()
-    timer.Simple(2, function()
-        OpenTrainingMenu()
-    end)
-end)
-
--- Console command to open the training menu manually
-concommand.Add("open_training_menu", function()
-    OpenTrainingMenu()
+-- Console command to enable the marker
+concommand.Add("enable_training_marker", function()
+    EnableMarker()
 end)
