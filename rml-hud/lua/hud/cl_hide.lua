@@ -1,3 +1,13 @@
+
+-- Cache screen dimensions
+local screenW, screenH = ScrW(), ScrH()
+
+-- Recalculate screen dimensions if resolution changes
+hook.Add("OnScreenSizeChanged", "HUD_RecalculateScreenSize", function()
+    screenW, screenH = ScrW(), ScrH()
+end)
+
+
 -- Function to hide default and DarkRP HUD elements
 hook.Add("HUDShouldDraw", "HideDefaultAndDarkRPHUD", function(name)
     -- List of default HUD elements to hide

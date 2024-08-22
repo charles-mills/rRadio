@@ -1,3 +1,20 @@
+
+-- Cache screen dimensions
+local screenW, screenH = ScrW(), ScrH()
+
+-- Recalculate screen dimensions if resolution changes
+hook.Add("OnScreenSizeChanged", "HUD_RecalculateScreenSize", function()
+    screenW, screenH = ScrW(), ScrH()
+end)
+
+
+
+-- Dynamically scale font sizes based on screen height
+local scaledFontSize = function(size)
+    return math.floor(size * (screenH / 1440))
+end
+
+
 HUDConfig = {}
 
 -- General Settings

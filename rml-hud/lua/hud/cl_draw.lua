@@ -1,17 +1,25 @@
 include("config/config.lua")
 include("hud/cl_util.lua")
+-- Cache screen dimensions
+local screenW, screenH = ScrW(), ScrH()
+
+-- Recalculate screen dimensions if resolution changes
+hook.Add("OnScreenSizeChanged", "HUD_RecalculateScreenSize", function()
+    screenW, screenH = ScrW(), ScrH()
+end)
+
 
 -- Create fonts for the HUD
 surface.CreateFont("HUD_ServerName", {
     font = HUDConfig.Font,
-    size = HUDConfig.ServerNameFontSize,
+    size = scaledFontSize(HUDConfig.ServerNameFontSize),
     weight = 1000,
     antialias = true
 })
 
 surface.CreateFont("HUD_Info", {
     font = HUDConfig.Font,
-    size = HUDConfig.InfoFontSize,
+    size = scaledFontSize(HUDConfig.InfoFontSize),
     weight = 700,
     antialias = true
 })
