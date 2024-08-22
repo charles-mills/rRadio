@@ -1,6 +1,7 @@
 include("config/config.lua")
 include("hud/cl_util.lua")
 
+-- Create fonts for the HUD
 surface.CreateFont("HUD_ServerName", {
     font = HUDConfig.Font,
     size = HUDConfig.ServerNameFontSize,
@@ -15,55 +16,113 @@ surface.CreateFont("HUD_Info", {
     antialias = true
 })
 
--- Check if DarkRP is available
-local isDarkRP = DarkRP and DarkRP.getVar and true or false
-
+-- Function to draw player information
 local function DrawPlayerInfo(ply, x, y)
-    local name = isDarkRP and ply:Nick() or ply:SteamName()
-    
-    draw.SimpleText("Name: " .. name, "HUD_Info", x, y, HUDConfig.TextColor)
+    local name = ply:Nick()
+    draw.SimpleText(name, "HUD_Info", x, y, HUDConfig.TextColor)
     y = y + HUDConfig.InfoFontSize
-    
+
     if isDarkRP then
         local job = ply:getDarkRPVar("job") or "Unemployed"
         local money = ply:getDarkRPVar("money") or 0
-        draw.SimpleText("Job: " .. job, "HUD_Info", x, y, HUDConfig.TextColor)
+        local tokens = 0 -- Placeholder for tokens
+
+        draw.SimpleText(job, "HUD_Info", x, y, HUDConfig.TextColor)
         y = y + HUDConfig.InfoFontSize
-        draw.SimpleText("Money: $" .. money, "HUD_Info", x, y, HUDConfig.TextColor)
+        draw.SimpleText(HUDConfig.currency .. money, "HUD_Info", x, y, HUDConfig.TextColor)
+        y = y + HUDConfig.InfoFontSize
+        draw.SimpleText("Tokens: " .. tokens, "HUD_Info", x, y, HUDConfig.TextColor)
         y = y + HUDConfig.InfoFontSize
     end
 
-    return y + HUDConfig.InfoFontSize + 15
+    return y + 15
 end
 
-local function DrawHealthBar(ply, x, y)
-    local health = ply:Health()
-    DrawRoundedBoxWithText(HUDConfig.BarCornerRadius, x, y, HUDConfig.HealthBarWidth, HUDConfig.HealthBarHeight, HUDConfig.BackgroundColor, HUDConfig.TextColor, health, "HUD_Info")
-    draw.RoundedBox(HUDConfig.BarCornerRadius, x, y, math.Clamp(health / 100, 0, 1) * HUDConfig.HealthBarWidth, HUDConfig.HealthBarHeight, HUDConfig.HealthBarColor)
-    return y + HUDConfig.HealthBarHeight + HUDConfig.BarPadding
+-- Generic function to draw bars (health, armor, etc.)
+local function DrawBar(ply, x, y, value, maxValue, barWidth, barHeight, barColor)
+    local width = math.Clamp(value / maxValue, 0, 1) * barWidth
+
+    -- Draw the bar background
+    draw.RoundedBox(0, x, y, barWidth, barHeight, HUDConfig.BackgroundColor)
+
+    -- Draw the bar fill
+    draw.RoundedBox(0, x, y, width, barHeight, barColor)
+
+    -- Draw the value within the bar
+    draw.SimpleText(value, "HUD_Info", x + barWidth / 2, y + barHeight / 2, HUDConfig.TextColor, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+
+    return y + barHeight + HUDConfig.BarPadding
 end
 
-local function DrawArmorBar(ply, x, y)
-    local armor = ply:Armor()
-    DrawRoundedBoxWithText(HUDConfig.BarCornerRadius, x, y, HUDConfig.ArmorBarWidth, HUDConfig.ArmorBarHeight, HUDConfig.BackgroundColor, HUDConfig.TextColor, armor, "HUD_Info")
-    draw.RoundedBox(HUDConfig.BarCornerRadius, x, y, math.Clamp(armor / 100, 0, 1) * HUDConfig.ArmorBarWidth, HUDConfig.ArmorBarHeight, HUDConfig.ArmorBarColor)
-    return y + HUDConfig.ArmorBarHeight
-end
-
+-- Main function to draw the entire HUD
 function DrawCustomHUD()
     local ply = LocalPlayer()
     if not ply:Alive() then return end
 
-    local x = HUDConfig.MarginX
+    -- Adjust the x position with right padding
+    local x = HUDConfig.MarginX + HUDConfig.PaddingRight
+    local y = HUDConfig.MarginY
+    local screenHeight = ScrH()
+
+    -- Draw player info
+    y = DrawPlayerInfo(ply, x, y)
+
+    -- Draw health bar
+    y = DrawBar(ply, x, y, ply:Health(), 100, HUDConfig.HealthBarWidth, HUDConfig.HealthBarHeight, HUDConfig.HealthBarColor)
+
+    -- Draw armor bar
+    y = DrawBar(ply, x, y, ply:Armor(), 100, HUDConfig.ArmorBarWidth, HUDConfig.ArmorBarHeight, HUDConfig.ArmorBarColor)
+end
+
+-- Function to draw the health bar
+local function DrawHealthBar(ply, x, y)
+    local health = ply:Health()
+    
+    -- Draw the health bar background
+    draw.RoundedBox(0, x, y, HUDConfig.HealthBarWidth, HUDConfig.HealthBarHeight, HUDConfig.BackgroundColor)
+    
+    -- Draw the health bar fill
+    draw.RoundedBox(0, x, y, math.Clamp(health / 100, 0, 1) * HUDConfig.HealthBarWidth, HUDConfig.HealthBarHeight, HUDConfig.HealthBarColor)
+    
+    -- Draw the health value within the bar
+    draw.SimpleText(health, "HUD_Info", x + HUDConfig.HealthBarWidth / 2, y + HUDConfig.HealthBarHeight / 2, HUDConfig.TextColor, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+    
+    return y + HUDConfig.HealthBarHeight + HUDConfig.BarPadding
+end
+
+-- Function to draw the armor bar
+local function DrawArmorBar(ply, x, y)
+    local armor = ply:Armor()
+
+    -- Draw the armor bar background
+    draw.RoundedBox(0, x, y, HUDConfig.ArmorBarWidth, HUDConfig.ArmorBarHeight, HUDConfig.BackgroundColor)
+    
+    -- Draw the armor bar fill
+    draw.RoundedBox(0, x, y, math.Clamp(armor / 100, 0, 1) * HUDConfig.ArmorBarWidth, HUDConfig.ArmorBarHeight, HUDConfig.ArmorBarColor)
+    
+    -- Draw the armor value within the bar
+    draw.SimpleText(armor, "HUD_Info", x + HUDConfig.ArmorBarWidth / 2, y + HUDConfig.ArmorBarHeight / 2, HUDConfig.TextColor, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+    
+    return y + HUDConfig.ArmorBarHeight
+end
+
+-- Main function to draw the entire HUD
+function DrawCustomHUD()
+    local ply = LocalPlayer()
+    if not ply:Alive() then return end
+
+    -- Adjust the x position with right padding
+    local x = HUDConfig.MarginX + HUDConfig.PaddingRight
     local screenHeight = ScrH()
 
     -- Calculate the height of the entire HUD
     local totalHeight = HUDConfig.ServerNameFontSize + 15 + (HUDConfig.InfoFontSize * (isDarkRP and 4 or 1)) + (HUDConfig.HealthBarHeight + HUDConfig.ArmorBarHeight) + HUDConfig.BarPadding * 2 + 35
     local y = screenHeight - HUDConfig.MarginY - totalHeight
 
-    -- Draw the background box
+    -- Draw the background box with a rainbow border
     local boxWidth = HUDConfig.HealthBarWidth + 2 * HUDConfig.MarginX
-    draw.RoundedBox(HUDConfig.BarCornerRadius, x - HUDConfig.MarginX, y - 10, boxWidth, totalHeight, HUDConfig.BackgroundBoxColor)
+    DrawRainbowBorder(x - HUDConfig.MarginX, y - 10, boxWidth, totalHeight, 5)  -- 5 is the border thickness
+    draw.RoundedBox(0, x - HUDConfig.MarginX, y - 10, boxWidth, totalHeight, HUDConfig.BackgroundBoxColor)
 
     -- Draw server name
     draw.SimpleText(HUDConfig.ServerName, "HUD_ServerName", x, y, HUDConfig.TextColor)
@@ -76,5 +135,5 @@ function DrawCustomHUD()
     y = DrawHealthBar(ply, x, y)
 
     -- Draw armor bar
-    y = DrawArmorBar(ply, x, y)
+    DrawArmorBar(ply, x, y)
 end

@@ -1,4 +1,9 @@
-function DrawRoundedBoxWithText(cornerRadius, x, y, width, height, bgColor, textColor, text, font)
-    draw.RoundedBox(cornerRadius, x, y, width, height, bgColor)
-    draw.SimpleText(text, font, x + width / 2, y + height / 2, textColor, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+-- Function to draw a uniform rainbow border around the HUD
+function DrawRainbowBorder(x, y, width, height, thickness)
+    local rainbowSpeed = 0.5
+    local color = HSVToColor((CurTime() * 360 * rainbowSpeed) % 360, 1, 1)
+    surface.SetDrawColor(color)
+    
+    -- Draw the border in one call
+    surface.DrawOutlinedRect(x - thickness, y - thickness, width + 2 * thickness, height + 2 * thickness, thickness)
 end

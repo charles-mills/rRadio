@@ -1,28 +1,28 @@
--- hud/cl_hide.lua
+-- Function to hide default and DarkRP HUD elements
+hook.Add("HUDShouldDraw", "HideDefaultAndDarkRPHUD", function(name)
+    -- List of default HUD elements to hide
+    local hideHUDElements = {
+        ["CHudHealth"] = true,
+        ["CHudBattery"] = true,
+        ["CHudAmmo"] = true,
+        ["CHudSecondaryAmmo"] = true,
+    }
 
--- Hide default GMod HUD elements
-local hideHUDElements = {
-    ["CHudHealth"] = true,
-    ["CHudBattery"] = true,
-    ["CHudAmmo"] = true,
-    ["CHudSecondaryAmmo"] = true
-}
+    -- List of DarkRP-specific HUD elements to hide
+    local hideDarkRPHudElements = {
+        ["DarkRP_HUD"] = true,
+        ["DarkRP_EntityDisplay"] = true,
+        ["DarkRP_LocalPlayerHUD"] = true,
+        ["DarkRP_Agenda"] = true,
+        ["DarkRP_Hungermod"] = true,
+        ["DarkRP_LockdownHUD"] = true,
+    }
 
-hook.Add("HUDShouldDraw", "HideDefaultHUD", function(name)
-    if hideHUDElements[name] then
+    -- If the name matches any element in the hide lists, return false to hide it
+    if hideHUDElements[name] or hideDarkRPHudElements[name] then
         return false
     end
-end)
 
--- Hide DarkRP HUD elements by overriding DarkRP's HUD functions directly
-hook.Add("HUDPaint", "HideDarkRPHud", function()
-    if DarkRP then
-        -- Disable DarkRP's HUD functions by returning false from the hook
-        hook.Remove("HUDPaint", "DarkRP_HUD")
-        hook.Remove("HUDPaint", "DarkRP_EntityDisplay")
-        hook.Remove("HUDPaint", "DarkRP_LocalPlayerHUD")
-        hook.Remove("HUDPaint", "DarkRP_Agenda")
-        hook.Remove("HUDPaint", "DarkRP_Hungermod")
-        hook.Remove("HUDPaint", "DarkRP_LockdownHUD")
-    end
+    -- Otherwise, allow other HUD elements (like your custom HUD) to be drawn
+    return true
 end)
