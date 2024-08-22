@@ -12,91 +12,92 @@ net.Receive("UpdateTokens", function()
     end
 end)
 
--- Function to create the player's avatar image on the HUD
-local function CreateAvatar(ply, avatarX, avatarY, avatarSize)
-    avatar = vgui.Create("AvatarImage")
+-- Function to create or update the player's avatar image on the HUD
+local function UpdateAvatar(ply, avatarX, avatarY, avatarSize)
+    if not IsValid(avatar) then
+        avatar = vgui.Create("AvatarImage")
+    end
+
     avatar:SetSize(avatarSize, avatarSize)
     avatar:SetPos(avatarX + 2, avatarY + 2)
     avatar:SetPlayer(ply, 64)
 end
 
--- Function to draw the HUD
+-- Function to draw player information (nickname, job, money, tokens)
+local function DrawPlayerInfo(ply, infoX, infoY, scaleH)
+    skidnetworks.DrawTextShadow(ply:Nick(), "Trebuchet24", infoX, infoY, Color(240, 240, 240), TEXT_ALIGN_LEFT)
+    skidnetworks.DrawTextShadow(ply:getDarkRPVar("job"), "Trebuchet18", infoX, infoY + 20 * scaleH, Color(150, 150, 150), TEXT_ALIGN_LEFT)
+
+    local money = DarkRP.formatMoney(ply:getDarkRPVar("money"))
+    local formattedMoney = string.sub(money, 2) -- Remove the dollar sign
+    skidnetworks.DrawTextShadow("£" .. formattedMoney, "Trebuchet18", infoX, infoY + 35 * scaleH, Color(100, 255, 100), TEXT_ALIGN_LEFT)
+
+    skidnetworks.DrawTextShadow("Tokens: " .. playerTokens, "Trebuchet18", infoX, infoY + 50 * scaleH, Color(255, 215, 0), TEXT_ALIGN_LEFT)  -- Gold color for tokens
+end
+
+-- Function to draw the health and armor bars
+local function DrawHealthArmorBars(ply, healthBarX, healthBarY, barWidth, barHeight, scaleH)
+    -- Health Bar
+    draw.RoundedBox(0, healthBarX, healthBarY, barWidth, barHeight, Color(40, 40, 40, 255))
+    local healthRatio = math.Clamp(ply:Health() / 100, 0, 1)
+    draw.RoundedBox(0, healthBarX, healthBarY, barWidth * healthRatio, barHeight, Color(200, 30, 30, 250))
+    draw.SimpleText(ply:Health() .. "%", "Trebuchet18", healthBarX + barWidth - 4 * scaleH, healthBarY + barHeight / 2, Color(240, 240, 240), TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER)
+
+    -- Armor Bar
+    local armorBarY = healthBarY + barHeight + 8 * scaleH
+    draw.RoundedBox(0, healthBarX, armorBarY, barWidth, barHeight, Color(40, 40, 40, 255))
+    local armorRatio = math.Clamp(ply:Armor() / 100, 0, 1)
+    draw.RoundedBox(0, healthBarX, armorBarY, barWidth * armorRatio, barHeight, Color(60, 120, 255, 250))
+    draw.SimpleText(ply:Armor() .. "%", "Trebuchet18", healthBarX + barWidth - 4 * scaleH, armorBarY + barHeight / 2, Color(240, 240, 240), TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER)
+end
+
+-- Function to draw the server name box
+local function DrawServerNameBox(x, y, boxW, scaleH)
+    local serverBoxH = 20 * scaleH
+    local serverBoxY = y - serverBoxH + 4 * scaleH
+    local serverBoxX = x + 4 * scaleH
+    
+    -- Draw the server name box (now part of the combined shadow box)
+    draw.RoundedBox(0, serverBoxX, serverBoxY, boxW, serverBoxH, Color(12, 12, 12, 236))
+
+    -- Draw server name with a slight outline for better readability
+    draw.SimpleTextOutlined("Skid Networks | PoliceRP", "Trebuchet18", x + boxW / 2, serverBoxY + serverBoxH / 2, Color(240, 240, 240), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 1, Color(0, 0, 0, 255))
+end
+
+-- Function to draw the entire HUD
 local function DrawHUD()
     if debugMode then
-        print("HUD has been drawn")  -- Debug
+        print("HUD has been drawn")  -- Debugging output
     end
 
     local ply = LocalPlayer()
     if not IsValid(ply) then return end
 
-    -- Dynamic scaling and positioning
+    -- Screen dimensions and scaling
     local scrW, scrH = ScrW(), ScrH()
-    local scaleW = scrW / 1920
-    local scaleH = scrH / 1080
-    local boxW, boxH = 225 * scaleW, 130 * scaleH  -- Adjusted height to accommodate tokens
-    local borderThickness = 4 * scaleW
-    local x, y = 10 * scaleW, scrH - boxH - 10 * scaleH
-    local padding = 8 * scaleW
-    local avatarSize = 60 * scaleH
-    local avatarX = x + padding + borderThickness
-    local avatarY = y + padding + borderThickness
-
-    -- Draw Background
-    draw.RoundedBox(0, x + borderThickness, y + borderThickness, boxW, boxH, Color(18, 18, 18))
-
-    -- Create and position the avatar if it hasn't been created yet
-    if not IsValid(avatar) then
-        CreateAvatar(ply, avatarX, avatarY, avatarSize)
-    else
-        avatar:SetPos(avatarX + 2, avatarY + 2)
-        avatar:SetSize(avatarSize, avatarSize)
-    end
-
-    -- Player Info
-    local infoX = avatarX + avatarSize + padding
-    local infoY = avatarY
-    skidnetworks.DrawTextShadow(ply:Nick(), "Trebuchet24", infoX, infoY, Color(240, 240, 240), TEXT_ALIGN_LEFT)
-    skidnetworks.DrawTextShadow(ply:getDarkRPVar("job"), "Trebuchet18", infoX, infoY + 20 * scaleH, Color(150, 150, 150), TEXT_ALIGN_LEFT)
-
-    -- Money Display
-    local money = DarkRP.formatMoney(ply:getDarkRPVar("money"))
-    local formattedMoney = string.sub(money, 2) -- Remove the dollar sign
-    local moneyX = infoX
-    local moneyY = infoY + 35 * scaleH
-    skidnetworks.DrawTextShadow("£" .. formattedMoney, "Trebuchet18", moneyX, moneyY, Color(100, 255, 100), TEXT_ALIGN_LEFT)
-
-    -- Token Display
-    local tokenX = infoX
-    local tokenY = moneyY + 15 * scaleH
-    skidnetworks.DrawTextShadow("Tokens: " .. playerTokens, "Trebuchet18", tokenX, tokenY, Color(255, 215, 0), TEXT_ALIGN_LEFT)  -- Gold color for tokens
-
-    -- Health and Armor Bars
-    local barWidth = 200 * scaleW
-    local barHeight = 15 * scaleH
-    local healthBarX = avatarX
-    local healthBarY = tokenY + 20 * scaleH
-    local armorBarX = healthBarX
-    local armorBarY = healthBarY + barHeight + padding
-
-    -- Health Bar
-    draw.RoundedBox(0, healthBarX, healthBarY, barWidth, barHeight, Color(40, 40, 40, 255))
-    local healthRatio = math.Clamp(ply:Health() / 100, 0, 1)
-    draw.RoundedBox(0, healthBarX, healthBarY, barWidth * healthRatio, barHeight, Color(200, 30, 30, 250))
-    draw.SimpleText(ply:Health() .. "%", "Trebuchet18", healthBarX + barWidth - padding, healthBarY + barHeight / 2, Color(240, 240, 240), TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER)
-
-    -- Armor Bar
-    draw.RoundedBox(0, armorBarX, armorBarY, barWidth, barHeight, Color(40, 40, 40, 255))
-    local armorRatio = math.Clamp(ply:Armor() / 100, 0, 1)
-    draw.RoundedBox(0, armorBarX, armorBarY, barWidth * armorRatio, barHeight, Color(60, 120, 255, 250))
-    draw.SimpleText(ply:Armor() .. "%", "Trebuchet18", armorBarX + barWidth - padding, armorBarY + barHeight / 2, Color(240, 240, 240), TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER)
-
-    -- Server Name Display Box
-    local serverBoxW = boxW
+    local scaleW, scaleH = scrW / 1920, scrH / 1080
+    local boxW, boxH = 225 * scaleW, 130 * scaleH
     local serverBoxH = 20 * scaleH
-    local serverBoxX = x + borderThickness
-    local serverBoxY = y - serverBoxH + 5 * scaleH
-    draw.RoundedBox(0, serverBoxX, serverBoxY, serverBoxW, serverBoxH, Color(18, 18, 18))
-    draw.SimpleText("Skid Networks | PoliceRP", "Trebuchet18", serverBoxX + serverBoxW / 2, serverBoxY + serverBoxH / 2, Color(240, 240, 240), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+    local totalBoxH = boxH + serverBoxH + 4 * scaleH  -- Combined height for the shadow
+    local x, y = 10 * scaleW, scrH - boxH - 10 * scaleH
+    draw.RoundedBox(0, x + 228 * scaleW, y + 6 * scaleH - serverBoxH, scaleW * 5, totalBoxH - 2 * scaleH, Color(0, 0, 0, 150)) -- Right shadow
+    draw.RoundedBox(0, x + 8 * scaleW, y + 153 * scaleH - serverBoxH, boxW - scaleW * 5, scaleH * 5, Color(0, 0, 0, 150)) -- Bottom shadow
+
+    -- Draw the main HUD box
+    draw.RoundedBox(0, x + 4 * scaleW, y + 4 * scaleH, boxW, boxH, Color(18, 18, 18))
+
+    -- Update or create the avatar
+    local avatarX, avatarY = x + 16 * scaleW, y + 16 * scaleH
+    UpdateAvatar(ply, avatarX, avatarY, 60 * scaleH)
+
+    -- Draw player information
+    DrawPlayerInfo(ply, avatarX + 60 * scaleH + 8 * scaleW, avatarY, scaleH)
+
+    -- Draw health and armor bars
+    DrawHealthArmorBars(ply, avatarX, y + 85 * scaleH, 200 * scaleW, 15 * scaleH, scaleH)
+
+    -- Draw server name box above the main box, aligned with it
+    DrawServerNameBox(x, y, boxW, scaleH)
 end
 
 hook.Add("HUDPaint", "SkidNetworks_HUD", DrawHUD)

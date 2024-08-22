@@ -1,4 +1,6 @@
 if SERVER then
+    include("config.lua")
+
     util.AddNetworkString("OpenTokenBuyerMenu")
     util.AddNetworkString("BuyWeaponWithTokens")
     util.AddNetworkString("UpdateTokens")
