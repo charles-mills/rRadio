@@ -1,15 +1,17 @@
 util.AddNetworkString("PlayCarRadioStation")
 util.AddNetworkString("StopCarRadioStation")
 
-
 net.Receive("PlayCarRadioStation", function(len, ply)
     local status, err = pcall(function()
         local url = net.ReadString()
+        local volume = net.ReadFloat() -- Get the volume from the driver
         local vehicle = ply:GetVehicle()
+
         if IsValid(vehicle) and url ~= "" then
             net.Start("PlayCarRadioStation")
             net.WriteEntity(vehicle)
             net.WriteString(url)
+            net.WriteFloat(volume) -- Broadcast the driver's volume
             net.Broadcast()
         else
             error("Invalid vehicle or URL")
@@ -35,4 +37,3 @@ net.Receive("StopCarRadioStation", function(len, ply)
         print("Error in StopCarRadioStation: " .. err)
     end
 end)
-

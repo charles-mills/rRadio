@@ -11,12 +11,25 @@ surface.CreateFont("Roboto18", {
 
 local radioMenuOpen = false
 local currentRadioStations = {}
-local radioVolume = Config.Volume -- Load default volume from config
-local currentlyPlayingStation = nil -- Track the currently playing station
+local currentlyPlayingStation = nil
+local driverVolume = Config.Volume -- This represents the volume set by the driver
 
--- Function to scale UI elements relative to the screen resolution
 local function Scale(value)
-    return value * (ScrW() / 2560) -- Assuming your base resolution is 2560x1440
+    return value * (ScrW() / 2560)
+end
+
+local function updateRadioVolume(station, distance)
+    local maxVolume = GetConVar("radio_max_volume"):GetFloat() -- Get the player's max volume setting
+    local effectiveVolume = math.min(driverVolume, maxVolume) -- Cap the volume by the client's max setting
+
+    if distance <= Config.MinVolumeDistance then
+        station:SetVolume(effectiveVolume)
+    elseif distance <= Config.MaxHearingDistance then
+        local adjustedVolume = effectiveVolume * (1 - (distance - Config.MinVolumeDistance) / (Config.MaxHearingDistance - Config.MinVolumeDistance))
+        station:SetVolume(adjustedVolume)
+    else
+        station:SetVolume(0)
+    end
 end
 
 local function openRadioMenu()
@@ -80,7 +93,6 @@ local function openRadioMenu()
         end
     end
 
-
     -- Create a scrollable panel for the radio list with padding and dark scrollbar
     local radioList = vgui.Create("DScrollPanel", frame)
     radioList:Dock(FILL)
@@ -129,8 +141,15 @@ local function openRadioMenu()
                 end
 
                 stationButton.DoClick = function()
+                    -- Ensure the current station is stopped before playing a new one
+                    if currentlyPlayingStation then
+                        net.Start("StopCarRadioStation")
+                        net.SendToServer()
+                    end
+
                     net.Start("PlayCarRadioStation")
                     net.WriteString(station.url)
+                    net.WriteFloat(driverVolume) -- Send the volume setting with the station URL
                     net.SendToServer()
 
                     currentlyPlayingStation = station
@@ -155,17 +174,22 @@ local function openRadioMenu()
     volumeSlider:SetMin(0)
     volumeSlider:SetMax(1)
     volumeSlider:SetDecimals(2)
-    volumeSlider:SetValue(radioVolume)
+    volumeSlider:SetValue(driverVolume)
     volumeSlider.Label:SetTextColor(Config.UI.TextColor)
     volumeSlider.Label:SetFont("Roboto18")
 
     -- Set the color and font for the value displayed on the slider
     volumeSlider.OnValueChanged = function(_, value)
-        radioVolume = value
-        for _, station in pairs(currentRadioStations) do
-            if IsValid(station) then
-                station:SetVolume(radioVolume)
-            end
+        driverVolume = value
+        if currentlyPlayingStation and IsValid(currentRadioStations[LocalPlayer():GetVehicle()]) then
+            -- Just update the volume, don't start a new station
+            net.Start("PlayCarRadioStation")
+            net.WriteString(currentlyPlayingStation.url)
+            net.WriteFloat(driverVolume) -- Update the broadcasted volume
+            net.SendToServer()
+
+            -- Update the volume of the current station locally
+            currentRadioStations[LocalPlayer():GetVehicle()]:SetVolume(driverVolume)
         end
     end
 
@@ -200,6 +224,7 @@ end)
 net.Receive("PlayCarRadioStation", function()
     local vehicle = net.ReadEntity()
     local url = net.ReadString()
+    local driverVolume = net.ReadFloat() -- Receive the volume set by the driver
 
     if not IsValid(vehicle) then return end
 
@@ -213,27 +238,22 @@ net.Receive("PlayCarRadioStation", function()
         sound.PlayURL(url, "3d mono", function(station, errorID, errorName)
             if IsValid(station) then
                 station:SetPos(vehicle:GetPos())
-                station:SetVolume(radioVolume)
+                station:SetVolume(driverVolume)
                 station:Play()
                 currentRadioStations[vehicle] = station
 
                 -- Update the station's position and volume to follow the vehicle
                 hook.Add("Think", "UpdateRadioPosition_" .. vehicle:EntIndex(), function()
                     if IsValid(vehicle) and IsValid(station) then
+                        -- Update the position of the sound to follow the vehicle
+                        station:SetPos(vehicle:GetPos())
+
+                        -- Update the volume based on the client's max volume setting
                         local playerPos = LocalPlayer():GetPos()
                         local vehiclePos = vehicle:GetPos()
                         local distance = playerPos:Distance(vehiclePos)
 
-                        station:SetPos(vehiclePos)
-
-                        if distance <= Config.MinVolumeDistance then
-                            station:SetVolume(radioVolume)
-                        elseif distance <= Config.MaxHearingDistance then
-                            local adjustedVolume = radioVolume * (1 - (distance - Config.MinVolumeDistance) / (Config.MaxHearingDistance - Config.MinVolumeDistance))
-                            station:SetVolume(adjustedVolume)
-                        else
-                            station:SetVolume(0)
-                        end
+                        updateRadioVolume(station, distance)
                     else
                         hook.Remove("Think", "UpdateRadioPosition_" .. vehicle:EntIndex())
                     end
@@ -277,5 +297,4 @@ net.Receive("StopCarRadioStation", function()
         hook.Remove("EntityRemoved", "StopRadioOnVehicleRemove_" .. entIndex)
         hook.Remove("Think", "UpdateRadioPosition_" .. entIndex)
     end
-    
 end)

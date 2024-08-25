@@ -1,7 +1,5 @@
-CreateClientConVar("radio_theme", "dark", true, false)
-
 -- Include the themes.lua file to access the defined themes
-local themes = include("themes.lua") -- Make sure the path is correct
+local themes = include("themes.lua")
 
 -- Function to apply the selected theme
 local function applyTheme(themeName)
@@ -23,9 +21,11 @@ end
 loadSavedTheme()
 
 -- Create a new tool menu in the "Utilities" section
-hook.Add("PopulateToolMenu", "AddThemeSelectionMenu", function()
-    spawnmenu.AddToolMenuOption("Utilities", "Radio Addon", "ThemeSelection", "Select Theme", "", "", function(panel)
+hook.Add("PopulateToolMenu", "AddThemeAndVolumeSelectionMenu", function()
+    spawnmenu.AddToolMenuOption("Utilities", "Radio Addon", "ThemeVolumeSelection", "Settings", "", "", function(panel)
         panel:ClearControls()
+        
+        -- Section for Theme Selection
         panel:Help("Select your preferred theme for the radio addon UI:")
 
         local themeDropdown = vgui.Create("DComboBox", panel)
@@ -56,5 +56,18 @@ hook.Add("PopulateToolMenu", "AddThemeSelectionMenu", function()
         end
 
         panel:AddItem(themeDropdown)
+
+        -- Section for Volume Control
+        panel:Help("Set the global maximum volume for all radios:")
+
+        local volumeSlider = vgui.Create("DNumSlider", panel)
+        volumeSlider:SetText("Max Radio Volume")
+        volumeSlider:SetMin(0)
+        volumeSlider:SetMax(1)
+        volumeSlider:SetDecimals(2)
+        volumeSlider:SetConVar("radio_max_volume") -- Bind to the ConVar
+        volumeSlider:SetValue(GetConVar("radio_max_volume"):GetFloat()) -- Set initial value
+
+        panel:AddItem(volumeSlider)
     end)
 end)
