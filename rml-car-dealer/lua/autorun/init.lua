@@ -1,0 +1,1 @@
+AddCSLuaFile("entities/car_dealer.lua")
