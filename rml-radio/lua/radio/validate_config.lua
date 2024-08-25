@@ -33,7 +33,7 @@ function validateConfig()
     end
 
     -- Validate UI settings
-    if Config.UI.FrameSize.width <= 0 or Config.UI.FrameSize.height <= 0 then
+    if Config.UI and Config.UI.FrameSize and (Config.UI.FrameSize.width <= 0 or Config.UI.FrameSize.height <= 0) then
         error("Config.UI.FrameSize must have positive width and height")
         Config.UI.FrameSize.width = 400
     end

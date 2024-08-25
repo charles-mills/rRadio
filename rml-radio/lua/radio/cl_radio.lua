@@ -72,10 +72,14 @@ local function openRadioMenu()
     searchBox.Paint = function(self, w, h)
         draw.RoundedBox(8, 0, 0, w, h, Config.UI.SearchBoxColor)
         self:DrawTextEntryText(Config.UI.TextColor, Color(120, 120, 120), Config.UI.TextColor)
+        
+        -- Check if the search box is empty and draw the placeholder text
         if self:GetText() == "" then
-            draw.SimpleText(self:GetPlaceholderText(), self:GetFont(), Scale(5), h / 2, Color(200, 200, 200), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+            -- Apply the theme's text color to the placeholder text
+            draw.SimpleText(self:GetPlaceholderText(), self:GetFont(), Scale(5), h / 2, Config.UI.TextColor, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
         end
     end
+
 
     -- Create a scrollable panel for the radio list with padding and dark scrollbar
     local radioList = vgui.Create("DScrollPanel", frame)

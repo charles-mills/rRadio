@@ -1,11 +1,12 @@
+Config = Config or {}
+
 -- Load themes
 local themes = include("themes.lua")
 
 -- Default to dark theme or set based on user preference
-local selectedTheme = themes.darkTheme -- or themes.lightTheme
+local selectedTheme = themes.darkTheme
 
 -- General Settings
-Config = {}
 
 Config.UI = selectedTheme
 Config.Volume = 1 -- Default radio volume (range: 0.0 to 1.0)

@@ -1,18 +1,17 @@
 CreateClientConVar("radio_theme", "dark", true, false)
 
 -- Include the themes.lua file to access the defined themes
-local themes = include("themes.lua")
+local themes = include("themes.lua") -- Make sure the path is correct
 
 -- Function to apply the selected theme
 local function applyTheme(themeName)
-    if themeName == "dark" then
-        Config.UI = themes.darkTheme
-    elseif themeName == "light" then
-        Config.UI = themes.lightTheme
+    if themes[themeName] then
+        Config.UI = themes[themeName]
+        -- You may need to refresh your UI elements to apply the new theme
+        hook.Run("ThemeChanged", themeName)
+    else
+        print("Invalid theme name: " .. themeName)
     end
-    -- Refresh or rebuild your UI elements to apply the new theme
-    -- This could involve closing and reopening UI frames or updating their colors
-    hook.Run("ThemeChanged", themeName) -- Custom hook to notify the rest of the addon that the theme changed
 end
 
 -- Load the saved theme from convar and apply it
@@ -33,6 +32,8 @@ hook.Add("PopulateToolMenu", "AddThemeSelectionMenu", function()
         themeDropdown:SetValue("Select Theme")
         themeDropdown:AddChoice("Dark")
         themeDropdown:AddChoice("Light")
+        themeDropdown:AddChoice("Ocean")
+        themeDropdown:AddChoice("Forest")
 
         -- Set the current value to the saved theme
         local currentTheme = GetConVar("radio_theme"):GetString()
@@ -40,15 +41,17 @@ hook.Add("PopulateToolMenu", "AddThemeSelectionMenu", function()
             themeDropdown:SetValue("Dark")
         elseif currentTheme == "light" then
             themeDropdown:SetValue("Light")
+        elseif currentTheme == "ocean" then
+            themeDropdown:SetValue("Ocean")
+        elseif currentTheme == "forest" then
+            themeDropdown:SetValue("Forest")
         end
 
         themeDropdown.OnSelect = function(panel, index, value)
-            if value == "Dark" then
-                applyTheme("dark")
-                RunConsoleCommand("radio_theme", "dark")
-            elseif value == "Light" then
-                applyTheme("light")
-                RunConsoleCommand("radio_theme", "light")
+            local lowerValue = value:lower()
+            if themes[lowerValue] then
+                applyTheme(lowerValue)
+                RunConsoleCommand("radio_theme", lowerValue)
             end
         end
 
