@@ -69,10 +69,12 @@ local function updateRadioVolume(station, distance)
     end
 end
 
-local function populateList(stationListPanel)
+local function populateList(stationListPanel, backButton)
     stationListPanel:Clear()
 
     if selectedCountry == nil then
+        backButton:SetVisible(false) -- Hide the back button when viewing countries
+
         -- Populate with countries
         for country, _ in pairs(Config.RadioStations) do
             local countryButton = vgui.Create("DButton", stationListPanel)
@@ -92,7 +94,8 @@ local function populateList(stationListPanel)
 
             countryButton.DoClick = function()
                 selectedCountry = country
-                populateList(stationListPanel)
+                backButton:SetVisible(true) -- Show the back button when viewing radio stations
+                populateList(stationListPanel, backButton)
             end
         end
     else
@@ -129,7 +132,7 @@ local function populateList(stationListPanel)
                 net.SendToServer()
 
                 currentlyPlayingStation = station
-                populateList(stationListPanel)
+                populateList(stationListPanel, backButton)
             end
         end
     end
@@ -199,7 +202,7 @@ local function openRadioMenu()
         net.Start("StopCarRadioStation")
         net.SendToServer()
         currentlyPlayingStation = nil
-        populateList(stationListPanel)
+        populateList(stationListPanel, backButton)
     end
 
     -- Back arrow to return to the country selection
@@ -224,7 +227,8 @@ local function openRadioMenu()
 
     backButton.DoClick = function()
         selectedCountry = nil
-        populateList(stationListPanel)
+        backButton:SetVisible(false) -- Hide the back button when returning to the country selection
+        populateList(stationListPanel, backButton)
     end
 
     -- Custom close button with dynamic size and positioning
@@ -253,7 +257,7 @@ local function openRadioMenu()
     function sbar.btnDown:Paint(w, h) draw.RoundedBox(8, 0, 0, w, h, Config.UI.ScrollbarColor) end
     function sbar.btnGrip:Paint(w, h) draw.RoundedBox(8, 0, 0, w, h, Config.UI.ScrollbarGripColor) end
 
-    populateList(stationListPanel) -- Pass stationListPanel to the populateList function
+    populateList(stationListPanel, backButton) -- Pass stationListPanel and backButton to the populateList function
 end
 
 hook.Add("Think", "OpenCarRadioMenu", function()
