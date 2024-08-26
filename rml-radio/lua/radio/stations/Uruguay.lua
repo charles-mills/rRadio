@@ -40,7 +40,7 @@ local stations = {
     {name = "La Nueva Del Sur", url = "http://stream-176.zeno.fm/s6hdmgb9na0uv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJzNmhkbWdiOW5hMHV2IiwiaG9zdCI6InN0cmVhbS0xNzYuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6ImNzX0FfMzd6UXBHY3d3NWw1eTQ1ZXciLCJpYXQiOjE3MjQ2ODY5MDYsImV4cCI6MTcyNDY4Njk2Nn0.DRWJIHtfZGFwaXTGZ9gsCKdj1cgCXPZi0Ga7lHFNVco"},
     {name = "La R - 1410 AM", url = "https://la1410-2.nty.uy/"},
     {name = "LA VEREDA WEB RADIO", url = "https://srv2.radiostreamuy.com/8012/stream"},
-    {name = "La Voz De Melo", url = "https://stream-157.zeno.fm/fzc86k96yy8uv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJmemM4Nms5Nnl5OHV2IiwiaG9zdCI6InN0cmVhbS0xNTcuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6IlpTLV9LVnNGU0lTTThLLW1UYzZUZXciLCJpYXQiOjE3MjQ2ODg3OTksImV4cCI6MTcyNDY4ODg1OX0.ttQ8KiscaYyhrtIDL-j6sYOKBFte8zQHx-UDf7r2Jb8"},
+    {name = "La Voz De Melo", url = "https://stream-157.zeno.fm/fzc86k96yy8uv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJmemM4Nms5Nnl5OHV2IiwiaG9zdCI6InN0cmVhbS0xNTcuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6Im5qbmR1UHNrUWdheVVDWjg4RkttLUEiLCJpYXQiOjE3MjQ3MDUyMjEsImV4cCI6MTcyNDcwNTI4MX0.bgBjFnR0pRDQu8XiJ_SI4pgH5pNLD5pf6LX7IYWFUHU"},
     {name = "La Voz De Paysandú - AM 1320", url = "http://salida.stream.com.uy:8508/stream"},
     {name = "Laser FM", url = "https://server.laradio.online/proxy/eduardo_correa?mp=/stream"},
     {name = "Mega FM", url = "https://radio.cimaspeed.com/8070/stream"},

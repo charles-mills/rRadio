@@ -1,5 +1,5 @@
 local stations = {
-    {name = "A1-Radio-1011Mhz-Bolgatanga", url = "http://stream-160.zeno.fm/y77gg1ggeq8uv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJ5NzdnZzFnZ2VxOHV2IiwiaG9zdCI6InN0cmVhbS0xNjAuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6Ikxrd0pqQnZTUU5PdzBpa2otS01jaEEiLCJpYXQiOjE3MjQ2NzM2NDcsImV4cCI6MTcyNDY3MzcwN30.2t3GlLxAa9D5dTAht0yLYIOg_XKqeLtcVF8PD84AGgs"},
+    {name = "A1-Radio-1011Mhz-Bolgatanga", url = "http://stream-161.zeno.fm/y77gg1ggeq8uv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJ5NzdnZzFnZ2VxOHV2IiwiaG9zdCI6InN0cmVhbS0xNjEuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6IkJyc0RRZEVNUXp5Sy1uQmF6LVVWNFEiLCJpYXQiOjE3MjQ3MDQ1MDQsImV4cCI6MTcyNDcwNDU2NH0.3h__15hf9RNXJk_0QfRL4FdtPT10m9m8CODo_EAPODE"},
     {name = "ADUM RADIO", url = "http://stream-157.zeno.fm/dmn9atfb7ehvv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJkbW45YXRmYjdlaHZ2IiwiaG9zdCI6InN0cmVhbS0xNTcuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6Imtyd2tlUU84UXhLaVlfMElCM3lfV0EiLCJpYXQiOjE3MjQ2OTM0NDksImV4cCI6MTcyNDY5MzUwOX0.T-q5X4G-Py2j0tZC6uNhUzoZr2r0vWnmcR_zUL7Ppq8"},
     {name = "Akomapa FM", url = "http://mounthoreb1.primcast.com:8210/"},
     {name = "Ark FM - Sunyani", url = "https://www.liveradio.es/http://67.212.165.106:8247/;"},

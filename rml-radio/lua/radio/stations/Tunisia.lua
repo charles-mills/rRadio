@@ -46,7 +46,7 @@ local stations = {
     {name = "إذاعة الفتاوى العامة", url = "https://qurango.net/radio/fatwa"},
     {name = "إذاعة القرآن الكريم", url = "http://n0e.radiojar.com/0tpy1h0kxtzuv?rj-ttl=5&rj-tok=AAABkY7n-k0AMU6SXWMBxq7BNQ"},
     {name = "إذاعة القرآن الكريم", url = "http://n09.radiojar.com/0tpy1h0kxtzuv?rj-ttl=5&rj-tok=AAABkY-ReqwAArPpcsR1ayAtKg"},
-    {name = "إذاعة القرآن الكريم", url = "http://n04.radiojar.com/0tpy1h0kxtzuv?rj-ttl=5&rj-tok=AAABkY3TJ2AAWbCX9HOhDIiFHA"},
+    {name = "إذاعة القرآن الكريم", url = "http://n06.radiojar.com/0tpy1h0kxtzuv?rj-ttl=5&rj-tok=AAABkZB_OdEAKBF6tgu3tJACsw"},
     {name = "إذاعة طريق السلف", url = "https://airtime.salafwayfm.ly/"},
     {name = "إذاعة علي جابر", url = "https://qurango.net/radio/ali_jaber"},
     {name = "إذاعة محمد أيوب", url = "https://qurango.net/radio/mohammed_ayyub"},

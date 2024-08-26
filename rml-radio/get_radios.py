@@ -20,6 +20,13 @@ def clean_station_name(name):
         print(f"Error applying title case to name '{name}': {e}")
     return cleaned_name
 
+# Function to clean and format file names
+def clean_file_name(name):
+    # Replace spaces with underscores and remove problematic characters
+    name = re.sub(r'[^\w\s-]', '', name)  # Remove non-alphanumeric characters except spaces and hyphens
+    name = name.replace(' ', '_')  # Replace spaces with underscores
+    return name.lower()  # Convert to lowercase for consistency
+
 # Create a session with retry logic
 session = requests.Session()
 retries = Retry(total=5, backoff_factor=1, status_forcelist=[500, 502, 503, 504], allowed_methods=["GET"])
@@ -59,8 +66,9 @@ def save_stations_to_file(country, stations):
     directory = "rml-radio/lua/radio/stations"
     os.makedirs(directory, exist_ok=True)  # Create the directory if it doesn't exist
 
-    # Create the file path
-    file_name = f"{country}.lua" if country else "Other.lua"
+    # Clean the country name for use as a file name
+    cleaned_country_name = clean_file_name(country)
+    file_name = f"{cleaned_country_name}.lua" if country else "other.lua"
     file_path = os.path.join(directory, file_name)
 
     # Write the Lua table to the file

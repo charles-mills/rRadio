@@ -33,7 +33,7 @@ local stations = {
     {name = "Radio Holguín", url = "https://icecast.teveo.cu/dn9JTKtH"},
     {name = "Radio Holguin La Nueva CMKE", url = "https://icecast.teveo.cu/dn9JTKtH"},
     {name = "Radio Libertad", url = "https://icecast.teveo.cu/kcLKb4qv"},
-    {name = "Radio María De La Caridad", url = "https://stream-173.zeno.fm/5rul798y3xatv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiI1cnVsNzk4eTN4YXR2IiwiaG9zdCI6InN0cmVhbS0xNzMuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6IkRSamo2RE5IUkdxYlNKYVZrbFVidHciLCJpYXQiOjE3MjQ2OTU4NDAsImV4cCI6MTcyNDY5NTkwMH0.ACryFKqfKvtObQEd6oe4A4D6d83OzYBgqCO__E0rSlc"},
+    {name = "Radio María De La Caridad", url = "https://stream-173.zeno.fm/5rul798y3xatv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiI1cnVsNzk4eTN4YXR2IiwiaG9zdCI6InN0cmVhbS0xNzMuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6InFQR0RzXzQzVDZlZ1dzRDRfclJ1ZWciLCJpYXQiOjE3MjQ3MDQxMjYsImV4cCI6MTcyNDcwNDE4Nn0.ZjxpajaC480Fu6REfetweG0L_Vvt76XERuct2DQr4BQ"},
     {name = "Radio Nuevitas", url = "https://icecast.teveo.cu/9VVnwcww"},
     {name = "Radio Placetas", url = "https://icecast.teveo.cu/wnW3hTrw"},
     {name = "Radio Progreso", url = "https://icecast.teveo.cu/XjfW7qWN"},

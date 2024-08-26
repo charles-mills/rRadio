@@ -30,7 +30,7 @@ local stations = {
     {name = "ILM Radio Renala FM 92", url = "https://stream-176.zeno.fm/7wre21u7xa0uv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiI3d3JlMjF1N3hhMHV2IiwiaG9zdCI6InN0cmVhbS0xNzYuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6Ijd3LTJuNXlfVHVPSXlUNUozOEZJbkEiLCJpYXQiOjE3MjQ2NzkxNTksImV4cCI6MTcyNDY3OTIxOX0.ajPjdrYmc3C8FtFa-kG71tqqQerOM7IRBf-P51m6MAY"},
     {name = "Insaf Radio", url = "https://cdn.voscast.com/resources/?key=4e1e2d7ac97ea7ad9493c529df2ab16c&c=wmp"},
     {name = "Live", url = "http://live.mp3quran.net:9752/"},
-    {name = "Love-Islam-Radio", url = "https://stream-151.zeno.fm/f9h69cgbu68uv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJmOWg2OWNnYnU2OHV2IiwiaG9zdCI6InN0cmVhbS0xNTEuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6ImkyQXR2Z08wU0FlTi1EY0ZHSW1jbHciLCJpYXQiOjE3MjQ2ODI5OTAsImV4cCI6MTcyNDY4MzA1MH0.fzgDx70pk5aofZuHB7A3fpdTzD6Vbpf6ekxdd6yNIVY"},
+    {name = "Love-Islam-Radio", url = "https://stream-151.zeno.fm/f9h69cgbu68uv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJmOWg2OWNnYnU2OHV2IiwiaG9zdCI6InN0cmVhbS0xNTEuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6IlZMdjlDZDlBU2k2UzZGSEN0TnZMeWciLCJpYXQiOjE3MjQ3MDM5OTMsImV4cCI6MTcyNDcwNDA1M30.f_yGV-Y6Z0v6FfYMnaFznX76BKIPwI1Epf3lzG7ySGU"},
     {name = "Multan MW", url = "https://whmsonic.radio.gov.pk:8034/stream?type=http&nocache=12"},
     {name = "Naat", url = "http://philae.shoutca.st:8640/naat"},
     {name = "Radio Mirpur", url = "https://whmsonic.radio.gov.pk:8074/?type=http&nocache=9"},
@@ -48,7 +48,7 @@ local stations = {
     {name = "Radio Pakistan Peshawar MW", url = "https://whmsonic.radio.gov.pk:8072/relay"},
     {name = "Radio Pakistan Quetta MW", url = "https://whmsonic.radio.gov.pk:8060/relay"},
     {name = "Radio Pakistan World Service", url = "https://whmsonic.radio.gov.pk:7005/stream"},
-    {name = "VOA Urdu", url = "http://n11.radiojar.com/zpd8p6fgq3quv?rj-ttl=5&rj-tok=AAABkYwry6AAvYMfh_mDBf_nvw"},
+    {name = "VOA Urdu", url = "http://n13.radiojar.com/zpd8p6fgq3quv?rj-ttl=5&rj-tok=AAABkZB-cEgAiSqwgSmCiHqkng"},
 }
 
 return stations

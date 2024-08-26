@@ -87,7 +87,7 @@ local stations = {
     {name = "Radio Denmark FM", url = "https://live-bauerdk.sharp-stream.com/radio100_dk_mp3"},
     {name = "Radio Diablo", url = "https://icecast1.radiostuff.dk/Diablo128"},
     {name = "Radio Fasanen Frederiksberg", url = "https://c14.radioboss.fm:18228/stream"},
-    {name = "Radio Folk", url = "http://n07.radiojar.com/fqt2y0ds97zuv?rj-ttl=5&rj-tok=AAABkY2XVxwAvi9zI9jMj9y9ag"},
+    {name = "Radio Folk", url = "http://n01.radiojar.com/fqt2y0ds97zuv?rj-ttl=5&rj-tok=AAABkZCGXtoA9w116WhKSYKr0w"},
     {name = "Radio Freja", url = "http://solid67.streamupsolutions.com:15507/stream"},
     {name = "Radio Globus", url = "https://stream.probroadcast.dk/radioglobus"},
     {name = "Radio Haderslev", url = "http://media.wlmm.dk/radiohaderslevmp3"},

@@ -12,7 +12,7 @@ local stations = {
     {name = "RADIO MARIA ALBANIA", url = "http://dreamsiteradiocp2.com:8028/stream"},
     {name = "Radio Ora News", url = "https://radio.oranews.tv:8443/stream"},
     {name = "Radio Tirana 1", url = "http://79.106.48.2:8000/radiotirana1"},
-    {name = "Radio-Bllaca", url = "https://stream-174.zeno.fm/0smrlmhdbxuuv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiIwc21ybG1oZGJ4dXV2IiwiaG9zdCI6InN0cmVhbS0xNzQuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6IkZUQjNFVXBQUU5PUUFVYjV2VmZZQWciLCJpYXQiOjE3MjQ2Mzc5NjksImV4cCI6MTcyNDYzODAyOX0.1DDqsmw3dkgcGw66m1PzVM0oLh9jtDRB6b0OiFg8IdY"},
+    {name = "Radio-Bllaca", url = "https://stream-174.zeno.fm/0smrlmhdbxuuv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiIwc21ybG1oZGJ4dXV2IiwiaG9zdCI6InN0cmVhbS0xNzQuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6Ik9HckxLOGNnU3d1eXB4LWxhd1lla0EiLCJpYXQiOjE3MjQ3MDM0MDAsImV4cCI6MTcyNDcwMzQ2MH0.2R54Q5GumCOfVy4IWz0xsFQxEjSA4H0Tvez0Os1LZfU"},
     {name = "Radioone", url = "https://cp1.sednastream.com/proxy/radioone94?mp=/stream"},
     {name = "Raduo-Bllaca", url = "https://stream-174.zeno.fm/0smrlmhdbxuuv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiIwc21ybG1oZGJ4dXV2IiwiaG9zdCI6InN0cmVhbS0xNzQuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6IjlHUGRxSldOUzF5aHFVOXJOeGp2S2ciLCJpYXQiOjE3MjQ2OTQ5NTksImV4cCI6MTcyNDY5NTAxOX0.dNJUtXNYqurTDQSbw07aYwTCNeEi5jEiWwJrtLWEt38"},
     {name = "RTSH Radio Tirana International", url = "http://79.106.48.2:8000/rti"},

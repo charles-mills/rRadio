@@ -1,0 +1,27 @@
+local stations = {
+    {name = "AZ Rock", url = "http://cassini.shoutca.st:9300/stream"},
+    {name = "Catolica Radio", url = "https://live.turadio.stream:7017/catolicaradiopr"},
+    {name = "Club One World", url = "https://streams.radio.co/sa0b5d970a/listen"},
+    {name = "Echo 355", url = "http://stream-152.zeno.fm/hssq9ydayf9uv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJoc3NxOXlkYXlmOXV2IiwiaG9zdCI6InN0cmVhbS0xNTIuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6IktQajViaFd5VGFDOXp6Y0JaeFk3NGciLCJpYXQiOjE3MjQ2OTI0ODEsImV4cCI6MTcyNDY5MjU0MX0.Nru7kUZnWgrx_9GU5CTeCIGZMQgEWfm-yIe7ULUH3lw"},
+    {name = "Exa FM", url = "https://14553.live.streamtheworld.com:443/XHPSFMAAC.aac"},
+    {name = "FM 96", url = "http://149.56.155.73:8105/stream"},
+    {name = "Fuzed Club Radio", url = "https://radio.fuzedclubradio.com/listen/fuzed_club_radio/stream"},
+    {name = "Hot 102", url = "https://server7.servistreaming.com/proxy/hot?mp=%2Fstream%3Ftype%3D.mp3&_=1"},
+    {name = "LA X94 - RADIO CRISTIANA", url = "https://securestreams6.autopo.st:2128/stream"},
+    {name = "Notiunopr", url = "https://server20.servistreaming.com:9022/stream"},
+    {name = "Radio Atenas 1500 AM", url = "https://radioatenas-webctgena.radioca.st/stream"},
+    {name = "Radio Casa Pueblo", url = "http://s1.voscast.com:9906/;stream1523840050300/1"},
+    {name = "Radio Costa Calidad Normal", url = "https://radio.archipielago.uno/radiocosta"},
+    {name = "RADIO TROPICAL PR", url = "https://cast.miradio.in/proxy/radiotropical/stream"},
+    {name = "Radiooro PR", url = "https://us2.internet-radio.com/proxy/woro?mp=/stream"},
+    {name = "Spot Radio", url = "https://c9.radioboss.fm/stream/141"},
+    {name = "Super K FM", url = "http://grupomedrano.stream-audio.com:8856/SuperK"},
+    {name = "WABA", url = "https://stream.eleden.com/waba.aac/waba.aac.stream/playlist.m3u8"},
+    {name = "WKVM Radio Paz 810", url = "http://us2.internet-radio.com:8085/"},
+    {name = "WPAB 550 PONCE", url = "http://68.235.35.243:9059/stream"},
+    {name = "WSKN Radio Isla1320 Am", url = "http://server7.servistreaming.com:10070/stream"},
+    {name = "WUPR Éxitos 1530", url = "https://exitos1530.radioca.st/stream"},
+    {name = "Yunque93", url = "http://server7.servistreaming.com:10021/stream?type=.mp3"},
+}
+
+return stations

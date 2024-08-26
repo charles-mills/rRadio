@@ -32,7 +32,7 @@ local stations = {
     {name = "Mars Dance", url = "https://stream-176.zeno.fm/683gf5xrxfeuv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiI2ODNnZjV4cnhmZXV2IiwiaG9zdCI6InN0cmVhbS0xNzYuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6ImxvMHNYcnNiVFBxT29qRm9FaTZkN2ciLCJpYXQiOjE3MjQ2ODQxMTcsImV4cCI6MTcyNDY4NDE3N30.h2FswDrSpkjgGMscbJ3RBHOu7-xF7YVGUD8YdyShdrg"},
     {name = "METALSCENA Netradio", url = "https://listen.radioking.com/radio/263218/stream/308365"},
     {name = "Mirjam Rádio - Mária Rádió Felvidék", url = "http://193.87.81.131:8081/MariaRadioFelvidek"},
-    {name = "Party Mix Radio", url = "http://stream-156.zeno.fm/rw6ckefezs8uv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJydzZja2VmZXpzOHV2IiwiaG9zdCI6InN0cmVhbS0xNTYuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6IjF1SW41dXJ3U2ctMld2UFE4Z3NscWciLCJpYXQiOjE3MjQ2ODA4NzEsImV4cCI6MTcyNDY4MDkzMX0.bAGLBYQAFAoVSfbDO6vKKerN901BheMYp5J5-4oXGCg"},
+    {name = "Party Mix Radio", url = "http://stream-158.zeno.fm/rw6ckefezs8uv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJydzZja2VmZXpzOHV2IiwiaG9zdCI6InN0cmVhbS0xNTguemVuby5mbSIsInJ0dGwiOjUsImp0aSI6Im54SnJMYjNjU3hHV2I4MWhXWHFwSUEiLCJpYXQiOjE3MjQ3MDQ2OTEsImV4cCI6MTcyNDcwNDc1MX0.OVX9_cYIQGh3K7-Cz-i17HJAaQBY1OQCKYoMR_H2Tk0"},
     {name = "Pátria Rádió", url = "https://icecast.stv.livebox.sk/patria_128.mp3"},
     {name = "Radio 7", url = "https://play.radio7.sk/128"},
     {name = "Rádio Aetter", url = "http://stream.aetter.sk:8000/aetter"},

@@ -9,7 +9,7 @@ local stations = {
     {name = "Estéreo Salvación", url = "https://server.radiogs.org/8092/stream"},
     {name = "Estéreo Santa Sion", url = "https://radio015.gt.gt/radio/8000/live.mp3"},
     {name = "Estéreo Torre Fuerte", url = "https://server.radiogs.org/8296/stream"},
-    {name = "Eventos Catolicos Radio 940 AM", url = "https://stream-159.zeno.fm/1g9cduy10bruv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiIxZzljZHV5MTBicnV2IiwiaG9zdCI6InN0cmVhbS0xNTkuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6IjYzNHhTemR1UU5lZF80QVBla1hRcWciLCJpYXQiOjE3MjQ2MjQwODUsImV4cCI6MTcyNDYyNDE0NX0.lyFnaYHJL47k3L2oXRD8dwSEyRkMxBOK8w9wY4qrNjA"},
+    {name = "Eventos Catolicos Radio 940 AM", url = "https://stream-161.zeno.fm/1g9cduy10bruv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiIxZzljZHV5MTBicnV2IiwiaG9zdCI6InN0cmVhbS0xNjEuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6IkV2a25QMWVpU2ItVjZEQVh6RlBDY1EiLCJpYXQiOjE3MjQ3MDQ4MzUsImV4cCI6MTcyNDcwNDg5NX0.hv8TSP49tIWrSVuD3-NLi9n8_y4Ze4QQ103kpYi05Zk"},
     {name = "Exa FM Guatemala", url = "https://stream-158.zeno.fm/czdkk32qduhvv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJjemRrazMycWR1aHZ2IiwiaG9zdCI6InN0cmVhbS0xNTguemVuby5mbSIsInJ0dGwiOjUsImp0aSI6IkcxWnV6bWpLVFZHdmVSUnJBbkQ0M0EiLCJpYXQiOjE3MjQ3MDExMjMsImV4cCI6MTcyNDcwMTE4M30.oR6G6YwKjXt7a6zcPwJ4LwLsfOAM-l-8cMQNuUogsGc"},
     {name = "Felove Biblia En Quiché", url = "http://radio.produccionescasaverde.com:8788/autodj"},
     {name = "Gaiteros De Guatemala", url = "https://radio.forensedigital.gt:8030/stream"},
@@ -31,7 +31,7 @@ local stations = {
     {name = "RADIO MARIA GUATEMALA", url = "http://dreamsiteradiocp.com:8072/stream"},
     {name = "Radio Mesiánica", url = "https://felovemesianica-radiofelove.radioca.st/stream"},
     {name = "Radio Planeta Guatemala", url = "https://cast.az-streamingserver.com/proxy/lhufblaq?mp=/stream"},
-    {name = "Radio Universidad", url = "https://stream-163.zeno.fm/xqbz7b86a0quv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJ4cWJ6N2I4NmEwcXV2IiwiaG9zdCI6InN0cmVhbS0xNjMuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6ImNtRHBJeTJ2U1RPdEJjOFNqTGR2Y0EiLCJpYXQiOjE3MjQ2MTk2NDEsImV4cCI6MTcyNDYxOTcwMX0.N0XcZWto0yiskio_wSew7kBJ5J4McJCLDeNEukvkz_0"},
+    {name = "Radio Universidad", url = "https://stream-162.zeno.fm/xqbz7b86a0quv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJ4cWJ6N2I4NmEwcXV2IiwiaG9zdCI6InN0cmVhbS0xNjIuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6InQyNkM5dnpVUzZDdmQzellHWlM3VnciLCJpYXQiOjE3MjQ3MDYwODksImV4cCI6MTcyNDcwNjE0OX0.mu4ClpnF6nAVu32RYE6u1Ec539bE6JhbgxfGqFC2h7U"},
     {name = "Rhema Stereo", url = "https://radio.fiberstreams.com:2000/stream/8710"},
     {name = "SINAI WORKSHOP", url = "https://radio.forensedigital.gt:8070/stream"},
 }

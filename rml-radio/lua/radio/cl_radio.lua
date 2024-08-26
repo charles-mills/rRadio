@@ -50,6 +50,7 @@ local function Scale(value)
     return value * (ScrW() / 2560)
 end
 
+-- Define the updateRadioVolume function
 local function updateRadioVolume(station, distance, isPlayerInCar)
     if driverVolume <= 0.02 then
         station:SetVolume(0)
@@ -74,6 +75,12 @@ local function updateRadioVolume(station, distance, isPlayerInCar)
     end
 end
 
+-- Helper function to format country names
+local function formatCountryName(name)
+    -- Replace underscores with spaces and apply title case
+    return name:gsub("_", " "):gsub("(%a)([%w_']*)", function(a, b) return string.upper(a) .. string.lower(b) end)
+end
+
 local function populateList(stationListPanel, backButton, searchBox, resetSearch)
     stationListPanel:Clear()
 
@@ -89,15 +96,15 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
         -- Collect and sort the countries
         local countries = {}
         for country, _ in pairs(Config.RadioStations) do
-            if filterText == "" or string.find(country:lower(), filterText:lower(), 1, true) then
+            if filterText == "" or string.find(formatCountryName(country):lower(), filterText:lower(), 1, true) then
                 table.insert(countries, country)
             end
         end
 
         -- Custom sort: US and UK at the top, followed by alphabetical order
         table.sort(countries, function(a, b)
-            UK_OPTIONS = {"UK", "United Kingdom", "GB", "Great Britain", "United Kingdom Of Great Britain And Northern Ireland", "The United Kingdom Of Great Britain And Northern Ireland", "The United Kingdom"}
-            US_OPTIONS = {"US", "United States", "USA", "United States Of America", "The United States Of America"}
+            local UK_OPTIONS = {"United Kingdom"}
+            local US_OPTIONS = {"United States"}
 
             if table.HasValue(UK_OPTIONS, a) then
                 return true
@@ -118,7 +125,7 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
             countryButton:Dock(TOP)
             countryButton:DockMargin(Scale(5), Scale(5), Scale(5), 0)
             countryButton:SetTall(Scale(40))
-            countryButton:SetText(country)
+            countryButton:SetText(formatCountryName(country))  -- Format the country name for display
             countryButton:SetFont("Roboto18")
             countryButton:SetTextColor(Config.UI.TextColor)
 
@@ -194,7 +201,7 @@ local function openRadioMenu()
     frame.Paint = function(self, w, h)
         draw.RoundedBox(8, 0, 0, w, h, Config.UI.BackgroundColor)
         draw.RoundedBox(8, 0, 0, w, Scale(30), Config.UI.HeaderColor)
-        draw.SimpleText(selectedCountry and selectedCountry or "Select a Country", "Roboto18", Scale(10), Scale(5), Config.UI.TextColor, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
+        draw.SimpleText(selectedCountry and formatCountryName(selectedCountry) or "Select a Country", "Roboto18", Scale(10), Scale(5), Config.UI.TextColor, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
     end
 
     -- Create a search bar

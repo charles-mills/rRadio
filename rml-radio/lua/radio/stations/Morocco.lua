@@ -50,7 +50,7 @@ local stations = {
     {name = "اذاعة القرآن الكريم", url = "http://n0c.radiojar.com/0tpy1h0kxtzuv?rj-ttl=5&rj-tok=AAABkYz7QiMAmWj2404ihj00ig"},
     {name = "العيون الكوشي رواية ورش عن نافع", url = "https://qurango.net/radio/aloyoon_alkoshi"},
     {name = "تفسير بن عثيمين", url = "https://qurango.net/radio/tafseer"},
-    {name = "صدقة جارية", url = "https://stream-152.zeno.fm/xzxaqh2w5rhvv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJ4enhhcWgydzVyaHZ2IiwiaG9zdCI6InN0cmVhbS0xNTIuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6Ii13eEJ6N1Z4UV8yZ1lWQk5GdjY2dlEiLCJpYXQiOjE3MjQ2NzAxOTQsImV4cCI6MTcyNDY3MDI1NH0.LV_0gJ5C9o4JturvN18CDmmKEqabqPVmW2mx4Wazj5A"},
+    {name = "صدقة جارية", url = "https://stream-152.zeno.fm/xzxaqh2w5rhvv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJ4enhhcWgydzVyaHZ2IiwiaG9zdCI6InN0cmVhbS0xNTIuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6IkdBa1N1Wm1VVEpPaFpJZGc4ZndwRGciLCJpYXQiOjE3MjQ3MDU1NTksImV4cCI6MTcyNDcwNTYxOX0.22D_kKJxf5vjvTdTJyk7KG4jyUQYXmXD-ujHNM-NGc8"},
     {name = "ضرب الراديو", url = "http://hitradio-maroc.ice.infomaniak.ch/hitradio-maroc-128.mp3"},
     {name = "قرآن كريم للمقرئ المغربي عبد الرحمن بنموسى", url = "http://ia904708.us.archive.org/32/items/A_B_M_SO_2/009.mp3"},
     {name = "نهج واضح للمسلمين", url = "http://alnahj.net:8000/stream"},

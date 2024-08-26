@@ -1,6 +1,6 @@
 local stations = {
     {name = "775ライブリーFM", url = "https://mtist.as.smartstream.ne.jp/30026/livestream/playlist.m3u8"},
-    {name = "AFN GO TOKYO", url = "http://17813.live.streamtheworld.com:3690/AFNP_TKO_SC"},
+    {name = "AFN GO TOKYO", url = "http://14003.live.streamtheworld.com/AFNP_TKO_SC"},
     {name = "AIR STATION HIBIKI", url = "https://mtist.as.smartstream.ne.jp/30052/livestream/playlist.m3u8"},
     {name = "ALR Jazz Radio", url = "http://195.154.79.204:8638/stream"},
     {name = "Anime Para Ti", url = "https://stream-155.zeno.fm/qpn8mkt8c4duv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJxcG44bWt0OGM0ZHV2IiwiaG9zdCI6InN0cmVhbS0xNTUuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6IjAwVzcyTm9zUk1XRmw3SDFxWWlyd3ciLCJpYXQiOjE3MjQ2OTIzMzYsImV4cCI6MTcyNDY5MjM5Nn0.4oq1aa1yhDmLPY4o1q_KRegZbV5w7Z2tHz7WSo90hw4"},

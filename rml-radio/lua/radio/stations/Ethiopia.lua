@@ -1,5 +1,5 @@
 local stations = {
-    {name = "Addis Music", url = "https://stream-155.zeno.fm/umguj2baxdctv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJ1bWd1ajJiYXhkY3R2IiwiaG9zdCI6InN0cmVhbS0xNTUuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6IjYtaFl1XzRPVG11anNCS2R4V0l5NWciLCJpYXQiOjE3MjQ2ODkyMzcsImV4cCI6MTcyNDY4OTI5N30.nQS_4B81K8gPrmobmLYLmiQ1Q_ME-QSX0jg11epaIoU"},
+    {name = "Addis Music", url = "https://stream-157.zeno.fm/umguj2baxdctv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJ1bWd1ajJiYXhkY3R2IiwiaG9zdCI6InN0cmVhbS0xNTcuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6IkFpWXh3cG5HUnFDdFdWRXV0OE10RVEiLCJpYXQiOjE3MjQ3MDQ4NjQsImV4cCI6MTcyNDcwNDkyNH0.6eOlkcDnTAxBzWgs1cm7fL4HmIdfYFpVGILNG9voVH8"},
     {name = "Afro FM", url = "http://stream-156.zeno.fm/fu367ky6hkeuv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJmdTM2N2t5NmhrZXV2IiwiaG9zdCI6InN0cmVhbS0xNTYuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6Ik84eDZEQndmUUZxTmplSzZjZWktS2ciLCJpYXQiOjE3MjQ2ODYwNjQsImV4cCI6MTcyNDY4NjEyNH0.gP6GrOwouyDFL1rKCkCpRr5rxoR-ABRONa8xgn1hlX8"},
     {name = "Amharic Live Sport የኳስ ኮሜኔታተር", url = "https://stream-158.zeno.fm/bqtruhn4q98uv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJicXRydWhuNHE5OHV2IiwiaG9zdCI6InN0cmVhbS0xNTguemVuby5mbSIsInJ0dGwiOjUsImp0aSI6IlhFQUV2WS1aUnJ5a3hDZ1pHZnkxM1EiLCJpYXQiOjE3MjQ2ODk1NjYsImV4cCI6MTcyNDY4OTYyNn0.iikXEWx0fpfk565nSzWRSckjlAcc9BW3AABHemwErhs"},
     {name = "AXUMITE RADIO", url = "https://stream-176.zeno.fm/b9bn18xa2k8uv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJiOWJuMTh4YTJrOHV2IiwiaG9zdCI6InN0cmVhbS0xNzYuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6IjJqLXhWejZ6Uzg2cnIyQlJJN0FkdXciLCJpYXQiOjE3MjQ2OTU5OTksImV4cCI6MTcyNDY5NjA1OX0.4WFh3gUim8LuExX5w-w1Y7S4YxudCiz0tWrJ7A6a0_I"},
@@ -29,7 +29,7 @@ local stations = {
     {name = "Yenevibe Radio", url = "https://stream-158.zeno.fm/5mz3qqftsnhvv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiI1bXozcXFmdHNuaHZ2IiwiaG9zdCI6InN0cmVhbS0xNTguemVuby5mbSIsInJ0dGwiOjUsImp0aSI6IjhMRVNMSHVpUS1LOW9uNTU4MjRxbEEiLCJpYXQiOjE3MjQ2ODM4ODUsImV4cCI6MTcyNDY4Mzk0NX0.tP0M92Beggrnlu_mPn1rSU2zLRqRxsr0axCAEIQGt8Y"},
     {name = "Yengat Weg", url = "https://stream-174.zeno.fm/pp0d9hyddxquv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJwcDBkOWh5ZGR4cXV2IiwiaG9zdCI6InN0cmVhbS0xNzQuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6InlzRTAtdlZ3UVdLRnVkbTFjZWNWMGciLCJpYXQiOjE3MjQ2ODg1NjQsImV4cCI6MTcyNDY4ODYyNH0.rKR_rtNs8veRZ2StaSyZsls5EfJw2-Sbdm9Ee5ZTCRo"},
     {name = "Yonjon", url = "http://stream-174.zeno.fm/tkkjml4sqsguv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJ0a2tqbWw0c3FzZ3V2IiwiaG9zdCI6InN0cmVhbS0xNzQuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6InNZaXNxeE1sUWpTQUVQX2tEbW9ya3ciLCJpYXQiOjE3MjQ2NzcxODAsImV4cCI6MTcyNDY3NzI0MH0.hWQsNdqST7PRthPSYd7LIjdwbzvxh9lXIeNOX6gg3Jc"},
-    {name = "اذاعة القرآن الكريم", url = "http://n0f.radiojar.com/0tpy1h0kxtzuv?rj-ttl=5&rj-tok=AAABkY3b-HUAjtxt6bRLA4Yp6Q"},
+    {name = "اذاعة القرآن الكريم", url = "http://n03.radiojar.com/0tpy1h0kxtzuv?rj-ttl=5&rj-tok=AAABkZB_di4AN0TzzSKfEGinZQ"},
 }
 
 return stations

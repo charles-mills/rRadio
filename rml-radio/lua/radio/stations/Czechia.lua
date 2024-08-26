@@ -115,7 +115,7 @@ local stations = {
     {name = "Rádio Beat", url = "http://icecast2.play.cz/radiobeat128.mp3"},
     {name = "Radio Beat", url = "http://icecast2.play.cz/radiobeat128.mp3"},
     {name = "Radio Beat 128 MP3", url = "http://icecast2.play.cz/radiobeat128.mp3"},
-    {name = "Rádio Blaník", url = "https://20133.live.streamtheworld.com:443/RADIO_BLANIK_128.mp3"},
+    {name = "Rádio Blaník", url = "https://25443.live.streamtheworld.com:443/RADIO_BLANIK_128.mp3"},
     {name = "Rádio Blaník CZ Webové Rádio", url = "http://ice.abradio.cz/blanikcz128.mp3"},
     {name = "Radio Blaník Morava A Slezsko", url = "https://ice.abradio.cz/blanikmorava128.mp3?gdpr=1&gdpr_consent=Q084aEUyaE84aEUyaEFjQUJCRU5BX0NnQVBfQUFIX0FBQVlnRjVvQmhEeEVCU0ZDQUdKb1lOa2dBQUFXeHdBQUFDQUNBQUFBb0FBQUFCb0FBQVFBQUFBQUFBQWdCQUFBQUJJQUlBSUFBQUJBR0VBQUFBQUFBQUFBQUFBQUFFQUFBQUFBSVFBQUFBQUFBQ0JBQUFBQUFBQUFBQUFBQUFBQVFBQUFnWG5BZUFBV0FCVUFDNEFIQUFRQUFxQUJvQURrQUlnQVRBQW5nQlZBQzRBRjhBTVFBaElCRUFFVUFLVUFXSUF5d0Jtd0R1QU84QWhBQkZnQzBnRjFBTUNBYXdCTm9DOHdBQUFBLllBQUFBQUFBQUFBQQ=="},
     {name = "Rádio Blaník Oldies", url = "https://ice.radia.cz/oldiesradio128.mp3"},

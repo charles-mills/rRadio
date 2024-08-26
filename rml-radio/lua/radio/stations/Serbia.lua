@@ -18,7 +18,7 @@ local stations = {
     {name = "Dasko I Mladja", url = "http://172.105.250.193:8000/stream"},
     {name = "Deluxe Radio", url = "http://cmr-hosting.com:8408/;*.mp3"},
     {name = "Dženarika", url = "http://stream.dzenarika.net:8000/stream"},
-    {name = "Egata Radio", url = "http://stream-153.zeno.fm/kcn3b5gfuhruv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJrY24zYjVnZnVocnV2IiwiaG9zdCI6InN0cmVhbS0xNTMuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6IjUyWFg4bk1NUWlLMjY1aUI0ZENXTkEiLCJpYXQiOjE3MjQ2ODI3NTMsImV4cCI6MTcyNDY4MjgxM30.jUq2BKjSsLRj2O2MhsJMgYYYwzHWK1nhvf33xZ5vELE"},
+    {name = "Egata Radio", url = "http://stream-153.zeno.fm/kcn3b5gfuhruv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJrY24zYjVnZnVocnV2IiwiaG9zdCI6InN0cmVhbS0xNTMuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6Imc0d2J4WnFXUzF5TDREdXdmRzZXMnciLCJpYXQiOjE3MjQ3MDQ2MTAsImV4cCI6MTcyNDcwNDY3MH0.ne08Nz73qjdyo_tL5fOl_AnB6d-9Z1QRA0rQYRT7aNc"},
     {name = "Fan Radio Bajina Basta", url = "http://stream.fanradio.info:9000/;stream.nsv"},
     {name = "Focus Radio", url = "https://streamer.radio.co/s34d2c17d8/listen"},
     {name = "Folk Radio Beograd", url = "http://usa6.fastcast4u.com:5010/stream"},

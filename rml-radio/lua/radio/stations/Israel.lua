@@ -27,7 +27,7 @@ local stations = {
     {name = "Kan 88", url = "https://27343.live.streamtheworld.com:443/KAN_88.mp3?dist=bynetredirect"},
     {name = "Kan Gimel", url = "https://22673.live.streamtheworld.com:443/KAN_GIMMEL.mp3?dist=bynetredirect"},
     {name = "Kan Israel 88 FM", url = "https://25533.live.streamtheworld.com:443/KAN_88.mp3?dist=bynetredirect"},
-    {name = "Kan Israel Tarbut", url = "https://27873.live.streamtheworld.com:443/KAN_TARBUT.mp3?dist=bynetredirect"},
+    {name = "Kan Israel Tarbut", url = "https://25483.live.streamtheworld.com:443/KAN_TARBUT.mp3?dist=bynetredirect"},
     {name = "Kan Kol Hamusica", url = "https://27993.live.streamtheworld.com:443/KAN_KOL_HAMUSICA.mp3?dist=bynetredirect"},
     {name = "Kan Reka", url = "https://27993.live.streamtheworld.com:443/KAN_REKA.mp3?dist=bynetredirect"},
     {name = "Kan Tarbut", url = "https://25483.live.streamtheworld.com:443/KAN_TARBUT.mp3?dist"},
@@ -84,7 +84,7 @@ local stations = {
     {name = "רשת ג בדיקה", url = "https://23553.live.streamtheworld.com:443/KAN_GIMMEL.mp3?dist=bynetredirect"},
     {name = "תל אביב Tel Aviv 102FM", url = "http://102.livecdn.biz/102fm_aac"},
     {name = "اذاعة الشمس - A-Shams", url = "https://cdna.streamgates.net/Ashams/Live/icecast.audio"},
-    {name = "راديو مكان - Kan Israel Makan", url = "https://25483.live.streamtheworld.com:443/RADIO_MAKAN.mp3?dist=bynetredirect"},
+    {name = "راديو مكان - Kan Israel Makan", url = "https://27993.live.streamtheworld.com:443/RADIO_MAKAN.mp3?dist=bynetredirect"},
 }
 
 return stations

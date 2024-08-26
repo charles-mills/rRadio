@@ -2,12 +2,18 @@ local Config = {}
 
 Config.RadioStations = {}
 
+-- Function to format the country name for UI display
+local function formatCountryName(filename)
+    local formattedName = filename:gsub("-", " "):gsub("(%a)([%w_']*)", function(a, b) return string.upper(a) .. string.lower(b) end)
+    return formattedName
+end
+
 -- Function to load stations for a specific country
 local function loadStationsForCountry(country)
     local path = "radio/stations/" .. country .. ".lua"
     if file.Exists(path, "LUA") then
         local stations = include(path)
-        Config.RadioStations[country] = stations
+        Config.RadioStations[formatCountryName(country)] = stations -- Store with formatted name for UI
     else
         print("Warning: No stations found for " .. country)
     end

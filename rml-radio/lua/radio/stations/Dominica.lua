@@ -39,7 +39,7 @@ local stations = {
     {name = "Orbit TV", url = "https://ss3.domint.net:3134/otv_str/orbittv/playlist.m3u8?PlaylistM3UCL"},
     {name = "Platino Radio", url = "https://platinoradio-henrsosa.radioca.st/stream"},
     {name = "Power FM Santo Domingo", url = "https://radio4.domint.net:8096/stream"},
-    {name = "Radio Alma Cristiana", url = "http://stream-164.zeno.fm/whc88qnppyduv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJ3aGM4OHFucHB5ZHV2IiwiaG9zdCI6InN0cmVhbS0xNjQuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6ImF5UFFwbV9QUXNhS1ludTU0dUJvSkEiLCJpYXQiOjE3MjQ2NjA0MDYsImV4cCI6MTcyNDY2MDQ2Nn0.PAelTQ8lTsRdeOH27PJ1ShDkKnEVQBe29KB2EV0hZ80"},
+    {name = "Radio Alma Cristiana", url = "http://stream-162.zeno.fm/whc88qnppyduv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJ3aGM4OHFucHB5ZHV2IiwiaG9zdCI6InN0cmVhbS0xNjIuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6IndtRnROeU9HUW1LSUFvUVltSC12bXciLCJpYXQiOjE3MjQ3MDI3MTQsImV4cCI6MTcyNDcwMjc3NH0.J50XJ8f1hRcp_aL2K2pOHVIgFo4v5C05_l5MWCWFGBk"},
     {name = "Radio Bachata", url = "http://perseus.shoutca.st:8312/;stream/1"},
     {name = "Radio Bendicion", url = "https://samuel.i-radio.co:9000/radiobendicion"},
     {name = "Radio Cimarrona", url = "http://radiocimarrona.out.airtime.pro:8000/radiocimarrona_a"},

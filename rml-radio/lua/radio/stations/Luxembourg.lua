@@ -21,7 +21,7 @@ local stations = {
     {name = "RTL Radio - Die Besten Hits Aller Zeiten", url = "http://rtlberlin.streamabc.net/rtlb-rtldebestehits-mp3-192-2026538?sABC=66pporq4%230%236080533n48sp2nrq0o4389q6o67o3qps%23&aw_0_1st.playerid=&amsparams=playerid:;skey:1724694228"},
     {name = "RTL Radio Letzebuerg", url = "http://sc.rtl.lu/rtl"},
     {name = "RTL Radio Lëtzebuerg", url = "https://stream.rtl.lu/data/live/tele/rtlradiowebtv/playlist.m3u8"},
-    {name = "RTL Schlagerliebe", url = "http://rtlberlin.streamabc.net/rtlb-schlagerliebe-mp3-192-3577731?sABC=66ppp523%230%232qqpnss01895rqr0s8oq129o03s183o0%23&aw_0_1st.playerid=&amsparams=playerid:;skey:1724695843"},
+    {name = "RTL Schlagerliebe", url = "http://rtlberlin.streamabc.net/rtlb-schlagerliebe-mp3-192-3577731?sABC=66ppr9po%230%236080533n48sp2nrq0o4389q6o67o3qps%23&aw_0_1st.playerid=&amsparams=playerid:;skey:1724705227"},
 }
 
 return stations
