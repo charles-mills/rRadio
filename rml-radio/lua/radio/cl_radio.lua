@@ -74,15 +74,38 @@ local function updateRadioVolume(station, distance, isPlayerInCar)
     end
 end
 
-
-local function populateList(stationListPanel, backButton)
+-- Populate the list of countries or stations
+local function populateList(stationListPanel, backButton, filterText)
     stationListPanel:Clear()
 
     if selectedCountry == nil then
         backButton:SetVisible(false) -- Hide the back button when viewing countries
 
-        -- Populate with countries
+        -- Collect and sort the countries
+        local countries = {}
         for country, _ in pairs(Config.RadioStations) do
+            if filterText == "" or string.find(country:lower(), filterText:lower(), 1, true) then
+                table.insert(countries, country)
+            end
+        end
+
+        -- Custom sort: US and UK at the top, followed by alphabetical order
+        table.sort(countries, function(a, b)
+            if a == "The United States Of America" then
+                return true
+            elseif b == "The United States Of America" then
+                return false
+            elseif a == "The United Kingdom" then
+                return true
+            elseif b == "The United Kingdom" then
+                return false
+            else
+                return a < b
+            end
+        end)
+
+        -- Populate with sorted countries
+        for _, country in ipairs(countries) do
             local countryButton = vgui.Create("DButton", stationListPanel)
             countryButton:Dock(TOP)
             countryButton:DockMargin(Scale(5), Scale(5), Scale(5), 0)
@@ -101,48 +124,52 @@ local function populateList(stationListPanel, backButton)
             countryButton.DoClick = function()
                 selectedCountry = country
                 backButton:SetVisible(true) -- Show the back button when viewing radio stations
-                populateList(stationListPanel, backButton)
+                populateList(stationListPanel, backButton, "")
             end
         end
     else
         -- Populate with stations for the selected country
         for _, station in ipairs(Config.RadioStations[selectedCountry]) do
-            local stationButton = vgui.Create("DButton", stationListPanel)
-            stationButton:Dock(TOP)
-            stationButton:DockMargin(Scale(5), Scale(5), Scale(5), 0)
-            stationButton:SetTall(Scale(40))
-            stationButton:SetText(station.name)
-            stationButton:SetFont("Roboto18")
-            stationButton:SetTextColor(Config.UI.TextColor)
+            if filterText == "" or string.find(station.name:lower(), filterText:lower(), 1, true) then
+                local stationButton = vgui.Create("DButton", stationListPanel)
+                stationButton:Dock(TOP)
+                stationButton:DockMargin(Scale(5), Scale(5), Scale(5), 0)
+                stationButton:SetTall(Scale(40))
+                stationButton:SetText(station.name)
+                stationButton:SetFont("Roboto18")
+                stationButton:SetTextColor(Config.UI.TextColor)
 
-            stationButton.Paint = function(self, w, h)
-                if station == currentlyPlayingStation then
-                    draw.RoundedBox(8, 0, 0, w, h, Config.UI.PlayingButtonColor)
-                else
-                    draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonColor)
-                    if self:IsHovered() then
-                        draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonHoverColor)
+                stationButton.Paint = function(self, w, h)
+                    if station == currentlyPlayingStation then
+                        draw.RoundedBox(8, 0, 0, w, h, Config.UI.PlayingButtonColor)
+                    else
+                        draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonColor)
+                        if self:IsHovered() then
+                            draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonHoverColor)
+                        end
                     end
                 end
-            end
 
-            stationButton.DoClick = function()
-                if currentlyPlayingStation then
-                    net.Start("StopCarRadioStation")
+                stationButton.DoClick = function()
+                    if currentlyPlayingStation then
+                        net.Start("StopCarRadioStation")
+                        net.SendToServer()
+                    end
+
+                    net.Start("PlayCarRadioStation")
+                    net.WriteString(station.url)
+                    net.WriteFloat(driverVolume) -- Send the volume setting with the station URL
                     net.SendToServer()
+
+                    currentlyPlayingStation = station
+                    populateList(stationListPanel, backButton, filterText)
                 end
-
-                net.Start("PlayCarRadioStation")
-                net.WriteString(station.url)
-                net.WriteFloat(driverVolume) -- Send the volume setting with the station URL
-                net.SendToServer()
-
-                currentlyPlayingStation = station
-                populateList(stationListPanel, backButton)
             end
         end
     end
 end
+
+
 
 local function openRadioMenu()
     if radioMenuOpen then return end
@@ -164,10 +191,27 @@ local function openRadioMenu()
         draw.SimpleText(selectedCountry and "Select a Radio Station" or "Select a Country", "Roboto18", Scale(10), Scale(5), Config.UI.TextColor, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
     end
 
+    -- Create a search bar
+    local searchBox = vgui.Create("DTextEntry", frame)
+    searchBox:SetPos(Scale(10), Scale(40)) -- Position below the header
+    searchBox:SetSize(Scale(Config.UI.FrameSize.width) - Scale(20), Scale(30))
+    searchBox:SetFont("Roboto18")
+    searchBox:SetPlaceholderText("Search...")
+    searchBox:SetTextColor(Config.UI.TextColor)
+    searchBox:SetDrawBackground(false)
+    searchBox.Paint = function(self, w, h)
+        draw.RoundedBox(8, 0, 0, w, h, Config.UI.SearchBoxColor)
+        self:DrawTextEntryText(Config.UI.TextColor, Color(120, 120, 120), Config.UI.TextColor)
+
+        if self:GetText() == "" then
+            draw.SimpleText(self:GetPlaceholderText(), self:GetFont(), Scale(5), h / 2, Config.UI.TextColor, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+        end
+    end
+
     -- Create a scrollable panel for the station list
     local stationListPanel = vgui.Create("DScrollPanel", frame)
-    stationListPanel:SetPos(Scale(10), Scale(40)) -- Position below the header
-    stationListPanel:SetSize(Scale(Config.UI.FrameSize.width) - Scale(20), Scale(Config.UI.FrameSize.height) - Scale(150)) -- Explicitly set size
+    stationListPanel:SetPos(Scale(10), Scale(80)) -- Position below the search box
+    stationListPanel:SetSize(Scale(Config.UI.FrameSize.width) - Scale(20), Scale(Config.UI.FrameSize.height) - Scale(190)) -- Explicitly set size
 
     -- Create a volume control slider
     local volumeSlider = vgui.Create("DNumSlider", frame)
@@ -218,7 +262,7 @@ local function openRadioMenu()
         net.Start("StopCarRadioStation")
         net.SendToServer()
         currentlyPlayingStation = nil
-        populateList(stationListPanel, backButton)
+        populateList(stationListPanel, backButton, searchBox:GetText())
     end
 
     -- Back arrow to return to the country selection
@@ -244,7 +288,7 @@ local function openRadioMenu()
     backButton.DoClick = function()
         selectedCountry = nil
         backButton:SetVisible(false) -- Hide the back button when returning to the country selection
-        populateList(stationListPanel, backButton)
+        populateList(stationListPanel, backButton, searchBox:GetText())
     end
 
     -- Custom close button with dynamic size and positioning
@@ -273,7 +317,12 @@ local function openRadioMenu()
     function sbar.btnDown:Paint(w, h) draw.RoundedBox(8, 0, 0, w, h, Config.UI.ScrollbarColor) end
     function sbar.btnGrip:Paint(w, h) draw.RoundedBox(8, 0, 0, w, h, Config.UI.ScrollbarGripColor) end
 
-    populateList(stationListPanel, backButton) -- Pass stationListPanel and backButton to the populateList function
+    -- Update the list whenever the user types in the search box
+    searchBox.OnValueChange = function(self)
+        populateList(stationListPanel, backButton, self:GetText())
+    end
+
+    populateList(stationListPanel, backButton, "") -- Pass stationListPanel and backButton to the populateList function
 end
 
 hook.Add("Think", "OpenCarRadioMenu", function()

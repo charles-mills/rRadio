@@ -2,7 +2,7 @@ local themes = {}
 
 -- Dark Theme
 themes["dark"] = {
-    FrameSize = { width = 400, height = 500 },
+    FrameSize = { width = 600, height = 800 },
     BackgroundColor = Color(40, 40, 40),
     HeaderColor = Color(50, 50, 50),
     TextColor = Color(255, 255, 255),
@@ -18,7 +18,7 @@ themes["dark"] = {
 
 -- Light Theme
 themes["light"] = {
-    FrameSize = { width = 400, height = 500 },
+    FrameSize = { width = 600, height = 800 },
     BackgroundColor = Color(245, 245, 245),
     HeaderColor = Color(220, 220, 220),
     TextColor = Color(30, 30, 30),
@@ -34,7 +34,7 @@ themes["light"] = {
 
 -- Ocean Theme
 themes["ocean"] = {
-    FrameSize = { width = 400, height = 500 },
+    FrameSize = { width = 600, height = 800 },
     BackgroundColor = Color(20, 60, 100),
     HeaderColor = Color(15, 45, 75),
     TextColor = Color(255, 255, 255),
@@ -50,7 +50,7 @@ themes["ocean"] = {
 
 -- Forest Theme
 themes["forest"] = {
-    FrameSize = { width = 400, height = 500 },
+    FrameSize = { width = 600, height = 800 },
     BackgroundColor = Color(34, 60, 34),
     HeaderColor = Color(40, 85, 40),
     TextColor = Color(255, 255, 255),
@@ -66,7 +66,7 @@ themes["forest"] = {
 
 -- Solarized Theme
 themes["solarized"] = {
-    FrameSize = { width = 400, height = 500 },
+    FrameSize = { width = 600, height = 800 },
     BackgroundColor = Color(0, 43, 54),
     HeaderColor = Color(7, 54, 66),
     TextColor = Color(131, 148, 150),
@@ -82,7 +82,7 @@ themes["solarized"] = {
 
 -- Midnight Theme
 themes["midnight"] = {
-    FrameSize = { width = 400, height = 500 },
+    FrameSize = { width = 600, height = 800 },
     BackgroundColor = Color(10, 10, 35),
     HeaderColor = Color(20, 20, 50),
     TextColor = Color(255, 255, 255),
@@ -98,7 +98,7 @@ themes["midnight"] = {
 
 -- Coral Theme
 themes["coral"] = {
-    FrameSize = { width = 400, height = 500 },
+    FrameSize = { width = 600, height = 800 },
     BackgroundColor = Color(255, 127, 80),
     HeaderColor = Color(255, 99, 71),
     TextColor = Color(255, 255, 255),
