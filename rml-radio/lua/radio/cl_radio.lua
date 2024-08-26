@@ -7,13 +7,26 @@ surface.CreateFont("Roboto18", {
     weight = 500,
 })
 
+local selectedCountry = nil
 local radioMenuOpen = false
-local currentRadioStations = {}
 local currentlyPlayingStation = nil
 local driverVolume = Config.Volume -- This represents the volume set by the driver
 
+local currentRadioStations = {}
+
+local lastMessageTime = -math.huge -- Initialize to a value that ensures the first message shows immediately
+
 local function PrintCarRadioMessage()
     if not GetConVar("car_radio_show_messages"):GetBool() then return end
+
+    local currentTime = CurTime() -- Get the current time
+
+    -- Check if enough time has passed since the last message was shown
+    if (currentTime - lastMessageTime) < Config.MessageCooldown and lastMessageTime ~= -math.huge then
+        return -- Exit if the cooldown period hasn't passed
+    end
+
+    lastMessageTime = currentTime -- Update the last message time
 
     local prefixColor = Color(0, 255, 128)  -- Aqua/Teal color for the prefix
     local keyColor = Color(255, 165, 0)  -- Orange color for the key
@@ -27,7 +40,6 @@ local function PrintCarRadioMessage()
         messageColor, " to pick a station"
     )
 end
-
 
 -- Listen for the net message from the server
 net.Receive("CarRadioMessage", function()
@@ -66,11 +78,10 @@ local function openRadioMenu()
     frame:MakePopup()
     frame.OnClose = function() radioMenuOpen = false end
 
-    -- Set a custom style for the frame with scaled dimensions
     frame.Paint = function(self, w, h)
         draw.RoundedBox(8, 0, 0, w, h, Config.UI.BackgroundColor)
         draw.RoundedBox(8, 0, 0, w, Scale(30), Config.UI.HeaderColor)
-        draw.SimpleText("Select a Radio Station", "Roboto18", Scale(10), Scale(5), Config.UI.TextColor, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
+        draw.SimpleText(selectedCountry and "Select a Radio Station" or "Select a Country", "Roboto18", Scale(10), Scale(5), Config.UI.TextColor, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
     end
 
     -- Custom close button with dynamic size and positioning
@@ -82,9 +93,7 @@ local function openRadioMenu()
     closeButton:SetPos(frame:GetWide() - Scale(39), 0)
     closeButton.Paint = function(self, w, h)
         local cornerRadius = 8  -- Same corner radius as the frame
-        -- Draw the close button background with only the top-right corner rounded
         draw.RoundedBoxEx(cornerRadius, 0, 0, w, h, Config.UI.CloseButtonColor, false, true, false, false)
-        
         if self:IsHovered() then
             draw.RoundedBoxEx(cornerRadius, 0, 0, w, h, Config.UI.CloseButtonHoverColor, false, true, false, false)
         end
@@ -93,54 +102,50 @@ local function openRadioMenu()
         frame:Close()
     end
 
-    -- Create a dark search bar with dynamic size and positioning
-    local searchBox = vgui.Create("DTextEntry", frame)
-    searchBox:Dock(TOP)
-    searchBox:SetPlaceholderText("Search for a station...")
-    searchBox:SetUpdateOnType(true)
-    searchBox:DockMargin(Scale(10), Scale(10), Scale(10), 0)
-    searchBox:SetFont("Roboto18")
-    searchBox:SetTextColor(Config.UI.TextColor)
-    searchBox:SetDrawBackground(false)
-    searchBox.Paint = function(self, w, h)
-        draw.RoundedBox(8, 0, 0, w, h, Config.UI.SearchBoxColor)
-        self:DrawTextEntryText(Config.UI.TextColor, Color(120, 120, 120), Config.UI.TextColor)
-        
-        -- Check if the search box is empty and draw the placeholder text
-        if self:GetText() == "" then
-            -- Apply the theme's text color to the placeholder text
-            draw.SimpleText(self:GetPlaceholderText(), self:GetFont(), Scale(5), h / 2, Config.UI.TextColor, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
-        end
-    end
+    -- Create a scrollable panel for the country or radio list
+    local listPanel = vgui.Create("DScrollPanel", frame)
+    listPanel:Dock(FILL)
+    listPanel:DockMargin(Scale(10), Scale(10), Scale(10), Scale(10))
 
-    -- Create a scrollable panel for the radio list with padding and dark scrollbar
-    local radioList = vgui.Create("DScrollPanel", frame)
-    radioList:Dock(FILL)
-    radioList:DockMargin(Scale(10), Scale(10), Scale(10), Scale(10))
-
-    -- Customize the scrollbar to be dark
-    local sbar = radioList:GetVBar()
+    -- Customize the scrollbar
+    local sbar = listPanel:GetVBar()
     sbar:SetWide(Scale(8))
-    function sbar:Paint(w, h)
-        draw.RoundedBox(8, 0, 0, w, h, Config.UI.ScrollbarColor)
-    end
-    function sbar.btnUp:Paint(w, h)
-        draw.RoundedBox(8, 0, 0, w, h, Config.UI.ScrollbarColor)
-    end
-    function sbar.btnDown:Paint(w, h)
-        draw.RoundedBox(8, 0, 0, w, h, Config.UI.ScrollbarColor)
-    end
-    function sbar.btnGrip:Paint(w, h)
-        draw.RoundedBox(8, 0, 0, w, h, Config.UI.ScrollbarGripColor)
-    end
+    function sbar:Paint(w, h) draw.RoundedBox(8, 0, 0, w, h, Config.UI.ScrollbarColor) end
+    function sbar.btnUp:Paint(w, h) draw.RoundedBox(8, 0, 0, w, h, Config.UI.ScrollbarColor) end
+    function sbar.btnDown:Paint(w, h) draw.RoundedBox(8, 0, 0, w, h, Config.UI.ScrollbarColor) end
+    function sbar.btnGrip:Paint(w, h) draw.RoundedBox(8, 0, 0, w, h, Config.UI.ScrollbarGripColor) end
 
-    -- Function to populate the radio list
-    local function populateRadioList(filter)
-        radioList:Clear()
+    -- Function to populate the list with countries or stations
+    local function populateList()
+        listPanel:Clear()
 
-        for _, station in ipairs(Config.RadioStations) do
-            if not filter or station.name:lower():find(filter:lower(), 1, true) then
-                local stationButton = vgui.Create("DButton", radioList)
+        if selectedCountry == nil then
+            -- Populate with countries
+            for country, _ in pairs(Config.RadioStations) do
+                local countryButton = vgui.Create("DButton", listPanel)
+                countryButton:Dock(TOP)
+                countryButton:DockMargin(Scale(5), Scale(5), Scale(5), 0)
+                countryButton:SetTall(Scale(40))
+                countryButton:SetText(country)
+                countryButton:SetFont("Roboto18")
+                countryButton:SetTextColor(Config.UI.TextColor)
+
+                countryButton.Paint = function(self, w, h)
+                    draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonColor)
+                    if self:IsHovered() then
+                        draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonHoverColor)
+                    end
+                end
+
+                countryButton.DoClick = function()
+                    selectedCountry = country
+                    populateList()
+                end
+            end
+        else
+            -- Populate with stations for the selected country
+            for _, station in ipairs(Config.RadioStations[selectedCountry]) do
+                local stationButton = vgui.Create("DButton", listPanel)
                 stationButton:Dock(TOP)
                 stationButton:DockMargin(Scale(5), Scale(5), Scale(5), 0)
                 stationButton:SetTall(Scale(40))
@@ -148,7 +153,6 @@ local function openRadioMenu()
                 stationButton:SetFont("Roboto18")
                 stationButton:SetTextColor(Config.UI.TextColor)
 
-                -- Custom button style
                 stationButton.Paint = function(self, w, h)
                     if station == currentlyPlayingStation then
                         draw.RoundedBox(8, 0, 0, w, h, Config.UI.PlayingButtonColor)
@@ -161,7 +165,6 @@ local function openRadioMenu()
                 end
 
                 stationButton.DoClick = function()
-                    -- Ensure the current station is stopped before playing a new one
                     if currentlyPlayingStation then
                         net.Start("StopCarRadioStation")
                         net.SendToServer()
@@ -173,65 +176,32 @@ local function openRadioMenu()
                     net.SendToServer()
 
                     currentlyPlayingStation = station
-                    populateRadioList(filter)
+                    populateList()
                 end
+            end
+
+            -- Back button to return to the country selection
+            local backButton = vgui.Create("DButton", listPanel)
+            backButton:Dock(BOTTOM)
+            backButton:DockMargin(Scale(5), Scale(5), Scale(5), 0)
+            backButton:SetTall(Scale(40))
+            backButton:SetText("Back to Country Selection")
+            backButton:SetFont("Roboto18")
+            backButton:SetTextColor(Config.UI.TextColor)
+            backButton.Paint = function(self, w, h)
+                draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonColor)
+                if self:IsHovered() then
+                    draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonHoverColor)
+                end
+            end
+            backButton.DoClick = function()
+                selectedCountry = nil
+                populateList()
             end
         end
     end
 
-    populateRadioList()
-
-    -- Filter stations as the user types in the search box
-    searchBox.OnValueChange = function(self)
-        populateRadioList(self:GetText())
-    end
-
-    -- Volume control slider
-    local volumeSlider = vgui.Create("DNumSlider", frame)
-    volumeSlider:Dock(BOTTOM)
-    volumeSlider:DockMargin(Scale(10), Scale(10), Scale(10), Scale(10))
-    volumeSlider:SetText("Volume")
-    volumeSlider:SetMin(0)
-    volumeSlider:SetMax(1)
-    volumeSlider:SetDecimals(2)
-    volumeSlider:SetValue(driverVolume)
-    volumeSlider.Label:SetTextColor(Config.UI.TextColor)
-    volumeSlider.Label:SetFont("Roboto18")
-
-    -- Set the color and font for the value displayed on the slider
-    volumeSlider.OnValueChanged = function(_, value)
-        driverVolume = value
-        if currentlyPlayingStation and IsValid(currentRadioStations[LocalPlayer():GetVehicle()]) then
-            -- Just update the volume, don't start a new station
-            net.Start("PlayCarRadioStation")
-            net.WriteString(currentlyPlayingStation.url)
-            net.WriteFloat(driverVolume) -- Update the broadcasted volume
-            net.SendToServer()
-
-            -- Update the volume of the current station locally
-            currentRadioStations[LocalPlayer():GetVehicle()]:SetVolume(driverVolume)
-        end
-    end
-
-    -- Create a stop button with modern styling
-    local stopButton = vgui.Create("DButton", frame)
-    stopButton:Dock(BOTTOM)
-    stopButton:SetText("Stop Radio")
-    stopButton:SetTall(Scale(40))
-    stopButton:SetFont("Roboto18")
-    stopButton:SetTextColor(Config.UI.TextColor)
-    stopButton.Paint = function(self, w, h)
-        draw.RoundedBox(8, 0, 0, w, h, Config.UI.CloseButtonColor)
-        if self:IsHovered() then
-            draw.RoundedBox(8, 0, 0, w, h, Config.UI.CloseButtonHoverColor)
-        end
-    end
-    stopButton.DoClick = function()
-        net.Start("StopCarRadioStation")
-        net.SendToServer()
-        currentlyPlayingStation = nil
-        populateRadioList()
-    end
+    populateList()
 end
 
 hook.Add("Think", "OpenCarRadioMenu", function()

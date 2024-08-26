@@ -7,7 +7,6 @@ hook.Add("PlayerEnteredVehicle", "CarRadioMessageOnEnter", function(ply, vehicle
     net.Send(ply)
 end)
 
-
 net.Receive("PlayCarRadioStation", function(len, ply)
     local status, err = pcall(function()
         local url = net.ReadString()
