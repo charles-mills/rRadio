@@ -1,65 +1,80 @@
+import os
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 import time
 
-# Function to get all available countries
-def get_all_countries():
-    url = "https://de1.api.radio-browser.info/json/countries"
-    response = requests.get(url)
-    countries = response.json()
-    return [country['name'] for country in countries if country['name'] != "Korea, Democratic People's Republic of"]
+# Function to escape special characters for Lua
+def escape_lua_string(s):
+    return s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "").replace("\r", "")
+
+# Create a session with retry logic
+session = requests.Session()
+retries = Retry(total=5, backoff_factor=1, status_forcelist=[500, 502, 503, 504], allowed_methods=["GET"])
+adapter = HTTPAdapter(max_retries=retries)
+session.mount("https://", adapter)
 
 # Function to get radio stations for a specific country
 def get_radio_stations(country_name):
     stations = []
     url = f"https://de1.api.radio-browser.info/json/stations/bycountry/{country_name.replace(' ', '%20')}"
     
-    response = requests.get(url)
-    
-    if response.headers['Content-Type'].startswith('application/json'):
-        try:
+    try:
+        response = session.get(url, timeout=10)  # Add a timeout for each request
+        response.raise_for_status()  # Raise an error for bad status codes
+        if response.headers['Content-Type'].startswith('application/json'):
             data = response.json()
             for station in data:
-                name = station.get('name', 'Unknown')
-                url = station.get('url_resolved', '')
+                name = escape_lua_string(station.get('name', 'Unknown'))
+                url = escape_lua_string(station.get('url_resolved', ''))
                 if url:
                     stations.append({"name": name, "url": url})
-        except requests.exceptions.JSONDecodeError:
-            print(f"Error: Could not decode JSON for {country_name}")
-    else:
-        print(f"Unexpected content type for {country_name}: {response.headers['Content-Type']}")
-        print(response.text)  # Print the actual HTML or other response for debugging
+        else:
+            print(f"Unexpected content type for {country_name}: {response.headers['Content-Type']}")
+            print(response.text)  # Print the actual HTML or other response for debugging
+    except requests.exceptions.SSLError as e:
+        print(f"SSL error occurred for {country_name}: {e}")
+    except requests.exceptions.RequestException as e:
+        print(f"Request error occurred for {country_name}: {e}")
     
     return stations
 
-# Function to format the stations into Lua-compatible format
-def format_stations_to_lua(country_stations):
-    lua_str = 'Config.RadioStations = {\n'
+# Function to save stations to a Lua file for a specific country
+def save_stations_to_file(country, stations):
+    directory = "rml-radio/lua/radio/stations"
+    os.makedirs(directory, exist_ok=True)  # Create the directory if it doesn't exist
     
-    for country, stations in country_stations.items():
-        lua_str += f'    ["{country}"] = {{\n'
+    # Create the file path
+    file_path = os.path.join(directory, f"{country}.lua")
+    
+    # Write the Lua table to the file
+    with open(file_path, "w", encoding="utf-8") as f:
+        f.write("local stations = {\n")
         for station in stations:
-            lua_str += f'        {{name = "{station["name"]}", url = "{station["url"]}"}},\n'
-        lua_str += '    },\n'
+            f.write(f'    {{name = "{station["name"]}", url = "{station["url"]}"}},\n')
+        f.write("}\n\n")
+        f.write("return stations\n")
     
-    lua_str += '}\n'
-    return lua_str
+    print(f"Saved stations for {country} to {file_path}")
 
 # Get the list of all countries, excluding DPRK
-countries = get_all_countries()
-country_stations = {}
+def get_all_countries():
+    url = "https://de1.api.radio-browser.info/json/countries"
+    response = session.get(url)
+    countries = response.json()
+    return [country['name'] for country in countries if country['name'] != "Korea, Democratic People's Republic of"]
 
-# Fetch radio stations for each country
+# Example usage
+countries = get_all_countries()
+
+# Fetch radio stations for each country and save to separate files
 for country in countries:
     print(f"Fetching stations for {country}...")
+    time.sleep(1)
     stations = get_radio_stations(country)
-    country_stations[country] = stations
-    time.sleep(1)  # Sleep for a second to avoid rate limiting
+    if stations:
+        save_stations_to_file(country, stations)
+    else:
+        print(f"No stations found for {country}.")
 
-# Format the output to Lua
-lua_output = format_stations_to_lua(country_stations)
-
-# Write to config.lua file using UTF-8 encoding
-with open("config.lua", "w", encoding="utf-8") as f:
-    f.write(lua_output)
-
-print("Finished fetching and writing radio stations.")
+print("Finished fetching and saving radio stations.")
