@@ -2,6 +2,7 @@ local Config = {}
 
 Config.RadioStations = {
     ["United Kingdom"] = {
+        {name = "Sub FM", url = "http://sub.fm/listen.pls"},
         {name= "Capital FM", url = "http://media-ice.musicradio.com/CapitalMP3"},
         {name = "Capital XTRA", url = "http://media-ice.musicradio.com/CapitalXTRAReloadedMP3"},
         {name = "Smooth Radio", url = "http://media-ice.musicradio.com/SmoothUKMP3"},
@@ -9,9 +10,23 @@ Config.RadioStations = {
         {name = "Classic FM", url = "http://media-ice.musicradio.com/ClassicFMMP3"},
         {name = "TalkSPORT", url = "http://radio.talksport.com/stream"},
         {name = "Gold Radio", url = "http://media-ice.musicradio.com/GoldMP3"},
+        {name = "Heart FM", url = "http://media-ice.musicradio.com/HeartUKMP3"},
+        {name = "LBC", url = "http://media-ice.musicradio.com/LBC973MP3"},
+        {name = "KISS FM", url = "http://stream-kiss.planetradio.co.uk/kiss"},
+        {name = "Magic Radio", url = "http://media-ice.musicradio.com/MagicUKMP3"},
+        {name = "Rinse FM", url = "http://streamer.dgen.net:8000/rinsefm.mp3"},
+        {name = "Reprezent", url = "http://streamer.dgen.net:8000/reprezent.mp3"},
+        {name = "NTS", url = "http://streamer.dgen.net:8000/nts.mp3"},
+        {name = "Mi-Soul", url = "http://streamer.dgen.net:8000/misoul.mp3"},
+        {name = "KISS Fresh", url = "http://stream-kiss.planetradio.co.uk/kissfresh"},
+        {name = "KISS Dance", url = "http://stream-kiss.planetradio.co.uk/kissdance"},
+        {name = "KISS Garage", url = "http://stream-kiss.planetradio.co.uk/kissgarage"},
+        {name = "KISS Ibiza", url = "http://stream-kiss.planetradio.co.uk/kissibiza"},
+        {name = "KISS Jams", url = "http://stream-kiss.planetradio.co.uk/kissjams"},
+        {name = "KISS Soul", url = "http://stream-kiss.planetradio.co.uk/kisssoul"},
+        {name = "KISS Fresh", url = "http://stream-kiss.planetradio.co.uk/kissfresh"},
     },
     ["USA"] = {
-        {name = "Sub FM", url = "http://sub.fm/listen.pls"},
         {name = "KEXP", url = "http://kexp-mp3-128.streamguys1.com/kexp128.mp3"},
         -- Add more stations for USA here
     },
