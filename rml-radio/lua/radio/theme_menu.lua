@@ -22,29 +22,24 @@ loadSavedTheme()
 
 -- Create a new tool menu in the "Utilities" section
 hook.Add("PopulateToolMenu", "AddThemeAndVolumeSelectionMenu", function()
-    spawnmenu.AddToolMenuOption("Utilities", "Radio Addon", "ThemeVolumeSelection", "Settings", "", "", function(panel)
+    spawnmenu.AddToolMenuOption("Utilities", "Rammel's Radio", "ThemeVolumeSelection", "Settings", "", "", function(panel)
         panel:ClearControls()
         
         -- Section for Theme Selection
-        panel:Help("Select your preferred theme for the radio addon UI:")
+        panel:Help("Select your preferred theme:")
 
         local themeDropdown = vgui.Create("DComboBox", panel)
         themeDropdown:SetValue("Select Theme")
-        themeDropdown:AddChoice("Dark")
-        themeDropdown:AddChoice("Light")
-        themeDropdown:AddChoice("Ocean")
-        themeDropdown:AddChoice("Forest")
+
+        -- Dynamically add all available themes to the dropdown
+        for themeName, _ in pairs(themes) do
+            themeDropdown:AddChoice(themeName:gsub("^%l", string.upper)) -- Capitalizes the first letter of the theme name for display
+        end
 
         -- Set the current value to the saved theme
         local currentTheme = GetConVar("radio_theme"):GetString()
-        if currentTheme == "dark" then
-            themeDropdown:SetValue("Dark")
-        elseif currentTheme == "light" then
-            themeDropdown:SetValue("Light")
-        elseif currentTheme == "ocean" then
-            themeDropdown:SetValue("Ocean")
-        elseif currentTheme == "forest" then
-            themeDropdown:SetValue("Forest")
+        if currentTheme and themes[currentTheme] then
+            themeDropdown:SetValue(currentTheme:gsub("^%l", string.upper))
         end
 
         themeDropdown.OnSelect = function(panel, index, value)
@@ -58,7 +53,7 @@ hook.Add("PopulateToolMenu", "AddThemeAndVolumeSelectionMenu", function()
         panel:AddItem(themeDropdown)
 
         -- Section for Volume Control
-        panel:Help("Set the global maximum volume for all radios:")
+        panel:Help("Set your Global Maximum Volume (Only Affects You):")
 
         local volumeSlider = vgui.Create("DNumSlider", panel)
         volumeSlider:SetText("Max Radio Volume")
