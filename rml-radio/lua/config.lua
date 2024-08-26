@@ -20,6 +20,7 @@ local selectedTheme = themes["dark"]
 -- General Settings
 
 Config.UI = selectedTheme
+Config.OpenKey = KEY_K -- Key to open the radio menu
 Config.Volume = 1 -- Default radio volume (range: 0.0 to 1.0)
 Config.MaxHearingDistance = 1000 -- Maximum distance at which the radio can be heard (in units)
 Config.MinVolumeDistance = 500 -- Distance at which the radio volume starts to drop off (in units)

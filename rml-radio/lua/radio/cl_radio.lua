@@ -215,7 +215,7 @@ local function openRadioMenu()
 end
 
 hook.Add("Think", "OpenCarRadioMenu", function()
-    if input.IsKeyDown(KEY_K) and not radioMenuOpen and IsValid(LocalPlayer():GetVehicle()) then
+    if input.IsKeyDown(Config.OpenKey) and not radioMenuOpen and IsValid(LocalPlayer():GetVehicle()) then
         openRadioMenu()
     end
 end)
