@@ -34,6 +34,7 @@ local selectedTheme = themes["dark"]
 
 -- General Settings
 Config.UI = selectedTheme
+Config.UKAndUSPrioritised = true -- Include UK and US stations at the top of the list (default alphabetical sort if false)
 Config.MessageCooldown = 300 -- Cooldown time in seconds before the chat message can be sent again ("Press {key} to open the radio menu")
 Config.OpenKey = KEY_K -- Key to open the radio menu
 Config.Volume = 1 -- Default radio volume (range: 0.0 to 1.0)

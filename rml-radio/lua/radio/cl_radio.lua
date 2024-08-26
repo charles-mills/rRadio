@@ -101,23 +101,29 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
             end
         end
 
-        -- Custom sort: US and UK at the top, followed by alphabetical order
-        table.sort(countries, function(a, b)
-            local UK_OPTIONS = {"United Kingdom"}
-            local US_OPTIONS = {"United States"}
 
-            if table.HasValue(UK_OPTIONS, a) then
-                return true
-            elseif table.HasValue(UK_OPTIONS, b) then
-                return false
-            elseif table.HasValue(US_OPTIONS, a) then
-                return true
-            elseif table.HasValue(US_OPTIONS, b) then
-                return false 
-            else
-                return a < b
-            end
-        end)
+        if Config.UKAndUSPrioritised then
+            -- Custom sort: US and UK at the top, followed by alphabetical order
+            table.sort(countries, function(a, b)
+                local UK_OPTIONS = {"United Kingdom", "The United Kingdom"}
+                local US_OPTIONS = {"United States", "The United States Of Amnerica"}
+
+                if table.HasValue(UK_OPTIONS, a) then
+                    return true
+                elseif table.HasValue(UK_OPTIONS, b) then
+                    return false
+                elseif table.HasValue(US_OPTIONS, a) then
+                    return true
+                elseif table.HasValue(US_OPTIONS, b) then
+                    return false 
+                else
+                    return a < b
+                end
+            end)
+        else
+            -- Default sort: Alphabetical order
+            table.sort(countries)
+        end
 
         -- Populate with sorted countries
         for _, country in ipairs(countries) do
