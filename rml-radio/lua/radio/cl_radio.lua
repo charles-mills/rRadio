@@ -165,15 +165,25 @@ local function openRadioMenu()
 
     -- Create a volume control slider
     local volumeSlider = vgui.Create("DNumSlider", frame)
-    volumeSlider:SetPos(Scale(10), Scale(Config.UI.FrameSize.height) - Scale(90)) -- Position slider above the stop button
+    volumeSlider:SetPos(Scale(10), Scale(Config.UI.FrameSize.height) - Scale(100)) -- Position slider above the stop button
     volumeSlider:SetSize(Scale(Config.UI.FrameSize.width) - Scale(20), Scale(40))
-    volumeSlider:SetText("Volume")
+    volumeSlider:SetText("")
     volumeSlider:SetMin(0)
     volumeSlider:SetMax(1)
     volumeSlider:SetDecimals(2)
     volumeSlider:SetValue(driverVolume)
-    volumeSlider.Label:SetTextColor(Config.UI.TextColor)
-    volumeSlider.Label:SetFont("Roboto18")
+    
+    volumeSlider.Slider.Paint = function(self, w, h)
+        draw.RoundedBox(4, 0, h/2 - 2, w, 4, Config.UI.HeaderColor) -- Slider track
+    end
+
+    volumeSlider.Slider.Knob.Paint = function(self, w, h)
+        draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonHoverColor) -- Slider handle
+    end
+
+    volumeSlider.TextArea:SetTextColor(Config.UI.TextColor)
+    volumeSlider.TextArea:SetFont("Roboto18")
+    volumeSlider.Label:SetVisible(false) -- Hide default label
 
     -- Volume control logic
     volumeSlider.OnValueChanged = function(_, value)
