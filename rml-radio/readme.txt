@@ -29,15 +29,15 @@ The RML Radio addon provides several configuration options to customize your exp
 - Favorites: Save your favorite radio stations for quick access.
 - Language: Change the language used in the addon interface.
 
-## Troubleshooting
-If you encounter any issues or have questions about the RML Radio addon, please refer to the following resources:
-
-- [Steam Workshop page](https://steamcommunity.com/sharedfiles/filedetails/?id=YOUR_ADDON_ID)
-- [Addon support forum](https://steamcommunity.com/app/4000/discussions/)
-
 ## License
 This addon is released under the [MIT License](LICENSE.md). Please refer to the license file for more information.
 
-## Credits
-- Developer: Your Name
-- Special thanks to: [Contributor Name](https://github.com/contributor)
+## Development
+To contribute to the development of the RML Radio addon, follow these steps:
+
+1. Clone the repository to your local machine.
+2. Make your changes and test them in your local Garry's Mod installation.
+3. Submit a pull request with a detailed description of your changes.
+
+## Directory Structure
+The RML Radio addon has the following directory structure:

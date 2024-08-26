@@ -1,5 +1,4 @@
-Config = Config or {}
-print("Config initialized: ", Config)
+local Config = {}
 
 Config.RadioStations = {
     {name= "Sub FM", url = "http://sub.fm/listen.pls"},
@@ -27,3 +26,5 @@ Config.MaxHearingDistance = 1000 -- Maximum distance at which the radio can be h
 Config.MinVolumeDistance = 500 -- Distance at which the radio volume starts to drop off (in units)
 Config.RetryAttempts = 3 -- Number of retry attempts to play a station in case of failure
 Config.RetryDelay = 2 -- Delay in seconds between retry attempts
+
+return Config

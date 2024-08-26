@@ -6,8 +6,6 @@ CreateClientConVar("car_radio_show_messages", "1", true, false, "Enable or disab
 
 -- Function to apply the selected theme
 local function applyTheme(themeName)
-    Config = Config or {}
-
     if themes[themeName] then
         Config.UI = themes[themeName]
         -- You may need to refresh your UI elements to apply the new theme

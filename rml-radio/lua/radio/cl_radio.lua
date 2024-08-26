@@ -1,7 +1,5 @@
-include("config.lua")
 include("radio/key_names.lua")
-
-Config = Config or {}
+include("radio/config.lua")
 
 surface.CreateFont("Roboto18", {
     font = "Roboto",
