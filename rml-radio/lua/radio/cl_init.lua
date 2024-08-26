@@ -1,5 +1,5 @@
--- Create a client ConVar to control the maximum radio volume
-CreateClientConVar("radio_max_volume", 1, true, false)
+Config = Config or {}
 
--- Create a client ConVar to store the user's theme preference
+CreateClientConVar("radio_max_volume", 1, true, false)
 CreateClientConVar("radio_theme", "dark", true, false)
+CreateClientConVar("car_radio_show_messages", "1", true, false, "Enable or disable car radio messages.")

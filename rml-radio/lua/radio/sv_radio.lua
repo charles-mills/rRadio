@@ -1,5 +1,12 @@
 util.AddNetworkString("PlayCarRadioStation")
 util.AddNetworkString("StopCarRadioStation")
+util.AddNetworkString("CarRadioMessage")
+
+hook.Add("PlayerEnteredVehicle", "CarRadioMessageOnEnter", function(ply, vehicle, role)
+    net.Start("CarRadioMessage")
+    net.Send(ply)
+end)
+
 
 net.Receive("PlayCarRadioStation", function(len, ply)
     local status, err = pcall(function()

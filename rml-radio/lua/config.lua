@@ -1,4 +1,5 @@
 Config = Config or {}
+print("Config initialized: ", Config)
 
 Config.RadioStations = {
     {name= "Sub FM", url = "http://sub.fm/listen.pls"},

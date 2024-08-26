@@ -1,7 +1,7 @@
 include("config.lua")
-include("radio/validate_config.lua")
+include("radio/key_names.lua")
 
-validateConfig()
+Config = Config or {}
 
 surface.CreateFont("Roboto18", {
     font = "Roboto",
@@ -13,6 +13,28 @@ local radioMenuOpen = false
 local currentRadioStations = {}
 local currentlyPlayingStation = nil
 local driverVolume = Config.Volume -- This represents the volume set by the driver
+
+local function PrintCarRadioMessage()
+    if not GetConVar("car_radio_show_messages"):GetBool() then return end
+
+    local prefixColor = Color(0, 255, 128)  -- Aqua/Teal color for the prefix
+    local keyColor = Color(255, 165, 0)  -- Orange color for the key
+    local messageColor = Color(255, 255, 255)  -- White color for the rest of the message
+    keyName = GetKeyName(Config.OpenKey)
+
+    chat.AddText(
+        prefixColor, "[CAR RADIO] ",
+        messageColor, "Press ", 
+        keyColor, keyName,
+        messageColor, " to pick a station"
+    )
+end
+
+
+-- Listen for the net message from the server
+net.Receive("CarRadioMessage", function()
+    PrintCarRadioMessage()
+end)
 
 local function Scale(value)
     return value * (ScrW() / 2560)
