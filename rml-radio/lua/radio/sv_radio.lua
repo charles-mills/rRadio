@@ -2,6 +2,8 @@ util.AddNetworkString("PlayCarRadioStation")
 util.AddNetworkString("StopCarRadioStation")
 util.AddNetworkString("CarRadioMessage")
 
+debug_mode = false
+
 hook.Add("PlayerEnteredVehicle", "CarRadioMessageOnEnter", function(ply, vehicle, role)
     net.Start("CarRadioMessage")
     net.Send(ply)
@@ -23,7 +25,7 @@ net.Receive("PlayCarRadioStation", function(len, ply)
             error("Invalid vehicle or URL")
         end
     end)
-    if not status then
+    if not status and debug_mode then
         print("Error in PlayCarRadioStation: " .. err)
     end
 end)
@@ -39,7 +41,7 @@ net.Receive("StopCarRadioStation", function(len, ply)
             error("Invalid vehicle")
         end
     end)
-    if not status then
+    if not status and debug_mode then
         print("Error in StopCarRadioStation: " .. err)
     end
 end)

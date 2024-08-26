@@ -4,7 +4,6 @@ local stations = {
     {name = "MBC Radio Maurice", url = "https://radio.mbconline.xyz/hls/radiomaurice.m3u8"},
     {name = "MBC Radio Mauritius", url = "https://radio.mbconline.xyz/hls/radiomauritus.m3u8"},
     {name = "MBC Taal FM", url = "https://radio.mbconline.xyz/hls/tallfm.m3u8"},
-    {name = "NRJ Maurice 92,4 FM", url = "http://185.52.127.131/mu/55802/mp3_128.mp3?adws_out_2&access_token=feaf03bdfde04565a48c52b471669cdd"},
     {name = "Radio One", url = "https://webstream.r1.mu/proxy/r1stream128fm/stream"},
     {name = "Radio Plus Mauritius", url = "http://s4.voscast.com:8432/;?icy=http"},
     {name = "Radioplus Fever", url = "https://streamer.radio.co/s3fe39a4a4/listen"},

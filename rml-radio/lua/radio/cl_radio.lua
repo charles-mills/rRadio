@@ -74,9 +74,14 @@ local function updateRadioVolume(station, distance, isPlayerInCar)
     end
 end
 
--- Populate the list of countries or stations
-local function populateList(stationListPanel, backButton, filterText)
+local function populateList(stationListPanel, backButton, searchBox, resetSearch)
     stationListPanel:Clear()
+
+    if resetSearch then
+        searchBox:SetText("")  -- Reset the search box text
+    end
+
+    local filterText = searchBox:GetText()  -- Get the current search box text
 
     if selectedCountry == nil then
         backButton:SetVisible(false) -- Hide the back button when viewing countries
@@ -91,14 +96,17 @@ local function populateList(stationListPanel, backButton, filterText)
 
         -- Custom sort: US and UK at the top, followed by alphabetical order
         table.sort(countries, function(a, b)
-            if a == "The United States Of America" then
+            UK_OPTIONS = {"UK", "United Kingdom", "GB", "Great Britain", "United Kingdom Of Great Britain And Northern Ireland", "The United Kingdom Of Great Britain And Northern Ireland", "The United Kingdom"}
+            US_OPTIONS = {"US", "United States", "USA", "United States Of America", "The United States Of America"}
+
+            if table.HasValue(UK_OPTIONS, a) then
                 return true
-            elseif b == "The United States Of America" then
+            elseif table.HasValue(UK_OPTIONS, b) then
                 return false
-            elseif a == "The United Kingdom" then
+            elseif table.HasValue(US_OPTIONS, a) then
                 return true
-            elseif b == "The United Kingdom" then
-                return false
+            elseif table.HasValue(US_OPTIONS, b) then
+                return false 
             else
                 return a < b
             end
@@ -124,7 +132,7 @@ local function populateList(stationListPanel, backButton, filterText)
             countryButton.DoClick = function()
                 selectedCountry = country
                 backButton:SetVisible(true) -- Show the back button when viewing radio stations
-                populateList(stationListPanel, backButton, "")
+                populateList(stationListPanel, backButton, searchBox, true)
             end
         end
     else
@@ -162,14 +170,12 @@ local function populateList(stationListPanel, backButton, filterText)
                     net.SendToServer()
 
                     currentlyPlayingStation = station
-                    populateList(stationListPanel, backButton, filterText)
+                    populateList(stationListPanel, backButton, searchBox, false)
                 end
             end
         end
     end
 end
-
-
 
 local function openRadioMenu()
     if radioMenuOpen then return end
@@ -188,7 +194,7 @@ local function openRadioMenu()
     frame.Paint = function(self, w, h)
         draw.RoundedBox(8, 0, 0, w, h, Config.UI.BackgroundColor)
         draw.RoundedBox(8, 0, 0, w, Scale(30), Config.UI.HeaderColor)
-        draw.SimpleText(selectedCountry and "Select a Radio Station" or "Select a Country", "Roboto18", Scale(10), Scale(5), Config.UI.TextColor, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
+        draw.SimpleText(selectedCountry and selectedCountry or "Select a Country", "Roboto18", Scale(10), Scale(5), Config.UI.TextColor, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
     end
 
     -- Create a search bar
@@ -262,7 +268,7 @@ local function openRadioMenu()
         net.Start("StopCarRadioStation")
         net.SendToServer()
         currentlyPlayingStation = nil
-        populateList(stationListPanel, backButton, searchBox:GetText())
+        populateList(stationListPanel, backButton, searchBox, false)
     end
 
     -- Back arrow to return to the country selection
@@ -288,7 +294,7 @@ local function openRadioMenu()
     backButton.DoClick = function()
         selectedCountry = nil
         backButton:SetVisible(false) -- Hide the back button when returning to the country selection
-        populateList(stationListPanel, backButton, searchBox:GetText())
+        populateList(stationListPanel, backButton, searchBox, true)
     end
 
     -- Custom close button with dynamic size and positioning
@@ -317,12 +323,13 @@ local function openRadioMenu()
     function sbar.btnDown:Paint(w, h) draw.RoundedBox(8, 0, 0, w, h, Config.UI.ScrollbarColor) end
     function sbar.btnGrip:Paint(w, h) draw.RoundedBox(8, 0, 0, w, h, Config.UI.ScrollbarGripColor) end
 
-    -- Update the list whenever the user types in the search box
-    searchBox.OnValueChange = function(self)
-        populateList(stationListPanel, backButton, self:GetText())
-    end
+    -- Populate the list with initial data
+    populateList(stationListPanel, backButton, searchBox, true)
 
-    populateList(stationListPanel, backButton, "") -- Pass stationListPanel and backButton to the populateList function
+    -- Update the list dynamically as the user types in the search box
+    searchBox.OnChange = function(self)
+        populateList(stationListPanel, backButton, searchBox, false)
+    end
 end
 
 hook.Add("Think", "OpenCarRadioMenu", function()
