@@ -50,7 +50,7 @@ local function Scale(value)
     return value * (ScrW() / 2560)
 end
 
-local function updateRadioVolume(station, distance)
+local function updateRadioVolume(station, distance, isPlayerInCar)
     if driverVolume <= 0.02 then
         station:SetVolume(0)
         return
@@ -59,15 +59,21 @@ local function updateRadioVolume(station, distance)
     local maxVolume = GetConVar("radio_max_volume"):GetFloat() -- Get the player's max volume setting
     local effectiveVolume = math.min(driverVolume, maxVolume) -- Cap the volume by the client's max setting
 
-    if distance <= Config.MinVolumeDistance then
+    if isPlayerInCar then
+        -- If the player is in the car, set the volume to the maximum possible
         station:SetVolume(effectiveVolume)
-    elseif distance <= Config.MaxHearingDistance then
-        local adjustedVolume = effectiveVolume * (1 - (distance - Config.MinVolumeDistance) / (Config.MaxHearingDistance - Config.MinVolumeDistance))
-        station:SetVolume(adjustedVolume)
     else
-        station:SetVolume(0)
+        if distance <= Config.MinVolumeDistance then
+            station:SetVolume(effectiveVolume)
+        elseif distance <= Config.MaxHearingDistance then
+            local adjustedVolume = effectiveVolume * (1 - (distance - Config.MinVolumeDistance) / (Config.MaxHearingDistance - Config.MinVolumeDistance))
+            station:SetVolume(adjustedVolume)
+        else
+            station:SetVolume(0)
+        end
     end
 end
+
 
 local function populateList(stationListPanel, backButton)
     stationListPanel:Clear()
@@ -303,17 +309,20 @@ net.Receive("PlayCarRadioStation", function()
                     if IsValid(vehicle) and IsValid(station) then
                         -- Update the position of the sound to follow the vehicle
                         station:SetPos(vehicle:GetPos())
-
-                        -- Update the volume based on the client's max volume setting
+                
                         local playerPos = LocalPlayer():GetPos()
                         local vehiclePos = vehicle:GetPos()
                         local distance = playerPos:Distance(vehiclePos)
-
-                        updateRadioVolume(station, distance)
+                
+                        -- Check if the player is in the vehicle
+                        local isPlayerInCar = LocalPlayer():GetVehicle() == vehicle
+                
+                        updateRadioVolume(station, distance, isPlayerInCar)
                     else
                         hook.Remove("Think", "UpdateRadioPosition_" .. vehicle:EntIndex())
                     end
                 end)
+                
 
                 -- Add a hook to stop the radio when the vehicle is removed
                 hook.Add("EntityRemoved", "StopRadioOnVehicleRemove_" .. vehicle:EntIndex(), function(ent)
