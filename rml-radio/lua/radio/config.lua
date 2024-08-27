@@ -45,7 +45,7 @@ end
 local themes = include("themes.lua")
 
 -- Default to dark theme or set based on user preference
-local selectedTheme = themes["dark"]
+local selectedTheme = themes["neon"]
 
 -- General Settings
 Config.UI = selectedTheme
