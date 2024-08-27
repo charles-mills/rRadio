@@ -3,11 +3,11 @@ AddCSLuaFile("shared.lua")
 
 include("shared.lua")
 
--- Network strings for communication
+util.AddNetworkString("OpenRadioMenu")
 util.AddNetworkString("PlayCarRadioStation")
 util.AddNetworkString("StopCarRadioStation")
-util.AddNetworkString("OpenRadioMenu")
 
+-- Called when the entity is initialized.
 function ENT:Initialize()
     self:SetModel("models/rammel/boombox.mdl")
     self:PhysicsInit(SOLID_VPHYSICS)
@@ -18,40 +18,52 @@ function ENT:Initialize()
     if phys:IsValid() then
         phys:Wake()
     end
-end
 
-function ENT:Use(activator, caller)
-    if activator:IsPlayer() then
-        -- Send the entity (boombox) to the client when the player uses it
-        net.Start("OpenRadioMenu")
-        net.WriteEntity(self)  -- Send the boombox entity
-        net.Send(activator)
+    -- Store the owner when the boombox is spawned.
+    if IsValid(self:GetOwner()) then
+        self.BoomboxOwner = self:GetOwner()
+    else
+        self.BoomboxOwner = nil
     end
 end
 
--- Handle playing the radio station from the client
-net.Receive("PlayCarRadioStation", function(len, ply)
-    local entity = net.ReadEntity()
-    local url = net.ReadString()
-    local volume = net.ReadFloat()
+-- Helper function to check if a player can control the boombox.
+function ENT:CanPlayerControl(activator)
+    if IsValid(self.BoomboxOwner) and activator == self.BoomboxOwner then
+        return true
+    elseif activator:IsSuperAdmin() then
+        return true
+    end
+    return false
+end
 
-    if not IsValid(entity) then return end
+-- Called when the player presses "E" on the boombox.
+function ENT:Use(activator, caller)
+    if not activator:IsPlayer() then return end
 
-    -- Broadcast the station to be played on this entity
+    -- Ensure only the owner or a superadmin can control the boombox.
+    if self:CanPlayerControl(activator) then
+        -- Open the radio menu.
+        net.Start("OpenRadioMenu")
+        net.WriteEntity(self)  -- Send the boombox entity
+        net.Send(activator)
+    else
+        activator:ChatPrint("You do not have permission to control this boombox.")
+    end
+end
+
+-- Play a radio station from the server-side.
+function ENT:PlayStation(url, volume)
     net.Start("PlayCarRadioStation")
-    net.WriteEntity(entity)
+    net.WriteEntity(self)
     net.WriteString(url)
     net.WriteFloat(volume)
     net.Broadcast()
-end)
+end
 
--- Handle stopping the radio station
-net.Receive("StopCarRadioStation", function(len, ply)
-    local entity = net.ReadEntity()
-
-    if not IsValid(entity) then return end
-
+-- Stop the radio station from the server-side.
+function ENT:StopStation()
     net.Start("StopCarRadioStation")
-    net.WriteEntity(entity)
+    net.WriteEntity(self)
     net.Broadcast()
-end)
+end

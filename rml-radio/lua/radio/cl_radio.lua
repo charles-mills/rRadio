@@ -10,18 +10,23 @@ surface.CreateFont("Roboto18", {
 local selectedCountry = nil
 local radioMenuOpen = false
 local currentlyPlayingStation = nil
-local driverVolume = Config.Volume
+
 local currentRadioSources = {}
+local entityVolumes = {}  -- Stores volume settings for each entity
+local entityStations = {}  -- Stores the currently active station for each entity
+
 local lastMessageTime = -math.huge
 
-local function updateRadioVolume(station, distance, isPlayerInCar)
-    if driverVolume <= 0.02 then
+local function updateRadioVolume(station, distance, isPlayerInCar, entity)
+    local volume = entityVolumes[entity] or Config.Volume
+
+    if volume <= 0.02 then
         station:SetVolume(0)
         return
     end
 
     local maxVolume = GetConVar("radio_max_volume"):GetFloat()
-    local effectiveVolume = math.min(driverVolume, maxVolume)
+    local effectiveVolume = math.min(volume, maxVolume)
 
     if isPlayerInCar then
         station:SetVolume(effectiveVolume)
@@ -94,6 +99,8 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
     end
 
     local filterText = searchBox:GetText()
+    local entity = LocalPlayer().currentRadioEntity
+    local activeStation = entityStations[entity]  -- Get the active station for the entity
 
     if selectedCountry == nil then
         backButton:SetVisible(false)
@@ -161,7 +168,7 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                 stationButton:SetTextColor(Config.UI.TextColor)
 
                 stationButton.Paint = function(self, w, h)
-                    if station == currentlyPlayingStation then
+                    if station == activeStation then
                         draw.RoundedBox(8, 0, 0, w, h, Config.UI.PlayingButtonColor)
                     else
                         draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonColor)
@@ -172,8 +179,6 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                 end
 
                 stationButton.DoClick = function()
-                    local entity = LocalPlayer().currentRadioEntity
-
                     if not IsValid(entity) then
                         print("No valid entity for PlayCarRadioStation")
                         return
@@ -188,9 +193,10 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                     net.Start("PlayCarRadioStation")
                     net.WriteEntity(entity)
                     net.WriteString(station.url)
-                    net.WriteFloat(driverVolume)
+                    net.WriteFloat(entityVolumes[entity] or Config.Volume)
                     net.SendToServer()
 
+                    entityStations[entity] = station  -- Update the active station for this entity
                     currentlyPlayingStation = station
                     populateList(stationListPanel, backButton, searchBox, false)
                 end
@@ -245,8 +251,10 @@ local function openRadioMenu()
     volumeSlider:SetMin(0)
     volumeSlider:SetMax(1)
     volumeSlider:SetDecimals(2)
-    volumeSlider:SetValue(driverVolume)
-    
+
+    local entity = LocalPlayer().currentRadioEntity
+    volumeSlider:SetValue(entityVolumes[entity] or Config.Volume)
+
     volumeSlider.Slider.Paint = function(self, w, h)
         draw.RoundedBox(4, 0, h/2 - 2, w, 4, Config.UI.HeaderColor)
     end
@@ -260,11 +268,9 @@ local function openRadioMenu()
     volumeSlider.Label:SetVisible(false)
 
     volumeSlider.OnValueChanged = function(_, value)
-        driverVolume = value
-        for entity, station in pairs(currentRadioSources) do
-            if IsValid(station) then
-                station:SetVolume(driverVolume)
-            end
+        entityVolumes[entity] = value
+        if currentRadioSources[entity] and IsValid(currentRadioSources[entity]) then
+            currentRadioSources[entity]:SetVolume(value)
         end
     end
 
@@ -282,12 +288,11 @@ local function openRadioMenu()
     end
 
     stopButton.DoClick = function()
-        local entity = LocalPlayer().currentRadioEntity
-
         if IsValid(entity) then
             net.Start("StopCarRadioStation")
             net.WriteEntity(entity)
             net.SendToServer()
+            entityStations[entity] = nil  -- Clear the active station for this entity
             currentlyPlayingStation = nil
             populateList(stationListPanel, backButton, searchBox, false)
         end
@@ -359,7 +364,7 @@ end)
 net.Receive("PlayCarRadioStation", function()
     local entity = net.ReadEntity()
     local url = net.ReadString()
-    local driverVolume = net.ReadFloat()
+    local volume = net.ReadFloat()
 
     if not IsValid(entity) then
         print("Invalid entity received for PlayCarRadioStation.")
@@ -374,9 +379,11 @@ net.Receive("PlayCarRadioStation", function()
         sound.PlayURL(url, "3d mono", function(station, errorID, errorName)
             if IsValid(station) then
                 station:SetPos(entity:GetPos())
-                station:SetVolume(driverVolume)
+                station:SetVolume(volume)
                 station:Play()
                 currentRadioSources[entity] = station
+
+                entityStations[entity] = station  -- Store the active station for this entity
 
                 hook.Add("Think", "UpdateRadioPosition_" .. entity:EntIndex(), function()
                     if IsValid(entity) and IsValid(station) then
@@ -388,7 +395,7 @@ net.Receive("PlayCarRadioStation", function()
 
                         local isPlayerInCar = LocalPlayer():GetVehicle() == entity
 
-                        updateRadioVolume(station, distance, isPlayerInCar)
+                        updateRadioVolume(station, distance, isPlayerInCar, entity)
                     else
                         hook.Remove("Think", "UpdateRadioPosition_" .. entity:EntIndex())
                     end
@@ -400,6 +407,7 @@ net.Receive("PlayCarRadioStation", function()
                             currentRadioSources[entity]:Stop()
                         end
                         currentRadioSources[entity] = nil
+                        entityStations[entity] = nil  -- Clear the active station when the entity is removed
                         hook.Remove("EntityRemoved", "StopRadioOnEntityRemove_" .. entity:EntIndex())
                         hook.Remove("Think", "UpdateRadioPosition_" .. entity:EntIndex())
                     end
@@ -423,6 +431,7 @@ net.Receive("StopCarRadioStation", function()
     if IsValid(entity) and IsValid(currentRadioSources[entity]) then
         currentRadioSources[entity]:Stop()
         currentRadioSources[entity] = nil
+        entityStations[entity] = nil  -- Clear the active station when stopped
         local entIndex = entity:EntIndex()
         hook.Remove("EntityRemoved", "StopRadioOnEntityRemove_" .. entIndex)
         hook.Remove("Think", "UpdateRadioPosition_" .. entIndex)
@@ -432,7 +441,9 @@ end)
 net.Receive("OpenRadioMenu", function()
     local entity = net.ReadEntity()
     LocalPlayer().currentRadioEntity = entity
-    if not radioMenuOpen then
-        openRadioMenu()
+
+    -- Only open the menu if the player is the owner or a superadmin.
+    if IsValid(entity) then
+        openRadioMenu()  -- This will be called if the server has verified control.
     end
 end)
