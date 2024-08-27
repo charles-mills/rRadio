@@ -1,0 +1,12 @@
+{
+  "title": "RML Radio",
+  "type": "ServerContent",
+  "tags": [
+    "fun",
+    "realism",
+    "roleplay"
+  ],
+  "ignore": [
+    "*.py"
+  ]
+}

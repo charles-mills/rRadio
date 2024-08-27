@@ -12,8 +12,7 @@ local radioMenuOpen = false
 local currentlyPlayingStation = nil
 
 local currentRadioSources = {}
-local entityVolumes = {}  -- Stores volume settings for each entity
-local entityStations = {}  -- Stores the currently active station for each entity
+local entityVolumes = {}  -- This will store volume settings for each entity
 
 local lastMessageTime = -math.huge
 
@@ -99,8 +98,6 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
     end
 
     local filterText = searchBox:GetText()
-    local entity = LocalPlayer().currentRadioEntity
-    local activeStation = entityStations[entity]  -- Get the active station for the entity
 
     if selectedCountry == nil then
         backButton:SetVisible(false)
@@ -168,7 +165,7 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                 stationButton:SetTextColor(Config.UI.TextColor)
 
                 stationButton.Paint = function(self, w, h)
-                    if station == activeStation then
+                    if station == currentlyPlayingStation then
                         draw.RoundedBox(8, 0, 0, w, h, Config.UI.PlayingButtonColor)
                     else
                         draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonColor)
@@ -179,6 +176,8 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                 end
 
                 stationButton.DoClick = function()
+                    local entity = LocalPlayer().currentRadioEntity
+
                     if not IsValid(entity) then
                         print("No valid entity for PlayCarRadioStation")
                         return
@@ -196,7 +195,6 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                     net.WriteFloat(entityVolumes[entity] or Config.Volume)
                     net.SendToServer()
 
-                    entityStations[entity] = station  -- Update the active station for this entity
                     currentlyPlayingStation = station
                     populateList(stationListPanel, backButton, searchBox, false)
                 end
@@ -292,7 +290,6 @@ local function openRadioMenu()
             net.Start("StopCarRadioStation")
             net.WriteEntity(entity)
             net.SendToServer()
-            entityStations[entity] = nil  -- Clear the active station for this entity
             currentlyPlayingStation = nil
             populateList(stationListPanel, backButton, searchBox, false)
         end
@@ -383,8 +380,6 @@ net.Receive("PlayCarRadioStation", function()
                 station:Play()
                 currentRadioSources[entity] = station
 
-                entityStations[entity] = station  -- Store the active station for this entity
-
                 hook.Add("Think", "UpdateRadioPosition_" .. entity:EntIndex(), function()
                     if IsValid(entity) and IsValid(station) then
                         station:SetPos(entity:GetPos())
@@ -407,7 +402,6 @@ net.Receive("PlayCarRadioStation", function()
                             currentRadioSources[entity]:Stop()
                         end
                         currentRadioSources[entity] = nil
-                        entityStations[entity] = nil  -- Clear the active station when the entity is removed
                         hook.Remove("EntityRemoved", "StopRadioOnEntityRemove_" .. entity:EntIndex())
                         hook.Remove("Think", "UpdateRadioPosition_" .. entity:EntIndex())
                     end
@@ -431,7 +425,6 @@ net.Receive("StopCarRadioStation", function()
     if IsValid(entity) and IsValid(currentRadioSources[entity]) then
         currentRadioSources[entity]:Stop()
         currentRadioSources[entity] = nil
-        entityStations[entity] = nil  -- Clear the active station when stopped
         local entIndex = entity:EntIndex()
         hook.Remove("EntityRemoved", "StopRadioOnEntityRemove_" .. entIndex)
         hook.Remove("Think", "UpdateRadioPosition_" .. entIndex)
@@ -441,9 +434,7 @@ end)
 net.Receive("OpenRadioMenu", function()
     local entity = net.ReadEntity()
     LocalPlayer().currentRadioEntity = entity
-
-    -- Only open the menu if the player is the owner or a superadmin.
-    if IsValid(entity) then
-        openRadioMenu()  -- This will be called if the server has verified control.
+    if not radioMenuOpen then
+        openRadioMenu()
     end
 end)
