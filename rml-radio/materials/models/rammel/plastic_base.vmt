@@ -1,0 +1,5 @@
+"VertexLitGeneric"
+{
+	"$basetexture" "plastic_base"
+	"$normalmap" "plastic_base_n"
+}

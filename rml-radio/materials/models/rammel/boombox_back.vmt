@@ -1,0 +1,5 @@
+"VertexLitGeneric"
+{
+	"$basetexture" "boombox_back"
+	"$normalmap" "boombox_back_n"
+}
