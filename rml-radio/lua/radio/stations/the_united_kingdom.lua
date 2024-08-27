@@ -1074,7 +1074,6 @@ local stations = {
     {name = "UCB 2", url = "http://edge-audio-02-thn.sharp-stream.com/ucbinspirational.mp3?device=tuneinradio"},
     {name = "Ujima Radio", url = "https://radio.canstream.co.uk:8037/live.mp3"},
     {name = "Ujima Radio 98Fm", url = "https://radio.canstream.co.uk:9037/live.mp3"},
-    {name = "UK Bass", url = "https://s2.ssl-stream.com/listen/uk_bass_radio/stream"},
     {name = "UK Bass Radio", url = "https://s2.ssl-stream.com/listen/uk_bass_radio/stream"},
     {name = "UK Health Radio", url = "https://streaming.radio.co/s8e535ff20/listen"},
     {name = "UK National Radio", url = "https://das-edge14-live365-dal02.cdnstream.com/a80402"},
