@@ -50,35 +50,27 @@ local function Scale(value)
     return value * (ScrW() / 2560)
 end
 
--- Define the updateRadioVolume function
-local function updateRadioVolume(station, distance, isPlayerInCar)
-    if driverVolume <= 0.02 then
-        station:SetVolume(0)
-        return
-    end
+-- Country translation table
+local CountryTranslations = {
+    en = {
+        ["the_united_kingdom"] = "United Kingdom",
+        ["the_united_states_of_america"] = "United States of America",
+        -- Add other country translations
+    },
+    es = {
+        ["the_united_kingdom"] = "Reino Unido",
+        ["the_united_states_of_america"] = "Estados Unidos de América",
+        -- Add other country translations
+    },
+    -- Add more languages here
+}
 
-    local maxVolume = GetConVar("radio_max_volume"):GetFloat() -- Get the player's max volume setting
-    local effectiveVolume = math.min(driverVolume, maxVolume) -- Cap the volume by the client's max setting
-
-    if isPlayerInCar then
-        -- If the player is in the car, set the volume to the maximum possible
-        station:SetVolume(effectiveVolume)
-    else
-        if distance <= Config.MinVolumeDistance then
-            station:SetVolume(effectiveVolume)
-        elseif distance <= Config.MaxHearingDistance then
-            local adjustedVolume = effectiveVolume * (1 - (distance - Config.MinVolumeDistance) / (Config.MaxHearingDistance - Config.MinVolumeDistance))
-            station:SetVolume(adjustedVolume)
-        else
-            station:SetVolume(0)
-        end
-    end
-end
-
--- Helper function to format country names
+-- Helper function to format and translate country names
 local function formatCountryName(name)
+    local lang = GetConVar("radio_language"):GetString() or "en"
+    local translation = CountryTranslations[lang] and CountryTranslations[lang][name] or name
     -- Replace underscores with spaces and apply title case
-    return name:gsub("_", " "):gsub("(%a)([%w_']*)", function(a, b) return string.upper(a) .. string.lower(b) end)
+    return translation:gsub("_", " "):gsub("(%a)([%w_']*)", function(a, b) return string.upper(a) .. string.lower(b) end)
 end
 
 local function populateList(stationListPanel, backButton, searchBox, resetSearch)
@@ -96,32 +88,33 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
         -- Collect and sort the countries
         local countries = {}
         for country, _ in pairs(Config.RadioStations) do
-            if filterText == "" or string.find(formatCountryName(country):lower(), filterText:lower(), 1, true) then
-                table.insert(countries, country)
+            local translatedCountry = formatCountryName(country)
+            if filterText == "" or string.find(translatedCountry:lower(), filterText:lower(), 1, true) then
+                table.insert(countries, { original = country, translated = translatedCountry })
             end
         end
 
         if Config.UKAndUSPrioritised then
             -- Custom sort: US and UK at the top, followed by alphabetical order
             table.sort(countries, function(a, b)
-                local UK_OPTIONS = {"United Kingdom", "The United Kingdom", "The_united_kingdom"}
-                local US_OPTIONS = {"United States", "The United States Of America", "The_united_states_of_america"}
+                local UK_OPTIONS = {"United Kingdom", "The United Kingdom", "the_united_kingdom"}
+                local US_OPTIONS = {"United States", "The United States Of America", "the_united_states_of_america"}
 
-                if table.HasValue(UK_OPTIONS, a) then
+                if table.HasValue(UK_OPTIONS, a.original) then
                     return true
-                elseif table.HasValue(UK_OPTIONS, b) then
+                elseif table.HasValue(UK_OPTIONS, b.original) then
                     return false
-                elseif table.HasValue(US_OPTIONS, a) then
+                elseif table.HasValue(US_OPTIONS, a.original) then
                     return true
-                elseif table.HasValue(US_OPTIONS, b) then
+                elseif table.HasValue(US_OPTIONS, b.original) then
                     return false 
                 else
-                    return a < b
+                    return a.translated < b.translated
                 end
             end)
         else
             -- Default sort: Alphabetical order
-            table.sort(countries)
+            table.sort(countries, function(a, b) return a.translated < b.translated end)
         end
 
         -- Populate with sorted countries
@@ -130,7 +123,7 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
             countryButton:Dock(TOP)
             countryButton:DockMargin(Scale(5), Scale(5), Scale(5), 0)
             countryButton:SetTall(Scale(40))
-            countryButton:SetText(formatCountryName(country))  -- Format the country name for display
+            countryButton:SetText(country.translated)  -- Display the translated country name
             countryButton:SetFont("Roboto18")
             countryButton:SetTextColor(Config.UI.TextColor)
 
@@ -142,7 +135,7 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
             end
 
             countryButton.DoClick = function()
-                selectedCountry = country
+                selectedCountry = country.original
                 backButton:SetVisible(true) -- Show the back button when viewing radio stations
                 populateList(stationListPanel, backButton, searchBox, true)
             end
