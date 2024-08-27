@@ -112,8 +112,8 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
 
         if Config.UKAndUSPrioritised then
             table.sort(countries, function(a, b)
-                local UK_OPTIONS = {"United Kingdom", "The United Kingdom", "the_united_kingdom"}
-                local US_OPTIONS = {"United States", "The United States Of America", "the_united_states_of_america"}
+                local UK_OPTIONS = {"United Kingdom", "The United Kingdom", "The_united_kingdom"}
+                local US_OPTIONS = {"United States", "The United States Of America", "The_united_states_of_america"}
 
                 if table.HasValue(UK_OPTIONS, a.original) then
                     return true
@@ -258,7 +258,7 @@ local function openRadioMenu()
     end
 
     volumeSlider.Slider.Knob.Paint = function(self, w, h)
-        draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonHoverColor)
+        draw.RoundedBox(8, 0, 0, w, h, Config.UI.AccentColor)
     end
 
     volumeSlider.TextArea:SetTextColor(Config.UI.TextColor)

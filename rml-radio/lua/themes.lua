@@ -196,4 +196,20 @@ themes["gold"] = {
     AccentColor = Color(255, 215, 0),  -- Gold (used for key buttons, text highlights)
 }
 
+themes["main"] = {
+    FrameSize = { width = 600, height = 800 },
+    BackgroundColor = Color(15, 15, 15),
+    HeaderColor = Color(25, 25, 25),
+    TextColor = Color(228, 161, 15),
+    ButtonColor = Color(35, 35, 35),
+    ButtonHoverColor = Color(46, 45, 43),
+    PlayingButtonColor = Color(46, 45, 43),
+    CloseButtonColor = Color(25, 25, 25),
+    CloseButtonHoverColor = Color(228, 161, 15),
+    ScrollbarColor = Color(35, 35, 35),
+    ScrollbarGripColor = Color(228, 161, 15),
+    SearchBoxColor = Color(25, 25, 25),
+    AccentColor = Color(228, 161, 15),
+}
+
 return themes
