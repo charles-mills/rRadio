@@ -33,11 +33,11 @@ local function PrintCarRadioMessage()
     local messageColor = Color(255, 255, 255)  -- White color for the rest of the message
     local keyName = GetKeyName(Config.OpenKey)
 
+    local message = Config.Lang["PressKeyToOpen"]:gsub("{key}", keyName)
+
     chat.AddText(
         prefixColor, "[CAR RADIO] ",
-        messageColor, "Press ", 
-        keyColor, keyName,
-        messageColor, " to pick a station"
+        messageColor, message
     )
 end
 
@@ -101,12 +101,11 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
             end
         end
 
-
         if Config.UKAndUSPrioritised then
             -- Custom sort: US and UK at the top, followed by alphabetical order
             table.sort(countries, function(a, b)
-                local UK_OPTIONS = {"United Kingdom", "The United Kingdom"}
-                local US_OPTIONS = {"United States", "The United States Of Amnerica"}
+                local UK_OPTIONS = {"United Kingdom", "The United Kingdom", "The_united_kingdom"}
+                local US_OPTIONS = {"United States", "The United States Of America", "The_united_states_of_america"}
 
                 if table.HasValue(UK_OPTIONS, a) then
                     return true
@@ -207,7 +206,7 @@ local function openRadioMenu()
     frame.Paint = function(self, w, h)
         draw.RoundedBox(8, 0, 0, w, h, Config.UI.BackgroundColor)
         draw.RoundedBox(8, 0, 0, w, Scale(30), Config.UI.HeaderColor)
-        draw.SimpleText(selectedCountry and formatCountryName(selectedCountry) or "Select a Country", "Roboto18", Scale(10), Scale(5), Config.UI.TextColor, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
+        draw.SimpleText(selectedCountry and formatCountryName(selectedCountry) or Config.Lang["SelectCountry"], "Roboto18", Scale(10), Scale(5), Config.UI.TextColor, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
     end
 
     -- Create a search bar
@@ -215,7 +214,7 @@ local function openRadioMenu()
     searchBox:SetPos(Scale(10), Scale(40)) -- Position below the header
     searchBox:SetSize(Scale(Config.UI.FrameSize.width) - Scale(20), Scale(30))
     searchBox:SetFont("Roboto18")
-    searchBox:SetPlaceholderText("Search...")
+    searchBox:SetPlaceholderText(Config.Lang["SearchPlaceholder"])
     searchBox:SetTextColor(Config.UI.TextColor)
     searchBox:SetDrawBackground(false)
     searchBox.Paint = function(self, w, h)
@@ -268,7 +267,7 @@ local function openRadioMenu()
     local stopButton = vgui.Create("DButton", frame)
     stopButton:SetPos(Scale(10), Scale(Config.UI.FrameSize.height) - Scale(50)) -- Position at the bottom
     stopButton:SetSize(Scale(Config.UI.FrameSize.width) - Scale(20), Scale(40))
-    stopButton:SetText("Stop Radio")
+    stopButton:SetText(Config.Lang["StopRadio"])
     stopButton:SetFont("Roboto18")
     stopButton:SetTextColor(Config.UI.TextColor)
     stopButton.Paint = function(self, w, h)
@@ -277,13 +276,14 @@ local function openRadioMenu()
             draw.RoundedBox(8, 0, 0, w, h, Config.UI.CloseButtonHoverColor)
         end
     end
+
     stopButton.DoClick = function()
         net.Start("StopCarRadioStation")
         net.SendToServer()
         currentlyPlayingStation = nil
         populateList(stationListPanel, backButton, searchBox, false)
     end
-
+    
     -- Back arrow to return to the country selection
     local backButton = vgui.Create("DButton", frame)
     backButton:SetSize(Scale(30), Scale(30)) -- Adjust size to fit the header

@@ -1,8 +1,23 @@
 -- Include the themes.lua file to access the defined themes
 local themes = include("themes.lua")
 
+-- Table to define available languages
+local languages = {
+    de = "Deutsch",
+    en = "English",
+    es = "Español",
+    fr = "Français",
+    it = "Italiano",
+    ja = "日本語",
+    ko = "한국어",
+    pt_br = "Português (Brasil)",
+    ru = "Русский",
+    zh_cn = "简体中文",
+}
+
 -- Create the client convar to enable/disable chat messages
 CreateClientConVar("car_radio_show_messages", "1", true, false, "Enable or disable car radio messages.")
+CreateClientConVar("radio_language", "en", true, false, "Select the language for the radio UI.")
 
 -- Function to apply the selected theme
 local function applyTheme(themeName)
@@ -15,13 +30,28 @@ local function applyTheme(themeName)
     end
 end
 
--- Load the saved theme from convar and apply it
-local function loadSavedTheme()
-    local themeName = GetConVar("radio_theme"):GetString()
-    applyTheme(themeName)
+-- Function to apply the selected language
+local function applyLanguage(languageCode)
+    local path = "radio/lang/" .. languageCode .. ".lua"
+    if file.Exists(path, "LUA") then
+        Config.Lang = include(path)
+        -- You may need to refresh your UI elements to apply the new language
+        hook.Run("LanguageChanged", languageCode)
+    else
+        print("Invalid language code: " .. languageCode)
+    end
 end
 
-loadSavedTheme()
+-- Load the saved theme and language from convars and apply them
+local function loadSavedSettings()
+    local themeName = GetConVar("radio_theme"):GetString()
+    applyTheme(themeName)
+
+    local languageCode = GetConVar("radio_language"):GetString()
+    applyLanguage(languageCode)
+end
+
+loadSavedSettings()
 
 -- Create a new tool menu in the "Utilities" section
 hook.Add("PopulateToolMenu", "AddThemeAndVolumeSelectionMenu", function()
@@ -66,6 +96,39 @@ hook.Add("PopulateToolMenu", "AddThemeAndVolumeSelectionMenu", function()
         end
 
         panel:AddItem(themeDropdown)
+
+        -- Section Header for Language Selection
+        local languageHeader = vgui.Create("DLabel", panel)
+        languageHeader:SetText("Language Selection")
+        languageHeader:SetFont("Trebuchet18")
+        languageHeader:SetTextColor(Color(50, 50, 50))  -- Darker color for visibility on light background
+        languageHeader:Dock(TOP)
+        languageHeader:DockMargin(0, 20, 0, 0)
+        panel:AddItem(languageHeader)
+
+        local languageDropdown = vgui.Create("DComboBox", panel)
+        languageDropdown:SetValue("Select Language")
+        languageDropdown:Dock(TOP)
+        languageDropdown:SetTall(30)
+        languageDropdown:SetTooltip("Select the language for the radio UI.") -- Tooltip text
+
+        -- Dynamically add all available languages to the dropdown
+        for code, name in pairs(languages) do
+            languageDropdown:AddChoice(name, code)
+        end
+
+        -- Set the current value to the saved language
+        local currentLanguage = GetConVar("radio_language"):GetString()
+        if currentLanguage and languages[currentLanguage] then
+            languageDropdown:SetValue(languages[currentLanguage])
+        end
+
+        languageDropdown.OnSelect = function(panel, index, value, data)
+            applyLanguage(data)
+            RunConsoleCommand("radio_language", data)
+        end
+
+        panel:AddItem(languageDropdown)
 
         -- Section Header for Volume Control
         local volumeHeader = vgui.Create("DLabel", panel)

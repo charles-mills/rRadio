@@ -2,6 +2,21 @@ local Config = {}
 
 Config.RadioStations = {}
 
+Config.Language = "en" -- Default language
+
+local function loadLanguage()
+    local lang = Config.Language or GetConVar("gmod_language"):GetString() or "en"
+    local path = "radio/lang/" .. lang .. ".lua"
+    
+    if file.Exists(path, "LUA") then
+        Config.Lang = include(path)
+    else
+        Config.Lang = include("radio/lang/en.lua") -- Fallback to English if the specified language file doesn't exist
+    end
+end
+
+loadLanguage()
+
 -- Function to format the country name for UI display
 local function formatCountryName(filename)
     local formattedName = filename:gsub("-", " "):gsub("(%a)([%w_']*)", function(a, b) return string.upper(a) .. string.lower(b) end)
