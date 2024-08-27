@@ -1,6 +1,7 @@
 util.AddNetworkString("PlayCarRadioStation")
 util.AddNetworkString("StopCarRadioStation")
 util.AddNetworkString("CarRadioMessage")
+util.AddNetworkString("OpenRadioMenu")
 
 debug_mode = false
 

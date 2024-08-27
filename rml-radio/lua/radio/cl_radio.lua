@@ -16,6 +16,30 @@ local currentRadioStations = {}
 
 local lastMessageTime = -math.huge -- Initialize to a value that ensures the first message shows immediately
 
+local function updateRadioVolume(station, distance, isPlayerInCar)
+    if driverVolume <= 0.02 then
+        station:SetVolume(0)
+        return
+    end
+
+    local maxVolume = GetConVar("radio_max_volume"):GetFloat() -- Get the player's max volume setting
+    local effectiveVolume = math.min(driverVolume, maxVolume) -- Cap the volume by the client's max setting
+
+    if isPlayerInCar then
+        -- If the player is in the car, set the volume to the maximum possible
+        station:SetVolume(effectiveVolume)
+    else
+        if distance <= Config.MinVolumeDistance then
+            station:SetVolume(effectiveVolume)
+        elseif distance <= Config.MaxHearingDistance then
+            local adjustedVolume = effectiveVolume * (1 - (distance - Config.MinVolumeDistance) / (Config.MaxHearingDistance - Config.MinVolumeDistance))
+            station:SetVolume(adjustedVolume)
+        else
+            station:SetVolume(0)
+        end
+    end
+end
+
 local function PrintCarRadioMessage()
     if not GetConVar("car_radio_show_messages"):GetBool() then return end
 
@@ -55,14 +79,11 @@ local CountryTranslations = {
     en = {
         ["the_united_kingdom"] = "United Kingdom",
         ["the_united_states_of_america"] = "United States of America",
-        -- Add other country translations
     },
     es = {
         ["the_united_kingdom"] = "Reino Unido",
         ["the_united_states_of_america"] = "Estados Unidos de América",
-        -- Add other country translations
     },
-    -- Add more languages here
 }
 
 -- Helper function to format and translate country names
@@ -423,5 +444,11 @@ net.Receive("StopCarRadioStation", function()
         local entIndex = vehicle:EntIndex()
         hook.Remove("EntityRemoved", "StopRadioOnVehicleRemove_" .. entIndex)
         hook.Remove("Think", "UpdateRadioPosition_" .. entIndex)
+    end
+end)
+
+net.Receive("OpenRadioMenu", function()
+    if not radioMenuOpen then
+        openRadioMenu()
     end
 end)
