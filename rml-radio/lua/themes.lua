@@ -179,21 +179,21 @@ themes["synthwave"] = {
     AccentColor = Color(255, 0, 160),  -- Magenta (used for text highlights, borders)
 }
 
--- Monochrome Gold Theme
+-- Gold Theme
 themes["gold"] = {
     FrameSize = { width = 600, height = 800 },
-    BackgroundColor = Color(18, 18, 18),  -- Almost Black
-    HeaderColor = Color(28, 28, 28),
-    TextColor = Color(229, 229, 229),  -- Light Gray
-    ButtonColor = Color(40, 40, 40),  -- Dark Gray
-    ButtonHoverColor = Color(255, 215, 0),  -- Gold (Accent)
-    PlayingButtonColor = Color(30, 30, 30),
-    CloseButtonColor = Color(28, 28, 28),
-    CloseButtonHoverColor = Color(255, 215, 0),  -- Gold (Accent)
-    ScrollbarColor = Color(40, 40, 40),
-    ScrollbarGripColor = Color(77, 77, 77),
-    SearchBoxColor = Color(28, 28, 28),
-    AccentColor = Color(255, 215, 0),  -- Gold (used for key buttons, text highlights)
+    BackgroundColor = Color(15, 15, 15),
+    HeaderColor = Color(25, 25, 25),
+    TextColor = Color(228, 161, 15),
+    ButtonColor = Color(35, 35, 35),
+    ButtonHoverColor = Color(46, 45, 43),
+    PlayingButtonColor = Color(46, 45, 43),
+    CloseButtonColor = Color(25, 25, 25),
+    CloseButtonHoverColor = Color(228, 161, 15),
+    ScrollbarColor = Color(35, 35, 35),
+    ScrollbarGripColor = Color(228, 161, 15),
+    SearchBoxColor = Color(25, 25, 25),
+    AccentColor = Color(228, 161, 15),
 }
 
 themes["main"] = {

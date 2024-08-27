@@ -164,8 +164,10 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                 stationButton:SetFont("Roboto18")
                 stationButton:SetTextColor(Config.UI.TextColor)
 
+                local currentlyPlayingStations = {}
+                
                 stationButton.Paint = function(self, w, h)
-                    if station == currentlyPlayingStation then
+                    if station == currentlyPlayingStations[LocalPlayer().currentRadioEntity] then
                         draw.RoundedBox(8, 0, 0, w, h, Config.UI.PlayingButtonColor)
                     else
                         draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonColor)
@@ -174,28 +176,31 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                         end
                     end
                 end
-
+                
                 stationButton.DoClick = function()
                     local entity = LocalPlayer().currentRadioEntity
-
+                
                     if not IsValid(entity) then
                         print("No valid entity for PlayCarRadioStation")
                         return
                     end
-
-                    if currentlyPlayingStation then
+                
+                    -- Stop the currently playing station for this entity
+                    if currentlyPlayingStations[entity] then
                         net.Start("StopCarRadioStation")
                         net.WriteEntity(entity)
                         net.SendToServer()
                     end
-
+                
+                    -- Start the new station
                     net.Start("PlayCarRadioStation")
                     net.WriteEntity(entity)
                     net.WriteString(station.url)
                     net.WriteFloat(entityVolumes[entity] or Config.Volume)
                     net.SendToServer()
-
-                    currentlyPlayingStation = station
+                
+                    -- Update the currently playing station for this entity
+                    currentlyPlayingStations[entity] = station
                     populateList(stationListPanel, backButton, searchBox, false)
                 end
             end
