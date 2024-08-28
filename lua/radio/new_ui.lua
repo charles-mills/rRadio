@@ -15,15 +15,30 @@ local function OpenRadioUI()
     frame:Center()
     frame:MakePopup()
     frame:SetDraggable(false)
-    frame:ShowCloseButton(false)
+    frame:ShowCloseButton(false)  -- Disable the default close button
 
     -- Background color and style
     frame.Paint = function(self, w, h)
         draw.RoundedBox(8, 0, 0, w, h, Color(40, 40, 40, 255))
+        -- Replace with a valid path to your radio icon
+        surface.SetMaterial(Material("icons/radio_icon.png"))
         surface.SetDrawColor(255, 255, 255, 255)
-        surface.SetMaterial(Material("icons/radio_icon.png")) -- Custom icon for the radio
         surface.DrawTexturedRect(10, 5, 24, 24)
         draw.SimpleText("rRadio", "rRadioFont", 40, 5, Color(255, 255, 255, 255), TEXT_ALIGN_LEFT)
+    end
+
+    -- Create a close button in the top right corner
+    local closeButton = vgui.Create("DButton", frame)
+    closeButton:SetText("X")
+    closeButton:SetFont("rRadioFont")
+    closeButton:SetTextColor(Color(255, 255, 255))
+    closeButton:SetSize(30, 30)
+    closeButton:SetPos(365, 5)  -- Position adjusted to align with the corner
+    closeButton.Paint = function(self, w, h)
+        draw.RoundedBox(4, 0, 0, w, h, Color(200, 0, 0, 255))
+    end
+    closeButton.DoClick = function()
+        frame:Remove()  -- Explicitly remove the frame to close it
     end
 
     -- Create a label for the "Select a Country" text
@@ -78,8 +93,9 @@ local function OpenRadioUI()
     stopButton:SetPos(15, 620)
     stopButton.Paint = function(self, w, h)
         draw.RoundedBox(8, 0, 0, w, h, Color(255, 0, 0, 255))
+        -- Replace with a valid path to your stop icon
+        surface.SetMaterial(Material("icons/stop_icon.png"))
         surface.SetDrawColor(255, 255, 255, 255)
-        surface.SetMaterial(Material("icons/stop_icon.png")) -- Custom icon for the stop button
         surface.DrawTexturedRect(10, 10, 30, 30)
         draw.SimpleText("STOP", "rRadioFont", 45, 10, Color(255, 255, 255), TEXT_ALIGN_LEFT)
     end
@@ -103,9 +119,8 @@ local function OpenRadioUI()
 end
 
 -- Bind the UI opening function to the "L" key
-hook.Add("PlayerButtonDown", "OpenRadioUIKey", function(ply, button)
-    print("Button Pressed: " .. button)
-    if button == KEY_L then
+hook.Add("Think", "OpenRadioUIKey", function()
+    if input.IsKeyDown(KEY_L) then
         OpenRadioUI()
     end
 end)

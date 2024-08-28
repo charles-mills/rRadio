@@ -1,13 +1,13 @@
 local stations = {
-    {name = [[Radio BLAU Leipzig Trocken 320Kbps]], url = [[http://icecast.radioblau.de:8000/blau_320_dry]]},
-    {name = [[Radio Dallol 928 Dogondoutchi]], url = [[https://stream-172.zeno.fm/orv3efzpotytv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJvcnYzZWZ6cG90eXR2IiwiaG9zdCI6InN0cmVhbS0xNzIuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6ImE0WnkyeXVtUVI2SjZRWHZoeTJ0enciLCJpYXQiOjE3MjQ4Mzk1MjQsImV4cCI6MTcyNDgzOTU4NH0.xwIKInSY0J-jqxe1vHpkdJqI92olLD40cZUmYMZy0RU]]},
-    {name = [[Radio Farah]], url = [[https://stream-151.zeno.fm/f9zacil8jwgtv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJmOXphY2lsOGp3Z3R2IiwiaG9zdCI6InN0cmVhbS0xNTEuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6InQxMk04cjFiUlp1aC1DV0ZmZnFxN2ciLCJpYXQiOjE3MjQ4NTg2MjAsImV4cCI6MTcyNDg1ODY4MH0.HUrfI4wHd8qvogWGoTvuR1VeZtJBnx317euLR21tMK8]]},
-    {name = [[Radio Garkuwa 107 Maradi]], url = [[https://stream-176.zeno.fm/x0a1r1qu1nhvv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJ4MGExcjFxdTFuaHZ2IiwiaG9zdCI6InN0cmVhbS0xNzYuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6IkdlSGduRWdwU1lTUEY0bkYyYXlQeXciLCJpYXQiOjE3MjQ4NDU2NDMsImV4cCI6MTcyNDg0NTcwM30.xGXVaJqJ9h3NIb1yBR6_9D7QVqI1pPJ3o6nFfOlMEVg]]},
-    {name = [[Radio Gaskia Zinder]], url = [[https://stream-153.zeno.fm/wmhdhhdhakhvv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJ3bWhkaGhkaGFraHZ2IiwiaG9zdCI6InN0cmVhbS0xNTMuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6IjNvTG1Bbm5zUVVhWHRfRHFxOUVqYXciLCJpYXQiOjE3MjQ4NTUyMjcsImV4cCI6MTcyNDg1NTI4N30.RP_zSTkK1cQ2oSTd92ix9eTj7QWKntVuPXJfXJb5yV8]]},
-    {name = [[Radio Moubarak 911 Ouallam]], url = [[https://stream-172.zeno.fm/ocexarwh8o8tv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJvY2V4YXJ3aDhvOHR2IiwiaG9zdCI6InN0cmVhbS0xNzIuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6IjlsZW9US0l5U1ZDSjFhTFpTS21SaVEiLCJpYXQiOjE3MjQ4NDIyNTEsImV4cCI6MTcyNDg0MjMxMX0.A5oT-ihRhBG-bR6gUX-Chatdg2l0k-PQPsiywkl9lAg]]},
-    {name = [[Radio Télévision Ténére]], url = [[https://stream-171.zeno.fm/y1xvpw44hf1tv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJ5MXh2cHc0NGhmMXR2IiwiaG9zdCI6InN0cmVhbS0xNzEuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6IjFQS2pSZGdIVGNtU1hFSDd2aGhEZmciLCJpYXQiOjE3MjQ4NjE0OTgsImV4cCI6MTcyNDg2MTU1OH0.MRzzMx54_sifUg2KeWnRON6BB7_7fydA2aVLNTqJB8o]]},
-    {name = [[Radio Zamani Maradi]], url = [[https://stream-175.zeno.fm/avyi72funjftv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJhdnlpNzJmdW5qZnR2IiwiaG9zdCI6InN0cmVhbS0xNzUuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6Im4xWXRDQUJIUUlTZnBKNGhLQUR2N0EiLCJpYXQiOjE3MjQ4MzkxMjEsImV4cCI6MTcyNDgzOTE4MX0.8aYR97icK51aOiwS7jh7NFb-Q5lXUNdC_xQsf20yZCc]]},
-    {name = [[Wadata Radio 1074 Niamey]], url = [[http://stream-176.zeno.fm/1y2c3qbgbchvv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiIxeTJjM3FiZ2JjaHZ2IiwiaG9zdCI6InN0cmVhbS0xNzYuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6ImFnZHZRSktNU01LUm9KSjN6WVU3WVEiLCJpYXQiOjE3MjQ4NTAxODEsImV4cCI6MTcyNDg1MDI0MX0.e5NoChkj2pnWuSTvXiWmY1lAkWOrPPVFbpiz1zCrgZ8]]},
+    {name = "Radio BLAU Leipzig (trocken 320kbps)", url = "http://icecast.radioblau.de:8000/blau_320_dry"},
+    {name = "Radio Dallol 92.8 Dogondoutchi", url = "https://stream.zeno.fm/orv3efzpotytv"},
+    {name = "Radio Farah", url = "https://stream.zeno.fm/f9zacil8jwgtv"},
+    {name = "Radio Garkuwa 107 Maradi", url = "https://stream.zeno.fm/x0a1r1qu1nhvv"},
+    {name = "Radio Gaskia Zinder", url = "https://stream.zeno.fm/wmhdhhdhakhvv"},
+    {name = "Radio Moubarak 91.1 Ouallam", url = "https://stream.zeno.fm/ocexarwh8o8tv"},
+    {name = "Radio Télévision Ténére", url = "https://stream.zeno.fm/y1xvpw44hf1tv"},
+    {name = "Radio Zamani Maradi", url = "https://stream.zeno.fm/avyi72funjftv"},
+    {name = "Wadata Radio 107.4 Niamey", url = "http://stream.zeno.fm/1y2c3qbgbchvv"},
 }
 
 return stations
