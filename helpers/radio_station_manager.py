@@ -43,6 +43,8 @@ BATCH_DELAY = int(config['DEFAULT'].get('batch_delay', 2))
 LOG_FILE = config['DEFAULT'].get('log_file', 'logs/radio_station_manager.log')
 VERBOSE = config['DEFAULT'].getboolean('verbose', False)
 BACKUP_DIR = os.path.join(script_dir, 'backups')
+# Use absolute path for the README file
+README_PATH = r'C:\Program Files (x86)\Steam\steamapps\common\GarrysMod\garrysmod\addons\rml-radio\README.md'
 
 # Configure logging with rotation
 os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
@@ -250,6 +252,52 @@ def count_total_stations(directory: str) -> int:
             total_stations += count_stations_in_file(file_path)
     return total_stations
 
+# Function to update the README.md file with the current station count
+def update_readme_with_station_count(total_stations: int) -> None:
+    readme_path = "C:\\Program Files (x86)\\Steam\\steamapps\\common\\GarrysMod\\garrysmod\\addons\\rml-radio\\README.md"
+
+    if not os.path.exists(readme_path):
+        logging.error(f"README.md not found at {readme_path}")
+        return
+
+    try:
+        # Backup the README file
+        backup_readme_path = readme_path + ".bak"
+        shutil.copy(readme_path, backup_readme_path)
+        logging.info(f"Backup of README.md created at {backup_readme_path}")
+
+        with open(readme_path, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        # Refine the regex pattern to specifically target the number within the correct context
+        updated_content = re.sub(
+            r"(It currently supports )\d+( active internet radio stations)",
+            fr"\1{total_stations}\2",
+            content
+        )
+
+        with open(readme_path, "w", encoding="utf-8") as f:
+            f.write(updated_content)
+
+        logging.info(f"Updated README.md with the current station count: {total_stations}")
+
+        # Commit and push the changes to GitHub
+        commit_and_push_changes(readme_path, total_stations)
+    except Exception as e:
+        logging.error(f"Failed to update README.md: {e}")
+
+
+# Function to commit and push changes to GitHub
+def commit_and_push_changes(file_path: str, total_stations: int) -> None:
+    try:
+        subprocess.run(["git", "add", file_path], check=True, cwd=GITHUB_REPO_DIR)
+        commit_message = f"Update README.md with {total_stations} radio stations"
+        subprocess.run(["git", "commit", "-m", commit_message], check=True, cwd=GITHUB_REPO_DIR)
+        subprocess.run(["git", "push"], check=True, cwd=GITHUB_REPO_DIR)
+        logging.info(f"Committed and pushed changes to GitHub: {commit_message}")
+    except subprocess.CalledProcessError as e:
+        logging.error(f"Failed to commit and push changes: {e}")
+
 def main_menu() -> None:
     while True:
         print(f"\n{Colors.BOLD}--- Radio Station Manager ---{Colors.END}")
@@ -270,6 +318,7 @@ def main_menu() -> None:
         elif choice == '4':
             total_stations = count_total_stations(STATIONS_DIR)
             print(f'{Colors.CYAN}Total number of radio stations: {Colors.BOLD}{total_stations}{Colors.END}')
+            update_readme_with_station_count(total_stations)  # Update README.md after counting
         elif choice == '5':
             print(f"{Colors.YELLOW}Exiting...{Colors.END}")
             break
@@ -295,5 +344,6 @@ if __name__ == "__main__":
     elif args.count:
         total_stations = count_total_stations(STATIONS_DIR)
         print(f'{Colors.CYAN}Total number of radio stations: {Colors.BOLD}{total_stations}{Colors.END}')
+        update_readme_with_station_count(total_stations)
     else:
         main_menu()

@@ -1421,3 +1421,21 @@
 2024-08-28 18:34:36,648 - INFO - Saved stations for Indonesia to rml-radio/lua/radio/stations\indonesia.lua
 2024-08-28 18:34:36,650 - ERROR - Lua validation failed for rml-radio/lua/radio/stations\indonesia.lua: [WinError 2] The system cannot find the file specified
 2024-08-28 18:34:38,656 - INFO - All stations fetched and saved.
+2024-08-28 19:22:25,649 - ERROR - README.md not found at /path/to/your/github/repo\README.md
+2024-08-28 19:23:43,120 - INFO - Updated README.md with the current station count: 102042
+2024-08-28 19:23:43,141 - ERROR - Failed to commit and push changes: Command '['git', 'add', 'rml-radio\\README.md']' returned non-zero exit status 128.
+2024-08-28 19:24:14,500 - INFO - Updated README.md with the current station count: 102042
+2024-08-28 19:24:14,520 - ERROR - Failed to commit and push changes: Command '['git', 'add', 'rml-radio\\README.md']' returned non-zero exit status 128.
+2024-08-28 19:25:02,982 - INFO - Updated README.md with the current station count: 102042
+2024-08-28 19:25:03,002 - ERROR - Failed to commit and push changes: Command '['git', 'add', 'rml-radio/README.md']' returned non-zero exit status 128.
+2024-08-28 19:29:41,468 - INFO - Updated README.md with the current station count: 102042
+2024-08-28 19:29:41,468 - ERROR - Failed to update README.md: name 'GITHUB_REPO_DIR' is not defined
+2024-08-28 19:31:29,545 - INFO - Updated README.md with the current station count: 102042
+2024-08-28 19:31:29,545 - ERROR - Failed to update README.md: name 'GITHUB_REPO_DIR' is not defined
+2024-08-28 19:31:37,318 - INFO - Updated README.md with the current station count: 102042
+2024-08-28 19:31:37,318 - ERROR - Failed to update README.md: name 'GITHUB_REPO_DIR' is not defined
+2024-08-28 19:31:59,059 - INFO - Updated README.md with the current station count: 102042
+2024-08-28 19:31:59,059 - ERROR - Failed to update README.md: name 'GITHUB_REPO_DIR' is not defined
+2024-08-28 19:32:43,652 - INFO - Backup of README.md created at C:\Program Files (x86)\Steam\steamapps\common\GarrysMod\garrysmod\addons\rml-radio\README.md.bak
+2024-08-28 19:32:43,652 - INFO - Updated README.md with the current station count: 102042
+2024-08-28 19:32:43,652 - ERROR - Failed to update README.md: name 'GITHUB_REPO_DIR' is not defined

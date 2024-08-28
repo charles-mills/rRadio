@@ -233,8 +233,26 @@ local function openRadioMenu()
     frame.Paint = function(self, w, h)
         draw.RoundedBox(8, 0, 0, w, h, Config.UI.BackgroundColor)
         draw.RoundedBoxEx(8, 0, 0, w, Scale(40), Config.UI.HeaderColor, true, true, false, false)
-        draw.SimpleText(selectedCountry and formatCountryName(selectedCountry) or Config.Lang["SelectCountry"], "HeaderFont", Scale(10), Scale(5), Config.UI.TextColor, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
-    end    
+        
+        local iconSize = Scale(30)
+        local iconOffsetX = Scale(10) -- Adjusted the X offset
+        
+        -- Get the height of the text
+        surface.SetFont("HeaderFont")
+        local textHeight = select(2, surface.GetTextSize("H")) -- Just a dummy character to get height
+        
+        -- Calculate the Y offset to align the icon bottom with the text bottom
+        local iconOffsetY = Scale(5) + textHeight - iconSize
+        
+        -- Draw the icon
+        surface.SetMaterial(Material("hud/radio"))
+        surface.SetDrawColor(Config.UI.TextColor)
+        surface.DrawTexturedRect(iconOffsetX, iconOffsetY, iconSize, iconSize)
+        
+        -- Draw the header text with Y offset
+        draw.SimpleText(selectedCountry and formatCountryName(selectedCountry) or Config.Lang["SelectCountry"], "HeaderFont", iconOffsetX + iconSize + Scale(5), Scale(5) + iconOffsetY, Config.UI.TextColor, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
+    end
+    
 
     local searchBox = vgui.Create("DTextEntry", frame)
     searchBox:SetPos(Scale(10), Scale(50))
