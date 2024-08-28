@@ -4012,3 +4012,6 @@
 2024-08-28 22:08:43,858 - WARNING - NO RESPONSE: https://fr1-play.adtonos.com/8108/thisisprimordial responded with status code: 404
 2024-08-28 22:08:44,828 - ERROR - Could not reach http://23.237.150.98:8512/: 0, message='', url='http://23.237.150.98:8512/'
 2024-08-28 22:08:47,069 - ERROR - Could not reach http://mp3.polskieradio.pl:8900/;: 0, message='', url='http://mp3.polskieradio.pl:8900/;'
+2024-08-28 22:08:55,794 - INFO - Backup of README.md created at c:\Program Files (x86)\Steam\steamapps\common\GarrysMod\garrysmod\addons\rml-radio\helpers\..\README.md.bak
+2024-08-28 22:08:55,795 - INFO - Updated README.md with the current station count: 80990
+2024-08-28 22:08:57,310 - INFO - Committed and pushed changes to GitHub: Update README.md with 80990 radio stations
