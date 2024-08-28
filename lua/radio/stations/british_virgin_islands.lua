@@ -1,5 +1,5 @@
 local stations = {
-    {name = "Dubstep FM", url = "http://stream.dubstep.fm/128aac"},
+    {name = [[Dubstep FM]], url = [[http://shout.dubstep.fm/256mp3]]},
 }
 
 return stations
