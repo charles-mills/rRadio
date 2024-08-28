@@ -7,6 +7,7 @@ include("shared.lua")
 util.AddNetworkString("PlayCarRadioStation")
 util.AddNetworkString("StopCarRadioStation")
 util.AddNetworkString("OpenRadioMenu")
+util.AddNetworkString("UpdateRadioStatus")
 
 function ENT:Initialize()
     self:SetModel("models/rammel/boombox.mdl")
@@ -32,7 +33,8 @@ end
 -- Handle playing the radio station from the client
 net.Receive("PlayCarRadioStation", function(len, ply)
     local entity = net.ReadEntity()
-    local url = net.ReadString()
+    local stationName = net.ReadString()  -- Receive the station name
+    local url = net.ReadString()          -- Receive the station URL
     local volume = net.ReadFloat()
 
     if not IsValid(entity) then return end
@@ -43,7 +45,14 @@ net.Receive("PlayCarRadioStation", function(len, ply)
     net.WriteString(url)
     net.WriteFloat(volume)
     net.Broadcast()
+
+    -- Send the updated station name to clients
+    net.Start("UpdateRadioStatus")
+    net.WriteEntity(entity)
+    net.WriteString(stationName)  -- Broadcast the station name
+    net.Broadcast()
 end)
+
 
 -- Handle stopping the radio station
 net.Receive("StopCarRadioStation", function(len, ply)
@@ -53,5 +62,11 @@ net.Receive("StopCarRadioStation", function(len, ply)
 
     net.Start("StopCarRadioStation")
     net.WriteEntity(entity)
+    net.Broadcast()
+
+    -- Clear the station name when stopping the radio
+    net.Start("UpdateRadioStatus")
+    net.WriteEntity(entity)
+    net.WriteString("")  -- Clear the station name
     net.Broadcast()
 end)

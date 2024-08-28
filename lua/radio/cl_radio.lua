@@ -201,10 +201,11 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                         net.SendToServer()
                     end
                 
-                    -- Start the new station
+                    -- Start the new station, sending both the name and URL
                     net.Start("PlayCarRadioStation")
                     net.WriteEntity(entity)
-                    net.WriteString(station.url)
+                    net.WriteString(station.name)  -- Send the station name
+                    net.WriteString(station.url)   -- Send the station URL
                     net.WriteFloat(entityVolumes[entity] or Config.Volume)
                     net.SendToServer()
                 
@@ -212,6 +213,7 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                     currentlyPlayingStations[entity] = station
                     populateList(stationListPanel, backButton, searchBox, false)
                 end
+                
             end
         end
     end

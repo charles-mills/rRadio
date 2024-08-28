@@ -1,9 +1,9 @@
 name: Get Stations
 
 on:
+  workflow_dispatch:
   schedule:
-    - cron: '0 */12 * * *'  # Runs every 12 hours (at 00:00 and 12:00 UTC)
-
+    - cron: '0 0 * * 1'  # Runs every Monday at 12AM UTC
 jobs:
   update_stations:
     runs-on: ubuntu-latest
