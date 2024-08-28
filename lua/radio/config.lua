@@ -47,15 +47,37 @@ local themes = include("themes.lua")
 -- Default to dark theme or set based on user preference
 local selectedTheme = themes["neon"]
 
--- General Settings
+-- General UI Settings
 Config.UI = selectedTheme
 Config.UKAndUSPrioritised = true -- Include UK and US stations at the top of the list (default alphabetical sort if false)
 Config.MessageCooldown = 300 -- Cooldown time in seconds before the chat message can be sent again ("Press {key} to open the radio menu")
 Config.OpenKey = KEY_K -- Key to open the radio menu
-Config.Volume = 1 -- Default radio volume (range: 0.0 to 1.0)
-Config.MaxHearingDistance = 1000 -- Maximum distance at which the radio can be heard (in units)
-Config.MinVolumeDistance = 500 -- Distance at which the radio volume starts to drop off (in units)
-Config.RetryAttempts = 3 -- Number of retry attempts to play a station in case of failure
-Config.RetryDelay = 2 -- Delay in seconds between retry attempts
+
+-- Boombox Settings (Normal)
+Config.Boombox = {
+    Volume = 1, -- Default radio volume (range: 0.0 to 1.0)
+    MaxHearingDistance = 1000, -- Maximum distance at which the radio can be heard (in units)
+    MinVolumeDistance = 500, -- Distance at which the radio volume starts to drop off (in units)
+    RetryAttempts = 3, -- Number of retry attempts to play a station in case of failure
+    RetryDelay = 2 -- Delay in seconds between retry attempts
+}
+
+-- Golden Boombox Settings
+Config.GoldenBoombox = {
+    Volume = 1, -- Default radio volume (range: 0.0 to 1.0)
+    MaxHearingDistance = 15000, -- Increased maximum distance at which the radio can be heard (in units)
+    MinVolumeDistance = 10000, -- Increased distance at which the radio volume starts to drop off (in units)
+    RetryAttempts = 3, -- Number of retry attempts to play a station in case of failure
+    RetryDelay = 2 -- Delay in seconds between retry attempts
+}
+
+-- Vehicle Radio Settings
+Config.VehicleRadio = {
+    Volume = 1, -- Default radio volume (range: 0.0 to 1.0)
+    MaxHearingDistance = 1000, -- Maximum distance at which the radio can be heard (in units)
+    MinVolumeDistance = 500, -- Distance at which the radio volume starts to drop off (in units)
+    RetryAttempts = 3, -- Number of retry attempts to play a station in case of failure
+    RetryDelay = 2 -- Delay in seconds between retry attempts
+}
 
 return Config

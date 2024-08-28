@@ -13,7 +13,6 @@ surface.CreateFont("HeaderFont", {
     weight = 700,  -- Make it bold to stand out more
 })
 
-
 local selectedCountry = nil
 local radioMenuOpen = false
 local currentlyPlayingStation = nil
@@ -23,8 +22,26 @@ local entityVolumes = {}  -- This will store volume settings for each entity
 
 local lastMessageTime = -math.huge
 
+-- Function to get the configuration based on the entity type
+local function getEntityConfig(entity)
+    if entity:GetClass() == "golden_boombox" then
+        return Config.GoldenBoombox
+    elseif entity:GetClass() == "boombox" then
+        return Config.Boombox
+    elseif entity:IsVehicle() then
+        return Config.VehicleRadio
+    else
+        return nil
+    end
+end
+
+-- Function to update radio volume based on distance and entity type
 local function updateRadioVolume(station, distance, isPlayerInCar, entity)
-    local volume = entityVolumes[entity] or Config.Volume
+    local entityConfig = getEntityConfig(entity)
+    
+    if not entityConfig then return end
+
+    local volume = entityVolumes[entity] or entityConfig.Volume
 
     if volume <= 0.02 then
         station:SetVolume(0)
@@ -37,10 +54,10 @@ local function updateRadioVolume(station, distance, isPlayerInCar, entity)
     if isPlayerInCar then
         station:SetVolume(effectiveVolume)
     else
-        if distance <= Config.MinVolumeDistance then
+        if distance <= entityConfig.MinVolumeDistance then
             station:SetVolume(effectiveVolume)
-        elseif distance <= Config.MaxHearingDistance then
-            local adjustedVolume = effectiveVolume * (1 - (distance - Config.MinVolumeDistance) / (Config.MaxHearingDistance - Config.MinVolumeDistance))
+        elseif distance <= entityConfig.MaxHearingDistance then
+            local adjustedVolume = effectiveVolume * (1 - (distance - entityConfig.MinVolumeDistance) / (entityConfig.MaxHearingDistance - entityConfig.MinVolumeDistance))
             station:SetVolume(adjustedVolume)
         else
             station:SetVolume(0)
@@ -204,11 +221,12 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                     end
 
                     -- Start the new station, sending both the name and URL
+                    local volume = entityVolumes[entity] or getEntityConfig(entity).Volume
                     net.Start("PlayCarRadioStation")
                     net.WriteEntity(entity)
                     net.WriteString(station.name)  -- Send the station name
                     net.WriteString(station.url)   -- Send the station URL
-                    net.WriteFloat(entityVolumes[entity] or Config.Volume)
+                    net.WriteFloat(volume)
                     net.SendToServer()
 
                     -- Update the currently playing station for this entity
@@ -256,7 +274,6 @@ local function openRadioMenu()
         draw.SimpleText(selectedCountry and formatCountryName(selectedCountry) or Config.Lang["SelectCountry"], "HeaderFont", iconOffsetX + iconSize + Scale(5), Scale(5) + iconOffsetY, Config.UI.TextColor, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
     end
     
-
     local searchBox = vgui.Create("DTextEntry", frame)
     searchBox:SetPos(Scale(10), Scale(50))
     searchBox:SetSize(Scale(Config.UI.FrameSize.width) - Scale(20), Scale(30))
@@ -286,7 +303,10 @@ local function openRadioMenu()
     volumeSlider:SetDecimals(2)
 
     local entity = LocalPlayer().currentRadioEntity
-    volumeSlider:SetValue(entityVolumes[entity] or Config.Volume)
+
+    -- Retrieve the current volume for the entity, defaulting to the entity's config volume
+    local currentVolume = entityVolumes[entity] or getEntityConfig(entity).Volume
+    volumeSlider:SetValue(currentVolume)  -- Set slider to the current volume
 
     volumeSlider.Slider.Paint = function(self, w, h)
         draw.RoundedBox(4, 0, h/2 - 2, w, 4, Config.UI.HeaderColor)
@@ -396,6 +416,7 @@ hook.Add("Think", "OpenCarRadioMenu", function()
     end
 end)
 
+-- The function responsible for playing the radio station
 net.Receive("PlayCarRadioStation", function()
     local entity = net.ReadEntity()
     local url = net.ReadString()
@@ -417,6 +438,16 @@ net.Receive("PlayCarRadioStation", function()
                 station:SetVolume(1)
                 station:Play()
                 currentRadioSources[entity] = station
+
+                -- Get the entity-specific config
+                local entityConfig = getEntityConfig(entity)
+                if not entityConfig then
+                    print("No valid config found for entity!")
+                    return
+                end
+
+                -- Set 3D fade distances based on entity configuration
+                station:Set3DFadeDistance(entityConfig.MinVolumeDistance, entityConfig.MaxHearingDistance)
 
                 hook.Add("Think", "UpdateRadioPosition_" .. entity:EntIndex(), function()
                     if IsValid(entity) and IsValid(station) then
@@ -445,8 +476,8 @@ net.Receive("PlayCarRadioStation", function()
                     end
                 end)
             else
-                if attempt < Config.RetryAttempts then
-                    timer.Simple(Config.RetryDelay, function()
+                if attempt < entityConfig.RetryAttempts then
+                    timer.Simple(entityConfig.RetryDelay, function()
                         tryPlayStation(attempt + 1)
                     end)
                 end
