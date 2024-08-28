@@ -3,6 +3,7 @@ name: Get Stations
 on:
   schedule:
     - cron: '0 */12 * * *'  # Runs every 12 hours (at 00:00 and 12:00 UTC)
+
 jobs:
   update_stations:
     runs-on: ubuntu-latest
@@ -22,7 +23,7 @@ jobs:
         pip install aiohttp tqdm configparser
 
     - name: Run the station manager script
-      run: python helpers/radio_station_manager.py --fetch --verify --count
+      run: python helpers/radio_station_manager.py --auto-run
 
     - name: Commit changes
       run: |

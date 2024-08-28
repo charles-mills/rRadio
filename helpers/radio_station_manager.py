@@ -331,7 +331,7 @@ def commit_and_push_changes(file_path: str, total_stations: int) -> None:
         
         # Push the changes to the remote repository
         subprocess.run(["git", "push"], check=True, cwd=repo_dir)
-        
+
         logging.info(f"Committed and pushed changes to GitHub: {commit_message}")
     except subprocess.CalledProcessError as e:
         logging.error(f"Failed to commit and push changes: {e}")
@@ -341,53 +341,53 @@ async def count_and_push_station_count():
     print(f'{Colors.CYAN}Total number of radio stations: {Colors.BOLD}{total_stations}{Colors.END}')
     update_readme_with_station_count(total_stations)  # Update README.md after counting
 
-def main_menu() -> None:
-    while True:
-        print(f"\n{Colors.BOLD}--- Radio Station Manager ---{Colors.END}")
-        print(f"{Colors.CYAN}1 - Full Rescan, Save, and Verify{Colors.END}")
-        print(f"{Colors.CYAN}2 - Just Fetch and Save Stations{Colors.END}")
-        print(f"{Colors.CYAN}3 - Verify Stations Only{Colors.END}")
-        print(f"{Colors.CYAN}4 - Count Total Stations{Colors.END}")
-        print(f"{Colors.CYAN}5 - Exit{Colors.END}")
-        choice = input(f"{Colors.BOLD}Select an option: {Colors.END}")
+def main_menu(auto_run: bool = False) -> None:
+    if auto_run:
+        # Automatically run the full rescan, save, and verify
+        asyncio.run(fetch_and_save_stations_concurrently())
+        asyncio.run(verify_all_stations())
+        asyncio.run(count_and_push_station_count())
+    else:
+        while True:
+            print(f"\n{Colors.BOLD}--- Radio Station Manager ---{Colors.END}")
+            print(f"{Colors.CYAN}1 - Full Rescan, Save, and Verify{Colors.END}")
+            print(f"{Colors.CYAN}2 - Just Fetch and Save Stations{Colors.END}")
+            print(f"{Colors.CYAN}3 - Verify Stations Only{Colors.END}")
+            print(f"{Colors.CYAN}4 - Count Total Stations{Colors.END}")
+            print(f"{Colors.CYAN}5 - Exit{Colors.END}")
+            choice = input(f"{Colors.BOLD}Select an option: {Colors.END}")
 
-        if choice == '1':
-            asyncio.run(fetch_and_save_stations_concurrently())
-            asyncio.run(verify_all_stations())
-            asyncio.run(count_and_push_station_count())
-        elif choice == '2':
-            asyncio.run(fetch_and_save_stations_concurrently())
-            asyncio.run(count_and_push_station_count())
-        elif choice == '3':
-            asyncio.run(verify_all_stations())
-            asyncio.run(count_and_push_station_count())
-        elif choice == '4':
-            asyncio.run(count_and_push_station_count())
-        elif choice == '5':
-            print(f"{Colors.YELLOW}Exiting...{Colors.END}")
-            break
-        else:
-            print(f"{Colors.RED}Invalid option. Please try again.{Colors.END}")
+            if choice == '1':
+                asyncio.run(fetch_and_save_stations_concurrently())
+                asyncio.run(verify_all_stations())
+                asyncio.run(count_and_push_station_count())
+            elif choice == '2':
+                asyncio.run(fetch_and_save_stations_concurrently())
+                asyncio.run(count_and_push_station_count())
+            elif choice == '3':
+                asyncio.run(verify_all_stations())
+                asyncio.run(count_and_push_station_count())
+            elif choice == '4':
+                asyncio.run(count_and_push_station_count())
+            elif choice == '5':
+                print(f"{Colors.YELLOW}Exiting...{Colors.END}")
+                break
+            else:
+                print(f"{Colors.RED}Invalid option. Please try again.{Colors.END}")
 
 if __name__ == "__main__":
-    # Parse command-line arguments
     parser = argparse.ArgumentParser(description='Radio Station Manager')
     parser.add_argument('--fetch', action='store_true', help='Fetch and save stations')
     parser.add_argument('--verify', action='store_true', help='Verify saved stations')
     parser.add_argument('--count', action='store_true', help='Count total stations')
     parser.add_argument('--verbose', action='store_true', help='Enable verbose output')
+    parser.add_argument('--auto-run', action='store_true', help='Automatically run full rescan, save, and verify')
     args = parser.parse_args()
 
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
 
-    if args.fetch:
-        asyncio.run(fetch_and_save_stations_concurrently())
-    elif args.verify:
-        asyncio.run(verify_all_stations())
-    elif args.count:
-        total_stations = count_total_stations(STATIONS_DIR)
-        print(f'{Colors.CYAN}Total number of radio stations: {Colors.BOLD}{total_stations}{Colors.END}')
-        update_readme_with_station_count(total_stations)
+    if args.auto_run:
+        main_menu(auto_run=True)
     else:
         main_menu()
