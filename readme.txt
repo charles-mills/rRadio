@@ -1,23 +1,31 @@
 # rRadio Addon
 
 ## Description
-rRadio is a Garry's Mod addon that allows players to listen to their favorite radio stations in-game, with friends, or alone. It supports over 6000 active internet radio stations, which are actively collected from the [Radio Browser API](https://www.radio-browser.info/).
+**rRadio** is a Garry's Mod addon that allows players to listen to their favorite radio stations in-game, either with friends or alone. It supports over 6000 active internet radio stations, which are actively collected from the [Radio Browser API](https://www.radio-browser.info/).
 
 ## Features
-- Access to a wide range of radio stations from around the world.
-- Simple and intuitive user interface for easy navigation and station selection.
-- Support for both singleplayer and multiplayer modes.
-- Customisable settings to personalise the UI (client-side).
-- Customisable settings to adjust key values such as audio range and maximum volume (server-side).
+- **Wide Range of Stations**: Access to radio stations from around the world.
+- **User-Friendly Interface**: Simple and intuitive UI for easy navigation and station selection.
+- **Multiplayer and Singleplayer Support**: Works seamlessly in both modes.
+- **Customizable Client-Side Settings**: Personalize the UI to fit your preferences.
+- **Adjustable Server-Side Settings**: Modify key values such as audio range and maximum volume.
 
 ## Installation
-1. Download the rRadio addon from the [Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=3318060741) or this repository.
-2. Extract the addon files to the `addons` folder in your Garry's Mod installation directory.
-3. Launch Garry's Mod and enable the rRadio addon in the Addons menu (if using Steam Workshop).
+
+1. **Download the Addon**: Get the rRadio addon from the [Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=3318060741) or clone this repository.
+   
+2. **Extract the Files**: Place the extracted addon files into the `addons` folder within your Garry's Mod installation directory.
+
+3. **Enable the Addon**: Launch Garry's Mod and activate the rRadio addon through the Addons menu (if installed via Steam Workshop).
 
 ## Usage
-1. Open the RML Radio menu by pressing the designated key (default: K).
-2. Browse through the available radio stations using the mouse.
-3. Select a station by left-clicking on it.
-4. Adjust the volume and other settings as desired.
-5. Enjoy listening to your favorite radio station while playing Garry's Mod!
+
+1. **Open the Radio Menu**: Press the designated key (default: `K`) to open the RML Radio menu.
+   
+2. **Browse Stations**: Use the mouse to scroll through the list of available radio stations.
+   
+3. **Select a Station**: Left-click on a station to start playing it.
+   
+4. **Adjust Settings**: Modify the volume and other settings according to your preferences.
+   
+5. **Enjoy**: Listen to your favorite radio station while enjoying your Garry's Mod experience!
