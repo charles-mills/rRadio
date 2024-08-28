@@ -98,6 +98,10 @@ local function formatCountryName(name)
 end
 
 local function populateList(stationListPanel, backButton, searchBox, resetSearch)
+    if backButton and selectedCountry == nil then
+        backButton:SetVisible(false)
+    end
+
     stationListPanel:Clear()
 
     if resetSearch then
@@ -107,8 +111,6 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
     local filterText = searchBox:GetText()
 
     if selectedCountry == nil then
-        backButton:SetVisible(false)
-
         local countries = {}
         for country, _ in pairs(Config.RadioStations) do
             local translatedCountry = formatCountryName(country)
@@ -157,7 +159,7 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
             countryButton.DoClick = function()
                 surface.PlaySound("buttons/button3.wav")
                 selectedCountry = country.original
-                backButton:SetVisible(true)
+                if backButton then backButton:SetVisible(true) end
                 populateList(stationListPanel, backButton, searchBox, true)
             end
         end
@@ -173,7 +175,7 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                 stationButton:SetTextColor(Config.UI.TextColor)
 
                 local currentlyPlayingStations = {}
-                
+
                 stationButton.Paint = function(self, w, h)
                     if station == currentlyPlayingStations[LocalPlayer().currentRadioEntity] then
                         draw.RoundedBox(8, 0, 0, w, h, Config.UI.PlayingButtonColor)
@@ -184,23 +186,23 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                         end
                     end
                 end
-                
+
                 stationButton.DoClick = function()
                     surface.PlaySound("buttons/button17.wav")
                     local entity = LocalPlayer().currentRadioEntity
-                
+
                     if not IsValid(entity) then
                         print("No valid entity for PlayCarRadioStation")
                         return
                     end
-                
+
                     -- Stop the currently playing station for this entity
                     if currentlyPlayingStations[entity] then
                         net.Start("StopCarRadioStation")
                         net.WriteEntity(entity)
                         net.SendToServer()
                     end
-                
+
                     -- Start the new station, sending both the name and URL
                     net.Start("PlayCarRadioStation")
                     net.WriteEntity(entity)
@@ -208,12 +210,11 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                     net.WriteString(station.url)   -- Send the station URL
                     net.WriteFloat(entityVolumes[entity] or Config.Volume)
                     net.SendToServer()
-                
+
                     -- Update the currently playing station for this entity
                     currentlyPlayingStations[entity] = station
                     populateList(stationListPanel, backButton, searchBox, false)
                 end
-                
             end
         end
     end
@@ -328,7 +329,7 @@ local function openRadioMenu()
             currentlyPlayingStation = nil
             populateList(stationListPanel, backButton, searchBox, false)
         end
-    end
+    end    
     
     local backButton = vgui.Create("DButton", frame)
     backButton:SetSize(Scale(30), Scale(30))
