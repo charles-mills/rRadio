@@ -2,26 +2,34 @@ name: Get Stations
 
 on:
   schedule:
-    - cron: '0 0 * * *'  # This runs the script daily at midnight (UTC)
-
+    - cron: '0 */12 * * *'  # Runs every 12 hours (at 00:00 and 12:00 UTC)
 jobs:
-  run-script:
+  update_stations:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
+    - name: Checkout code
+      uses: actions/checkout@v2
 
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v2
       with:
-        python-version: '3.9'  # Specify the Python version you want to use
+        python-version: '3.x'
 
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install aiohttp requests tqdm configparser
+        pip install aiohttp tqdm configparser
 
-    - name: Run Python script
+    - name: Run the station manager script
+      run: python helpers/radio_station_manager.py --fetch --verify --count
+
+    - name: Commit changes
       run: |
-        python path/to/your_script.py
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git add README.md
+        git commit -m "Update README.md with latest station count"
+        git push
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
