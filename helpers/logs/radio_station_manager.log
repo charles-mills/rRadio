@@ -856,3 +856,383 @@
 2024-08-28 20:19:45,192 - ERROR - Could not reach https://2rphstream.org.au/stream/3/: 0, message='', url='https://2rphstream.org.au/stream/3/'
 2024-08-28 20:19:59,077 - ERROR - Could not reach https://ondemand.rrr.org.au/stream/ws-hq.m3u: Cannot connect to host ondemand.rrr.org.au:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]
 2024-08-28 20:20:07,623 - WARNING - NO RESPONSE: https://27253.live.streamtheworld.com/5KIXAAC.aac responded with status code: 404
+2024-08-28 20:21:08,574 - WARNING - NO RESPONSE: https://wz4liw.scahw.com.au/live/4bbb_128.stream/playlist.m3u8? responded with status code: 403
+2024-08-28 20:21:10,170 - WARNING - NO RESPONSE: http://stream.bbcri.com.au/live responded with status code: 404
+2024-08-28 20:21:13,613 - WARNING - NO RESPONSE: https://wz2liw.scahw.com.au/live/2blenderbeats_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:21:14,295 - WARNING - NO RESPONSE: https://legacy.scahw.com.au/2buddha_32 responded with status code: 403
+2024-08-28 20:21:24,679 - WARNING - NO RESPONSE: http://coles.streaming.novaentertainment.com.au/nsw_act responded with status code: 404
+2024-08-28 20:21:27,285 - WARNING - NO RESPONSE: https://wz2liw.scahw.com.au/live/2dance_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:21:27,792 - WARNING - NO RESPONSE: http://198.143.144.226:8403/live responded with status code: 404
+2024-08-28 20:21:30,085 - WARNING - NO RESPONSE: https://wz2liw.scahw.com.au/live/2easy_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:21:35,159 - WARNING - NO RESPONSE: https://legacy.scahw.com.au/3fox_128 responded with status code: 403
+2024-08-28 20:21:43,165 - WARNING - NO RESPONSE: https://wz7liw.scahw.com.au/live/7goodvibes_128.stream/playlist.m3u8? responded with status code: 403
+2024-08-28 20:21:48,230 - WARNING - NO RESPONSE: https://wz4liw.scahw.com.au/live/4mky_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:21:48,231 - WARNING - NO RESPONSE: https://wz4liw.scahw.com.au/live/4cee_128.stream/playlist.m3u8?listeningSessionID=638606f8054f91d9_1333854_7lWU9m5A_MTAuNzAuMS4xOA!!_00000002Iz1&downloadSessionID=0&dist=listnr-web&aw_0_1st.playerId=LiSTNR_Web_native&cb=1e9fa6d0-7c0a-11ed-83ac-73171c862f0d responded with status code: 403
+2024-08-28 20:21:48,695 - WARNING - NO RESPONSE: https://wz4liw.scahw.com.au/live/4ram_128.stream/playlist.m3u8? responded with status code: 403
+2024-08-28 20:21:49,098 - WARNING - NO RESPONSE: https://wz4liw.scahw.com.au/live/4rok_128.stream/playlist.m3u8? responded with status code: 403
+2024-08-28 20:21:49,934 - WARNING - NO RESPONSE: https://wz4liw.scahw.com.au/live/4rgd_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:21:50,002 - WARNING - NO RESPONSE: https://wz6liw.scahw.com.au/live/6red_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:21:50,296 - WARNING - NO RESPONSE: https://wz4liw.scahw.com.au/live/4rok_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:21:50,476 - WARNING - NO RESPONSE: https://wz6liw.scahw.com.au/live/6nam_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:21:50,595 - WARNING - NO RESPONSE: https://wz2liw.scahw.com.au/live/2wzd_128.stream/playlist.m3u8? responded with status code: 403
+2024-08-28 20:21:50,871 - WARNING - NO RESPONSE: https://wz6liw.scahw.com.au/live/6fms_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:21:51,238 - WARNING - NO RESPONSE: https://wz7liw.scahw.com.au/live/7ttt_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:21:51,256 - WARNING - NO RESPONSE: https://wz6liw.scahw.com.au/live/6hedb_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:21:51,571 - WARNING - NO RESPONSE: https://wz3liw.scahw.com.au/live/3sun_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:21:51,888 - WARNING - NO RESPONSE: https://wz2liw.scahw.com.au/live/2cfm_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:21:51,890 - WARNING - NO RESPONSE: https://wz4liw.scahw.com.au/live/4cee_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:21:51,952 - WARNING - NO RESPONSE: https://wz6liw.scahw.com.au/live/6bun_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:21:52,294 - WARNING - NO RESPONSE: https://wz4liw.scahw.com.au/live/4mic_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:21:52,295 - WARNING - NO RESPONSE: https://wz4liw.scahw.com.au/live/4ram_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:21:52,458 - WARNING - NO RESPONSE: https://wz6liw.scahw.com.au/live/6sea_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:21:53,266 - WARNING - NO RESPONSE: https://wz2liw.scahw.com.au/live/2rox_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:21:53,408 - WARNING - NO RESPONSE: https://wz4liw.scahw.com.au/live/4hot_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:21:53,749 - WARNING - NO RESPONSE: https://wz2liw.scahw.com.au/live/2aay_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:21:53,886 - WARNING - NO RESPONSE: https://wz2liw.scahw.com.au/live/2csf_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:21:54,053 - WARNING - NO RESPONSE: https://wz6liw.scahw.com.au/live/6hed_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:21:54,291 - WARNING - NO RESPONSE: https://wz2liw.scahw.com.au/live/2wzd_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:21:54,455 - WARNING - NO RESPONSE: https://wz3liw.scahw.com.au/live/3bdg_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:21:54,689 - WARNING - NO RESPONSE: https://wz4liw.scahw.com.au/live/4hit_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:21:54,826 - WARNING - NO RESPONSE: https://wz6liw.scahw.com.au/live/6ggg_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:21:54,845 - WARNING - NO RESPONSE: https://wz2liw.scahw.com.au/live/2gzf_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:21:54,846 - WARNING - NO RESPONSE: https://wz2liw.scahw.com.au/live/2xxx_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:21:54,862 - WARNING - NO RESPONSE: https://wz6liw.scahw.com.au/live/6aay_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:21:55,229 - WARNING - NO RESPONSE: https://wz6liw.scahw.com.au/live/6car_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:21:55,256 - WARNING - NO RESPONSE: https://wz3liw.scahw.com.au/live/3mda_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:21:55,323 - WARNING - NO RESPONSE: https://wz2liw.scahw.com.au/live/2rgf_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:21:55,487 - WARNING - NO RESPONSE: https://wz4liw.scahw.com.au/live/4amm_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:21:56,209 - WARNING - NO RESPONSE: https://wz6liw.scahw.com.au/live/6kar_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:22:02,417 - WARNING - NO RESPONSE: https://wz7liw.scahw.com.au/live/7indieandalternative_128.stream/playlist.m3u8? responded with status code: 403
+2024-08-28 20:22:02,578 - ERROR - Could not reach http://www.islam2day.tv:4000/: 0, message='', url='http://www.islam2day.tv:4000/'
+2024-08-28 20:22:14,399 - WARNING - NO RESPONSE: https://wz7liw.scahw.com.au/live/72010s_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:22:14,804 - WARNING - NO RESPONSE: https://wz7liw.scahw.com.au/live/790ssoftpop_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:22:15,204 - WARNING - NO RESPONSE: https://wz7liw.scahw.com.au/live/7mushroom50_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:22:15,790 - WARNING - NO RESPONSE: https://wz7liw.scahw.com.au/live/770shits_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:22:15,917 - WARNING - NO RESPONSE: https://wz7liw.scahw.com.au/live/780snewwave_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:22:15,928 - WARNING - NO RESPONSE: https://wz0liw.scahw.com.au/live/aussiedance_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:22:16,266 - WARNING - NO RESPONSE: https://wz7liw.scahw.com.au/live/7chillpophits_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:22:16,402 - WARNING - NO RESPONSE: https://wz7liw.scahw.com.au/live/7croonersandswooners_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:22:16,406 - WARNING - NO RESPONSE: https://wz7liw.scahw.com.au/live/7coverme_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:22:16,809 - WARNING - NO RESPONSE: https://wz7liw.scahw.com.au/live/7easy_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:22:16,812 - WARNING - NO RESPONSE: https://wz0liw.scahw.com.au/live/drumnbass_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:22:16,817 - WARNING - NO RESPONSE: https://wz2liw.scahw.com.au/live/2buddha_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:22:16,888 - WARNING - NO RESPONSE: https://wz2liw.scahw.com.au/live/760shits_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:22:17,202 - WARNING - NO RESPONSE: https://wz7liw.scahw.com.au/live/7girlpower_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:22:17,204 - WARNING - NO RESPONSE: https://wz7liw.scahw.com.au/live/7fithits_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:22:17,468 - WARNING - NO RESPONSE: https://wz7liw.scahw.com.au/live/7goodvibes_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:22:17,609 - WARNING - NO RESPONSE: https://wz7liw.scahw.com.au/live/7heartbreaker_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:22:17,763 - WARNING - NO RESPONSE: https://wz2liw.scahw.com.au/live/2hardnheavy_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:22:17,862 - WARNING - NO RESPONSE: https://wz7liw.scahw.com.au/live/7homegrown_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:22:18,001 - WARNING - NO RESPONSE: https://wz7liw.scahw.com.au/live/7indieandalternative_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:22:18,080 - WARNING - NO RESPONSE: https://wz0liw.scahw.com.au/live/festivalbangers_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:22:18,263 - WARNING - NO RESPONSE: https://wz7liw.scahw.com.au/live/7karaokestage_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:22:18,402 - WARNING - NO RESPONSE: https://wz7liw.scahw.com.au/live/7firstnations_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:22:18,404 - WARNING - NO RESPONSE: https://wz7liw.scahw.com.au/live/7noughties_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:22:18,565 - WARNING - NO RESPONSE: https://wz0liw.scahw.com.au/live/party_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:22:18,579 - WARNING - NO RESPONSE: https://wz7liw.scahw.com.au/live/7guiltypleasures_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:22:18,661 - WARNING - NO RESPONSE: https://wz7liw.scahw.com.au/live/7rocknroadtrip_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:22:18,804 - WARNING - NO RESPONSE: https://wz7liw.scahw.com.au/live/7stressfree_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:22:18,806 - WARNING - NO RESPONSE: https://wz7liw.scahw.com.au/live/7santa_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:22:19,069 - WARNING - NO RESPONSE: https://wz7liw.scahw.com.au/live/7yachtrock_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:22:19,072 - WARNING - NO RESPONSE: https://wz7liw.scahw.com.au/live/7trendingnow_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:22:20,039 - WARNING - NO RESPONSE: https://wz7liw.scahw.com.au/live/7top30_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:22:22,701 - ERROR - Could not reach https://syd02.sdn.dhcmedia.com.au/radio/8010/magic876: Cannot connect to host syd02.sdn.dhcmedia.com.au:443 ssl:True [SSLCertVerificationError: (1, "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: Hostname mismatch, certificate is not valid for 'syd02.sdn.dhcmedia.com.au'. (_ssl.c:1000)")]
+2024-08-28 20:22:27,371 - WARNING - NO RESPONSE: https://wz6liw.scahw.com.au/live/6mix_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:22:42,409 - WARNING - NO RESPONSE: http://wz2liw.scahw.com.au/live/2easy_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:22:43,263 - WARNING - NO RESPONSE: https://wz2liw.scahw.com.au/live/2oldskool_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:23:03,412 - ERROR - Could not reach https://streaming.rimfm.org/rimfmlive.mp3: Cannot connect to host streaming.rimfm.org:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]
+2024-08-28 20:23:05,729 - WARNING - NO RESPONSE: https://wz2liw.scahw.com.au/live/2rnbfridays_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:23:07,362 - ERROR - Could not reach https://www.liveradio.es/https://streamer5.rightclickitservices.com:19800/stream: 
+2024-08-28 20:23:09,644 - WARNING - NO RESPONSE: https://wz5liw.scahw.com.au/live/5sef_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:23:12,928 - WARNING - NO RESPONSE: https://wz4liw.scahw.com.au/live/4sea_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:23:27,159 - ERROR - Could not reach http://s34.myradiostream.com/5066/listen.mp3?0.8989059480158139: 0, message='', url='http://s34.myradiostream.com:5066/;listen.mp3'
+2024-08-28 20:23:28,959 - ERROR - Could not reach https://stationplaylist.com:7084/listen.mp3?hash=1690215763713.mp3: Cannot connect to host stationplaylist.com:7084 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]
+2024-08-28 20:23:33,852 - WARNING - NO RESPONSE: https://23033.live.streamtheworld.com/T_RAD_70S_S01AAC.aac responded with status code: 503
+2024-08-28 20:23:34,066 - WARNING - NO RESPONSE: https://23033.live.streamtheworld.com/T_RAD_90S_S01AAC.aac responded with status code: 503
+2024-08-28 20:23:45,250 - WARNING - NO RESPONSE: http://legacy.scahw.com.au/290s_32 responded with status code: 403
+2024-08-28 20:23:45,251 - WARNING - NO RESPONSE: http://legacy.scahw.com.au/280s_32 responded with status code: 403
+2024-08-28 20:23:45,930 - WARNING - NO RESPONSE: https://wz2liw.scahw.com.au/live/22000s_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:23:46,519 - WARNING - NO RESPONSE: https://legacy.scahw.com.au/5mmm_32 responded with status code: 403
+2024-08-28 20:23:46,625 - WARNING - NO RESPONSE: https://wz4liw.scahw.com.au/live/4mmm_128.stream/playlist.m3u8?dist=listnr-web&aw_0_1st.playerId=LiSTNR_Web_native&cb=641bc940-6513-11ed-b730-9fc45eec0ec1 responded with status code: 403
+2024-08-28 20:23:46,658 - WARNING - NO RESPONSE: https://wz4liw.scahw.com.au/live/4rgb_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:23:46,661 - WARNING - NO RESPONSE: https://wz2liw.scahw.com.au/live/2classicrock_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:23:47,202 - WARNING - NO RESPONSE: https://wz2liw.scahw.com.au/live/2kko_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:23:47,248 - WARNING - NO RESPONSE: http://legacy.scahw.com.au/2mmm_128 responded with status code: 403
+2024-08-28 20:23:47,545 - WARNING - NO RESPONSE: https://wz4liw.scahw.com.au/live/4mbb_128.stream/playlist.m3u8?listeningSessionID=638606f8054f91d9_1332470_ClkSurzq_MTAuNzAuMS4xOA!!_00000002Ig9&downloadSessionID=0&dist=listnr-web&aw_0_1st.playerId=LiSTNR_Web_native&cb=b864b890-7c06-11ed-858b-43d1749a55ef&aw_0_1st.playerId=LiSTNR_Web_native&cb=e5f39fb0-7c06-11ed-858b-43d1749a55ef responded with status code: 403
+2024-08-28 20:23:47,587 - ERROR - Could not reach https://ondemand.rrr.org.au/getstream?id=web1: Cannot connect to host ondemand.rrr.org.au:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]
+2024-08-28 20:23:47,888 - ERROR - Could not reach https://ondemand.rrr.org.au/getstream?id=wshq: Cannot connect to host ondemand.rrr.org.au:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]
+2024-08-28 20:23:48,007 - WARNING - NO RESPONSE: https://wz6liw.scahw.com.au/live/6ppm_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:23:48,210 - WARNING - NO RESPONSE: https://wz3drp.scahw.com.au/live/3mmm_32.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:23:48,829 - WARNING - NO RESPONSE: https://wz4liw.scahw.com.au/live/4too_128.stream/playlist.m3u8 responded with status code: 403
+2024-08-28 20:23:52,679 - ERROR - Could not reach https://streams3.vision.org.au/vision128.mp3?_=1: Cannot connect to host streams3.vision.org.au:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1000)')]
+2024-08-28 20:23:52,921 - ERROR - Could not reach https://streams2.vision.org.au/vision128.mp3: Cannot connect to host streams2.vision.org.au:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1000)')]
+2024-08-28 20:23:57,196 - WARNING - NO RESPONSE: https://stream2.cnmns.net/wayfm-mp3 responded with status code: 404
+2024-08-28 20:23:59,696 - WARNING - NO RESPONSE: http://d.liveatc.net/ybtl1_app responded with status code: 404
+2024-08-28 20:24:00,079 - WARNING - NO RESPONSE: http://d.liveatc.net/ybtl1_atis responded with status code: 404
+2024-08-28 20:24:03,308 - INFO - 1132 responsive stations found in rml-radio/lua/radio/stations\australia.lua
+2024-08-28 20:24:03,311 - INFO - Updated rml-radio/lua/radio/stations\australia.lua with responsive stations only.
+2024-08-28 20:24:03,311 - INFO - Verifying stations in rml-radio/lua/radio/stations\austria.lua
+2024-08-28 20:24:08,841 - ERROR - Could not reach https://s2.stationplaylist.com:9470/listen.aac: Cannot connect to host s2.stationplaylist.com:9470 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]
+2024-08-28 20:24:08,908 - WARNING - NO RESPONSE: http://cdn.nrjaudio.fm/adwz1/at/36001/mp3_128.mp3 responded with status code: 403
+2024-08-28 20:24:09,035 - WARNING - NO RESPONSE: https://scdn.nrjaudio.fm/adwz1/at/36001/mp3_128.mp3 responded with status code: 403
+2024-08-28 20:24:10,582 - WARNING - NO RESPONSE: https://radio.her.st/listen/listen/128.mp3 responded with status code: 502
+2024-08-28 20:24:14,418 - ERROR - Could not reach http://host6.cartwall.at:7200/;stream.nsv: 0, message='', url='http://host6.cartwall.at:7200/;stream.nsv'
+2024-08-28 20:24:14,993 - ERROR - Could not reach https://museum.streamserver24.com:8080/stream: Cannot connect to host museum.streamserver24.com:8080 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]
+2024-08-28 20:24:15,024 - WARNING - NO RESPONSE: https://scdn.nrjaudio.fm/adwz1/at/58914/mp3_128.mp3 responded with status code: 403
+2024-08-28 20:24:20,141 - ERROR - Could not reach http://host6.cartwall.at:9630/: 0, message='', url='http://host6.cartwall.at:9630/'
+2024-08-28 20:24:24,349 - ERROR - Could not reach http://audio.gendercriminals.gay/listen/lo-fi_halloween_and_chill/radio-browser: 
+2024-08-28 20:24:24,602 - WARNING - NO RESPONSE: http://styrialounge.out.airtime.pro:8000/styrialounge_a responded with status code: 401
+2024-08-28 20:24:34,372 - ERROR - Could not reach http://audio.gendercriminals.gay/listen/splatoon_station_seven/radio-browser: 
+2024-08-28 20:24:34,372 - INFO - 252 responsive stations found in rml-radio/lua/radio/stations\austria.lua
+2024-08-28 20:24:34,373 - INFO - Updated rml-radio/lua/radio/stations\austria.lua with responsive stations only.
+2024-08-28 20:24:34,374 - INFO - Verifying stations in rml-radio/lua/radio/stations\azerbaijan.lua
+2024-08-28 20:24:35,902 - INFO - 19 responsive stations found in rml-radio/lua/radio/stations\azerbaijan.lua
+2024-08-28 20:24:35,903 - INFO - Updated rml-radio/lua/radio/stations\azerbaijan.lua with responsive stations only.
+2024-08-28 20:24:35,903 - INFO - Verifying stations in rml-radio/lua/radio/stations\bahrain.lua
+2024-08-28 20:24:36,622 - WARNING - NO RESPONSE: https://5c7b683162943.streamlock.net/live/ngrp:radio-96-5_all/playlist.m3u8 responded with status code: 404
+2024-08-28 20:24:37,872 - INFO - 15 responsive stations found in rml-radio/lua/radio/stations\bahrain.lua
+2024-08-28 20:24:37,873 - INFO - Updated rml-radio/lua/radio/stations\bahrain.lua with responsive stations only.
+2024-08-28 20:24:37,873 - INFO - Verifying stations in rml-radio/lua/radio/stations\bangladesh.lua
+2024-08-28 20:24:40,043 - INFO - 10 responsive stations found in rml-radio/lua/radio/stations\bangladesh.lua
+2024-08-28 20:24:40,043 - INFO - Updated rml-radio/lua/radio/stations\bangladesh.lua with responsive stations only.
+2024-08-28 20:24:40,043 - INFO - Verifying stations in rml-radio/lua/radio/stations\barbados.lua
+2024-08-28 20:24:41,622 - INFO - 10 responsive stations found in rml-radio/lua/radio/stations\barbados.lua
+2024-08-28 20:24:41,623 - INFO - Updated rml-radio/lua/radio/stations\barbados.lua with responsive stations only.
+2024-08-28 20:24:41,624 - INFO - Verifying stations in rml-radio/lua/radio/stations\belarus.lua
+2024-08-28 20:24:41,814 - ERROR - Could not reach https://kathy.torontocast.com:3375/stream: Cannot connect to host kathy.torontocast.com:3375 ssl:default [[SSL: SSLV3_ALERT_HANDSHAKE_FAILURE] sslv3 alert handshake failure (_ssl.c:1000)]
+2024-08-28 20:24:44,288 - ERROR - Could not reach https://radio.vaticannews.va/stream-be: Cannot connect to host radio.vaticannews.va:443 ssl:default [[SSL: SSLV3_ALERT_HANDSHAKE_FAILURE] sslv3 alert handshake failure (_ssl.c:1000)]
+2024-08-28 20:24:46,676 - ERROR - Could not reach https://server.radiorm.by:8443/live: Cannot connect to host server.radiorm.by:8443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]
+2024-08-28 20:24:47,678 - INFO - 58 responsive stations found in rml-radio/lua/radio/stations\belarus.lua
+2024-08-28 20:24:47,679 - INFO - Updated rml-radio/lua/radio/stations\belarus.lua with responsive stations only.
+2024-08-28 20:24:47,679 - INFO - Verifying stations in rml-radio/lua/radio/stations\belgium.lua
+2024-08-28 20:24:48,611 - ERROR - Could not reach https://streaming.antipode.be/antipode.mp3: Cannot connect to host streaming.antipode.be:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1000)')]
+2024-08-28 20:24:49,174 - ERROR - Could not reach http://stream03.level27.be/;stream.mp3: 0, message='', url='http://stream03.level27.be/;stream.mp3'
+2024-08-28 20:24:50,527 - ERROR - Could not reach https://server3.radio-streams.net:18010/stream: Cannot connect to host server3.radio-streams.net:18010 ssl:default [[SSL: SSLV3_ALERT_HANDSHAKE_FAILURE] sslv3 alert handshake failure (_ssl.c:1000)]
+2024-08-28 20:24:53,986 - ERROR - Could not reach https://jouwradio.live-streams.nl/: Cannot connect to host jouwradio.live-streams.nl:443 ssl:default [[SSL: SSLV3_ALERT_HANDSHAKE_FAILURE] sslv3 alert handshake failure (_ssl.c:1000)]
+2024-08-28 20:24:54,684 - ERROR - Could not reach http://eu1.reliastream.com:8033/;: 0, message='', url='http://eu1.reliastream.com:8033/;'
+2024-08-28 20:24:54,898 - ERROR - Could not reach http://streams.servicehosting.be:3730/;: 0, message='', url='http://streams.servicehosting.be:3730/;'
+2024-08-28 20:24:55,270 - ERROR - Could not reach https://server2.inetcast.nl:2275/stream: Cannot connect to host server2.inetcast.nl:2275 ssl:default [[SSL: SSLV3_ALERT_HANDSHAKE_FAILURE] sslv3 alert handshake failure (_ssl.c:1000)]
+2024-08-28 20:24:58,037 - WARNING - NO RESPONSE: https://22673.live.streamtheworld.com/NOSTALGIEWHATAFEELING.mp3 responded with status code: 503
+2024-08-28 20:24:59,088 - WARNING - NO RESPONSE: https://22673.live.streamtheworld.com/NOSTALGIEWAF6070.mp3 responded with status code: 503
+2024-08-28 20:24:59,388 - WARNING - NO RESPONSE: http://cdn.nrjaudio.fm/adwz1/be/34017/mp3_128.mp3 responded with status code: 403
+2024-08-28 20:25:00,997 - WARNING - NO RESPONSE: https://www.clubfmserver.be/pink.mp3 responded with status code: 404
+2024-08-28 20:25:01,100 - ERROR - Could not reach https://stream4.audiostreamen.nl/radiopros: Cannot connect to host stream4.audiostreamen.nl:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1000)')]
+2024-08-28 20:25:01,225 - ERROR - Could not reach https://psylo.ddns.net/radio/PGS4: Cannot connect to host psylo.ddns.net:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1000)')]
+2024-08-28 20:25:03,315 - ERROR - Could not reach https://www.radiocampus.be/stream/stream.aacplus.m3u: Cannot connect to host www.radiocampus.be:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1000)')]
+2024-08-28 20:25:03,361 - ERROR - Could not reach https://www.radiocampus.be/stream/stream.aacplus: Cannot connect to host www.radiocampus.be:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1000)')]
+2024-08-28 20:25:03,386 - ERROR - Could not reach https://www.radiocampus.be/stream/stream_hi.ogg: Cannot connect to host www.radiocampus.be:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1000)')]
+2024-08-28 20:25:03,858 - ERROR - Could not reach http://listen.shoutcast.com/radioeurodanceclassic: http:///quincy.torontocast.com:2380/stream - Invalid redirect URL origin
+2024-08-28 20:25:06,424 - ERROR - Could not reach https://live.roa.be:8000/roa1062fm-128.mp3: Cannot connect to host live.roa.be:8000 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1000)')]
+2024-08-28 20:25:08,932 - WARNING - NO RESPONSE: https://22673.live.streamtheworld.com/OWR_DAB.mp3 responded with status code: 503
+2024-08-28 20:25:11,505 - WARNING - NO RESPONSE: https://22733.live.streamtheworld.com/TOPSPINNINGAAC.aac responded with status code: 503
+2024-08-28 20:25:12,250 - WARNING - NO RESPONSE: http://27993.live.streamtheworld.com/TOPVERSUZ.mp3 responded with status code: 503
+2024-08-28 20:25:15,357 - ERROR - Could not reach http://stream2.radiostad.org:8344/: 
+2024-08-28 20:25:15,530 - INFO - 286 responsive stations found in rml-radio/lua/radio/stations\belgium.lua
+2024-08-28 20:25:15,531 - INFO - Updated rml-radio/lua/radio/stations\belgium.lua with responsive stations only.
+2024-08-28 20:25:15,531 - INFO - Verifying stations in rml-radio/lua/radio/stations\belize.lua
+2024-08-28 20:25:15,796 - ERROR - Could not reach https://s1.voscast.com:10243/lovefm: Cannot connect to host s1.voscast.com:10243 ssl:default [[SSL: SSLV3_ALERT_HANDSHAKE_FAILURE] sslv3 alert handshake failure (_ssl.c:1000)]
+2024-08-28 20:25:15,796 - ERROR - Could not reach https://s1.voscast.com:10379/ealive: Cannot connect to host s1.voscast.com:10379 ssl:default [[SSL: SSLV3_ALERT_HANDSHAKE_FAILURE] sslv3 alert handshake failure (_ssl.c:1000)]
+2024-08-28 20:25:16,685 - INFO - 3 responsive stations found in rml-radio/lua/radio/stations\belize.lua
+2024-08-28 20:25:16,685 - INFO - Updated rml-radio/lua/radio/stations\belize.lua with responsive stations only.
+2024-08-28 20:25:16,685 - INFO - Verifying stations in rml-radio/lua/radio/stations\benin.lua
+2024-08-28 20:25:19,168 - INFO - 6 responsive stations found in rml-radio/lua/radio/stations\benin.lua
+2024-08-28 20:25:19,168 - INFO - Updated rml-radio/lua/radio/stations\benin.lua with responsive stations only.
+2024-08-28 20:25:19,168 - INFO - Verifying stations in rml-radio/lua/radio/stations\bermuda.lua
+2024-08-28 20:25:20,100 - INFO - 8 responsive stations found in rml-radio/lua/radio/stations\bermuda.lua
+2024-08-28 20:25:20,100 - INFO - Updated rml-radio/lua/radio/stations\bermuda.lua with responsive stations only.
+2024-08-28 20:25:20,100 - INFO - Verifying stations in rml-radio/lua/radio/stations\bolivarian_republic_of_venezuela.lua
+2024-08-28 20:25:20,890 - WARNING - NO RESPONSE: https://stream.zeno.fm/t31pbasum7zuv responded with status code: 503
+2024-08-28 20:25:22,100 - WARNING - NO RESPONSE: http://streamingned.com:7286/; responded with status code: 401
+2024-08-28 20:25:24,557 - ERROR - Could not reach https://cp2.lorini.net:41036/CarismahFM: Cannot connect to host cp2.lorini.net:41036 ssl:True [SSLCertVerificationError: (1, "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: Hostname mismatch, certificate is not valid for 'cp2.lorini.net'. (_ssl.c:1000)")]
+2024-08-28 20:25:27,486 - ERROR - Could not reach https://sc10.conectarhosting.com/proxy/djcarlo1?mp=/stream: Cannot connect to host sc10.conectarhosting.com:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]
+2024-08-28 20:25:28,221 - WARNING - NO RESPONSE: https://laradiossl.online:10583/;?_=2#.mp3 responded with status code: 401
+2024-08-28 20:25:30,594 - WARNING - NO RESPONSE: https://laradiossl.online:10175/;?_=1#.mp3 responded with status code: 401
+2024-08-28 20:25:44,370 - ERROR - Could not reach https://stream-150.zeno.fm/9v1hr7ekzk8uv?zs=OUXqin1ySEe0qxB9jq6byQ: 
+2024-08-28 20:25:44,370 - INFO - 110 responsive stations found in rml-radio/lua/radio/stations\bolivarian_republic_of_venezuela.lua
+2024-08-28 20:25:44,371 - INFO - Updated rml-radio/lua/radio/stations\bolivarian_republic_of_venezuela.lua with responsive stations only.
+2024-08-28 20:25:44,371 - INFO - Verifying stations in rml-radio/lua/radio/stations\bolivia.lua
+2024-08-28 20:25:45,280 - ERROR - Could not reach http://sc10.conectarhosting.com/proxy/derribadorradio/;: 0, message='', url='http://sc10.conectarhosting.com/proxy/derribadorradio/;'
+2024-08-28 20:25:46,429 - WARNING - NO RESPONSE: https://playerservices.streamtheworld.com/api/livestream-redirect/XHPSFMAAC.aac responded with status code: 503
+2024-08-28 20:25:47,184 - ERROR - Could not reach https://cdn.boliviaplay.com.bo:9005/stream: Cannot connect to host cdn.boliviaplay.com.bo:9005 ssl:default [[SSL: SSLV3_ALERT_HANDSHAKE_FAILURE] sslv3 alert handshake failure (_ssl.c:1000)]
+2024-08-28 20:25:53,406 - ERROR - Could not reach https://213.199.42.66:8000/zoymilton.mp3: Cannot connect to host 213.199.42.66:8000 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate (_ssl.c:1000)')]
+2024-08-28 20:25:57,463 - INFO - 66 responsive stations found in rml-radio/lua/radio/stations\bolivia.lua
+2024-08-28 20:25:57,463 - INFO - Updated rml-radio/lua/radio/stations\bolivia.lua with responsive stations only.
+2024-08-28 20:25:57,463 - INFO - Verifying stations in rml-radio/lua/radio/stations\bonaire.lua
+2024-08-28 20:25:57,661 - ERROR - Could not reach http://79.120.39.202:9111/: 0, message='', url='http://79.120.39.202:9111/'
+2024-08-28 20:25:58,979 - INFO - 9 responsive stations found in rml-radio/lua/radio/stations\bonaire.lua
+2024-08-28 20:25:58,979 - INFO - Updated rml-radio/lua/radio/stations\bonaire.lua with responsive stations only.
+2024-08-28 20:25:58,979 - INFO - Verifying stations in rml-radio/lua/radio/stations\bosnia_and_herzegovina.lua
+2024-08-28 20:25:59,267 - ERROR - Could not reach http://51.254.61.148:8222/: 0, message='', url='http://51.254.61.148:8222/'
+2024-08-28 20:26:00,145 - ERROR - Could not reach http://51.254.61.148:8152/;autostart=1: 0, message='', url='http://51.254.61.148:8152/;autostart=1'
+2024-08-28 20:26:00,445 - ERROR - Could not reach http://cast2.name.ba:8067/: 0, message='', url='http://cast2.name.ba:8067/'
+2024-08-28 20:26:00,672 - ERROR - Could not reach http://cast2.name.ba:8101/: 0, message='', url='http://cast2.name.ba:8101/'
+2024-08-28 20:26:01,281 - ERROR - Could not reach http://s37.myradiostream.com:8120/: 0, message='', url='http://s37.myradiostream.com:8120/'
+2024-08-28 20:26:02,590 - ERROR - Could not reach http://195.222.33.217:8095/: 0, message='', url='http://195.222.33.217:8095/'
+2024-08-28 20:26:02,957 - ERROR - Could not reach http://cast2.name.ba:9054/: 0, message='', url='http://cast2.name.ba:9054/'
+2024-08-28 20:26:03,071 - ERROR - Could not reach http://185.50.56.3/;stream.nsv: 0, message='', url='http://185.50.56.3/;stream.nsv'
+2024-08-28 20:26:03,377 - WARNING - NO RESPONSE: https://s8.iqstreaming.com:8034/stream responded with status code: 404
+2024-08-28 20:26:03,494 - ERROR - Could not reach http://195.222.33.217:8093/;: 0, message='', url='http://195.222.33.217:8093/;'
+2024-08-28 20:26:03,558 - ERROR - Could not reach http://195.222.33.217:8022/: 0, message='', url='http://195.222.33.217:8022/'
+2024-08-28 20:26:04,051 - ERROR - Could not reach http://162.241.132.173:10002/Radio_BA.m3u: Cannot connect to host 162.241.132.173:10002 ssl:default [The remote computer refused the network connection]
+2024-08-28 20:26:04,182 - ERROR - Could not reach http://188.40.62.20:8024/: 0, message='', url='http://188.40.62.20:8024/'
+2024-08-28 20:26:04,481 - ERROR - Could not reach http://s37.myradiostream.com:8120/;stream.mp3: 0, message='', url='http://s37.myradiostream.com:8120/;stream.mp3'
+2024-08-28 20:26:04,790 - ERROR - Could not reach http://109.169.15.21:4441/: 0, message='', url='http://109.169.15.21:4441/'
+2024-08-28 20:26:05,111 - ERROR - Could not reach http://live.radiosrebrenik.ba:7600/: 0, message='', url='http://live.radiosrebrenik.ba:7600/'
+2024-08-28 20:26:05,217 - ERROR - Could not reach http://radio.studiod.ba:8018/: 0, message='', url='http://radio.studiod.ba:8018/'
+2024-08-28 20:26:06,087 - ERROR - Could not reach http://cast2.name.ba:9049/;: 0, message='', url='http://cast2.name.ba:9049/;'
+2024-08-28 20:26:07,340 - INFO - 113 responsive stations found in rml-radio/lua/radio/stations\bosnia_and_herzegovina.lua
+2024-08-28 20:26:07,341 - INFO - Updated rml-radio/lua/radio/stations\bosnia_and_herzegovina.lua with responsive stations only.
+2024-08-28 20:26:07,341 - INFO - Verifying stations in rml-radio/lua/radio/stations\botswana.lua
+2024-08-28 20:26:07,799 - ERROR - Could not reach http://fmt01.egihosting.com:17721/;: 0, message='', url='http://fmt01.egihosting.com:17721/;'
+2024-08-28 20:26:07,991 - INFO - 2 responsive stations found in rml-radio/lua/radio/stations\botswana.lua
+2024-08-28 20:26:07,991 - INFO - Updated rml-radio/lua/radio/stations\botswana.lua with responsive stations only.
+2024-08-28 20:26:07,992 - INFO - Verifying stations in rml-radio/lua/radio/stations\brazil.lua
+2024-08-28 20:26:10,058 - ERROR - Could not reach https://appradio.app:8010//live: Cannot connect to host appradio.app:8010 ssl:True [SSLCertVerificationError: (1, "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: Hostname mismatch, certificate is not valid for 'appradio.app'. (_ssl.c:1000)")]
+2024-08-28 20:26:11,535 - WARNING - NO RESPONSE: https://www.radios.com.br/play/playlist/31289/listen-radio.asx responded with status code: 403
+2024-08-28 20:26:21,961 - WARNING - NO RESPONSE: https://www.radios.com.br/play/playlist/27268/listen-radio.m3u responded with status code: 403
+2024-08-28 20:26:22,038 - WARNING - NO RESPONSE: https://www.radios.com.br/play/playlist/34140/listen-radio.m3u responded with status code: 403
+2024-08-28 20:26:22,362 - ERROR - Could not reach https://stream02.ouveai.com.br/8072/stream: 
+2024-08-28 20:26:25,431 - ERROR - Could not reach http://shoutcast.virtualbit.com.br:8000/;: 0, message='', url='http://shoutcast.virtualbit.com.br:8000/;'
+2024-08-28 20:26:29,272 - WARNING - NO RESPONSE: https://www.radios.com.br/play/playlist/11171/listen-radio.m3u responded with status code: 403
+2024-08-28 20:26:31,090 - ERROR - Could not reach https://live.ojc.com.br/e9cd_3/myStream.m3u8: Cannot connect to host live.ojc.com.br:443 ssl:default [[SSL: UNSAFE_LEGACY_RENEGOTIATION_DISABLED] unsafe legacy renegotiation disabled (_ssl.c:1000)]
+2024-08-28 20:26:31,437 - WARNING - NO RESPONSE: https://www.radios.com.br/play/playlist/120034/listen-radio.m3u responded with status code: 403
+2024-08-28 20:26:32,026 - WARNING - NO RESPONSE: https://www.radios.com.br/play/playlist/200030/listen-radio.m3u responded with status code: 403
+2024-08-28 20:26:32,421 - WARNING - NO RESPONSE: https://www.radios.com.br/play/playlist/11376/listen-radio.m3u responded with status code: 403
+2024-08-28 20:26:33,214 - ERROR - Could not reach https://radios.digital:8160/stream: Cannot connect to host radios.digital:8160 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1000)')]
+2024-08-28 20:26:33,521 - ERROR - Could not reach https://08.stmip.net:8718/live: Cannot connect to host 08.stmip.net:8718 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]
+2024-08-28 20:26:34,212 - ERROR - Could not reach https://player-centova.ipstm.net/proxy-full.php?ip=centova10.ipstm.net&port=10033&mount=/stream: Cannot connect to host player-centova.ipstm.net:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1000)')]
+2024-08-28 20:26:34,401 - ERROR - Could not reach https://hts05.kshost.com.br:10092/live: Cannot connect to host hts05.kshost.com.br:10092 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]
+2024-08-28 20:26:35,166 - WARNING - NO RESPONSE: https://www.radios.com.br/play/playlist/11968/listen-radio.m3u responded with status code: 403
+2024-08-28 20:26:36,343 - ERROR - Could not reach https://stm47.stmsrv.com:16180/stream: Cannot connect to host stm47.stmsrv.com:16180 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1000)')]
+2024-08-28 20:26:36,415 - ERROR - Could not reach https://01.stmip.net:8096/stream: Cannot connect to host 01.stmip.net:8096 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]
+2024-08-28 20:26:36,492 - WARNING - NO RESPONSE: https://www.radios.com.br/play/playlist/12592/listen-radio.m3u responded with status code: 403
+2024-08-28 20:26:36,760 - ERROR - Could not reach https://hts02.kshost.com.br:8856/live: Cannot connect to host hts02.kshost.com.br:8856 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]
+2024-08-28 20:26:37,049 - ERROR - Could not reach https://discomusicradio.com:8100/;: Cannot connect to host discomusicradio.com:8100 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]
+2024-08-28 20:26:40,535 - WARNING - NO RESPONSE: https://www.radios.com.br/play/playlist/97810/listen-radio.m3u responded with status code: 403
+2024-08-28 20:26:44,914 - WARNING - NO RESPONSE: https://www.radios.com.br/play/playlist/194960/listen-radio.m3u responded with status code: 403
+2024-08-28 20:26:45,260 - ERROR - Could not reach https://hts03.kshost.com.br:13392/live: Cannot connect to host hts03.kshost.com.br:13392 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]
+2024-08-28 20:26:46,332 - WARNING - NO RESPONSE: https://www.radios.com.br/play/playlist/13291/listen-radio.asx responded with status code: 403
+2024-08-28 20:26:47,533 - WARNING - NO RESPONSE: https://www.radios.com.br/play/playlist/8817/listen-radio.m3u responded with status code: 403
+2024-08-28 20:26:53,231 - WARNING - NO RESPONSE: https://www.radios.com.br/play/playlist/13437/listen-radio.m3u responded with status code: 403
+2024-08-28 20:27:00,092 - WARNING - NO RESPONSE: https://27403.live.streamtheworld.com/LIGHTFM_BRAAC.aac responded with status code: 503
+2024-08-28 20:27:14,585 - WARNING - NO RESPONSE: https://www.radios.com.br/play/playlist/79200/listen-radio.m3u responded with status code: 403
+2024-08-28 20:27:22,281 - WARNING - NO RESPONSE: https://www.radios.com.br/play/playlist/49001/listen-radio.m3u responded with status code: 403
+2024-08-28 20:27:22,605 - ERROR - Could not reach https://radios.digital:8000/stream?1718726187769: Cannot connect to host radios.digital:8000 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1000)')]
+2024-08-28 20:27:22,648 - ERROR - Could not reach https://radios.digital:8000/stream?1698356364189: Cannot connect to host radios.digital:8000 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1000)')]
+2024-08-28 20:27:23,268 - ERROR - Could not reach https://cast4.hoost.com.br:20079/stream: Cannot connect to host cast4.hoost.com.br:20079 ssl:default [[SSL: SSLV3_ALERT_HANDSHAKE_FAILURE] sslv3 alert handshake failure (_ssl.c:1000)]
+2024-08-28 20:27:24,558 - ERROR - Could not reach https://hts05.kshost.com.br:9430/live: Cannot connect to host hts05.kshost.com.br:9430 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]
+2024-08-28 20:27:25,486 - ERROR - Could not reach https://hts06.kshost.com.br:9600/live: Cannot connect to host hts06.kshost.com.br:9600 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]
+2024-08-28 20:27:27,354 - WARNING - NO RESPONSE: https://www.radios.com.br/play/playlist/9571/listen-radio.m3u responded with status code: 403
+2024-08-28 20:27:29,555 - WARNING - NO RESPONSE: https://www.radios.com.br/play/playlist/10232/listen-radio.m3u responded with status code: 403
+2024-08-28 20:27:32,125 - WARNING - NO RESPONSE: https://www.radios.com.br/play/playlist/72311/listen-radio.m3u responded with status code: 403
+2024-08-28 20:27:34,673 - ERROR - Could not reach https://hts04.kshost.com.br:10790/live: Cannot connect to host hts04.kshost.com.br:10790 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]
+2024-08-28 20:27:37,100 - ERROR - Could not reach https://hts04.kshost.com.br:13728/stream: Cannot connect to host hts04.kshost.com.br:13728 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]
+2024-08-28 20:27:39,078 - ERROR - Could not reach https://audio01.viaflux.com:10290/live.aac: Cannot connect to host audio01.viaflux.com:10290 ssl:default [[SSL: SSLV3_ALERT_HANDSHAKE_FAILURE] sslv3 alert handshake failure (_ssl.c:1000)]
+2024-08-28 20:27:41,652 - WARNING - NO RESPONSE: https://www.radios.com.br/play/playlist/18263/listen-radio.m3u responded with status code: 403
+2024-08-28 20:27:41,751 - WARNING - NO RESPONSE: https://www.radios.com.br/play/playlist/11886/listen-radio.m3u responded with status code: 403
+2024-08-28 20:27:41,821 - WARNING - NO RESPONSE: https://www.radios.com.br/play/playlist/190913/listen-radio.m3u responded with status code: 403
+2024-08-28 20:27:42,777 - ERROR - Could not reach https://hts04.kshost.com.br:8324/live: Cannot connect to host hts04.kshost.com.br:8324 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]
+2024-08-28 20:27:53,932 - WARNING - NO RESPONSE: https://www.radios.com.br/play/playlist/13319/listen-radio.asx responded with status code: 403
+2024-08-28 20:28:01,832 - WARNING - NO RESPONSE: https://www.radios.com.br/play/playlist/112934/listen-radio.m3u responded with status code: 403
+2024-08-28 20:28:03,557 - WARNING - NO RESPONSE: https://www.radios.com.br/play/playlist/13581/listen-radio.m3u responded with status code: 403
+2024-08-28 20:28:05,110 - WARNING - NO RESPONSE: https://www.radios.com.br/play/playlist/198842/listen-radio.m3u responded with status code: 403
+2024-08-28 20:28:07,966 - ERROR - Could not reach https://cast4.hoost.com.br:20084/stream?type=.flv: Cannot connect to host cast4.hoost.com.br:20084 ssl:default [[SSL: SSLV3_ALERT_HANDSHAKE_FAILURE] sslv3 alert handshake failure (_ssl.c:1000)]
+2024-08-28 20:28:09,433 - ERROR - Could not reach https://hts05.kshost.com.br:11640/stream: Cannot connect to host hts05.kshost.com.br:11640 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]
+2024-08-28 20:28:12,871 - WARNING - NO RESPONSE: https://142722d.ha.azioncdn.net/ebc/radionacionalfm/chunks.m3u8 responded with status code: 404
+2024-08-28 20:28:15,236 - ERROR - Could not reach https://appradio.app:8157/live: Cannot connect to host appradio.app:8157 ssl:True [SSLCertVerificationError: (1, "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: Hostname mismatch, certificate is not valid for 'appradio.app'. (_ssl.c:1000)")]
+2024-08-28 20:28:17,153 - ERROR - Could not reach https://cast4.hoost.com.br:20214/stream: Cannot connect to host cast4.hoost.com.br:20214 ssl:default [[SSL: SSLV3_ALERT_HANDSHAKE_FAILURE] sslv3 alert handshake failure (_ssl.c:1000)]
+2024-08-28 20:28:18,423 - WARNING - NO RESPONSE: https://www.radios.com.br/play/playlist/31354/listen-radio.m3u responded with status code: 403
+2024-08-28 20:28:19,357 - ERROR - Could not reach https://stream02.ouveai.com.br/8034/stream: 
+2024-08-28 20:28:22,743 - WARNING - NO RESPONSE: https://www.radios.com.br/play/playlist/18225/listen-radio.m3u responded with status code: 403
+2024-08-28 20:28:24,908 - WARNING - NO RESPONSE: https://www.radios.com.br/play/playlist/13579/listen-radio.m3u responded with status code: 403
+2024-08-28 20:28:45,643 - WARNING - NO RESPONSE: https://www.radios.com.br/play/playlist/38149/listen-radio.m3u responded with status code: 403
+2024-08-28 20:28:51,739 - WARNING - NO RESPONSE: https://www.radios.com.br/play/playlist/18272/listen-radio.m3u responded with status code: 403
+2024-08-28 20:28:52,034 - ERROR - Could not reach https://hts03.kshost.com.br:10972/live: Cannot connect to host hts03.kshost.com.br:10972 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]
+2024-08-28 20:28:53,364 - ERROR - Could not reach https://stream02.ouveai.com.br/8066/stream: 
+2024-08-28 20:28:57,553 - ERROR - Could not reach https://s01.w3bserver.com:20112/stream: Cannot connect to host s01.w3bserver.com:20112 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]
+2024-08-28 20:28:57,627 - WARNING - NO RESPONSE: https://www.radios.com.br/play/playlist/27208/listen-radio.m3u responded with status code: 403
+2024-08-28 20:29:00,789 - ERROR - Could not reach https://appradio.app:8161//live: Cannot connect to host appradio.app:8161 ssl:True [SSLCertVerificationError: (1, "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: Hostname mismatch, certificate is not valid for 'appradio.app'. (_ssl.c:1000)")]
+2024-08-28 20:29:06,421 - ERROR - Could not reach https://hts06.kshost.com.br:9712/live: Cannot connect to host hts06.kshost.com.br:9712 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]
+2024-08-28 20:29:07,151 - WARNING - NO RESPONSE: https://www.radios.com.br/play/playlist/111451/listen-radio.m3u responded with status code: 403
+2024-08-28 20:29:07,312 - ERROR - Could not reach https://vgradio.sytes.net/listen/vg_radio/radio: Cannot connect to host vgradio.sytes.net:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1000)')]
+2024-08-28 20:29:08,382 - ERROR - Could not reach https://hts05.kshost.com.br:9890/live: Cannot connect to host hts05.kshost.com.br:9890 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]
+2024-08-28 20:29:14,853 - INFO - 978 responsive stations found in rml-radio/lua/radio/stations\brazil.lua
+2024-08-28 20:29:14,854 - INFO - Updated rml-radio/lua/radio/stations\brazil.lua with responsive stations only.
+2024-08-28 20:29:14,854 - INFO - Verifying stations in rml-radio/lua/radio/stations\british_indian_ocean_territory.lua
+2024-08-28 20:29:16,138 - INFO - 5 responsive stations found in rml-radio/lua/radio/stations\british_indian_ocean_territory.lua
+2024-08-28 20:29:16,139 - INFO - Updated rml-radio/lua/radio/stations\british_indian_ocean_territory.lua with responsive stations only.
+2024-08-28 20:29:16,139 - INFO - Verifying stations in rml-radio/lua/radio/stations\british_virgin_islands.lua
+2024-08-28 20:29:16,251 - INFO - 1 responsive stations found in rml-radio/lua/radio/stations\british_virgin_islands.lua
+2024-08-28 20:29:16,251 - INFO - Updated rml-radio/lua/radio/stations\british_virgin_islands.lua with responsive stations only.
+2024-08-28 20:29:16,251 - INFO - Verifying stations in rml-radio/lua/radio/stations\brunei_darussalam.lua
+2024-08-28 20:29:16,395 - ERROR - Could not reach https://play.thestreamtech.com:7038/: Cannot connect to host play.thestreamtech.com:7038 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]
+2024-08-28 20:29:16,395 - ERROR - Could not reach https://play.thestreamtech.com:7038/index.html: Cannot connect to host play.thestreamtech.com:7038 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]
+2024-08-28 20:29:17,312 - INFO - 1 responsive stations found in rml-radio/lua/radio/stations\brunei_darussalam.lua
+2024-08-28 20:29:17,312 - INFO - Updated rml-radio/lua/radio/stations\brunei_darussalam.lua with responsive stations only.
+2024-08-28 20:29:17,313 - INFO - Verifying stations in rml-radio/lua/radio/stations\bulgaria.lua
+2024-08-28 20:29:17,791 - ERROR - Could not reach https://radio.jump.bg:7489/live: Cannot connect to host radio.jump.bg:7489 ssl:True [SSLCertVerificationError: (1, "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: Hostname mismatch, certificate is not valid for 'radio.jump.bg'. (_ssl.c:1000)")]
+2024-08-28 20:29:17,910 - ERROR - Could not reach https://radio.jump.bg:7049/live: Cannot connect to host radio.jump.bg:7049 ssl:True [SSLCertVerificationError: (1, "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: Hostname mismatch, certificate is not valid for 'radio.jump.bg'. (_ssl.c:1000)")]
+2024-08-28 20:29:18,194 - ERROR - Could not reach https://radio.jump.bg:7028/live: Cannot connect to host radio.jump.bg:7028 ssl:True [SSLCertVerificationError: (1, "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: Hostname mismatch, certificate is not valid for 'radio.jump.bg'. (_ssl.c:1000)")]
+2024-08-28 20:29:18,869 - ERROR - Could not reach https://play.global.audio/testb.aac?dist=RADIOPLAY: Cannot connect to host play.global.audio:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]
+2024-08-28 20:29:19,218 - ERROR - Could not reach https://radio.jump.bg:7181/live: Cannot connect to host radio.jump.bg:7181 ssl:True [SSLCertVerificationError: (1, "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: Hostname mismatch, certificate is not valid for 'radio.jump.bg'. (_ssl.c:1000)")]
+2024-08-28 20:29:19,351 - ERROR - Could not reach http://185.20.88.1:8010/: 0, message='', url='http://185.20.88.1:8010/'
+2024-08-28 20:29:19,776 - ERROR - Could not reach https://play.global.audio/cityrabhi.aac: Cannot connect to host play.global.audio:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]
+2024-08-28 20:29:19,849 - ERROR - Could not reach https://play.global.audio/citylatin.aac: Cannot connect to host play.global.audio:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]
+2024-08-28 20:29:20,250 - ERROR - Could not reach https://play.global.audio/city.opus: Cannot connect to host play.global.audio:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]
+2024-08-28 20:29:21,096 - ERROR - Could not reach https://play.global.audio/energy-00s.aac.m3u: Cannot connect to host play.global.audio:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]
+2024-08-28 20:29:21,270 - ERROR - Could not reach https://play.global.audio/energy-90s: Cannot connect to host play.global.audio:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]
+2024-08-28 20:29:21,876 - ERROR - Could not reach http://listen.hotget.net:810/: 0, message='', url='http://listen.hotget.net:810/'
+2024-08-28 20:29:22,295 - ERROR - Could not reach https://play.global.audio/radio1-koleda.aac: Cannot connect to host play.global.audio:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]
+2024-08-28 20:29:22,580 - ERROR - Could not reach http://rnmediagroup.com:10000/;: 0, message='', url='http://rnmediagroup.com:10000/;'
+2024-08-28 20:29:22,580 - ERROR - Could not reach http://rnmediagroup.com:9000/;: 0, message='', url='http://rnmediagroup.com:9000/;'
+2024-08-28 20:29:23,940 - ERROR - Could not reach https://play.global.audio/novanews.aac: Cannot connect to host play.global.audio:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]
+2024-08-28 20:29:24,475 - ERROR - Could not reach https://a1.vizitec.com:8001/powerfm.mp3: Cannot connect to host a1.vizitec.com:8001 ssl:default [[SSL: SSLV3_ALERT_HANDSHAKE_FAILURE] sslv3 alert handshake failure (_ssl.c:1000)]
+2024-08-28 20:29:24,922 - ERROR - Could not reach http://79.98.108.170:8002/;: 0, message='', url='http://79.98.108.170:8002/;'
+2024-08-28 20:29:24,974 - ERROR - Could not reach https://live.radiobg.co.uk:8443/live: Cannot connect to host live.radiobg.co.uk:8443 ssl:default [[SSL: SSLV3_ALERT_HANDSHAKE_FAILURE] sslv3 alert handshake failure (_ssl.c:1000)]
+2024-08-28 20:29:25,198 - ERROR - Could not reach https://play.global.audio/bgradio128: Cannot connect to host play.global.audio:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]
+2024-08-28 20:29:25,958 - ERROR - Could not reach https://play.global.audio/energy-90s.aac: Cannot connect to host play.global.audio:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]
+2024-08-28 20:29:27,800 - ERROR - Could not reach http://powerdj.sf.ddns.bulsat.com:8066/;: 0, message='', url='http://powerdj.sf.ddns.bulsat.com:8066/;'
+2024-08-28 20:29:28,006 - ERROR - Could not reach https://play.global.audio/nova.opus: Cannot connect to host play.global.audio:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]
+2024-08-28 20:29:28,740 - ERROR - Could not reach http://195.68.214.130:8000/: 0, message='', url='http://195.68.214.130:8000/'
+2024-08-28 20:29:28,776 - ERROR - Could not reach http://79.98.108.170:8043/;: 0, message='', url='http://79.98.108.170:8043/;'
+2024-08-28 20:29:29,492 - ERROR - Could not reach http://89.106.110.85:8000/: 0, message='', url='http://89.106.110.85:8000/'
+2024-08-28 20:29:29,530 - ERROR - Could not reach https://play.global.audio/veronika64: Cannot connect to host play.global.audio:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]
+2024-08-28 20:29:29,858 - ERROR - Could not reach https://play.global.audio/cafehi.aac: Cannot connect to host play.global.audio:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]
+2024-08-28 20:29:31,226 - ERROR - Could not reach https://play.global.audio/vanillahi.aac: Cannot connect to host play.global.audio:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]
+2024-08-28 20:29:31,499 - ERROR - Could not reach http://79.98.108.170:8092/;: 0, message='', url='http://79.98.108.170:8092/;'
+2024-08-28 20:29:32,575 - ERROR - Could not reach http://mpc1.mediacp.eu:8024/;: 0, message='', url='http://mpc1.mediacp.eu:8024/;'
+2024-08-28 20:29:32,899 - INFO - 183 responsive stations found in rml-radio/lua/radio/stations\bulgaria.lua
+2024-08-28 20:29:32,901 - INFO - Updated rml-radio/lua/radio/stations\bulgaria.lua with responsive stations only.
+2024-08-28 20:29:32,901 - INFO - Verifying stations in rml-radio/lua/radio/stations\burkina_faso.lua
+2024-08-28 20:29:33,791 - INFO - 7 responsive stations found in rml-radio/lua/radio/stations\burkina_faso.lua
+2024-08-28 20:29:33,792 - INFO - Updated rml-radio/lua/radio/stations\burkina_faso.lua with responsive stations only.
+2024-08-28 20:29:33,792 - INFO - Verifying stations in rml-radio/lua/radio/stations\burundi.lua
+2024-08-28 20:29:34,129 - INFO - 2 responsive stations found in rml-radio/lua/radio/stations\burundi.lua
+2024-08-28 20:29:34,129 - INFO - Updated rml-radio/lua/radio/stations\burundi.lua with responsive stations only.
+2024-08-28 20:29:34,129 - INFO - Verifying stations in rml-radio/lua/radio/stations\cabo_verde.lua
+2024-08-28 20:29:34,692 - INFO - 4 responsive stations found in rml-radio/lua/radio/stations\cabo_verde.lua
+2024-08-28 20:29:34,693 - INFO - Updated rml-radio/lua/radio/stations\cabo_verde.lua with responsive stations only.
+2024-08-28 20:29:34,693 - INFO - Verifying stations in rml-radio/lua/radio/stations\cambodia.lua
+2024-08-28 20:29:36,104 - INFO - 2 responsive stations found in rml-radio/lua/radio/stations\cambodia.lua
+2024-08-28 20:29:36,105 - INFO - Updated rml-radio/lua/radio/stations\cambodia.lua with responsive stations only.
+2024-08-28 20:29:36,106 - INFO - Verifying stations in rml-radio/lua/radio/stations\cameroon.lua
+2024-08-28 20:29:36,148 - ERROR - Could not reach http://46.105.111.94:8077/;: 0, message='', url='http://46.105.111.94:8077/;'
+2024-08-28 20:29:36,445 - INFO - 3 responsive stations found in rml-radio/lua/radio/stations\cameroon.lua
+2024-08-28 20:29:36,446 - INFO - Updated rml-radio/lua/radio/stations\cameroon.lua with responsive stations only.
+2024-08-28 20:29:36,446 - INFO - Verifying stations in rml-radio/lua/radio/stations\canada.lua
+2024-08-28 20:29:42,467 - ERROR - Could not reach https://stream.cfmu.ca/mount.128mp3: Cannot connect to host stream.cfmu.ca:443 ssl:default [[SSL: SSLV3_ALERT_HANDSHAKE_FAILURE] sslv3 alert handshake failure (_ssl.c:1000)]
+2024-08-28 20:29:44,881 - WARNING - NO RESPONSE: https://www.radio-addictive-50s.eu/stream/128mp3.m3u responded with status code: 403
+2024-08-28 20:29:46,697 - ERROR - Could not reach https://satcom.rfchosting.ca:8100/stream: Cannot connect to host satcom.rfchosting.ca:8100 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]
+2024-08-28 20:29:50,096 - ERROR - Could not reach https://s5.voscast.com:8051/stream: Cannot connect to host s5.voscast.com:8051 ssl:default [[SSL: SSLV3_ALERT_HANDSHAKE_FAILURE] sslv3 alert handshake failure (_ssl.c:1000)]
+2024-08-28 20:29:58,685 - WARNING - NO RESPONSE: http://stream2.statsradio.com:8040/stream responded with status code: 404
+2024-08-28 20:30:10,829 - ERROR - Could not reach https://s5.myradiostream.com:7371/listen.mp3: Cannot connect to host s5.myradiostream.com:7371 ssl:default [[SSL: SSLV3_ALERT_HANDSHAKE_FAILURE] sslv3 alert handshake failure (_ssl.c:1000)]
+2024-08-28 20:30:19,179 - ERROR - Could not reach https://s2.voscast.com:7387/stream: Cannot connect to host s2.voscast.com:7387 ssl:default [[SSL: SSLV3_ALERT_HANDSHAKE_FAILURE] sslv3 alert handshake failure (_ssl.c:1000)]
+2024-08-28 20:30:21,411 - WARNING - NO RESPONSE: http://192.99.14.49:9009/stream responded with status code: 404
+2024-08-28 20:30:22,617 - ERROR - Could not reach http://sc8.spacialnet.com:25868/;: 0, message='', url='http://sc8.spacialnet.com:25868/;'
+2024-08-28 20:30:30,252 - ERROR - Could not reach http://listen.cinemix.fr/: 0, message='', url='http://94.23.51.96:8001'
+2024-08-28 20:30:33,115 - ERROR - Could not reach https://s5.voscast.com:10205/stream: Cannot connect to host s5.voscast.com:10205 ssl:default [[SSL: SSLV3_ALERT_HANDSHAKE_FAILURE] sslv3 alert handshake failure (_ssl.c:1000)]
+2024-08-28 20:30:35,606 - ERROR - Could not reach http://128.100.197.46/: 0, message='', url='http://128.100.197.46/'
+2024-08-28 20:30:47,116 - ERROR - Could not reach https://s9.voscast.com:9705/stream: Cannot connect to host s9.voscast.com:9705 ssl:default [[SSL: SSLV3_ALERT_HANDSHAKE_FAILURE] sslv3 alert handshake failure (_ssl.c:1000)]
+2024-08-28 20:30:59,404 - ERROR - Could not reach https://archive1.ckdu.ca:9750/ckdu_1_on_air_high.mp3: Cannot connect to host archive1.ckdu.ca:9750 ssl:default [[SSL: SSLV3_ALERT_HANDSHAKE_FAILURE] sslv3 alert handshake failure (_ssl.c:1000)]
+2024-08-28 20:30:59,599 - ERROR - Could not reach https://archive1.ckdu.ca:9750/ckdu_1_on_air_low.mp3: Cannot connect to host archive1.ckdu.ca:9750 ssl:default [[SSL: SSLV3_ALERT_HANDSHAKE_FAILURE] sslv3 alert handshake failure (_ssl.c:1000)]
+2024-08-28 20:31:01,983 - WARNING - NO RESPONSE: https://14623.live.streamtheworld.com/CKFRAMAAC.aac responded with status code: 503

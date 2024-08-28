@@ -43,7 +43,7 @@ BATCH_DELAY = int(config['DEFAULT'].get('batch_delay', 2))
 LOG_FILE = config['DEFAULT'].get('log_file', 'logs/radio_station_manager.log')
 VERBOSE = config['DEFAULT'].getboolean('verbose', False)
 BACKUP_DIR = os.path.join(script_dir, 'backups')
-README_PATH = r'C:\Program Files (x86)\Steam\steamapps\common\GarrysMod\garrysmod\addons\rml-radio\README.md'
+README_PATH = os.path.join(script_dir, '..', 'README.md')
 
 # Configure logging with rotation
 os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
