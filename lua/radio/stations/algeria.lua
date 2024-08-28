@@ -39,7 +39,6 @@ local stations = {
     {name = "إذاعة القرآن الكريم", url = "http://n13.radiojar.com/0tpy1h0kxtzuv?rj-ttl=5&rj-tok=AAABkY7ILAAAocynT6MEmmwnvg"},
     {name = "إذاعة طريق السلف", url = "https://airtime.salafwayfm.ly/"},
     {name = "اذاعة القرآن الكريم", url = "http://n11.radiojar.com/0tpy1h0kxtzuv?rj-ttl=5&rj-tok=AAABkZBgtZYApmu71uHx-bwHxg"},
-    {name = "النهج الواضح", url = "https://node33.obviousapproach.com:9000/stream"},
     {name = "تفسير بن عثيمين رحمه الله", url = "https://qurango.net/radio/tafseer"},
     {name = "جو افريقيا", url = "https://ice.creacast.com/jowradio-north_africa"},
     {name = "جو راب", url = "https://ice.creacast.com/jowradio-jow_rap"},

@@ -1,7 +1,6 @@
 local stations = {
     {name = "Albania News 24 TV", url = "http://tv.balkanweb.com:8081/news24/livestream/playlist.m3u8"},
     {name = "ARNAVUT FM", url = "https://canli.arabeskinmerkezi.com/9180/stream"},
-    {name = "Chili Moje", url = "https://media-ssl.musicradio.com/ChillMP3"},
     {name = "Chill Radio", url = "http://eu8.fastcast4u.com/proxy/chillradio?mp=/1"},
     {name = "CLUB FM", url = "https://cp1.sednastream.com/proxy/clubfm?mp=/stream"},
     {name = "Club FM Kosova", url = "https://cp1.sednastream.com/proxy/clubfmkosova?mp=/stream"},

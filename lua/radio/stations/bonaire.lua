@@ -1,5 +1,4 @@
 local stations = {
-    {name = "Caprice Spacesynth", url = "http://79.120.39.202:9111/"},
     {name = "Live99 FM - Kralendijk", url = "http://162.244.80.220:8000/;stream.mp3"},
     {name = "Mega Hit FM", url = "http://megaspice.primcast.com:5216/;"},
     {name = "Non Stop Hits Alex FM", url = "https://radioalexfm.stream.laut.fm/radioalexfm?ref=web-app&start_time=1709718045653"},

@@ -1,5 +1,4 @@
 local stations = {
-    {name = "Gjr", url = "https://kathy.torontocast.com:3375/stream"},
     {name = "Humor Fm Minsk", url = "http://live.humorfm.by:8000/veseloe"},
     {name = "Ifree FM", url = "https://fm.ifree.pro:1045/stream"},
     {name = "Legendy FM", url = "http://live.legendy.by:8000/legendyfm"},
@@ -27,7 +26,6 @@ local stations = {
     {name = "Авторадио Беларусь", url = "http://live.humorfm.by:8000/avtoradio-high"},
     {name = "Авторадио Беларусь Low", url = "http://live.humorfm.by:8000/avtoradio-low"},
     {name = "Адкрытае Слова", url = "https://rs.radioslovo.net:4005/radio?1619348678875"},
-    {name = "Ватыканскае Радыё", url = "https://radio.vaticannews.va/stream-be"},
     {name = "Еўрарадыё Alternative", url = "http://stream1.euroradio.fm:8000/euroradio1?seed=1493710910"},
     {name = "Еўрарадыё BY", url = "http://stream1.euroradio.fm:8000/euroradio1"},
     {name = "Еўрарадыё Soft Rock", url = "http://stream1.euroradio.fm:8000/euroradio3?seed=1493711245"},
@@ -45,8 +43,6 @@ local stations = {
     {name = "Радио-Витебск", url = "https://live.radiovitebsk.by/live"},
     {name = "Радиусfm", url = "https://stream2.datacenter.by/radiusfm_main"},
     {name = "Радыё Relax", url = "http://live.humorfm.by:8000/radiorelax"},
-    {name = "Радыё Марыя", url = "https://server.radiorm.by:8443/live"},
-    {name = "Радые Марыя", url = "https://server.radiorm.by:8443/live"},
     {name = "Радыё Рацыя", url = "http://air.racyja.com:8000/racja128"},
     {name = "Соловьев", url = "https://solovievfm.hostingradio.ru/solovievfm128.aacp"},
     {name = "Юмор FM", url = "http://live.humorfm.by:8000/veseloeradio"},

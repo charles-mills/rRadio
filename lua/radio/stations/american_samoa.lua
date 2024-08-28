@@ -6,7 +6,6 @@ local stations = {
     {name = "Planet Black", url = "http://mp3.planetradio.de/plrchannels/hqblackbeats.aac"},
     {name = "Youtube", url = "http://listen.181fm.com/181-xtraditional_128k.mp3?listenerId=esAdblock074493&aw_0_1st.playerid=esPlayer&aw_0_1st.skey=1669379836"},
     {name = "創世", url = "https://cdn.deepcore.online/hlsme/ctv_hk_720.m3u8"},
-    {name = "希望之声", url = "https://livecast1.soundofhope.org:2087/soh-live"},
 }
 
 return stations

@@ -1,16 +1,12 @@
 local stations = {
     {name = "ATB Radio", url = "https://streamingenbolivia.com/8006/stream"},
     {name = "Big Radio Bolivia", url = "http://stream-152.zeno.fm/cb4zhgss538uv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJjYjR6aGdzczUzOHV2IiwiaG9zdCI6InN0cmVhbS0xNTIuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6InpSc1RiWV9lVEFhOFctZ3MzVFdTOFEiLCJpYXQiOjE3MjQ2OTk0NTksImV4cCI6MTcyNDY5OTUxOX0.4saY5nO0JYl5xnC_Mh8vPnFsO2vHTOIJMWl6zWUalnM"},
-    {name = "Cristo Viene La Red", url = "https://stream20.usastreams.com:7000/stream"},
-    {name = "El Derribador Radio", url = "http://sc10.conectarhosting.com/proxy/derribadorradio/;"},
     {name = "El Fin Del Silencio", url = "https://servidor24-1.brlogic.com:7302/live"},
     {name = "Eslatino Radio", url = "https://spanel.gcomstreaming.com/8030/stream"},
     {name = "Exa FM", url = "https://14553.live.streamtheworld.com:443/XHPSFMAAC.aac"},
     {name = "HUG - RADIO FOX STYLE", url = "http://stream-154.zeno.fm/leyjhheodeutv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJsZXlqaGhlb2RldXR2IiwiaG9zdCI6InN0cmVhbS0xNTQuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6InNpNUo4b05EVFFDV091S3JBaUVKMWciLCJpYXQiOjE3MjQ3MDU5NDYsImV4cCI6MTcyNDcwNjAwNn0.3kzgv0THHK6lj5dvTtyXPsO6gx3LMI-NimpDvEZCqWs"},
     {name = "Maritima Fm", url = "https://spanel.gcomstreaming.com/8004/stream"},
     {name = "Quechua FM", url = "https://stream-174.zeno.fm/e78z1h3drd0uv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJlNzh6MWgzZHJkMHV2IiwiaG9zdCI6InN0cmVhbS0xNzQuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6IjhoRm1lQjFBUW9TR0VKYm9qTE5SeXciLCJpYXQiOjE3MjQ2NzI2MzIsImV4cCI6MTcyNDY3MjY5Mn0.cGzLDSo2YGEbbfyMdkbbId51qjBDfL_EtOt37j2fMt8"},
-    {name = "Radio Andina Bolivia", url = "https://stm3.srvif.com:8302/stream"},
-    {name = "Radio Aprac Bol", url = "https://cdn.boliviaplay.com.bo:9005/stream"},
     {name = "Radio Aymara", url = "http://stream-162.zeno.fm/du0x9skxum0uv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJkdTB4OXNreHVtMHV2IiwiaG9zdCI6InN0cmVhbS0xNjIuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6InBRaXFLc21GU0JpNU1KZnBwemxoQmciLCJpYXQiOjE3MjQ2Njk2MzIsImV4cCI6MTcyNDY2OTY5Mn0.Zw9eJAmC75LPxrIg3kTCXajvDSKxdTqZVLLQB1LgAjw"},
     {name = "RADIO BEAT FOX", url = "http://stream-153.zeno.fm/0966xr1y8p8uv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiIwOTY2eHIxeThwOHV2IiwiaG9zdCI6InN0cmVhbS0xNTMuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6IlcwWFRZVnMxUnNtRjlmWWxnUHlnaVEiLCJpYXQiOjE3MjQ3MDUzNTMsImV4cCI6MTcyNDcwNTQxM30.yNRc4_tnZzOSXKGaKrxizaGbSu9ve8CuEk3Ni_eH1RM"},
     {name = "Radio Calacoto", url = "https://stream-151.zeno.fm/z73xx5qm8rhvv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJ6NzN4eDVxbThyaHZ2IiwiaG9zdCI6InN0cmVhbS0xNTEuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6ImtUMGhiVVc4Ukt5ZTJxN2tHUm1OaEEiLCJpYXQiOjE3MjQ2Njg3NzcsImV4cCI6MTcyNDY2ODgzN30.LJHhHJtlmZLY2bV8dcE3AiR1m7JiD_wagx2Bm8lEsyU"},
@@ -42,7 +38,6 @@ local stations = {
     {name = "Rplay", url = "https://emiteradio.com/proxy/playradio?mp=/stream"},
     {name = "Stereo97", url = "https://stream.consultoradas.com:10942/stream"},
     {name = "Vocera De La Vega", url = "https://stream-174.zeno.fm/yx76pfk5feruv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJ5eDc2cGZrNWZlcnV2IiwiaG9zdCI6InN0cmVhbS0xNzQuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6ImFaVXpiUUprUzdHTzZ3SC1fdGJfX2ciLCJpYXQiOjE3MjQ2NTY0MjIsImV4cCI6MTcyNDY1NjQ4Mn0.7bz4z7w7LtWovs7TeqFPAORoeEnPbb3eqt7IdqZrsoA"},
-    {name = "Zoy Milton", url = "https://213.199.42.66:8000/zoymilton.mp3"},
     {name = "Zoytv RADIO", url = "https://icepool.silvacast.com/GAYFM.mp3"},
 }
 
