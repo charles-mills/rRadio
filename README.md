@@ -1,6 +1,6 @@
 # rRadio Addon
 
-# ACTIVE STATIONS: 102042
+# <span style="color: #FFA500;">🎵 ACTIVE STATIONS: _102042_ 🎵</span>
 
 ## Description
 **rRadio** is a Garry's Mod addon that allows players to listen to their favorite radio stations in-game, either with friends or alone. The stations are regularly fetched via the [Radio Browser API](https://www.radio-browser.info/), and confirmed to be active.
