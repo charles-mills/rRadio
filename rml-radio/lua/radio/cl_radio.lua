@@ -7,6 +7,13 @@ surface.CreateFont("Roboto18", {
     weight = 500,
 })
 
+surface.CreateFont("HeaderFont", {
+    font = "Roboto",  -- You can change this to any font you prefer
+    size = ScreenScale(8),  -- Adjust the size as needed (this is larger than your Roboto18)
+    weight = 700,  -- Make it bold to stand out more
+})
+
+
 local selectedCountry = nil
 local radioMenuOpen = false
 local currentlyPlayingStation = nil
@@ -148,6 +155,7 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
             end
 
             countryButton.DoClick = function()
+                surface.PlaySound("buttons/button3.wav")
                 selectedCountry = country.original
                 backButton:SetVisible(true)
                 populateList(stationListPanel, backButton, searchBox, true)
@@ -178,6 +186,7 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                 end
                 
                 stationButton.DoClick = function()
+                    surface.PlaySound("buttons/button17.wav")
                     local entity = LocalPlayer().currentRadioEntity
                 
                     if not IsValid(entity) then
@@ -223,12 +232,12 @@ local function openRadioMenu()
 
     frame.Paint = function(self, w, h)
         draw.RoundedBox(8, 0, 0, w, h, Config.UI.BackgroundColor)
-        draw.RoundedBox(8, 0, 0, w, Scale(30), Config.UI.HeaderColor)
-        draw.SimpleText(selectedCountry and formatCountryName(selectedCountry) or Config.Lang["SelectCountry"], "Roboto18", Scale(10), Scale(5), Config.UI.TextColor, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
-    end
+        draw.RoundedBoxEx(8, 0, 0, w, Scale(40), Config.UI.HeaderColor, true, true, false, false)
+        draw.SimpleText(selectedCountry and formatCountryName(selectedCountry) or Config.Lang["SelectCountry"], "HeaderFont", Scale(10), Scale(5), Config.UI.TextColor, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
+    end    
 
     local searchBox = vgui.Create("DTextEntry", frame)
-    searchBox:SetPos(Scale(10), Scale(40))
+    searchBox:SetPos(Scale(10), Scale(50))
     searchBox:SetSize(Scale(Config.UI.FrameSize.width) - Scale(20), Scale(30))
     searchBox:SetFont("Roboto18")
     searchBox:SetPlaceholderText(Config.Lang["SearchPlaceholder"])
@@ -244,12 +253,12 @@ local function openRadioMenu()
     end
 
     local stationListPanel = vgui.Create("DScrollPanel", frame)
-    stationListPanel:SetPos(Scale(10), Scale(80))
-    stationListPanel:SetSize(Scale(Config.UI.FrameSize.width) - Scale(20), Scale(Config.UI.FrameSize.height) - Scale(190))
+    stationListPanel:SetPos(Scale(10), Scale(90))
+    stationListPanel:SetSize(Scale(Config.UI.FrameSize.width) - Scale(20), Scale(Config.UI.FrameSize.height) - Scale(200))
 
     local volumeSlider = vgui.Create("DNumSlider", frame)
-    volumeSlider:SetPos(Scale(10), Scale(Config.UI.FrameSize.height) - Scale(100))
-    volumeSlider:SetSize(Scale(Config.UI.FrameSize.width) - Scale(20), Scale(40))
+    volumeSlider:SetPos(Scale(10), Scale(Config.UI.FrameSize.height) - Scale(110))
+    volumeSlider:SetSize(Scale(Config.UI.FrameSize.width) - Scale(20), Scale(50))
     volumeSlider:SetText("")
     volumeSlider:SetMin(0)
     volumeSlider:SetMax(1)
@@ -263,7 +272,7 @@ local function openRadioMenu()
     end
 
     volumeSlider.Slider.Knob.Paint = function(self, w, h)
-        draw.RoundedBox(8, 0, 0, w, h, Config.UI.AccentColor)
+        draw.RoundedBox(8, 0, 0, w, h, Config.UI.TextColor)
     end
 
     volumeSlider.TextArea:SetTextColor(Config.UI.TextColor)
@@ -291,6 +300,7 @@ local function openRadioMenu()
     end
 
     stopButton.DoClick = function()
+        surface.PlaySound("buttons/button6.wav")
         if IsValid(entity) then
             net.Start("StopCarRadioStation")
             net.WriteEntity(entity)
@@ -302,7 +312,7 @@ local function openRadioMenu()
     
     local backButton = vgui.Create("DButton", frame)
     backButton:SetSize(Scale(30), Scale(30))
-    backButton:SetPos(frame:GetWide() - Scale(79), 0)
+    backButton:SetPos(frame:GetWide() - Scale(79), Scale(5))
     backButton:SetText("")
 
     backButton.Paint = function(self, w, h)
@@ -320,6 +330,7 @@ local function openRadioMenu()
     end
 
     backButton.DoClick = function()
+        surface.PlaySound("buttons/lightswitch2.wav")
         selectedCountry = nil
         backButton:SetVisible(false)
         populateList(stationListPanel, backButton, searchBox, true)
@@ -329,8 +340,8 @@ local function openRadioMenu()
     closeButton:SetText("X")
     closeButton:SetFont("Roboto18")
     closeButton:SetTextColor(Config.UI.TextColor)
-    closeButton:SetSize(Scale(40), Scale(30))
-    closeButton:SetPos(frame:GetWide() - Scale(39), 0)
+    closeButton:SetSize(Scale(40), Scale(40))
+    closeButton:SetPos(frame:GetWide() - Scale(40), 0)
     closeButton.Paint = function(self, w, h)
         local cornerRadius = 8
         draw.RoundedBoxEx(cornerRadius, 0, 0, w, h, Config.UI.CloseButtonColor, false, true, false, false)
@@ -339,6 +350,7 @@ local function openRadioMenu()
         end
     end
     closeButton.DoClick = function()
+        surface.PlaySound("buttons/lightswitch2.wav")
         frame:Close()
     end
 
@@ -381,7 +393,7 @@ net.Receive("PlayCarRadioStation", function()
         sound.PlayURL(url, "3d mono", function(station, errorID, errorName)
             if IsValid(station) then
                 station:SetPos(entity:GetPos())
-                station:SetVolume(volume)
+                station:SetVolume(1)
                 station:Play()
                 currentRadioSources[entity] = station
 
