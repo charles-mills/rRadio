@@ -21,7 +21,8 @@ class Colors:
 
 # Function to escape special characters for Lua
 def escape_lua_string(s):
-    return s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "").replace("\r", "")
+    # Lua escapes backslashes and double quotes
+    return s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r")
 
 # Function to clean and format station names
 def clean_station_name(name):
@@ -85,7 +86,8 @@ def save_stations_to_file(country, stations):
     with open(file_path, "w", encoding="utf-8") as f:
         f.write("local stations = {\n")
         for station in stations:
-            f.write(f'    {{name = "{station["name"]}", url = "{station["url"]}"}},\n')
+            # Write the station data using raw string notation to avoid issues with escape sequences
+            f.write(f'    {{name = [[{station["name"]}]], url = [[{station["url"]}]]}},\n')
         f.write("}\n\nreturn stations\n")
 
     print(f"{Colors.CYAN}Saved stations for {Colors.BOLD}{country or 'Other'}{Colors.END}{Colors.CYAN} to {file_path}{Colors.END}")
@@ -98,7 +100,7 @@ def fetch_and_save_stations_synchronously():
         stations = get_radio_stations(country)
         if stations:
             save_stations_to_file(country, stations)
-        time.sleep(1)  # Sleep for 1 second between requests to avoid rate limiting
+        time.sleep(2)  # Sleep for 2 seconds between requests to avoid rate limiting
     print(f"{Colors.GREEN}All stations fetched and saved.{Colors.END}")
 
 # Function to get the list of all countries, excluding DPRK
@@ -148,7 +150,7 @@ async def verify_all_stations():
                     with open(file_path, 'r', encoding='utf-8') as f:
                         content = f.read()
 
-                    stations = re.findall(r'\{name\s*=\s*"([^"]+)",\s*url\s*=\s*"([^"]+)"\}', content)
+                    stations = re.findall(r'\{name\s*=\s*\[\[(.*?)\]\],\s*url\s*=\s*\[\[(.*?)\]\]\}', content)
                     stations = [{"name": name, "url": url} for name, url in stations]
                     
                     verified_stations = await verify_stations_concurrently(session, stations)
@@ -160,7 +162,7 @@ async def verify_all_stations():
 
                     new_content = "local stations = {\n"
                     for station in verified_stations:
-                        new_content += f'    {{name = "{station["name"]}", url = "{station["url"]}"}},\n'
+                        new_content += f'    {{name = [[{station["name"]}]], url = [[{station["url"]}]]}},\n'
                     new_content += "}\n\nreturn stations\n"
 
                     with open(file_path, 'w', encoding='utf-8') as f:
@@ -196,7 +198,7 @@ def count_stations_in_file(file_path):
     count = 0
     with open(file_path, 'r', encoding='utf-8') as file:
         for line in file:
-            if re.match(r'\s*{\s*name\s*=\s*".*?",\s*url\s*=\s*".*?"\s*},\s*', line):
+            if re.match(r'\s*{\s*name\s*=\s*\[\[.*?\]\],\s*url\s*=\s*\[\[.*?\]\]\s*},\s*', line):
                 count += 1
     return count
 
