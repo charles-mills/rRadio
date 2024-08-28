@@ -8,7 +8,6 @@ local stations = {
     {name = "ERR Raadio 2 - 320Kbps", url = "http://icecast.err.ee/raadio2korge.mp3"},
     {name = "ERR Raadio 4", url = "http://icecast.err.ee/raadio4.mp3?type=.mp3/;stream.mp3"},
     {name = "Finest Radio", url = "https://shoutcast.finestfm.fi/stream/1/:80/;stream"},
-    {name = "Happy U", url = "https://radio.streemlion.com:2525/stream"},
     {name = "Hard FM Estonia", url = "http://s5.radio.co/s69e02764f/listen"},
     {name = "IDA", url = "https://broadcast.idaidaida.net:8000/stream"},
     {name = "IDA Raadio - Tallinn", url = "https://broadcast.idaidaida.net:8000/stream"},

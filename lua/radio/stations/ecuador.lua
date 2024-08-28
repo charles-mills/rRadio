@@ -36,7 +36,6 @@ local stations = {
     {name = "Radio Atenas", url = "http://stream-159.zeno.fm/63feuw9ezs8uv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiI2M2ZldXc5ZXpzOHV2IiwiaG9zdCI6InN0cmVhbS0xNTkuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6ImEwOHprN0xqVFpDdE9lb0ZwMVJ3VmciLCJpYXQiOjE3MjQ2NzY5NTgsImV4cCI6MTcyNDY3NzAxOH0.uT4KrdmH99uol0KkiM8t7nqdpYseCH7HyOxI56QHhbM"},
     {name = "Radio Cadena Stereo Country", url = "http://stream-161.zeno.fm/wyr2sxuito5vv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJ3eXIyc3h1aXRvNXZ2IiwiaG9zdCI6InN0cmVhbS0xNjEuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6IjNtRlczREp0UlNlX3A1QnZIX0psVlEiLCJpYXQiOjE3MjQ2ODk5NTksImV4cCI6MTcyNDY5MDAxOX0.5Z_L_wCJcnizSQiXbtiIIAYXFGYOBCRo8Y2RQDbq7XM"},
     {name = "Radio Canela Guayas", url = "https://canelaradio.makrodigital.com/stream/canelaradioguayaquil"},
-    {name = "Radio Canela Pichincha", url = "https://ecuadorstreaming.net:9280/stream"},
     {name = "Radio Corazón De Jesús FM", url = "http://stream-172.zeno.fm/cu68600hswzuv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJjdTY4NjAwaHN3enV2IiwiaG9zdCI6InN0cmVhbS0xNzIuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6IlhkdXZpY25EUTRLcVJ2TmFxM05yOHciLCJpYXQiOjE3MjQ2NjI2NzYsImV4cCI6MTcyNDY2MjczNn0.-g3VJ5ilZ3yH93AIytEw75s2NA03-hH0ydbIqC_S3iw"},
     {name = "Radio Cristal 870 AM", url = "https://streaming.ecuastreaming.com/9958/stream"},
     {name = "Radio Diblu", url = "https://streamingecuador.net:9002/stream"},
@@ -73,7 +72,6 @@ local stations = {
     {name = "Tres Patines", url = "https://ssl.nexuscast.com:8043/;"},
     {name = "Tu Voz Stereo", url = "http://stream-162.zeno.fm/zy7aqxp4q98uv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJ6eTdhcXhwNHE5OHV2IiwiaG9zdCI6InN0cmVhbS0xNjIuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6ImJSR3p4cWZRU1UyTXhTdF9ZX1dXb0EiLCJpYXQiOjE3MjQ3MDUyODgsImV4cCI6MTcyNDcwNTM0OH0.NKYgJOD0bxeAzOS2cJ4bjAPCtqV1bd7vyfd9ARPg2uM"},
     {name = "Turbo Imparable", url = "http://sonic.portalfoxmix.cl:8394/stream/;"},
-    {name = "UTC Radio FM", url = "https://radio.cedia.org.ec/utc-radio"},
     {name = "Virgen De Guadalupe Radio", url = "http://stream-174.zeno.fm/9f0rk1re508uv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiI5ZjByazFyZTUwOHV2IiwiaG9zdCI6InN0cmVhbS0xNzQuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6IlpCeHJ4VFptU2Z1X0QwdFRLLUFWVXciLCJpYXQiOjE3MjQ2OTk2MDIsImV4cCI6MTcyNDY5OTY2Mn0.aV78lw26Bx1M4XxE54V7z53dzzjjJmn38ciS4KGBy9Y"},
 }
 

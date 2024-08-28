@@ -19,7 +19,6 @@ local stations = {
     {name = "Karjalainen Syke", url = "https://stream.radiorex.fi:8000/radiorex"},
     {name = "Kasari", url = "https://stream.bauermedia.fi/kasari/kasari_64.aac"},
     {name = "KISS", url = "http://stream.bauermedia.fi/kiss/kiss_64.aac"},
-    {name = "LBC", url = "http://ice-sov.musicradio.com/LBCLondon"},
     {name = "Loop", url = "https://ms-live-loop.nm-elemental.nelonenmedia.fi/master.m3u8"},
     {name = "Nostalgia", url = "https://stream.bauermedia.fi/nostalgia/nostalgia_64.aac?aw_0_1st.bauer_loggedin=false&aw_0_1st.playerid=BMUK_tunein&aw_0_1st.skey=1724705941"},
     {name = "NRJ", url = "https://stream.bauermedia.fi/nrj/nrj_64.aac?aw_0_1st.bauer_loggedin=false&aw_0_1st.playerid=BMUK_tunein&aw_0_1st.skey=1724704714"},

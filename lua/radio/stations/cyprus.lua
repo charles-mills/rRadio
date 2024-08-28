@@ -8,20 +8,15 @@ local stations = {
     {name = "Mixfm Cyprus", url = "http://n11.radiojar.com/c27wx6pdh8vtv?rj-ttl=5&rj-tok=AAABkY9GupsAbOAQHNzgNhyWwA"},
     {name = "PIK Sat TV", url = "http://l3.cloudskep.com/cybcsat/abr/playlist.m3u8"},
     {name = "Proto Live", url = "http://r1.cloudskep.com/cybcr/cybc1/icecast.audio"},
-    {name = "Radio Proto", url = "https://live3.istoikona.net:18191/stream"},
     {name = "Rock FM Cyprus", url = "http://live3.istoikona.net:8278/;"},
     {name = "Sport FM Cyprus", url = "http://sportfm-cyprus.live24.gr/sportfm-cyprus"},
     {name = "Super Sport FM", url = "https://r1.cloudskep.com/radio3/supersportfm/icecast.audio"},
-    {name = "Superfm Cyprus", url = "https://live3.istoikona.net:18826/stream"},
     {name = "Tetarto Live", url = "http://r1.cloudskep.com/cybcr/cybc4/icecast.audio"},
     {name = "Translation Of The Quran In Greek", url = "https://server3.quraan.us:8022/"},
     {name = "Trito Live", url = "http://r1.cloudskep.com/cybcr/cybc3/icecast.audio"},
-    {name = "Zenith", url = "https://live3.istoikona.net:9836/stream"},
     {name = "Zucca Radio", url = "http://95.217.120.122/"},
     {name = "Ναυάγιο", url = "https://radio-navagio.com/stream"},
     {name = "РУССКОЕ РАДИО КИПР", url = "https://stream.veblot.net/proxy/russianradio/stream/"},
-    {name = "塞浦路斯CCN欧洲中国平台", url = "https://cdn.istoikona.com/ccnrtv/live/playlist.m3u8"},
-    {name = "塞浦路斯中文广播", url = "https://cdn.istoikona.com/ccnradio/ccnradio/icecast.audio"},
 }
 
 return stations
