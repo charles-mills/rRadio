@@ -1,10 +1,10 @@
 local stations = {
-    {name = "A Net Station", url = "http://www.anetstation.com/MP3/Jesse_Colin_Young_-_T-Bone_Shuffle.mp3"},
     {name = "Doujindance", url = "http://radio.funkot.net:8010/playlist"},
-    {name = "Kbs", url = "https://1fm.gscdn.kbs.co.kr/1fm_192_2.m3u8?Expires=1724858294&Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly8xZm0uZ3NjZG4ua2JzLmNvLmtyLzFmbV8xOTJfMi5tM3U4IiwiQ29uZGl0aW9uIjp7IkRhdGVMZXNzVGhhbiI6eyJBV1M6RXBvY2hUaW1lIjoxNzI0ODU4Mjk0fX19XX0_&Signature=AuyWfdr4R0kimnSbRMqQ9IfuDbNrpJHWg1y5KKEaAVL1pP4OUHmU1Xw17p7kep~Cz7HFyl-u6~yLechAC9CHxPFtvPLGwQ3aFiKE-L8HIk-8BGN2p8CmEP9qBEuclSM6D8JEds7Dfi95X89vtx-C1yhf7XGRjBFimA-Y9ugavI9-m~T4PvWDCQCf1PDqdtAwz2KtR1feq5rSN6~ew9wWkjowMa4HoiVVzURPNuaYUYPfcY7iqdukVWqh-v1XmEvyc0hV8tVqBZVMH1tvypJRsqVDZW5mrFj8FIevKEw71mIWpwtjIa0NHdBBfl7d9ZjrTz-2U5OSftN4CiSHto1eNw__&Key-Pair-Id=APKAICDSGT3Y7IXGJ3TA"},
-    {name = "Lassulus Radio", url = "http://radio.lassul.us/radio.mp3"},
-    {name = "Radio Cirqle", url = "http://82.209.210.183:8000/aac"},
     {name = "Uknova", url = "http://uknr.org:8000/"},
+    {name = "Radio Cirqle", url = "http://82.209.210.183:8000/aac"},
+    {name = "A Net Station", url = "http://www.anetstation.com/MP3/Jack_Treese_-_Recess_I.mp3"},
+    {name = "Lassulus Radio", url = "http://radio.lassul.us/radio.mp3"},
+    {name = "Kbs", url = "https://1fm.gscdn.kbs.co.kr/1fm_192_2.m3u8?Expires=1724974686&Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly8xZm0uZ3NjZG4ua2JzLmNvLmtyLzFmbV8xOTJfMi5tM3U4IiwiQ29uZGl0aW9uIjp7IkRhdGVMZXNzVGhhbiI6eyJBV1M6RXBvY2hUaW1lIjoxNzI0OTc0Njg2fX19XX0_&Signature=NloNMVrCOGJfCLT4pjMaFXCnz6G4UcvJs3wOYT~uf2hAK5Ld04HyW4UsUhDUZHiEYt4O-nX~DnH-p3d0kCuxao9XTqu4WWmTMmzp56CELh4jhIxJN~OLK18z0sBV-MDYzCNZlyH-KAFuLZ~0Mr9Oo5NMzSI3IUGLmpsgzYq7RHnz3Pi7YozBgiI60oAc7kY3nUGCsP9DssPygcXhyd3FsWd19odvP6ud-vmPPxMq7YD94-cydu1jSf8SCBeXMw6E9dXrIl-vD3NTyHTMfjBUowB-oTYkdTUvv-HyzlczdX9EQ2n2SkaNfhpp~p2WqxPNHrmzxPszdTcJEh0Ywg2cDA__&Key-Pair-Id=APKAICDSGT3Y7IXGJ3TA"},
 }
 
 return stations
