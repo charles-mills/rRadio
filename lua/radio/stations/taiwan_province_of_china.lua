@@ -19,7 +19,7 @@ local stations = {
     {name = [[佳音經典音樂網]], url = [[https://stream.ginnet.cloud/live0119lo-p4rb/_definst_/classic/playlist.m3u8]]},
     {name = [[佳音羅東宜蘭903]], url = [[http://cdn51.ccdntech.com/live-http/_definst_/vod51_Live/ch02/playlist.m3u8]]},
     {name = [[佳音電台]], url = [[https://stream.ginnet.cloud/live0119lo-p4rb/_definst_/fm909/playlist.m3u8]]},
-    {name = [[光華之聲]], url = [[http://vohradiow-hichannel.cdn.hinet.net/live/RA000077/playlist.m3u8?token=SZjs3CKtspaKNqIHcm3EEw&expires=1724965223]]},
+    {name = [[光華之聲]], url = [[http://vohradiow-hichannel.cdn.hinet.net/live/RA000077/playlist.m3u8?token=cXH1DOAvupelMaJcgLGhKA&expires=1724972955]]},
     {name = [[凱旋廣播電台]], url = [[http://59.125.209.209:8081/]]},
     {name = [[北台灣之聲]], url = [[http://211.72.65.62:8080/]]},
     {name = [[古典音樂台]], url = [[https://onair.family977.com.tw:8977/live.mp3]]},

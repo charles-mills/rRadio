@@ -12,7 +12,7 @@ local stations = {
     {name = [[Fabulosa Estéreo 1005 FM]], url = [[https://www.streaming507.net:8130/stream]]},
     {name = [[Faro De David 1045 FM]], url = [[https://tv.farodedavid.com:8002/live;]]},
     {name = [[LIKE 105 FM]], url = [[https://www.streaming507.net:8020/stream]]},
-    {name = [[Los 40 Principales Panamá]], url = [[http://14983.live.streamtheworld.com/LOS40_PAN_SC]]},
+    {name = [[Los 40 Principales Panamá]], url = [[http://14983.live.streamtheworld.com:3690/LOS40_PAN_SC]]},
     {name = [[Original Stereo 907 FM]], url = [[http://rosetta.shoutca.st:8931/;]]},
     {name = [[Radio Disney Panamá]], url = [[http://ic.streann.com:8000/disneypanama]]},
     {name = [[RADIO MARIA PANAMA]], url = [[http://dreamsiteradiocp.com:8082/stream]]},

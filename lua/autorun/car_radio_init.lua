@@ -8,6 +8,7 @@ if SERVER then
     AddCSLuaFile("themes.lua")
     AddCSLuaFile("radio/cl_init.lua")
     AddCSLuaFile("radio/key_names.lua")
+    AddCSLuaFile("radio/new_ui.lua")
     
     -- Dynamically include all radio station files
     local files = file.Find("radio/stations/*.lua", "LUA")
@@ -29,6 +30,7 @@ else
     include("themes.lua")
     include("radio/theme_menu.lua")
     include("radio/key_names.lua")
+    include("radio/new_ui.lua")
     
     print("[RADIO] Finished client-side initialization")
 end

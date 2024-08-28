@@ -12,7 +12,7 @@ local stations = {
     {name = [[TAMBRIN]], url = [[https://ice42.securenetsystems.net/TAMBRIN]]},
     {name = [[Trinidad TTPP Air Traffic Control]], url = [[http://s1-fmt2.liveatc.net:80/ttpp_twr?nocache=2024082811363148888]]},
     {name = [[Vibe CT Port Of Spain]], url = [[https://audio-edge-kef8b.ams.s.radiomast.io/c35d311e-cc60-41b9-b0c5-339e62c14dee]]},
-    {name = [[Woods Hit Radio]], url = [[https://stream-171.zeno.fm/2f33725t4mzuv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiIyZjMzNzI1dDRtenV2IiwiaG9zdCI6InN0cmVhbS0xNzEuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6Im1MZUo1Z1hSUjAyZU1VRTc0aU45VVEiLCJpYXQiOjE3MjQ3OTY4OTgsImV4cCI6MTcyNDc5Njk1OH0.0nInoNnhvB8H4TR-PHwFj3GuvtQvw_TQwMF5w3BwOU0]]},
+    {name = [[Woods Hit Radio]], url = [[https://stream-171.zeno.fm/2f33725t4mzuv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiIyZjMzNzI1dDRtenV2IiwiaG9zdCI6InN0cmVhbS0xNzEuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6InVhdWJueTdTUTBHQWM5XzBVdkRsMVEiLCJpYXQiOjE3MjQ4NTg4ODAsImV4cCI6MTcyNDg1ODk0MH0.Juy9T0LebOg2ftRej4Kul3AjeDFq-xV0WojAh_NTxo0]]},
 }
 
 return stations

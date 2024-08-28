@@ -7,7 +7,7 @@ local stations = {
     {name = [[Club One World]], url = [[https://streams.radio.co/sa0b5d970a/listen]]},
     {name = [[Cumbre 1470 AM - 1063 FM]], url = [[https://sp.unoredcdn.net/8158/stream]]},
     {name = [[Echo 355]], url = [[http://stream-152.zeno.fm/hssq9ydayf9uv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJoc3NxOXlkYXlmOXV2IiwiaG9zdCI6InN0cmVhbS0xNTIuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6InpwMEFZX0RxVHc2ZS1CNnA2MEtscGciLCJpYXQiOjE3MjQ3OTg4NDMsImV4cCI6MTcyNDc5ODkwM30.kZFFBru4t2_okcZvqKgELNlepegqzG4zGSV9wEvIBOc]]},
-    {name = [[Exa FM]], url = [[https://27063.live.streamtheworld.com:443/XHPSFMAAC.aac]]},
+    {name = [[Exa FM]], url = [[https://14553.live.streamtheworld.com:443/XHPSFMAAC.aac]]},
     {name = [[Fidelity 957 Fm PR]], url = [[https://server7.servistreaming.com/proxy/fidelity?mp=%2Fstream%3Ftype%3D.mp3&_=1]]},
     {name = [[FM 96]], url = [[http://149.56.155.73:8105/stream]]},
     {name = [[Fuzed Club Radio]], url = [[https://radio.fuzedclubradio.com/listen/fuzed_club_radio/stream]]},

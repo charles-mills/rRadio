@@ -1,6 +1,6 @@
 local stations = {
     {name = [[Beautiful Recitation]], url = [[https://qurango.net/radio/salma]]},
-    {name = [[إذاعة طلاب العلم]], url = [[http://stream-152.zeno.fm/xvzmnbe1ba9uv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJ4dnptbmJlMWJhOXV2IiwiaG9zdCI6InN0cmVhbS0xNTIuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6ImpEenVKQzMyUUxtcWFLTXRBOGxmRnciLCJpYXQiOjE3MjQ4MjY1NjAsImV4cCI6MTcyNDgyNjYyMH0.dK6Fl2jRKGwZFfiLvC-7edS1HKK-9ov679Pf843otu8&rj-ttl=5&rj-tok=AAABfmjkey8ArKeqTHsuekmiFQ]]},
+    {name = [[إذاعة طلاب العلم]], url = [[http://stream-174.zeno.fm/xvzmnbe1ba9uv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJ4dnptbmJlMWJhOXV2IiwiaG9zdCI6InN0cmVhbS0xNzQuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6ImpSWVYwSFRPUVBxektyZmhsVzhZc3ciLCJpYXQiOjE3MjQ4NjE5MDYsImV4cCI6MTcyNDg2MTk2Nn0.-4XhDVMf0BKA5idJ5N1SevKkgLqhFwNSjR9msDItqkM&rj-ttl=5&rj-tok=AAABfmjkey8ArKeqTHsuekmiFQ]]},
     {name = [[إذاعة ماهر المعيقلي]], url = [[https://backup.qurango.net/radio/maher]]},
     {name = [[شهر رمضان]], url = [[https://qurango.net/radio/ramadan]]},
     {name = [[صور من حياة الصحابة]], url = [[https://qurango.net/radio/sahabah]]},

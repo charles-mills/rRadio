@@ -5,7 +5,7 @@ local stations = {
     {name = [[Roob]], url = [[http://stream-176.zeno.fm/t0dhv78c9s8uv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJ0MGRodjc4YzlzOHV2IiwiaG9zdCI6InN0cmVhbS0xNzYuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6IlI0NFhBUEVoUzh1dDE2NjR5V1ZTZ0EiLCJpYXQiOjE3MjQ4MzcxMzUsImV4cCI6MTcyNDgzNzE5NX0.2BGCviUPjeAWqRJotfiUWDyZ2On3SUpOWftwYLSfpPU]]},
     {name = [[Testfm24]], url = [[https://stream-171.zeno.fm/apdaqqlnpahuv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJhcGRhcXFsbnBhaHV2IiwiaG9zdCI6InN0cmVhbS0xNzEuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6InRzTzBGU280UlgtSElzeE9ONkRYUXciLCJpYXQiOjE3MjQ4NTM0MjksImV4cCI6MTcyNDg1MzQ4OX0.62VZwcG2-qwvmTwzAMAXrHp2wZp9AKRicp3111eEVKM]]},
     {name = [[VOA Somali]], url = [[https://n0d.radiojar.com/sgbs60fgq3quv?rj-ttl=5&rj-tok=AAABkZh5XlQA64hPijtIN06x5g]]},
-    {name = [[اذاعة القرآن الكريم]], url = [[http://n09.radiojar.com/0tpy1h0kxtzuv?rj-ttl=5&rj-tok=AAABkZf6ByAAE_7qDbDmw0dhGA]]},
+    {name = [[اذاعة القرآن الكريم]], url = [[http://n01.radiojar.com/0tpy1h0kxtzuv?rj-ttl=5&rj-tok=AAABkZnB2OoAaVwCNpBHYXVHkg]]},
 }
 
 return stations

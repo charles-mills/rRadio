@@ -262,7 +262,7 @@ local stations = {
     {name = [[RTV - Radio Novi Sad 1]], url = [[http://212.200.230.50:1935/rns1/prviprogram/livestream/stream.m3u8]]},
     {name = [[RTV - Radio Novi Sad 2 Újvidéki Rádió]], url = [[http://212.200.230.50:1935/rns2/drugiprogram/livestream/stream.m3u8]]},
     {name = [[RTV - Radio Novi Sad 3]], url = [[http://212.200.230.50:1935/rns3/treciprogram/livestream/stream.m3u8]]},
-    {name = [[Sun Radio Novi Sad]], url = [[http://n0a.radiojar.com/4qawu2xta2zuv.mp3?rj-ttl=5&rj-tok=AAABkZjWsD0ABNJ59BuCmxwZWQ]]},
+    {name = [[Sun Radio Novi Sad]], url = [[http://n0a.radiojar.com/4qawu2xta2zuv.mp3?rj-ttl=5&rj-tok=AAABkZnbiwUA89xFrMMLGkJgHQ]]},
     {name = [[Super FM]], url = [[http://onair.superfm.rs/superfm.mp3]]},
     {name = [[Super FM Beograd]], url = [[https://onair.superfm.rs/superfm.mp3]]},
     {name = [[Szabadkai Magyar Rádió]], url = [[http://stream2.nmih.hu:4110/;]]},

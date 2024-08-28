@@ -38,7 +38,7 @@ local stations = {
     {name = [[Star Radio Live Skopje, Macedonia]], url = [[https://eu10.fastcast4u.com/staronline]]},
     {name = [[Star Radio MK Narodna Skopje, Macedonia]], url = [[https://eu10.fastcast4u.com:8900/stream/7/]]},
     {name = [[Star Radio Plus Skopje, Macedonia]], url = [[https://eu10.fastcast4u.com:8900/stream/4/]]},
-    {name = [[Star Radio Urban Folk Skopje, Macedonia]], url = [[https://eu10.fastcast4u.com:8900/stream/3/]]},
+    {name = [[Star Radio Urban Folk Skopje, Macedonia]], url = [[https://usa19.fastcast4u.com:8850/stream/3/]]},
     {name = [[Star Radio World Hits Skopje, Macedonia]], url = [[https://eu10.fastcast4u.com:8900/stream/5/]]},
     {name = [[STIL RADIO]], url = [[https://eu4.fastcast4u.com/proxy/stilradiomk?mp=/1]]},
     {name = [[Stil Radio MKD Narodna]], url = [[https://eu4.fastcast4u.com/proxy/stilradiomk?mp=/stream/3/]]},
