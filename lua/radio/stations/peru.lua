@@ -35,6 +35,7 @@ local stations = {
     {name = "Estudio J 973 FM", url = "https://stream.zeno.fm/qusmdw24a48uv"},
     {name = "Exa FM", url = "https://playerservices.streamtheworld.com/api/livestream-redirect/XHPSFMAAC.aac"},
     {name = "Fama Sur Tarata", url = "https://sp.oyotunstream.com/9326/stream"},
+    {name = "Fidelísima Radio 1077 FM", url = "https://st3.inkaniserver.net:8008/stream"},
     {name = "Filarmonía", url = "https://c22.radioboss.fm:8100/stream"},
     {name = "Filarmonía OCR-4V, 1027 Mhz FM, Lima IRTP", url = "http://c22.radioboss.fm:8100/stream"},
     {name = "Flow Cristiano", url = "https://mediastreamm.com:8054/stream?icy=http"},

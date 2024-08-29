@@ -11,6 +11,7 @@ local stations = {
     {name = "Exa FM", url = "https://playerservices.streamtheworld.com/api/livestream-redirect/XHPSFMAAC.aac"},
     {name = "Fabulosa Estéreo 1005 FM", url = "https://www.streaming507.net:8130/stream"},
     {name = "Faro De David 1045 FM", url = "https://tv.farodedavid.com:8002/live;"},
+    {name = "Festival 1540 AM", url = "http://streaming507.net:8128/stream"},
     {name = "LIKE 105 FM", url = "https://www.streaming507.net:8020/stream"},
     {name = "Los 40 Principales Panamá", url = "http://provisioning.streamtheworld.com/pls/LOS40_PAN.pls"},
     {name = "Original Stereo 907 FM", url = "http://rosetta.shoutca.st:8931/;"},

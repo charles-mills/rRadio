@@ -55,6 +55,7 @@ local stations = {
     {name = "Exa FM", url = "https://playerservices.streamtheworld.com/api/livestream-redirect/XHPSFMAAC.aac"},
     {name = "Exito - FM 997", url = "http://salida.stream.com.uy:8506/stream"},
     {name = "Exito FM 997", url = "https://salida.stream.com.uy:8506/stream"},
+    {name = "Federal FM 991", url = "http://usa15.ciudaddigital.com.uy:8040/FederalFM"},
     {name = "Felicidad - AM 1240", url = "http://medios.ciudaddigital.com.uy:8042/Felicidad"},
     {name = "FM Azul", url = "https://azul-1.nty.uy/"},
     {name = "FM Ciudadela 887", url = "https://streaming1.locucionar.com/proxy/fmciudadela887?mp=/stream"},

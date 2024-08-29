@@ -50,7 +50,7 @@ local stations = {
     {name = "Beata 2 Dance - House", url = "https://mediaserv38.live-streams.nl:18002/house"},
     {name = "Beats 2 Dance - Techno", url = "https://mediaserv38.live-streams.nl:18002/techno"},
     {name = "Beats 2 Dance - Trance", url = "https://mediaserv38.live-streams.nl:18002/trance"},
-    {name = "Bee Radio FLAC", url = "https://stream.beeradio.nl/flac_16"},
+    {name = "Beyond The Beat Generation", url = "http://86.94.213.59:8000/;"},
     {name = "Bigb21", url = "http://stream.b21fm.nl:9010/"},
     {name = "Blackwwod FM", url = "http://server-24.stream-server.nl:8326/stream"},
     {name = "BNR Nieuwsradio", url = "https://stream.bnr.nl/bnr_mp3_128_01"},

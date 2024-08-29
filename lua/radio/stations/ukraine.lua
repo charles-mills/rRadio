@@ -99,6 +99,7 @@ local stations = {
     {name = "Rock Ballads", url = "http://online.radioroks.ua/RadioROKS_Ballads"},
     {name = "Rockradio UA Рокрадіо UA", url = "https://rockradioua.online:8433/rock_256"},
     {name = "RZK", url = "http://stream.mjoy.ua:8000/rzk-aac"},
+    {name = "S1Lhoutte Phonk FM", url = "http://stream.zeno.fm/71ntub27u18uv"},
     {name = "Segenswelle Ukrainisch", url = "http://www.segenswelle.de:8000/ukrainisch"},
     {name = "Sevastopol 1020 FM", url = "http://air.volna.top/SFM"},
     {name = "Seven Rays - 7Rays", url = "http://7rays.stream.laut.fm/7rays"},

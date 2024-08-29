@@ -148,7 +148,6 @@ local stations = {
     {name = "Heavenly Altar Church Radio - Kampala MP3", url = "http://stream.zeno.fm/6s8719ctbphvv"},
     {name = "Hits Radio", url = "http://edge-bauerall-01-gos2.sharp-stream.com/hits.mp3"},
     {name = "HOPE FM", url = "https://stream-53.zeno.fm/08dadxzxfkhvv"},
-    {name = "Inspiration Sermon", url = "http://usa12.fastcast4u.com:5104/"},
     {name = "Islands FM", url = "http://radio.canstream.co.uk:8040/live.mp3"},
     {name = "Israel News Talk", url = "https://dfw.audio-stream.com/proxy/israelne?mp=/live_live"},
     {name = "Jembe Fm", url = "https://cast3.asurahosting.com/proxy/jembemed/stream"},

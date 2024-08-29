@@ -36,7 +36,6 @@ local stations = {
     {name = "Gaysa Radio", url = "https://zas1.ndx.co.za:8018/stream"},
     {name = "Groot FM", url = "https://cast3.my-control-panel.com/proxy/grootfm/stream?1682362396578"},
     {name = "Harties FM", url = "https://s5.radio.co/s68c6f4028/listen"},
-    {name = "Heart FM Cape Town", url = "https://www.heartfm.co.za/live-stream/"},
     {name = "Heaven FM", url = "https://stream.zeno.fm/eequgfw72hhvv"},
     {name = "Helderberg FM", url = "https://helderberg.highquality.radiostream.co.za/"},
     {name = "Hellenic Radio", url = "http://iceant.eclipse-streaming.co.za/Hellenic"},

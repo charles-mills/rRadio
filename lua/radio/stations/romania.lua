@@ -268,6 +268,7 @@ local stations = {
     {name = "Radio Iubire", url = "http://ssl.radios.show:8026/;"},
     {name = "Radio Kids Romania", url = "https://asculta.radioromanian.net:10997/"},
     {name = "Radio Killer Câmpia Turzii", url = "https://s12.myradiostream.com/17492/listen.mp3"},
+    {name = "Rádió Koko", url = "https://radiokoko.ro/live"},
     {name = "Rádio Koko", url = "https://az10.yesstreaming.net:8210/radiokoko"},
     {name = "Radio KPTV", url = "https://nl1.streamingpulse.com/ssl/KPTV"},
     {name = "Radio Lăutaru", url = "http://live.radiolautaru.ro:9000/;"},

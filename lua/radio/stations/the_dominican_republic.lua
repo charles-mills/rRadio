@@ -43,6 +43,8 @@ local stations = {
     {name = "ESTUDIO 979 FM", url = "http://paginas.moisespaulino.com:8067/stream"},
     {name = "Exa FM República Dominicana - 969 FM - HIK52 - Santo Domingo, República Dominicana", url = "https://s2.free-shoutcast.com/stream/18258"},
     {name = "Exaltacionfm", url = "https://chokostream.net/listen/exaltacionfm/live"},
+    {name = "Festival FM 903", url = "https://stream.zeno.fm/g0xb347pu4zuv"},
+    {name = "Fidelity 941 FM", url = "https://playerservices.streamtheworld.com/api/livestream-redirect/FIDELITYAAC.aac"},
     {name = "Fieramix", url = "https://c11.radioboss.fm:18269/stream"},
     {name = "Fuego 90 - La Salsera", url = "https://radio5.domint.net:8110/stream"},
     {name = "GMS", url = "https://radio.gmsiptv.com/gms"},

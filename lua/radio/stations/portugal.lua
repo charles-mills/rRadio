@@ -135,6 +135,7 @@ local stations = {
     {name = "Radio Fado De Coimbra", url = "https://nl.digitalrm.pt:8048/stream"},
     {name = "Rádio Felgueiras", url = "http://centova.radio.com.pt:8459/;"},
     {name = "Rádio Festival", url = "http://centova.radios.pt:9520/;"},
+    {name = "Radio Festival Do Norte", url = "https://centova.radio.com.pt/proxy/520?mp=/stream?nocache=123456789"},
     {name = "Rádio Festival Do Norte", url = "http://centova.radio.com.pt:9520/;"},
     {name = "Rádio Festival Madeira 984 FM", url = "https://audio.serv.pt/8012/stream.mp3"},
     {name = "Radio FM", url = "http://playerservices.streamtheworld.com/api/livestream-redirect/RFM.mp3"},
