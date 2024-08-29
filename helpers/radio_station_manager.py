@@ -12,9 +12,8 @@ from typing import List, Dict, Tuple, Optional
 import shutil
 import subprocess
 import datetime
-import platform
 from asyncio import Semaphore
-
+import platform
 
 # Configuration setup
 class Config:
@@ -223,7 +222,6 @@ class RadioStationManager:
             self.commit_and_push_changes(file_path, f"Verified and saved stations for {country}")
         pbar.update(1)
 
-
     def get_all_countries(self) -> List[str]:
         print("Fetching list of all countries...")
         url = f"{self.config.API_BASE_URL}/countries"
@@ -233,23 +231,20 @@ class RadioStationManager:
         return [country['name'] for country in countries if Utils.clean_file_name(country['name']) != "the_democratic_peoples_republic_of_korea"]
 
 # Main application logic
-def main(auto_run=False, fetch=False, verify=False, count=False):
+async def main_async(auto_run=False, fetch=False, verify=False, count=False):
     print("Starting the Radio Station Manager...")
     config = Config()
     setup_logging(config.LOG_FILE, config.VERBOSE)
     manager = RadioStationManager(config)
 
-    # Reset the event loop
-    asyncio.set_event_loop(asyncio.new_event_loop())
-
     if auto_run:
         print("Auto-run mode enabled.")
         if fetch:
             print("Fetching stations...")
-            asyncio.run(manager.fetch_all_stations())
+            await manager.fetch_all_stations()
         if verify:
             print("Verifying stations...")
-            asyncio.run(manager.verify_all_stations())
+            await manager.verify_all_stations()
         if count:
             print("Counting stations and updating README...")
             total_stations = count_total_stations(config.STATIONS_DIR)
@@ -268,15 +263,15 @@ def main(auto_run=False, fetch=False, verify=False, count=False):
             choice = input("Select an option: ")
 
             if choice == '1':
-                asyncio.run(manager.fetch_all_stations())
+                await manager.fetch_all_stations()
             elif choice == '2':
-                asyncio.run(manager.verify_all_stations())
+                await manager.verify_all_stations()
             elif choice == '3':
                 total_stations = count_total_stations(config.STATIONS_DIR)
                 update_readme_with_station_count(config.README_PATH, total_stations)
             elif choice == '4':
-                asyncio.run(manager.fetch_all_stations())
-                asyncio.run(manager.verify_all_stations())
+                await manager.fetch_all_stations()
+                await manager.verify_all_stations()
                 total_stations = count_total_stations(config.STATIONS_DIR)
                 update_readme_with_station_count(config.README_PATH, total_stations)
                 manager.commit_and_push_changes(config.README_PATH, f"Update README.md with {total_stations} radio stations")
@@ -286,6 +281,12 @@ def main(auto_run=False, fetch=False, verify=False, count=False):
             else:
                 print("Invalid option. Please try again.")
 
+def main(auto_run=False, fetch=False, verify=False, count=False):
+    # Setting the appropriate event loop policy based on the platform
+    if platform.system() == "Windows":
+        asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+
+    asyncio.run(main_async(auto_run=auto_run, fetch=fetch, verify=verify, count=count))
 
 # Helper functions
 def count_total_stations(directory: str) -> int:
