@@ -12,7 +12,9 @@ from typing import List, Dict, Tuple, Optional
 import shutil
 import subprocess
 import datetime
+import platform
 from asyncio import Semaphore
+
 
 # Configuration setup
 class Config:
@@ -236,6 +238,10 @@ def main(auto_run=False, fetch=False, verify=False, count=False):
     config = Config()
     setup_logging(config.LOG_FILE, config.VERBOSE)
     manager = RadioStationManager(config)
+
+    # Setting the appropriate event loop policy based on the platform
+    if platform.system() == "Windows":
+        asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
     if auto_run:
         print("Auto-run mode enabled.")
