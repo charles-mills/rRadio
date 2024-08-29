@@ -36,7 +36,7 @@ jobs:
         if [ -n "$(git status --porcelain)" ]; then
           git add .
           git commit -m "Fetched new radio stations"
-          git push
+          git push --force
         else
           echo "No changes to commit"
         fi
@@ -74,7 +74,7 @@ jobs:
         if [ -n "$(git status --porcelain)" ]; then
           git add .
           git commit -m "Verified radio stations"
-          git push
+          git push --force
         else
           echo "No changes to commit"
         fi
@@ -112,7 +112,7 @@ jobs:
         if [ -n "$(git status --porcelain)" ]; then
           git add README.md
           git commit -m "Updated README.md with latest station count"
-          git push
+          git push --force
         else
           echo "No changes to commit"
         fi
