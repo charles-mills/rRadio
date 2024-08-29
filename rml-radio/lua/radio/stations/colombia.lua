@@ -200,6 +200,7 @@ local stations = {
     {name = "Fantástica Internacional HJF92, 1039 Mhz FM, Leticia, Amazonas", url = "http://51.15.160.78:8326/;"},
     {name = "FANTÁSTICA MEDELLÍN 969 FM", url = "https://mdstrm.com/audio/632cb5dd08346a0889655d9d/live.m3u8"},
     {name = "FAVORITA STEREO 1013 FM", url = "https://stream.zeno.fm/fqk5n2ypgm9uv"},
+    {name = "Fiesta 1027 FM", url = "https://server1.intermediacolombia.com:8008/stream"},
     {name = "Fiesta Bogota", url = "http://stream.zeno.fm/fwbvsr52808uv.mp3"},
     {name = "Fiesta Stereo 958 FM La Plata, Huila", url = "https://radiohd.streaminghd.co:7523/stream"},
     {name = "Frecuencia Arena", url = "http://88.198.9.174:8854/stream?icy=https"},
