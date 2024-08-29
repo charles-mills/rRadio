@@ -33,6 +33,7 @@ jobs:
     - name: Commit fetched stations
       run: |
         git add rml-radio/lua/radio/stations
+        git add -u  # Stage modified files that are already tracked
         git commit -m "Fetched new radio stations"
         git push --force
       env:
@@ -66,6 +67,7 @@ jobs:
     - name: Commit verified stations
       run: |
         git add rml-radio/lua/radio/stations
+        git add -u  # Stage modified files that are already tracked
         git commit -m "Verified radio stations"
         git push --force
       env:
@@ -99,6 +101,7 @@ jobs:
     - name: Commit and Push all changes
       run: |
         git add rml-radio/lua/radio/stations README.md
+        git add -u  # Stage modified files that are already tracked
         git commit -m "Final update: fetched, verified, and updated README.md"
         git push --force
       env:
