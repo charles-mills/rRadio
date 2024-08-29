@@ -222,7 +222,7 @@ class RadioStationManager:
         return [country['name'] for country in countries if Utils.clean_file_name(country['name']) != "the_democratic_peoples_republic_of_korea"]
 
 # Main application logic
-def main(auto_run=False):
+def main(auto_run=False, fetch=False, verify=False, count=False):
     print("Starting the Radio Station Manager...")
     config = Config()
     setup_logging(config.LOG_FILE, config.VERBOSE)
@@ -230,11 +230,17 @@ def main(auto_run=False):
 
     if auto_run:
         print("Auto-run mode enabled.")
-        asyncio.run(manager.fetch_all_stations())
-        asyncio.run(manager.verify_all_stations())
-        total_stations = count_total_stations(config.STATIONS_DIR)
-        update_readme_with_station_count(config.README_PATH, total_stations)
-        manager.commit_and_push_changes(config.README_PATH, f"Update README.md with {total_stations} radio stations")
+        if fetch:
+            print("Fetching stations...")
+            asyncio.run(manager.fetch_all_stations())
+        if verify:
+            print("Verifying stations...")
+            asyncio.run(manager.verify_all_stations())
+        if count:
+            print("Counting stations and updating README...")
+            total_stations = count_total_stations(config.STATIONS_DIR)
+            update_readme_with_station_count(config.README_PATH, total_stations)
+            manager.commit_and_push_changes(config.README_PATH, f"Update README.md with {total_stations} radio stations")
     else:
         print("Interactive mode enabled.")
         while True:
@@ -265,7 +271,6 @@ def main(auto_run=False):
                 break
             else:
                 print("Invalid option. Please try again.")
-
 
 # Helper functions
 def count_total_stations(directory: str) -> int:
@@ -325,6 +330,9 @@ def update_readme_with_station_count(readme_path: str, total_stations: int):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Radio Station Manager')
     parser.add_argument('--auto-run', action='store_true', help='Automatically run full rescan, save, and verify')
+    parser.add_argument('--fetch', action='store_true', help='Fetch and save stations')
+    parser.add_argument('--verify', action='store_true', help='Verify saved stations')
+    parser.add_argument('--count', action='store_true', help='Count total stations and update README')
     args = parser.parse_args()
 
-    main(auto_run=args.auto_run)
+    main(auto_run=args.auto_run, fetch=args.fetch, verify=args.verify, count=args.count)
