@@ -8,9 +8,9 @@ surface.CreateFont("Roboto18", {
 })
 
 surface.CreateFont("HeaderFont", {
-    font = "Roboto",  -- You can change this to any font you prefer
-    size = ScreenScale(8),  -- Adjust the size as needed (this is larger than your Roboto18)
-    weight = 700,  -- Make it bold to stand out more
+    font = "Roboto",
+    size = ScreenScale(8),
+    weight = 700,
 })
 
 local selectedCountry = nil
@@ -18,11 +18,10 @@ local radioMenuOpen = false
 local currentlyPlayingStation = nil
 
 local currentRadioSources = {}
-local entityVolumes = {}  -- This will store volume settings for each entity
+local entityVolumes = {}
 
 local lastMessageTime = -math.huge
 
--- Function to get the configuration based on the entity type
 local function getEntityConfig(entity)
     if entity:GetClass() == "golden_boombox" then
         return Config.GoldenBoombox
@@ -35,7 +34,6 @@ local function getEntityConfig(entity)
     end
 end
 
--- Function to update radio volume based on distance and entity type
 local function updateRadioVolume(station, distance, isPlayerInCar, entity)
     local entityConfig = getEntityConfig(entity)
     
@@ -213,29 +211,53 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                         return
                     end
 
-                    -- Stop the currently playing station for this entity
                     if currentlyPlayingStations[entity] then
                         net.Start("StopCarRadioStation")
                         net.WriteEntity(entity)
                         net.SendToServer()
                     end
 
-                    -- Start the new station, sending both the name and URL
                     local volume = entityVolumes[entity] or getEntityConfig(entity).Volume
                     net.Start("PlayCarRadioStation")
                     net.WriteEntity(entity)
-                    net.WriteString(station.name)  -- Send the station name
-                    net.WriteString(station.url)   -- Send the station URL
+                    net.WriteString(station.name)
+                    net.WriteString(station.url)
                     net.WriteFloat(volume)
                     net.SendToServer()
 
-                    -- Update the currently playing station for this entity
                     currentlyPlayingStations[entity] = station
                     populateList(stationListPanel, backButton, searchBox, false)
                 end
             end
         end
     end
+end
+
+local function calculateFontSizeForStopButton(text, buttonWidth, buttonHeight)
+    local maxFontSize = buttonHeight * 0.7
+    local fontName = "DynamicStopButtonFont"
+
+    surface.CreateFont(fontName, {
+        font = "Roboto",
+        size = maxFontSize,
+        weight = 700,
+    })
+
+    surface.SetFont(fontName)
+    local textWidth, _ = surface.GetTextSize(text)
+
+    while textWidth > buttonWidth * 0.9 do
+        maxFontSize = maxFontSize - 1
+        surface.CreateFont(fontName, {
+            font = "Roboto",
+            size = maxFontSize,
+            weight = 700,
+        })
+        surface.SetFont(fontName)
+        textWidth, _ = surface.GetTextSize(text)
+    end
+
+    return fontName
 end
 
 local function openRadioMenu()
@@ -255,23 +277,19 @@ local function openRadioMenu()
         draw.RoundedBox(8, 0, 0, w, h, Config.UI.BackgroundColor)
         draw.RoundedBoxEx(8, 0, 0, w, Scale(40), Config.UI.HeaderColor, true, true, false, false)
         
-        local iconSize = Scale(30)
-        local iconOffsetX = Scale(10) -- Adjusted the X offset
+        local iconSize = Scale(25)
+        local iconOffsetX = Scale(10)
         
-        -- Get the height of the text
         surface.SetFont("HeaderFont")
-        local textHeight = select(2, surface.GetTextSize("H")) -- Just a dummy character to get height
+        local textHeight = select(2, surface.GetTextSize("H"))
         
-        -- Calculate the Y offset to align the icon bottom with the text bottom
-        local iconOffsetY = Scale(5) + textHeight - iconSize
+        local iconOffsetY = Scale(2) + textHeight - iconSize
         
-        -- Draw the icon
         surface.SetMaterial(Material("hud/radio"))
         surface.SetDrawColor(Config.UI.TextColor)
         surface.DrawTexturedRect(iconOffsetX, iconOffsetY, iconSize, iconSize)
         
-        -- Draw the header text with Y offset
-        draw.SimpleText(selectedCountry and formatCountryName(selectedCountry) or Config.Lang["SelectCountry"], "HeaderFont", iconOffsetX + iconSize + Scale(5), Scale(5) + iconOffsetY, Config.UI.TextColor, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
+        draw.SimpleText(selectedCountry and formatCountryName(selectedCountry) or Config.Lang["SelectCountry"], "HeaderFont", iconOffsetX + iconSize + Scale(5), iconOffsetY, Config.UI.TextColor, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
     end
     
     local searchBox = vgui.Create("DTextEntry", frame)
@@ -291,47 +309,19 @@ local function openRadioMenu()
     end
 
     local stationListPanel = vgui.Create("DScrollPanel", frame)
-    stationListPanel:SetPos(Scale(10), Scale(90))
+    stationListPanel:SetPos(Scale(5), Scale(90))
     stationListPanel:SetSize(Scale(Config.UI.FrameSize.width) - Scale(20), Scale(Config.UI.FrameSize.height) - Scale(200))
 
-    local volumeSlider = vgui.Create("DNumSlider", frame)
-    volumeSlider:SetPos(Scale(10), Scale(Config.UI.FrameSize.height) - Scale(110))
-    volumeSlider:SetSize(Scale(Config.UI.FrameSize.width) - Scale(20), Scale(50))
-    volumeSlider:SetText("")
-    volumeSlider:SetMin(0)
-    volumeSlider:SetMax(1)
-    volumeSlider:SetDecimals(2)
-
-    local entity = LocalPlayer().currentRadioEntity
-
-    -- Retrieve the current volume for the entity, defaulting to the entity's config volume
-    local currentVolume = entityVolumes[entity] or getEntityConfig(entity).Volume
-    volumeSlider:SetValue(currentVolume)  -- Set slider to the current volume
-
-    volumeSlider.Slider.Paint = function(self, w, h)
-        draw.RoundedBox(4, 0, h/2 - 2, w, 4, Config.UI.HeaderColor)
-    end
-
-    volumeSlider.Slider.Knob.Paint = function(self, w, h)
-        draw.RoundedBox(8, 0, 0, w, h, Config.UI.TextColor)
-    end
-
-    volumeSlider.TextArea:SetTextColor(Config.UI.TextColor)
-    volumeSlider.TextArea:SetFont("Roboto18")
-    volumeSlider.Label:SetVisible(false)
-
-    volumeSlider.OnValueChanged = function(_, value)
-        entityVolumes[entity] = value
-        if currentRadioSources[entity] and IsValid(currentRadioSources[entity]) then
-            currentRadioSources[entity]:SetVolume(value)
-        end
-    end
+    local stopButtonHeight = Scale(Config.UI.FrameSize.width) / 8
+    local stopButtonWidth = Scale(Config.UI.FrameSize.width) / 4
+    local stopButtonText = Config.Lang["StopRadio"] or "STOP"
+    local stopButtonFont = calculateFontSizeForStopButton(stopButtonText, stopButtonWidth, stopButtonHeight)
 
     local stopButton = vgui.Create("DButton", frame)
-    stopButton:SetPos(Scale(10), Scale(Config.UI.FrameSize.height) - Scale(50))
-    stopButton:SetSize(Scale(Config.UI.FrameSize.width) - Scale(20), Scale(40))
-    stopButton:SetText(Config.Lang["StopRadio"])
-    stopButton:SetFont("Roboto18")
+    stopButton:SetPos(Scale(10), Scale(Config.UI.FrameSize.height) - Scale(90))
+    stopButton:SetSize(stopButtonWidth, stopButtonHeight)
+    stopButton:SetText(stopButtonText)
+    stopButton:SetFont(stopButtonFont)
     stopButton:SetTextColor(Config.UI.TextColor)
     stopButton.Paint = function(self, w, h)
         draw.RoundedBox(8, 0, 0, w, h, Config.UI.CloseButtonColor)
@@ -342,12 +332,57 @@ local function openRadioMenu()
 
     stopButton.DoClick = function()
         surface.PlaySound("buttons/button6.wav")
+        local entity = LocalPlayer().currentRadioEntity
         if IsValid(entity) then
             net.Start("StopCarRadioStation")
             net.WriteEntity(entity)
             net.SendToServer()
             currentlyPlayingStation = nil
             populateList(stationListPanel, backButton, searchBox, false)
+        end
+    end 
+
+    local volumePanel = vgui.Create("DPanel", frame)
+    volumePanel:SetPos(Scale(20) + stopButtonWidth, Scale(Config.UI.FrameSize.height) - Scale(90))
+    volumePanel:SetSize(Scale(Config.UI.FrameSize.width) - Scale(30) - stopButtonWidth, stopButtonHeight)
+    volumePanel.Paint = function(self, w, h)
+        draw.RoundedBox(8, 0, 0, w, h, Config.UI.CloseButtonColor)
+    end
+
+    local volumeIconSize = Scale(50)
+    
+    local volumeIcon = vgui.Create("DImage", volumePanel)
+    volumeIcon:SetPos(Scale(10), (volumePanel:GetTall() - volumeIconSize) / 2)
+    volumeIcon:SetSize(volumeIconSize, volumeIconSize)
+    volumeIcon:SetImage("hud/volume")
+
+    local volumeSlider = vgui.Create("DNumSlider", volumePanel)
+    volumeSlider:SetPos(volumeIcon:GetWide() - Scale(200), Scale(5))
+    volumeSlider:SetSize(volumePanel:GetWide() - volumeIcon:GetWide() + Scale(180), volumePanel:GetTall() - Scale(20))
+    volumeSlider:SetText("")
+    volumeSlider:SetMin(0)
+    volumeSlider:SetMax(1)
+    volumeSlider:SetDecimals(2)
+    
+    local entity = LocalPlayer().currentRadioEntity
+    
+    local currentVolume = entityVolumes[entity] or getEntityConfig(entity).Volume
+    volumeSlider:SetValue(currentVolume)
+    
+    volumeSlider.Slider.Paint = function(self, w, h)
+        draw.RoundedBox(4, 0, h/2 - 4, w, 16, Config.UI.TextColor)
+    end
+    
+    volumeSlider.Slider.Knob.Paint = function(self, w, h)
+        draw.RoundedBox(8, 0, Scale(-2), w * 2, h * 2, Config.UI.BackgroundColor)
+    end
+    
+    volumeSlider.TextArea:SetVisible(false)
+
+    volumeSlider.OnValueChanged = function(_, value)
+        entityVolumes[entity] = value
+        if currentRadioSources[entity] and IsValid(currentRadioSources[entity]) then
+            currentRadioSources[entity]:SetVolume(value)
         end
     end    
     
@@ -416,7 +451,6 @@ hook.Add("Think", "OpenCarRadioMenu", function()
     end
 end)
 
--- The function responsible for playing the radio station
 net.Receive("PlayCarRadioStation", function()
     local entity = net.ReadEntity()
     local url = net.ReadString()
@@ -427,6 +461,8 @@ net.Receive("PlayCarRadioStation", function()
         return
     end
 
+    local entityConfig = getEntityConfig(entity)
+
     if currentRadioSources[entity] and IsValid(currentRadioSources[entity]) then
         currentRadioSources[entity]:Stop()
     end
@@ -435,18 +471,10 @@ net.Receive("PlayCarRadioStation", function()
         sound.PlayURL(url, "3d mono", function(station, errorID, errorName)
             if IsValid(station) then
                 station:SetPos(entity:GetPos())
-                station:SetVolume(1)
+                station:SetVolume(volume)
                 station:Play()
                 currentRadioSources[entity] = station
 
-                -- Get the entity-specific config
-                local entityConfig = getEntityConfig(entity)
-                if not entityConfig then
-                    print("No valid config found for entity!")
-                    return
-                end
-
-                -- Set 3D fade distances based on entity configuration
                 station:Set3DFadeDistance(entityConfig.MinVolumeDistance, entityConfig.MaxHearingDistance)
 
                 hook.Add("Think", "UpdateRadioPosition_" .. entity:EntIndex(), function()
