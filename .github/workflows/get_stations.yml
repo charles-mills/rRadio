@@ -1,7 +1,9 @@
 name: Auto Run Radio Station Manager
 
 on:
-  workflow_dispatch: # Allows the workflow to be triggered manually from the GitHub Actions tab
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * *'
 
 jobs:
   build:
