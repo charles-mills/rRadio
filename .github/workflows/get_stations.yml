@@ -32,8 +32,7 @@ jobs:
 
     - name: Commit fetched stations if changed
       run: |
-        git pull origin main  # Ensure your branch is up to date
-        git add .  # Stage all changes
+        git add rml-radio/lua/radio/stations  # Stage only the stations files
         if git diff-index --quiet HEAD; then
           echo "No changes to commit"
         else
@@ -70,8 +69,7 @@ jobs:
 
     - name: Commit verified stations if changed
       run: |
-        git pull origin main  # Ensure your branch is up to date
-        git add .  # Stage all changes
+        git add rml-radio/lua/radio/stations  # Stage only the stations files
         if git diff-index --quiet HEAD; then
           echo "No changes to commit"
         else
@@ -108,7 +106,6 @@ jobs:
 
     - name: Commit all changes
       run: |
-        git pull origin main  # Ensure your branch is up to date
         git add .  # Stage all changes
         if git diff-index --quiet HEAD; then
           echo "No changes to commit"
