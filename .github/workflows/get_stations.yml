@@ -9,7 +9,7 @@ jobs:
   fetch_stations:
     runs-on: ubuntu-latest
     outputs:
-      stations_updated: ${{ steps.stations_updated.outputs.stations_updated }}
+      stations_updated: ${{ steps.fetch_stations.outputs.stations_updated }}
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
@@ -30,7 +30,7 @@ jobs:
         git config --global user.email "github-actions@github.com"
 
     - name: Fetch Stations
-      id: stations_updated
+      id: fetch_stations
       run: |
         python helpers/radio_station_manager.py --auto-run --fetch
         if [ -n "$(git status --porcelain rml-radio/lua/radio/stations)" ]; then
@@ -92,7 +92,7 @@ jobs:
     - name: Commit and Push all changes
       if: ${{ needs.fetch_stations.outputs.stations_updated == 'true' }}
       run: |
-        git add rml-radio/lua/radio/stations README.md
+        git add rml-radio/lua/radio/stations README.md  # Stages all modified station files and README.md
         git commit -m "Final update: fetched, verified, and updated README.md"
         git push --force
       env:
