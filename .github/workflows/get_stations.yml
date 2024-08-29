@@ -30,11 +30,15 @@ jobs:
     - name: Fetch Stations
       run: python helpers/radio_station_manager.py --auto-run --fetch
 
-    - name: Commit fetched stations
+    - name: Commit fetched stations if changed
       run: |
-        git add .
-        git commit -m "Fetched new radio stations"
-        git push
+        if [ -n "$(git status --porcelain)" ]; then
+          git add .
+          git commit -m "Fetched new radio stations"
+          git push
+        else
+          echo "No changes to commit"
+        fi
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -63,11 +67,15 @@ jobs:
     - name: Verify Stations
       run: python helpers/radio_station_manager.py --auto-run --verify
 
-    - name: Commit verified stations
+    - name: Commit verified stations if changed
       run: |
-        git add .
-        git commit -m "Verified radio stations"
-        git push
+        if [ -n "$(git status --porcelain)" ]; then
+          git add .
+          git commit -m "Verified radio stations"
+          git push
+        else
+          echo "No changes to commit"
+        fi
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -96,10 +104,14 @@ jobs:
     - name: Update README.md
       run: python helpers/radio_station_manager.py --auto-run --count
 
-    - name: Commit README.md changes
+    - name: Commit README.md changes if changed
       run: |
-        git add README.md
-        git commit -m "Updated README.md with latest station count"
-        git push
+        if [ -n "$(git status --porcelain)" ]; then
+          git add README.md
+          git commit -m "Updated README.md with latest station count"
+          git push
+        else
+          echo "No changes to commit"
+        fi
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
