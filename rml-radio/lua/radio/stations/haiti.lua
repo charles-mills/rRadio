@@ -1,0 +1,25 @@
+local stations = {
+    {name = "Shelove International Radio", url = "https://stream.zeno.fm/xsijfdaz7inuv"},
+    {name = "Ananda Marga Haiti", url = "https://stream-152.zeno.fm/vm8mgn3eewzuv?zs=HWkYw7B5S2C0W0cAcrdGZQ"},
+    {name = "Caraibes FM", url = "https://stream.zeno.fm/54k0v7x14neuv"},
+    {name = "Intermix 931 FM", url = "https://studio.sitegenial.com/9310/stream"},
+    {name = "KONPA MIX RADIO", url = "http://streaming.live365.com/a15951"},
+    {name = "Love A Child FM", url = "https://ctntv.getstreamhosting.com:8028/creole"},
+    {name = "Love A Child Radio International", url = "https://ctntv.getstreamhosting.com:8026/english"},
+    {name = "RADIO BBC NEWS HAITI", url = "http://stream.zeno.fm/hpdayz31vd0uv"},
+    {name = "Radio Boursiquot'S FM 1017", url = "https://stream.zeno.fm/yoz610evcpltv"},
+    {name = "Radio Haiti Tropical", url = "https://zafemrtv.net/9934/;"},
+    {name = "Radio Humilite", url = "https://stream.zeno.fm/qhlllaz21cmuv"},
+    {name = "Radio Jamesen Show", url = "http://stream.zeno.fm/aparrwtkwyzuv"},
+    {name = "Radio Jeanvonvon", url = "https://stream-152.zeno.fm/28zya4hubwzuv?zs=KHC-EIFRRNCzl-jbVyJyjg"},
+    {name = "Radio Kiskeya", url = "http://stream.zeno.fm/82q102t62neuv"},
+    {name = "Radio Mega Haiti", url = "http://stream.zeno.fm/wus1q53u30duv"},
+    {name = "Radio Mille Colombes FM", url = "https://stream.zeno.fm/my1hfddd6nhvv"},
+    {name = "Radio Mondiale FM 1011", url = "https://stream-176.zeno.fm/hxea771y0nhvv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJoeGVhNzcxeTBuaHZ2IiwiaG9zdCI6InN0cmVhbS0xNzYuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6IkJMZUtfQWpqUmphdm82MExheGdrSXciLCJpYXQiOjE"},
+    {name = "Radio St Charles FM", url = "http://stream.zeno.fm/fd9kyc28dchvv"},
+    {name = "Radio Television Supreme RTVS", url = "https://stream.zeno.fm/bdkwbv3rt98uv"},
+    {name = "Radio Vision 2000 Sud Est 909 FM", url = "http://stream.zeno.fm/xmyroy1iu80uv"},
+    {name = "Radyo Tipiti", url = "https://a8.asurahosting.com:7530/stream"},
+}
+
+return stations
