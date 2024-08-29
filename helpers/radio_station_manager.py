@@ -31,7 +31,7 @@ class Config:
 
     def load_defaults(self):
         print("Loading default configuration values...")
-        self.STATIONS_DIR = self.config['DEFAULT'].get('stations_dir', 'rml-radio/lua/radio/stations')
+        self.STATIONS_DIR = self.config['DEFAULT'].get('stations_dir', 'lua/radio/stations')
         self.MAX_CONCURRENT_REQUESTS = int(self.config['DEFAULT'].get('max_concurrent_requests', 5))
         self.API_BASE_URL = self.config['DEFAULT'].get('api_base_url', 'https://de1.api.radio-browser.info/json')
         self.REQUEST_TIMEOUT = int(self.config['DEFAULT'].get('request_timeout', 10))
