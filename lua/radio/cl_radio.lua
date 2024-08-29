@@ -192,7 +192,9 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                 local currentlyPlayingStations = {}
 
                 stationButton.Paint = function(self, w, h)
-                    if station == currentlyPlayingStations[LocalPlayer().currentRadioEntity] then
+                    if currentlyPlayingStations[LocalPlayer().currentRadioEntity] and
+                       station.name == currentlyPlayingStations[LocalPlayer().currentRadioEntity].name and
+                       station.url == currentlyPlayingStations[LocalPlayer().currentRadioEntity].url then
                         draw.RoundedBox(8, 0, 0, w, h, Config.UI.PlayingButtonColor)
                     else
                         draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonColor)
@@ -200,23 +202,23 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                             draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonHoverColor)
                         end
                     end
-                end
+                end                
 
                 stationButton.DoClick = function()
                     surface.PlaySound("buttons/button17.wav")
                     local entity = LocalPlayer().currentRadioEntity
-
+                
                     if not IsValid(entity) then
                         print("No valid entity for PlayCarRadioStation")
                         return
                     end
-
+                
                     if currentlyPlayingStations[entity] then
                         net.Start("StopCarRadioStation")
                         net.WriteEntity(entity)
                         net.SendToServer()
                     end
-
+                
                     local volume = entityVolumes[entity] or getEntityConfig(entity).Volume
                     net.Start("PlayCarRadioStation")
                     net.WriteEntity(entity)
@@ -224,8 +226,8 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                     net.WriteString(station.url)
                     net.WriteFloat(volume)
                     net.SendToServer()
-
-                    currentlyPlayingStations[entity] = station
+                
+                    currentlyPlayingStations[entity] = { name = station.name, url = station.url }
                     populateList(stationListPanel, backButton, searchBox, false)
                 end
             end
@@ -456,64 +458,87 @@ net.Receive("PlayCarRadioStation", function()
     local url = net.ReadString()
     local volume = net.ReadFloat()
 
-    if not IsValid(entity) then
-        print("Invalid entity received for PlayCarRadioStation.")
-        return
-    end
+    local entityRetryAttempts = 5
+    local entityRetryDelay = 0.5  -- Delay in seconds between entity retries
 
-    local entityConfig = getEntityConfig(entity)
+    local function attemptPlayStation(attempt)
+        if not IsValid(entity) then
+            print("Invalid entity received for PlayCarRadioStation. Retrying... Attempt:", attempt)
 
-    if currentRadioSources[entity] and IsValid(currentRadioSources[entity]) then
-        currentRadioSources[entity]:Stop()
-    end
-
-    local function tryPlayStation(attempt)
-        sound.PlayURL(url, "3d mono", function(station, errorID, errorName)
-            if IsValid(station) then
-                station:SetPos(entity:GetPos())
-                station:SetVolume(volume)
-                station:Play()
-                currentRadioSources[entity] = station
-
-                station:Set3DFadeDistance(entityConfig.MinVolumeDistance, entityConfig.MaxHearingDistance)
-
-                hook.Add("Think", "UpdateRadioPosition_" .. entity:EntIndex(), function()
-                    if IsValid(entity) and IsValid(station) then
-                        station:SetPos(entity:GetPos())
-                        
-                        local playerPos = LocalPlayer():GetPos()
-                        local entityPos = entity:GetPos()
-                        local distance = playerPos:Distance(entityPos)
-
-                        local isPlayerInCar = LocalPlayer():GetVehicle() == entity
-
-                        updateRadioVolume(station, distance, isPlayerInCar, entity)
-                    else
-                        hook.Remove("Think", "UpdateRadioPosition_" .. entity:EntIndex())
-                    end
-                end)
-
-                hook.Add("EntityRemoved", "StopRadioOnEntityRemove_" .. entity:EntIndex(), function(ent)
-                    if ent == entity then
-                        if IsValid(currentRadioSources[entity]) then
-                            currentRadioSources[entity]:Stop()
-                        end
-                        currentRadioSources[entity] = nil
-                        hook.Remove("EntityRemoved", "StopRadioOnEntityRemove_" .. entity:EntIndex())
-                        hook.Remove("Think", "UpdateRadioPosition_" .. entity:EntIndex())
-                    end
+            if attempt < entityRetryAttempts then
+                timer.Simple(entityRetryDelay, function()
+                    attemptPlayStation(attempt + 1)
                 end)
             else
-                if attempt < entityConfig.RetryAttempts then
-                    timer.Simple(entityConfig.RetryDelay, function()
-                        tryPlayStation(attempt + 1)
-                    end)
-                end
+                print("[ERROR] Maximum retry attempts reached. Failed to validate entity.")
             end
-        end)
+            return
+        end
+
+        local entityConfig = getEntityConfig(entity)
+
+        if currentRadioSources[entity] and IsValid(currentRadioSources[entity]) then
+            currentRadioSources[entity]:Stop()
+        end
+
+        local function tryPlayStation(playAttempt)
+            sound.PlayURL(url, "3d mono", function(station, errorID, errorName)
+                if IsValid(station) then
+                    print("Playing radio station: " .. url)
+                    station:SetPos(entity:GetPos())
+                    station:SetVolume(volume)
+                    station:Play()
+                    currentRadioSources[entity] = station
+
+                    -- Set 3D fade distance according to the entity's configuration
+                    station:Set3DFadeDistance(entityConfig.MinVolumeDistance, entityConfig.MaxHearingDistance)
+
+                    -- Update the station's position relative to the entity's movement
+                    hook.Add("Think", "UpdateRadioPosition_" .. entity:EntIndex(), function()
+                        if IsValid(entity) and IsValid(station) then
+                            station:SetPos(entity:GetPos())
+
+                            local playerPos = LocalPlayer():GetPos()
+                            local entityPos = entity:GetPos()
+                            local distance = playerPos:Distance(entityPos)
+                            local isPlayerInCar = LocalPlayer():GetVehicle() == entity
+
+                            updateRadioVolume(station, distance, isPlayerInCar, entity)
+                        else
+                            hook.Remove("Think", "UpdateRadioPosition_" .. entity:EntIndex())
+                        end
+                    end)
+
+                    -- Stop the station if the entity is removed
+                    hook.Add("EntityRemoved", "StopRadioOnEntityRemove_" .. entity:EntIndex(), function(ent)
+                        if ent == entity then
+                            if IsValid(currentRadioSources[entity]) then
+                                currentRadioSources[entity]:Stop()
+                            end
+                            currentRadioSources[entity] = nil
+                            hook.Remove("EntityRemoved", "StopRadioOnEntityRemove_" .. entity:EntIndex())
+                            hook.Remove("Think", "UpdateRadioPosition_" .. entity:EntIndex())
+                        end
+                    end)
+                else
+                    -- Log the error and retry if the station couldn't be played
+                    print("[ERROR] Failed to play station. Attempt: " .. playAttempt .. ". Error: " .. (errorName or "Unknown error"))
+                    
+                    if playAttempt < entityConfig.RetryAttempts then
+                        timer.Simple(entityConfig.RetryDelay, function()
+                            tryPlayStation(playAttempt + 1)
+                        end)
+                    else
+                        print("[ERROR] Maximum retry attempts reached. Failed to play station: " .. url)
+                    end
+                end
+            end)
+        end
+
+        tryPlayStation(1)
     end
 
-    tryPlayStation(1)
+    attemptPlayStation(1)
 end)
 
 net.Receive("StopCarRadioStation", function()

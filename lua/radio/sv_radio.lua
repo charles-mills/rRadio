@@ -1,4 +1,3 @@
-
 util.AddNetworkString("PlayCarRadioStation")
 util.AddNetworkString("StopCarRadioStation")
 util.AddNetworkString("CarRadioMessage")
@@ -9,43 +8,45 @@ local ActiveRadios = {}
 debug_mode = true  -- Set to true to enable debug statements
 
 -- Function to add a radio to the active list
-local function AddActiveRadio(entity, station)
+local function AddActiveRadio(entity, stationName, url, volume)
     ActiveRadios[entity:EntIndex()] = {
         entity = entity,
-        station = station
+        stationName = stationName,
+        url = url,
+        volume = volume
     }
-    -- Debug: Print when a radio is added
-    print("[DEBUG] Added active radio:", entity, "Station:", station)
 end
 
 -- Function to remove a radio from the active list
 local function RemoveActiveRadio(entity)
     ActiveRadios[entity:EntIndex()] = nil
-    -- Debug: Print when a radio is removed
-    print("[DEBUG] Removed active radio:", entity)
 end
 
 -- Function to send active radios to a specific player
 local function SendActiveRadiosToPlayer(ply)
-    print("[DEBUG] Sending active radios to player:", ply)
     for _, radio in pairs(ActiveRadios) do
-        print("[DEBUG] Broadcasting active radio:", radio.entity, "Station:", radio.station)
-        net.Start("PlayCarRadioStation")
-        net.WriteEntity(radio.entity)
-        net.WriteString(radio.station)
-        net.WriteFloat(1) -- Assume default volume; adjust as necessary
-        net.Send(ply)
+        -- Check if the entity is valid before sending
+        if IsValid(radio.entity) then
+            net.Start("PlayCarRadioStation")
+            net.WriteEntity(radio.entity)
+            net.WriteString(radio.url)  -- Send the correct URL
+            net.WriteFloat(radio.volume) -- Send the actual volume
+            net.Send(ply)
+        end
     end
 end
 
 -- Hook to send active radios when a player initially joins
 hook.Add("PlayerInitialSpawn", "SendActiveRadiosOnJoin", function(ply)
-    print("[DEBUG] Player joined:", ply)
-    SendActiveRadiosToPlayer(ply)
+    -- Add a short delay to ensure entities are fully loaded on the client
+    timer.Simple(3, function()  -- Consider increasing the delay to 3 seconds
+        if IsValid(ply) then
+            SendActiveRadiosToPlayer(ply)
+        end
+    end)
 end)
 
 hook.Add("PlayerEnteredVehicle", "CarRadioMessageOnEnter", function(ply, vehicle, role)
-    print("[DEBUG] Player entered vehicle:", ply, vehicle)
     net.Start("CarRadioMessage")
     net.Send(ply)
 end)
@@ -58,15 +59,22 @@ net.Receive("PlayCarRadioStation", function(len, ply)
 
     if not IsValid(entity) then return end
 
+    -- Clamp the volume to ensure it's within the valid range
+    if volume < 0 or volume > 1 then
+        volume = 1 -- Default to 1.0 if the volume is out of range
+    end
+
     -- Check if the entity is a boombox or a vehicle
     if entity:GetClass() == "golden_boombox" or entity:GetClass() == "boombox" then
         entity:SetVolume(volume)
         entity:SetStationName(stationName)
 
+        AddActiveRadio(entity, stationName, url, volume)  -- Save both station name and URL
+
         -- Broadcast the station play request to all clients
         net.Start("PlayCarRadioStation")
         net.WriteEntity(entity)
-        net.WriteString(url)
+        net.WriteString(url)  -- Broadcast the URL
         net.WriteFloat(volume)
         net.Broadcast()
 
@@ -77,11 +85,12 @@ net.Receive("PlayCarRadioStation", function(len, ply)
         net.Broadcast()
 
     elseif entity:IsVehicle() then
-        -- Handle vehicle-specific logic here
+        AddActiveRadio(entity, stationName, url, volume)  -- Save both station name and URL
+
         -- Broadcast the station play request to all clients without setting volume on the vehicle
         net.Start("PlayCarRadioStation")
         net.WriteEntity(entity)
-        net.WriteString(url)
+        net.WriteString(url)  -- Broadcast the URL
         net.WriteFloat(volume)
         net.Broadcast()
 
@@ -101,6 +110,7 @@ net.Receive("StopCarRadioStation", function(len, ply)
     -- Check if the entity is a boombox or a vehicle
     if entity:GetClass() == "golden_boombox" or entity:GetClass() == "boombox" then
         entity:SetStationName("")
+        RemoveActiveRadio(entity)
 
         -- Broadcast the stop request to all clients
         net.Start("StopCarRadioStation")
@@ -115,6 +125,7 @@ net.Receive("StopCarRadioStation", function(len, ply)
 
     elseif entity:IsVehicle() then
         -- Handle vehicle-specific stop logic here
+        RemoveActiveRadio(entity)
 
         -- Broadcast the stop request to all clients
         net.Start("StopCarRadioStation")
@@ -128,4 +139,3 @@ net.Receive("StopCarRadioStation", function(len, ply)
         net.Broadcast()
     end
 end)
-
