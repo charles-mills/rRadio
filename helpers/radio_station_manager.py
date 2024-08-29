@@ -17,16 +17,19 @@ from asyncio import Semaphore
 # Configuration setup
 class Config:
     def __init__(self):
+        print("Initializing configuration...")
         self.config = configparser.ConfigParser()
         script_dir = os.path.dirname(os.path.abspath(__file__))
         config_file = os.path.join(script_dir, 'config.ini')
         if os.path.exists(config_file):
+            print(f"Reading config file: {config_file}")
             self.config.read(config_file)
         else:
             logging.warning(f"Config file not found: {config_file}")
         self.load_defaults()
 
     def load_defaults(self):
+        print("Loading default configuration values...")
         self.STATIONS_DIR = self.config['DEFAULT'].get('stations_dir', 'rml-radio/lua/radio/stations')
         self.MAX_CONCURRENT_REQUESTS = int(self.config['DEFAULT'].get('max_concurrent_requests', 5))
         self.API_BASE_URL = self.config['DEFAULT'].get('api_base_url', 'https://de1.api.radio-browser.info/json')
@@ -34,10 +37,11 @@ class Config:
         self.BATCH_DELAY = int(self.config['DEFAULT'].get('batch_delay', 5))
         self.LOG_FILE = self.config['DEFAULT'].get('log_file', 'logs/radio_station_manager.log')
         self.VERBOSE = self.config['DEFAULT'].getboolean('verbose', False)
-        self.README_PATH = os.path.join(script_dir, '..', 'README.md')
+        self.README_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'README.md')
 
 # Setup logging
 def setup_logging(log_file, verbose=False):
+    print(f"Setting up logging to {log_file}...")
     os.makedirs(os.path.dirname(log_file), exist_ok=True)
     handler = RotatingFileHandler(log_file, maxBytes=5*1024*1024, backupCount=5)
     logging.basicConfig(handlers=[handler], level=logging.DEBUG if verbose else logging.INFO,
@@ -78,15 +82,18 @@ class Utils:
 # Radio station management class
 class RadioStationManager:
     def __init__(self, config: Config):
+        print("Initializing RadioStationManager...")
         self.config = config
         self.semaphore = Semaphore(self.config.MAX_CONCURRENT_REQUESTS)
 
     async def fetch_stations(self, session: aiohttp.ClientSession, country_name: str, retries: int = 5) -> List[Dict[str, str]]:
+        print(f"Fetching stations for country: {country_name}")
         url = f"{self.config.API_BASE_URL}/stations/bycountry/{country_name.replace(' ', '%20')}"
         for attempt in range(retries):
             try:
                 async with session.get(url, timeout=self.config.REQUEST_TIMEOUT, ssl=True) as response:
                     if response.status == 200:
+                        print(f"Successfully fetched stations for {country_name}")
                         return await response.json()
                     elif response.status == 429:
                         logging.warning(f"Rate limit exceeded (429) for {country_name}. Retrying...")
@@ -97,9 +104,11 @@ class RadioStationManager:
             except (aiohttp.ClientError, asyncio.TimeoutError) as e:
                 logging.error(f"Attempt {attempt + 1} failed for {country_name}: {e}")
             await asyncio.sleep(2 ** attempt)
+        print(f"Failed to fetch stations for {country_name} after {retries} attempts.")
         return []
 
     def save_stations_to_file(self, country: str, stations: List[Dict[str, str]]):
+        print(f"Saving stations for country: {country}")
         directory = self.config.STATIONS_DIR
         os.makedirs(directory, exist_ok=True)
         cleaned_country_name = Utils.clean_file_name(country)
@@ -129,6 +138,7 @@ class RadioStationManager:
         Utils.validate_lua_file(file_path)
 
     def commit_and_push_changes(self, file_path: str, message: str):
+        print(f"Committing and pushing changes for file: {file_path}")
         try:
             repo_dir = os.path.dirname(file_path)
             while not os.path.exists(os.path.join(repo_dir, '.git')):
@@ -144,9 +154,11 @@ class RadioStationManager:
             logging.error(f"Failed to commit and push changes: {e}")
 
     async def verify_stations(self, session: aiohttp.ClientSession, stations: List[Dict[str, str]]) -> List[Dict[str, str]]:
+        print(f"Verifying {len(stations)} stations...")
         verified_stations = []
         tasks = [self.check_and_add_station(session, station, verified_stations) for station in stations]
         await asyncio.gather(*tasks)
+        print(f"Verified {len(verified_stations)} stations successfully.")
         return verified_stations
 
     async def check_and_add_station(self, session: aiohttp.ClientSession, station: Dict[str, str], verified_stations: List[Dict[str, str]]):
@@ -160,6 +172,7 @@ class RadioStationManager:
             logging.error(f"Station {station['name']} ({station['url']}) check failed: {e}")
 
     async def fetch_all_stations(self):
+        print("Starting to fetch all stations...")
         countries = self.get_all_countries()
         with tqdm(total=len(countries), desc="Fetching stations") as pbar:
             async with aiohttp.ClientSession() as session:
@@ -168,6 +181,7 @@ class RadioStationManager:
         logging.info("All stations fetched and saved.")
 
     async def fetch_save_stations(self, session: aiohttp.ClientSession, country: str, pbar: tqdm):
+        print(f"Fetching and saving stations for {country}...")
         async with self.semaphore:
             stations = await self.fetch_stations(session, country)
             if stations:
@@ -177,6 +191,7 @@ class RadioStationManager:
             pbar.update(1)
 
     async def verify_all_stations(self):
+        print("Starting to verify all stations...")
         countries = self.get_all_countries()
         with tqdm(total=len(countries), desc="Verifying stations") as pbar:
             async with aiohttp.ClientSession() as session:
@@ -185,6 +200,7 @@ class RadioStationManager:
         logging.info("All stations verified and saved.")
 
     async def verify_and_save_stations(self, session: aiohttp.ClientSession, country: str, pbar: tqdm):
+        print(f"Verifying and saving stations for {country}...")
         file_path = os.path.join(self.config.STATIONS_DIR, f"{Utils.clean_file_name(country)}.lua")
         with open(file_path, 'r', encoding='utf-8') as f:
             content = f.read()
@@ -198,26 +214,29 @@ class RadioStationManager:
         pbar.update(1)
 
     def get_all_countries(self) -> List[str]:
+        print("Fetching list of all countries...")
         url = f"{self.config.API_BASE_URL}/countries"
         response = requests.get(url, verify=True)
         countries = response.json()
+        print(f"Found {len(countries)} countries.")
         return [country['name'] for country in countries if Utils.clean_file_name(country['name']) != "the_democratic_peoples_republic_of_korea"]
 
 # Main application logic
 def main(auto_run=False):
+    print("Starting the Radio Station Manager...")
     config = Config()
     setup_logging(config.LOG_FILE, config.VERBOSE)
     manager = RadioStationManager(config)
 
     if auto_run:
-        # Auto-run mode: fetch, verify, update README, and push changes
+        print("Auto-run mode enabled.")
         asyncio.run(manager.fetch_all_stations())
         asyncio.run(manager.verify_all_stations())
         total_stations = count_total_stations(config.STATIONS_DIR)
         update_readme_with_station_count(config.README_PATH, total_stations)
         manager.commit_and_push_changes(config.README_PATH, f"Update README.md with {total_stations} radio stations")
     else:
-        # Interactive mode
+        print("Interactive mode enabled.")
         while True:
             print("\n--- Radio Station Manager ---")
             print("1 - Fetch and Save Stations")
@@ -250,11 +269,13 @@ def main(auto_run=False):
 
 # Helper functions
 def count_total_stations(directory: str) -> int:
+    print(f"Counting total stations in directory: {directory}")
     total_stations = 0
     for filename in os.listdir(directory):
         if filename.endswith('.lua'):
             file_path = os.path.join(directory, filename)
             total_stations += count_stations_in_file(file_path)
+    print(f"Total stations counted: {total_stations}")
     return total_stations
 
 def count_stations_in_file(file_path: str) -> int:
@@ -266,6 +287,7 @@ def count_stations_in_file(file_path: str) -> int:
     return count
 
 def update_readme_with_station_count(readme_path: str, total_stations: int):
+    print(f"Updating README.md at {readme_path} with station count: {total_stations}")
     if not os.path.exists(readme_path):
         logging.error(f"README.md not found at {readme_path}")
         return
