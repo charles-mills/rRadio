@@ -32,6 +32,7 @@ jobs:
 
     - name: Commit fetched stations if changed
       run: |
+        git pull origin main  # Ensure your branch is up to date
         if [ -n "$(git status --porcelain)" ]; then
           git add .
           git commit -m "Fetched new radio stations"
@@ -69,6 +70,7 @@ jobs:
 
     - name: Commit verified stations if changed
       run: |
+        git pull origin main  # Ensure your branch is up to date
         if [ -n "$(git status --porcelain)" ]; then
           git add .
           git commit -m "Verified radio stations"
@@ -106,6 +108,7 @@ jobs:
 
     - name: Commit README.md changes if changed
       run: |
+        git pull origin main  # Ensure your branch is up to date
         if [ -n "$(git status --porcelain)" ]; then
           git add README.md
           git commit -m "Updated README.md with latest station count"
