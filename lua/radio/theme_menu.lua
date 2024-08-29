@@ -1,4 +1,3 @@
--- Include the themes.lua file to access the defined themes
 local themes = include("themes.lua")
 
 -- Table to define available languages
@@ -13,6 +12,7 @@ local languages = {
     pt_br = "Português (Brasil)",
     ru = "Русский",
     zh_cn = "简体中文",
+    tr = "Türkçe",
 }
 
 -- Create the client convar to enable/disable chat messages
