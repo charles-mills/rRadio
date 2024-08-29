@@ -32,8 +32,9 @@ jobs:
 
     - name: Commit fetched stations
       run: |
-        git add .
+        git add rml-radio/lua/radio/stations
         git commit -m "Fetched new radio stations"
+        git push --force
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -64,8 +65,9 @@ jobs:
 
     - name: Commit verified stations
       run: |
-        git add .
+        git add rml-radio/lua/radio/stations
         git commit -m "Verified radio stations"
+        git push --force
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -96,7 +98,7 @@ jobs:
 
     - name: Commit and Push all changes
       run: |
-        git add .
+        git add rml-radio/lua/radio/stations README.md
         git commit -m "Final update: fetched, verified, and updated README.md"
         git push --force
       env:
