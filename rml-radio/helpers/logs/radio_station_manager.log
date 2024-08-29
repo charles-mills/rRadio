@@ -5286,3 +5286,5 @@
 2024-08-29 15:29:00,439 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/the_united_kingdom_of_great_britain_and_northern_ireland.lua: [Errno 2] No such file or directory: 'lua'
 2024-08-29 15:29:00,440 - ERROR - Git repository not found.
 2024-08-29 15:29:00,442 - INFO - All stations fetched and saved.
+2024-08-29 15:36:38,347 - INFO - Updated README.md with the current station count: 82586
+2024-08-29 15:36:38,768 - ERROR - Failed to commit and push changes: Command '['git', 'push']' returned non-zero exit status 1.
