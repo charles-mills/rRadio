@@ -22,6 +22,11 @@ jobs:
         python -m pip install --upgrade pip
         pip install aiohttp tqdm configparser requests
 
+    - name: Set up Git user
+      run: |
+        git config --global user.name "GitHub Action"
+        git config --global user.email "github-actions@github.com"
+
     - name: Fetch Stations
       run: python helpers/radio_station_manager.py --auto-run --fetch
 
@@ -48,6 +53,11 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install aiohttp tqdm configparser requests
+
+    - name: Set up Git user
+      run: |
+        git config --global user.name "GitHub Action"
+        git config --global user.email "github-actions@github.com"
 
     - name: Verify Stations
       run: python helpers/radio_station_manager.py --auto-run --verify
@@ -76,13 +86,13 @@ jobs:
         python -m pip install --upgrade pip
         pip install aiohttp tqdm configparser requests
 
-    - name: Update README.md
-      run: python helpers/radio_station_manager.py --auto-run --count
-
     - name: Set up Git user
       run: |
         git config --global user.name "GitHub Action"
         git config --global user.email "github-actions@github.com"
+
+    - name: Update README.md
+      run: python helpers/radio_station_manager.py --auto-run --count
 
     - name: Commit and Push all changes
       run: |
