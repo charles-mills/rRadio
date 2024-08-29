@@ -1743,3 +1743,862 @@
 2024-08-29 13:50:55,077 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/greece.lua: [Errno 2] No such file or directory: 'lua'
 2024-08-29 13:50:55,077 - ERROR - Git repository not found.
 2024-08-29 13:51:04,720 - INFO - All stations fetched and saved.
+2024-08-29 13:55:21,278 - INFO - Saved stations for Anguilla to rml-radio/lua/radio/stations/anguilla.lua
+2024-08-29 13:55:21,280 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/anguilla.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:21,281 - ERROR - Git repository not found.
+2024-08-29 13:55:21,319 - INFO - Saved stations for Antigua And Barbuda to rml-radio/lua/radio/stations/antigua_and_barbuda.lua
+2024-08-29 13:55:21,321 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/antigua_and_barbuda.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:21,321 - ERROR - Git repository not found.
+2024-08-29 13:55:21,521 - INFO - Saved stations for Andorra to rml-radio/lua/radio/stations/andorra.lua
+2024-08-29 13:55:21,523 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/andorra.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:21,523 - ERROR - Git repository not found.
+2024-08-29 13:55:21,645 - INFO - Saved stations for Armenia to rml-radio/lua/radio/stations/armenia.lua
+2024-08-29 13:55:21,647 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/armenia.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:21,647 - ERROR - Git repository not found.
+2024-08-29 13:55:21,898 - INFO - Saved stations for Afghanistan to rml-radio/lua/radio/stations/afghanistan.lua
+2024-08-29 13:55:21,900 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/afghanistan.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:21,900 - ERROR - Git repository not found.
+2024-08-29 13:55:21,972 - INFO - Saved stations for Albania to rml-radio/lua/radio/stations/albania.lua
+2024-08-29 13:55:21,974 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/albania.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:21,974 - ERROR - Git repository not found.
+2024-08-29 13:55:21,988 - INFO - Saved stations for Angola to rml-radio/lua/radio/stations/angola.lua
+2024-08-29 13:55:21,990 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/angola.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:21,990 - ERROR - Git repository not found.
+2024-08-29 13:55:22,060 - INFO - Saved stations for Antarctica to rml-radio/lua/radio/stations/antarctica.lua
+2024-08-29 13:55:22,063 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/antarctica.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:22,063 - ERROR - Git repository not found.
+2024-08-29 13:55:22,231 - INFO - Saved stations for The United Arab Emirates to rml-radio/lua/radio/stations/the_united_arab_emirates.lua
+2024-08-29 13:55:22,233 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/the_united_arab_emirates.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:22,233 - ERROR - Git repository not found.
+2024-08-29 13:55:22,496 - INFO - Saved stations for American Samoa to rml-radio/lua/radio/stations/american_samoa.lua
+2024-08-29 13:55:22,498 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/american_samoa.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:22,498 - ERROR - Git repository not found.
+2024-08-29 13:55:22,798 - INFO - Saved stations for Aruba to rml-radio/lua/radio/stations/aruba.lua
+2024-08-29 13:55:22,800 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/aruba.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:22,800 - ERROR - Git repository not found.
+2024-08-29 13:55:22,820 - INFO - Saved stations for Austria to rml-radio/lua/radio/stations/austria.lua
+2024-08-29 13:55:22,821 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/austria.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:22,821 - ERROR - Git repository not found.
+2024-08-29 13:55:22,975 - INFO - Saved stations for Australia to rml-radio/lua/radio/stations/australia.lua
+2024-08-29 13:55:22,977 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/australia.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:22,978 - ERROR - Git repository not found.
+2024-08-29 13:55:23,212 - INFO - Saved stations for Argentina to rml-radio/lua/radio/stations/argentina.lua
+2024-08-29 13:55:23,215 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/argentina.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:23,215 - ERROR - Git repository not found.
+2024-08-29 13:55:23,239 - INFO - Saved stations for Aland Islands to rml-radio/lua/radio/stations/aland_islands.lua
+2024-08-29 13:55:23,240 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/aland_islands.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:23,241 - ERROR - Git repository not found.
+2024-08-29 13:55:23,319 - INFO - Saved stations for Azerbaijan to rml-radio/lua/radio/stations/azerbaijan.lua
+2024-08-29 13:55:23,321 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/azerbaijan.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:23,321 - ERROR - Git repository not found.
+2024-08-29 13:55:23,373 - INFO - Saved stations for Bosnia And Herzegovina to rml-radio/lua/radio/stations/bosnia_and_herzegovina.lua
+2024-08-29 13:55:23,375 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/bosnia_and_herzegovina.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:23,375 - ERROR - Git repository not found.
+2024-08-29 13:55:23,399 - WARNING - Rate limit exceeded (429) for Bangladesh. Retrying...
+2024-08-29 13:55:23,480 - WARNING - Rate limit exceeded (429) for Belgium. Retrying...
+2024-08-29 13:55:23,489 - INFO - Saved stations for Barbados to rml-radio/lua/radio/stations/barbados.lua
+2024-08-29 13:55:23,491 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/barbados.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:23,491 - ERROR - Git repository not found.
+2024-08-29 13:55:23,534 - WARNING - Rate limit exceeded (429) for Burkina Faso. Retrying...
+2024-08-29 13:55:23,650 - WARNING - Rate limit exceeded (429) for Bulgaria. Retrying...
+2024-08-29 13:55:24,693 - WARNING - Rate limit exceeded (429) for Burkina Faso. Retrying...
+2024-08-29 13:55:24,810 - WARNING - Rate limit exceeded (429) for Bulgaria. Retrying...
+2024-08-29 13:55:24,819 - INFO - Saved stations for Bangladesh to rml-radio/lua/radio/stations/bangladesh.lua
+2024-08-29 13:55:24,821 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/bangladesh.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:24,821 - ERROR - Git repository not found.
+2024-08-29 13:55:25,095 - INFO - Saved stations for Bahrain to rml-radio/lua/radio/stations/bahrain.lua
+2024-08-29 13:55:25,097 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/bahrain.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:25,097 - ERROR - Git repository not found.
+2024-08-29 13:55:25,250 - INFO - Saved stations for Belgium to rml-radio/lua/radio/stations/belgium.lua
+2024-08-29 13:55:25,252 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/belgium.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:25,252 - ERROR - Git repository not found.
+2024-08-29 13:55:25,255 - WARNING - Rate limit exceeded (429) for Burundi. Retrying...
+2024-08-29 13:55:25,532 - INFO - Saved stations for Benin to rml-radio/lua/radio/stations/benin.lua
+2024-08-29 13:55:25,534 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/benin.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:25,534 - ERROR - Git repository not found.
+2024-08-29 13:55:25,695 - WARNING - Rate limit exceeded (429) for Bermuda. Retrying...
+2024-08-29 13:55:26,611 - INFO - Saved stations for Burundi to rml-radio/lua/radio/stations/burundi.lua
+2024-08-29 13:55:26,613 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/burundi.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:26,613 - ERROR - Git repository not found.
+2024-08-29 13:55:26,854 - WARNING - Rate limit exceeded (429) for Bermuda. Retrying...
+2024-08-29 13:55:26,896 - INFO - Saved stations for Brunei Darussalam to rml-radio/lua/radio/stations/brunei_darussalam.lua
+2024-08-29 13:55:26,898 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/brunei_darussalam.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:26,898 - ERROR - Git repository not found.
+2024-08-29 13:55:26,969 - WARNING - Rate limit exceeded (429) for Bulgaria. Retrying...
+2024-08-29 13:55:26,983 - INFO - Saved stations for Burkina Faso to rml-radio/lua/radio/stations/burkina_faso.lua
+2024-08-29 13:55:26,985 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/burkina_faso.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:26,985 - ERROR - Git repository not found.
+2024-08-29 13:55:27,057 - WARNING - Rate limit exceeded (429) for Bolivia. Retrying...
+2024-08-29 13:55:27,144 - WARNING - Rate limit exceeded (429) for Bonaire. Retrying...
+2024-08-29 13:55:28,454 - INFO - Saved stations for Bonaire to rml-radio/lua/radio/stations/bonaire.lua
+2024-08-29 13:55:28,456 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/bonaire.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:28,456 - ERROR - Git repository not found.
+2024-08-29 13:55:28,684 - INFO - Saved stations for Bolivia to rml-radio/lua/radio/stations/bolivia.lua
+2024-08-29 13:55:28,687 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/bolivia.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:28,687 - ERROR - Git repository not found.
+2024-08-29 13:55:29,533 - INFO - Saved stations for Other to rml-radio/lua/radio/stations/other.lua
+2024-08-29 13:55:29,535 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/other.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:29,546 - ERROR - Git repository not found.
+2024-08-29 13:55:29,614 - INFO - Saved stations for The Bahamas to rml-radio/lua/radio/stations/the_bahamas.lua
+2024-08-29 13:55:29,616 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/the_bahamas.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:29,616 - ERROR - Git repository not found.
+2024-08-29 13:55:29,771 - INFO - Saved stations for Brazil to rml-radio/lua/radio/stations/brazil.lua
+2024-08-29 13:55:29,772 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/brazil.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:29,773 - ERROR - Git repository not found.
+2024-08-29 13:55:29,775 - WARNING - Rate limit exceeded (429) for Bermuda. Retrying...
+2024-08-29 13:55:29,775 - WARNING - Rate limit exceeded (429) for Belarus. Retrying...
+2024-08-29 13:55:29,871 - INFO - Saved stations for Botswana to rml-radio/lua/radio/stations/botswana.lua
+2024-08-29 13:55:29,873 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/botswana.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:29,873 - ERROR - Git repository not found.
+2024-08-29 13:55:30,032 - INFO - Saved stations for Belize to rml-radio/lua/radio/stations/belize.lua
+2024-08-29 13:55:30,034 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/belize.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:30,034 - ERROR - Git repository not found.
+2024-08-29 13:55:30,035 - WARNING - Rate limit exceeded (429) for Canada. Retrying...
+2024-08-29 13:55:30,193 - WARNING - Rate limit exceeded (429) for The Cocos Keeling Islands. Retrying...
+2024-08-29 13:55:31,077 - INFO - Saved stations for Belarus to rml-radio/lua/radio/stations/belarus.lua
+2024-08-29 13:55:31,078 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/belarus.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:31,079 - ERROR - Git repository not found.
+2024-08-29 13:55:31,194 - WARNING - Rate limit exceeded (429) for Canada. Retrying...
+2024-08-29 13:55:31,237 - WARNING - Rate limit exceeded (429) for The Democratic Republic Of The Congo. Retrying...
+2024-08-29 13:55:31,418 - INFO - Saved stations for Bulgaria to rml-radio/lua/radio/stations/bulgaria.lua
+2024-08-29 13:55:31,419 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/bulgaria.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:31,419 - ERROR - Git repository not found.
+2024-08-29 13:55:31,468 - INFO - Saved stations for The Cocos Keeling Islands to rml-radio/lua/radio/stations/the_cocos_keeling_islands.lua
+2024-08-29 13:55:31,470 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/the_cocos_keeling_islands.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:31,470 - ERROR - Git repository not found.
+2024-08-29 13:55:31,579 - WARNING - Rate limit exceeded (429) for The Central African Republic. Retrying...
+2024-08-29 13:55:31,629 - WARNING - Rate limit exceeded (429) for The Congo. Retrying...
+2024-08-29 13:55:32,648 - INFO - Saved stations for The Democratic Republic Of The Congo to rml-radio/lua/radio/stations/the_democratic_republic_of_the_congo.lua
+2024-08-29 13:55:32,649 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/the_democratic_republic_of_the_congo.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:32,649 - ERROR - Git repository not found.
+2024-08-29 13:55:32,788 - WARNING - Rate limit exceeded (429) for The Congo. Retrying...
+2024-08-29 13:55:32,808 - WARNING - Rate limit exceeded (429) for Switzerland. Retrying...
+2024-08-29 13:55:32,870 - INFO - Saved stations for The Central African Republic to rml-radio/lua/radio/stations/the_central_african_republic.lua
+2024-08-29 13:55:32,872 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/the_central_african_republic.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:32,872 - ERROR - Git repository not found.
+2024-08-29 13:55:33,129 - INFO - Saved stations for Coted Ivoire to rml-radio/lua/radio/stations/coted_ivoire.lua
+2024-08-29 13:55:33,130 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/coted_ivoire.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:33,131 - ERROR - Git repository not found.
+2024-08-29 13:55:33,289 - WARNING - Rate limit exceeded (429) for The Cook Islands. Retrying...
+2024-08-29 13:55:33,967 - WARNING - Rate limit exceeded (429) for Switzerland. Retrying...
+2024-08-29 13:55:34,038 - INFO - Saved stations for Bermuda to rml-radio/lua/radio/stations/bermuda.lua
+2024-08-29 13:55:34,040 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/bermuda.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:34,040 - ERROR - Git repository not found.
+2024-08-29 13:55:34,199 - WARNING - Rate limit exceeded (429) for Chile. Retrying...
+2024-08-29 13:55:34,461 - INFO - Saved stations for Canada to rml-radio/lua/radio/stations/canada.lua
+2024-08-29 13:55:34,463 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/canada.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:34,464 - ERROR - Git repository not found.
+2024-08-29 13:55:34,545 - INFO - Saved stations for The Cook Islands to rml-radio/lua/radio/stations/the_cook_islands.lua
+2024-08-29 13:55:34,547 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/the_cook_islands.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:34,547 - ERROR - Git repository not found.
+2024-08-29 13:55:34,624 - WARNING - Rate limit exceeded (429) for Cameroon. Retrying...
+2024-08-29 13:55:34,706 - WARNING - Rate limit exceeded (429) for China. Retrying...
+2024-08-29 13:55:35,205 - INFO - Saved stations for The Congo to rml-radio/lua/radio/stations/the_congo.lua
+2024-08-29 13:55:35,207 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/the_congo.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:35,207 - ERROR - Git repository not found.
+2024-08-29 13:55:35,366 - WARNING - Rate limit exceeded (429) for Colombia. Retrying...
+2024-08-29 13:55:35,510 - INFO - Saved stations for Chile to rml-radio/lua/radio/stations/chile.lua
+2024-08-29 13:55:35,512 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/chile.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:35,512 - ERROR - Git repository not found.
+2024-08-29 13:55:35,671 - WARNING - Rate limit exceeded (429) for Costa Rica. Retrying...
+2024-08-29 13:55:35,784 - WARNING - Rate limit exceeded (429) for Cameroon. Retrying...
+2024-08-29 13:55:36,127 - WARNING - Rate limit exceeded (429) for Switzerland. Retrying...
+2024-08-29 13:55:36,206 - INFO - Saved stations for China to rml-radio/lua/radio/stations/china.lua
+2024-08-29 13:55:36,208 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/china.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:36,208 - ERROR - Git repository not found.
+2024-08-29 13:55:36,481 - INFO - Saved stations for Cuba to rml-radio/lua/radio/stations/cuba.lua
+2024-08-29 13:55:36,483 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/cuba.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:36,483 - ERROR - Git repository not found.
+2024-08-29 13:55:36,526 - WARNING - Rate limit exceeded (429) for Colombia. Retrying...
+2024-08-29 13:55:36,642 - WARNING - Rate limit exceeded (429) for Cabo Verde. Retrying...
+2024-08-29 13:55:36,955 - INFO - Saved stations for Costa Rica to rml-radio/lua/radio/stations/costa_rica.lua
+2024-08-29 13:55:36,957 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/costa_rica.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:36,957 - ERROR - Git repository not found.
+2024-08-29 13:55:37,116 - WARNING - Rate limit exceeded (429) for Curacao. Retrying...
+2024-08-29 13:55:37,906 - INFO - Saved stations for Cabo Verde to rml-radio/lua/radio/stations/cabo_verde.lua
+2024-08-29 13:55:37,907 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/cabo_verde.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:37,907 - ERROR - Git repository not found.
+2024-08-29 13:55:38,042 - INFO - Saved stations for Cameroon to rml-radio/lua/radio/stations/cameroon.lua
+2024-08-29 13:55:38,044 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/cameroon.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:38,045 - ERROR - Git repository not found.
+2024-08-29 13:55:38,066 - WARNING - Rate limit exceeded (429) for Cyprus. Retrying...
+2024-08-29 13:55:38,204 - WARNING - Rate limit exceeded (429) for Czechia. Retrying...
+2024-08-29 13:55:38,276 - WARNING - Rate limit exceeded (429) for Curacao. Retrying...
+2024-08-29 13:55:38,970 - INFO - Saved stations for Colombia to rml-radio/lua/radio/stations/colombia.lua
+2024-08-29 13:55:38,972 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/colombia.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:38,972 - ERROR - Git repository not found.
+2024-08-29 13:55:39,226 - WARNING - Rate limit exceeded (429) for Cyprus. Retrying...
+2024-08-29 13:55:40,120 - INFO - Saved stations for Germany to rml-radio/lua/radio/stations/germany.lua
+2024-08-29 13:55:40,122 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/germany.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:40,123 - ERROR - Git repository not found.
+2024-08-29 13:55:40,174 - INFO - Saved stations for Czechia to rml-radio/lua/radio/stations/czechia.lua
+2024-08-29 13:55:40,176 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/czechia.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:40,176 - ERROR - Git repository not found.
+2024-08-29 13:55:40,288 - WARNING - Rate limit exceeded (429) for Switzerland. Retrying...
+2024-08-29 13:55:40,436 - WARNING - Rate limit exceeded (429) for Curacao. Retrying...
+2024-08-29 13:55:40,447 - INFO - Saved stations for Denmark to rml-radio/lua/radio/stations/denmark.lua
+2024-08-29 13:55:40,449 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/denmark.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:40,449 - ERROR - Git repository not found.
+2024-08-29 13:55:40,480 - INFO - Saved stations for Dominica to rml-radio/lua/radio/stations/dominica.lua
+2024-08-29 13:55:40,482 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/dominica.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:40,482 - ERROR - Git repository not found.
+2024-08-29 13:55:40,609 - WARNING - Rate limit exceeded (429) for The Dominican Republic. Retrying...
+2024-08-29 13:55:40,641 - WARNING - Rate limit exceeded (429) for Algeria. Retrying...
+2024-08-29 13:55:41,497 - INFO - Saved stations for Cyprus to rml-radio/lua/radio/stations/cyprus.lua
+2024-08-29 13:55:41,499 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/cyprus.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:41,499 - ERROR - Git repository not found.
+2024-08-29 13:55:41,768 - WARNING - Rate limit exceeded (429) for The Dominican Republic. Retrying...
+2024-08-29 13:55:41,801 - WARNING - Rate limit exceeded (429) for Algeria. Retrying...
+2024-08-29 13:55:41,933 - INFO - Saved stations for Ecuador to rml-radio/lua/radio/stations/ecuador.lua
+2024-08-29 13:55:41,935 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/ecuador.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:41,935 - ERROR - Git repository not found.
+2024-08-29 13:55:42,208 - INFO - Saved stations for Estonia to rml-radio/lua/radio/stations/estonia.lua
+2024-08-29 13:55:42,210 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/estonia.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:42,210 - ERROR - Git repository not found.
+2024-08-29 13:55:42,459 - INFO - Saved stations for Egypt to rml-radio/lua/radio/stations/egypt.lua
+2024-08-29 13:55:42,461 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/egypt.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:42,461 - ERROR - Git repository not found.
+2024-08-29 13:55:42,620 - WARNING - Rate limit exceeded (429) for Eritrea. Retrying...
+2024-08-29 13:55:43,881 - INFO - Saved stations for Eritrea to rml-radio/lua/radio/stations/eritrea.lua
+2024-08-29 13:55:43,883 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/eritrea.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:43,883 - ERROR - Git repository not found.
+2024-08-29 13:55:44,044 - WARNING - Rate limit exceeded (429) for Spain. Retrying...
+2024-08-29 13:55:44,395 - INFO - Saved stations for Algeria to rml-radio/lua/radio/stations/algeria.lua
+2024-08-29 13:55:44,397 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/algeria.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:44,397 - ERROR - Git repository not found.
+2024-08-29 13:55:44,521 - INFO - Saved stations for The Dominican Republic to rml-radio/lua/radio/stations/the_dominican_republic.lua
+2024-08-29 13:55:44,523 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/the_dominican_republic.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:44,523 - ERROR - Git repository not found.
+2024-08-29 13:55:44,596 - WARNING - Rate limit exceeded (429) for Curacao. Retrying...
+2024-08-29 13:55:44,665 - INFO - Saved stations for Ethiopia to rml-radio/lua/radio/stations/ethiopia.lua
+2024-08-29 13:55:44,667 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/ethiopia.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:44,667 - ERROR - Git repository not found.
+2024-08-29 13:55:44,682 - WARNING - Rate limit exceeded (429) for Finland. Retrying...
+2024-08-29 13:55:44,929 - INFO - Saved stations for Fiji to rml-radio/lua/radio/stations/fiji.lua
+2024-08-29 13:55:44,931 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/fiji.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:44,931 - ERROR - Git repository not found.
+2024-08-29 13:55:45,090 - WARNING - Rate limit exceeded (429) for The Falkland Islands Malvinas. Retrying...
+2024-08-29 13:55:45,203 - WARNING - Rate limit exceeded (429) for Spain. Retrying...
+2024-08-29 13:55:46,266 - INFO - Saved stations for Finland to rml-radio/lua/radio/stations/finland.lua
+2024-08-29 13:55:46,268 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/finland.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:46,268 - ERROR - Git repository not found.
+2024-08-29 13:55:46,350 - INFO - Saved stations for The Falkland Islands Malvinas to rml-radio/lua/radio/stations/the_falkland_islands_malvinas.lua
+2024-08-29 13:55:46,352 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/the_falkland_islands_malvinas.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:46,352 - ERROR - Git repository not found.
+2024-08-29 13:55:46,511 - WARNING - Rate limit exceeded (429) for France. Retrying...
+2024-08-29 13:55:46,531 - INFO - Saved stations for The Faroe Islands to rml-radio/lua/radio/stations/the_faroe_islands.lua
+2024-08-29 13:55:46,533 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/the_faroe_islands.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:46,533 - ERROR - Git repository not found.
+2024-08-29 13:55:46,692 - WARNING - Rate limit exceeded (429) for The United Kingdom Of Great Britain And Northern Ireland. Retrying...
+2024-08-29 13:55:48,308 - INFO - Saved stations for Spain to rml-radio/lua/radio/stations/spain.lua
+2024-08-29 13:55:48,310 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/spain.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:48,310 - ERROR - Git repository not found.
+2024-08-29 13:55:48,470 - WARNING - Rate limit exceeded (429) for Grenada. Retrying...
+2024-08-29 13:55:49,008 - INFO - Saved stations for France to rml-radio/lua/radio/stations/france.lua
+2024-08-29 13:55:49,010 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/france.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:49,010 - ERROR - Git repository not found.
+2024-08-29 13:55:49,132 - INFO - Saved stations for The United Kingdom Of Great Britain And Northern Ireland to rml-radio/lua/radio/stations/the_united_kingdom_of_great_britain_and_northern_ireland.lua
+2024-08-29 13:55:49,134 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/the_united_kingdom_of_great_britain_and_northern_ireland.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:49,134 - ERROR - Git repository not found.
+2024-08-29 13:55:49,296 - WARNING - Rate limit exceeded (429) for French Guiana. Retrying...
+2024-08-29 13:55:49,309 - INFO - Saved stations for Georgia to rml-radio/lua/radio/stations/georgia.lua
+2024-08-29 13:55:49,311 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/georgia.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:49,311 - ERROR - Git repository not found.
+2024-08-29 13:55:49,374 - INFO - Saved stations for Switzerland to rml-radio/lua/radio/stations/switzerland.lua
+2024-08-29 13:55:49,376 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/switzerland.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:49,376 - ERROR - Git repository not found.
+2024-08-29 13:55:49,535 - WARNING - Rate limit exceeded (429) for Ghana. Retrying...
+2024-08-29 13:55:49,570 - INFO - Saved stations for Guernsey to rml-radio/lua/radio/stations/guernsey.lua
+2024-08-29 13:55:49,572 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/guernsey.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:49,572 - ERROR - Git repository not found.
+2024-08-29 13:55:49,630 - WARNING - Rate limit exceeded (429) for Grenada. Retrying...
+2024-08-29 13:55:49,733 - WARNING - Rate limit exceeded (429) for Gibraltar. Retrying...
+2024-08-29 13:55:50,549 - INFO - Saved stations for French Guiana to rml-radio/lua/radio/stations/french_guiana.lua
+2024-08-29 13:55:50,551 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/french_guiana.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:50,551 - ERROR - Git repository not found.
+2024-08-29 13:55:50,710 - WARNING - Rate limit exceeded (429) for Greenland. Retrying...
+2024-08-29 13:55:50,811 - INFO - Saved stations for Ghana to rml-radio/lua/radio/stations/ghana.lua
+2024-08-29 13:55:50,813 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/ghana.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:50,813 - ERROR - Git repository not found.
+2024-08-29 13:55:50,972 - WARNING - Rate limit exceeded (429) for Guinea. Retrying...
+2024-08-29 13:55:51,174 - INFO - Saved stations for Gibraltar to rml-radio/lua/radio/stations/gibraltar.lua
+2024-08-29 13:55:51,176 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/gibraltar.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:51,177 - ERROR - Git repository not found.
+2024-08-29 13:55:51,446 - INFO - Saved stations for Guadeloupe to rml-radio/lua/radio/stations/guadeloupe.lua
+2024-08-29 13:55:51,447 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/guadeloupe.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:51,448 - ERROR - Git repository not found.
+2024-08-29 13:55:51,607 - WARNING - Rate limit exceeded (429) for Equatorial Guinea. Retrying...
+2024-08-29 13:55:51,790 - WARNING - Rate limit exceeded (429) for Grenada. Retrying...
+2024-08-29 13:55:51,969 - INFO - Saved stations for Greenland to rml-radio/lua/radio/stations/greenland.lua
+2024-08-29 13:55:51,971 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/greenland.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:51,971 - ERROR - Git repository not found.
+2024-08-29 13:55:52,130 - WARNING - Rate limit exceeded (429) for Greece. Retrying...
+2024-08-29 13:55:52,131 - WARNING - Rate limit exceeded (429) for Guinea. Retrying...
+2024-08-29 13:55:52,772 - WARNING - Rate limit exceeded (429) for Equatorial Guinea. Retrying...
+2024-08-29 13:55:52,867 - INFO - Saved stations for Curacao to rml-radio/lua/radio/stations/curacao.lua
+2024-08-29 13:55:52,869 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/curacao.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:52,869 - ERROR - Git repository not found.
+2024-08-29 13:55:53,118 - INFO - Saved stations for Guatemala to rml-radio/lua/radio/stations/guatemala.lua
+2024-08-29 13:55:53,120 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/guatemala.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:53,120 - ERROR - Git repository not found.
+2024-08-29 13:55:53,279 - WARNING - Rate limit exceeded (429) for Guam. Retrying...
+2024-08-29 13:55:53,289 - WARNING - Rate limit exceeded (429) for Greece. Retrying...
+2024-08-29 13:55:54,390 - INFO - Saved stations for Guinea to rml-radio/lua/radio/stations/guinea.lua
+2024-08-29 13:55:54,392 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/guinea.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:54,392 - ERROR - Git repository not found.
+2024-08-29 13:55:54,531 - INFO - Saved stations for Guam to rml-radio/lua/radio/stations/guam.lua
+2024-08-29 13:55:54,533 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/guam.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:54,533 - ERROR - Git repository not found.
+2024-08-29 13:55:54,652 - INFO - Saved stations for Guinea Bissau to rml-radio/lua/radio/stations/guinea_bissau.lua
+2024-08-29 13:55:54,653 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/guinea_bissau.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:54,654 - ERROR - Git repository not found.
+2024-08-29 13:55:54,692 - WARNING - Rate limit exceeded (429) for Guyana. Retrying...
+2024-08-29 13:55:54,812 - WARNING - Rate limit exceeded (429) for Hong Kong. Retrying...
+2024-08-29 13:55:55,037 - INFO - Saved stations for Equatorial Guinea to rml-radio/lua/radio/stations/equatorial_guinea.lua
+2024-08-29 13:55:55,039 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/equatorial_guinea.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:55,039 - ERROR - Git repository not found.
+2024-08-29 13:55:55,198 - WARNING - Rate limit exceeded (429) for Honduras. Retrying...
+2024-08-29 13:55:55,949 - WARNING - Rate limit exceeded (429) for Grenada. Retrying...
+2024-08-29 13:55:55,961 - INFO - Saved stations for Guyana to rml-radio/lua/radio/stations/guyana.lua
+2024-08-29 13:55:55,963 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/guyana.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:55,963 - ERROR - Git repository not found.
+2024-08-29 13:55:55,971 - WARNING - Rate limit exceeded (429) for Hong Kong. Retrying...
+2024-08-29 13:55:56,122 - WARNING - Rate limit exceeded (429) for Croatia. Retrying...
+2024-08-29 13:55:56,320 - INFO - Saved stations for Greece to rml-radio/lua/radio/stations/greece.lua
+2024-08-29 13:55:56,322 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/greece.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:56,322 - ERROR - Git repository not found.
+2024-08-29 13:55:56,484 - WARNING - Rate limit exceeded (429) for Haiti. Retrying...
+2024-08-29 13:55:56,776 - INFO - Saved stations for Honduras to rml-radio/lua/radio/stations/honduras.lua
+2024-08-29 13:55:56,778 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/honduras.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:56,778 - ERROR - Git repository not found.
+2024-08-29 13:55:57,281 - WARNING - Rate limit exceeded (429) for Croatia. Retrying...
+2024-08-29 13:55:57,357 - INFO - Saved stations for Hungary to rml-radio/lua/radio/stations/hungary.lua
+2024-08-29 13:55:57,359 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/hungary.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:57,359 - ERROR - Git repository not found.
+2024-08-29 13:55:57,643 - WARNING - Rate limit exceeded (429) for Haiti. Retrying...
+2024-08-29 13:55:57,810 - INFO - Saved stations for Indonesia to rml-radio/lua/radio/stations/indonesia.lua
+2024-08-29 13:55:57,811 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/indonesia.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:57,812 - ERROR - Git repository not found.
+2024-08-29 13:55:58,131 - WARNING - Rate limit exceeded (429) for Hong Kong. Retrying...
+2024-08-29 13:55:58,322 - INFO - Saved stations for Ireland to rml-radio/lua/radio/stations/ireland.lua
+2024-08-29 13:55:58,324 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/ireland.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:58,324 - ERROR - Git repository not found.
+2024-08-29 13:55:58,595 - INFO - Saved stations for Israel to rml-radio/lua/radio/stations/israel.lua
+2024-08-29 13:55:58,597 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/israel.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:58,597 - ERROR - Git repository not found.
+2024-08-29 13:55:58,756 - WARNING - Rate limit exceeded (429) for Isle Of Man. Retrying...
+2024-08-29 13:55:59,560 - INFO - Saved stations for Croatia to rml-radio/lua/radio/stations/croatia.lua
+2024-08-29 13:55:59,562 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/croatia.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:55:59,562 - ERROR - Git repository not found.
+2024-08-29 13:55:59,802 - WARNING - Rate limit exceeded (429) for Haiti. Retrying...
+2024-08-29 13:56:00,091 - INFO - Saved stations for Isle Of Man to rml-radio/lua/radio/stations/isle_of_man.lua
+2024-08-29 13:56:00,093 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/isle_of_man.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:00,093 - ERROR - Git repository not found.
+2024-08-29 13:56:00,252 - WARNING - Rate limit exceeded (429) for British Indian Ocean Territory. Retrying...
+2024-08-29 13:56:00,275 - INFO - Saved stations for India to rml-radio/lua/radio/stations/india.lua
+2024-08-29 13:56:00,277 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/india.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:00,278 - ERROR - Git repository not found.
+2024-08-29 13:56:00,539 - INFO - Saved stations for Iraq to rml-radio/lua/radio/stations/iraq.lua
+2024-08-29 13:56:00,541 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/iraq.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:00,541 - ERROR - Git repository not found.
+2024-08-29 13:56:00,700 - WARNING - Rate limit exceeded (429) for Islamic Republic Of Iran. Retrying...
+2024-08-29 13:56:01,512 - INFO - Saved stations for British Indian Ocean Territory to rml-radio/lua/radio/stations/british_indian_ocean_territory.lua
+2024-08-29 13:56:01,514 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/british_indian_ocean_territory.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:01,514 - ERROR - Git repository not found.
+2024-08-29 13:56:01,782 - INFO - Saved stations for Iceland to rml-radio/lua/radio/stations/iceland.lua
+2024-08-29 13:56:01,784 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/iceland.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:01,784 - ERROR - Git repository not found.
+2024-08-29 13:56:01,942 - WARNING - Rate limit exceeded (429) for Italy. Retrying...
+2024-08-29 13:56:02,290 - WARNING - Rate limit exceeded (429) for Hong Kong. Retrying...
+2024-08-29 13:56:02,366 - INFO - Saved stations for Islamic Republic Of Iran to rml-radio/lua/radio/stations/islamic_republic_of_iran.lua
+2024-08-29 13:56:02,368 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/islamic_republic_of_iran.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:02,368 - ERROR - Git repository not found.
+2024-08-29 13:56:02,622 - INFO - Saved stations for Jamaica to rml-radio/lua/radio/stations/jamaica.lua
+2024-08-29 13:56:02,624 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/jamaica.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:02,624 - ERROR - Git repository not found.
+2024-08-29 13:56:02,783 - WARNING - Rate limit exceeded (429) for Jordan. Retrying...
+2024-08-29 13:56:04,023 - INFO - Saved stations for Italy to rml-radio/lua/radio/stations/italy.lua
+2024-08-29 13:56:04,025 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/italy.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:04,026 - ERROR - Git repository not found.
+2024-08-29 13:56:04,109 - WARNING - Rate limit exceeded (429) for Grenada. Retrying...
+2024-08-29 13:56:04,186 - WARNING - Rate limit exceeded (429) for Japan. Retrying...
+2024-08-29 13:56:04,203 - INFO - Saved stations for Jordan to rml-radio/lua/radio/stations/jordan.lua
+2024-08-29 13:56:04,205 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/jordan.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:04,206 - ERROR - Git repository not found.
+2024-08-29 13:56:04,251 - INFO - Saved stations for Haiti to rml-radio/lua/radio/stations/haiti.lua
+2024-08-29 13:56:04,253 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/haiti.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:04,253 - ERROR - Git repository not found.
+2024-08-29 13:56:04,411 - WARNING - Rate limit exceeded (429) for Kyrgyzstan. Retrying...
+2024-08-29 13:56:04,659 - INFO - Saved stations for Kenya to rml-radio/lua/radio/stations/kenya.lua
+2024-08-29 13:56:04,661 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/kenya.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:04,661 - ERROR - Git repository not found.
+2024-08-29 13:56:04,914 - INFO - Saved stations for Cambodia to rml-radio/lua/radio/stations/cambodia.lua
+2024-08-29 13:56:04,916 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/cambodia.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:04,916 - ERROR - Git repository not found.
+2024-08-29 13:56:05,075 - WARNING - Rate limit exceeded (429) for The Comoros. Retrying...
+2024-08-29 13:56:05,571 - WARNING - Rate limit exceeded (429) for Kyrgyzstan. Retrying...
+2024-08-29 13:56:05,767 - INFO - Saved stations for Japan to rml-radio/lua/radio/stations/japan.lua
+2024-08-29 13:56:05,768 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/japan.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:05,769 - ERROR - Git repository not found.
+2024-08-29 13:56:06,054 - INFO - Saved stations for Saint Kitts And Nevis to rml-radio/lua/radio/stations/saint_kitts_and_nevis.lua
+2024-08-29 13:56:06,056 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/saint_kitts_and_nevis.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:06,056 - ERROR - Git repository not found.
+2024-08-29 13:56:06,215 - WARNING - Rate limit exceeded (429) for The Republic Of Korea. Retrying...
+2024-08-29 13:56:06,234 - WARNING - Rate limit exceeded (429) for The Comoros. Retrying...
+2024-08-29 13:56:07,841 - INFO - Saved stations for Kyrgyzstan to rml-radio/lua/radio/stations/kyrgyzstan.lua
+2024-08-29 13:56:07,843 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/kyrgyzstan.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:07,843 - ERROR - Git repository not found.
+2024-08-29 13:56:07,980 - INFO - Saved stations for The Republic Of Korea to rml-radio/lua/radio/stations/the_republic_of_korea.lua
+2024-08-29 13:56:07,982 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/the_republic_of_korea.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:07,982 - ERROR - Git repository not found.
+2024-08-29 13:56:08,257 - INFO - Saved stations for The Cayman Islands to rml-radio/lua/radio/stations/the_cayman_islands.lua
+2024-08-29 13:56:08,259 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/the_cayman_islands.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:08,259 - ERROR - Git repository not found.
+2024-08-29 13:56:08,338 - INFO - Saved stations for Kuwait to rml-radio/lua/radio/stations/kuwait.lua
+2024-08-29 13:56:08,340 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/kuwait.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:08,340 - ERROR - Git repository not found.
+2024-08-29 13:56:08,418 - WARNING - Rate limit exceeded (429) for Kazakhstan. Retrying...
+2024-08-29 13:56:08,498 - WARNING - Rate limit exceeded (429) for The Lao Peoples Democratic Republic. Retrying...
+2024-08-29 13:56:08,538 - INFO - Saved stations for The Comoros to rml-radio/lua/radio/stations/the_comoros.lua
+2024-08-29 13:56:08,540 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/the_comoros.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:08,540 - ERROR - Git repository not found.
+2024-08-29 13:56:08,699 - WARNING - Rate limit exceeded (429) for Lebanon. Retrying...
+2024-08-29 13:56:09,772 - INFO - Saved stations for The Lao Peoples Democratic Republic to rml-radio/lua/radio/stations/the_lao_peoples_democratic_republic.lua
+2024-08-29 13:56:09,774 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/the_lao_peoples_democratic_republic.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:09,774 - ERROR - Git repository not found.
+2024-08-29 13:56:09,933 - WARNING - Rate limit exceeded (429) for Saint Lucia. Retrying...
+2024-08-29 13:56:10,004 - INFO - Saved stations for Kazakhstan to rml-radio/lua/radio/stations/kazakhstan.lua
+2024-08-29 13:56:10,006 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/kazakhstan.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:10,006 - ERROR - Git repository not found.
+2024-08-29 13:56:10,165 - WARNING - Rate limit exceeded (429) for Liechtenstein. Retrying...
+2024-08-29 13:56:10,282 - INFO - Saved stations for Lebanon to rml-radio/lua/radio/stations/lebanon.lua
+2024-08-29 13:56:10,284 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/lebanon.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:10,284 - ERROR - Git repository not found.
+2024-08-29 13:56:10,450 - WARNING - Rate limit exceeded (429) for Hong Kong. Retrying...
+2024-08-29 13:56:10,708 - INFO - Saved stations for Sri Lanka to rml-radio/lua/radio/stations/sri_lanka.lua
+2024-08-29 13:56:10,710 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/sri_lanka.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:10,710 - ERROR - Git repository not found.
+2024-08-29 13:56:10,977 - INFO - Saved stations for Lesotho to rml-radio/lua/radio/stations/lesotho.lua
+2024-08-29 13:56:10,979 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/lesotho.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:10,980 - ERROR - Git repository not found.
+2024-08-29 13:56:11,092 - WARNING - Rate limit exceeded (429) for Saint Lucia. Retrying...
+2024-08-29 13:56:11,138 - WARNING - Rate limit exceeded (429) for Lithuania. Retrying...
+2024-08-29 13:56:11,428 - INFO - Saved stations for Liechtenstein to rml-radio/lua/radio/stations/liechtenstein.lua
+2024-08-29 13:56:11,430 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/liechtenstein.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:11,430 - ERROR - Git repository not found.
+2024-08-29 13:56:11,589 - WARNING - Rate limit exceeded (429) for Luxembourg. Retrying...
+2024-08-29 13:56:12,679 - INFO - Saved stations for Lithuania to rml-radio/lua/radio/stations/lithuania.lua
+2024-08-29 13:56:12,681 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/lithuania.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:12,681 - ERROR - Git repository not found.
+2024-08-29 13:56:13,155 - INFO - Saved stations for Luxembourg to rml-radio/lua/radio/stations/luxembourg.lua
+2024-08-29 13:56:13,157 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/luxembourg.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:13,157 - ERROR - Git repository not found.
+2024-08-29 13:56:13,225 - INFO - Saved stations for Latvia to rml-radio/lua/radio/stations/latvia.lua
+2024-08-29 13:56:13,227 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/latvia.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:13,227 - ERROR - Git repository not found.
+2024-08-29 13:56:13,252 - WARNING - Rate limit exceeded (429) for Saint Lucia. Retrying...
+2024-08-29 13:56:13,386 - WARNING - Rate limit exceeded (429) for Morocco. Retrying...
+2024-08-29 13:56:13,437 - INFO - Saved stations for Libya to rml-radio/lua/radio/stations/libya.lua
+2024-08-29 13:56:13,439 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/libya.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:13,439 - ERROR - Git repository not found.
+2024-08-29 13:56:13,598 - WARNING - Rate limit exceeded (429) for Monaco. Retrying...
+2024-08-29 13:56:14,867 - INFO - Saved stations for Monaco to rml-radio/lua/radio/stations/monaco.lua
+2024-08-29 13:56:14,869 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/monaco.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:14,869 - ERROR - Git repository not found.
+2024-08-29 13:56:15,118 - INFO - Saved stations for Morocco to rml-radio/lua/radio/stations/morocco.lua
+2024-08-29 13:56:15,120 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/morocco.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:15,120 - ERROR - Git repository not found.
+2024-08-29 13:56:15,279 - WARNING - Rate limit exceeded (429) for Montenegro. Retrying...
+2024-08-29 13:56:15,287 - INFO - Saved stations for The Republic Of Moldova to rml-radio/lua/radio/stations/the_republic_of_moldova.lua
+2024-08-29 13:56:15,290 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/the_republic_of_moldova.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:15,290 - ERROR - Git repository not found.
+2024-08-29 13:56:15,539 - INFO - Saved stations for Madagascar to rml-radio/lua/radio/stations/madagascar.lua
+2024-08-29 13:56:15,541 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/madagascar.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:15,541 - ERROR - Git repository not found.
+2024-08-29 13:56:15,700 - WARNING - Rate limit exceeded (429) for Republic Of North Macedonia. Retrying...
+2024-08-29 13:56:16,854 - INFO - Saved stations for Montenegro to rml-radio/lua/radio/stations/montenegro.lua
+2024-08-29 13:56:16,856 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/montenegro.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:16,856 - ERROR - Git repository not found.
+2024-08-29 13:56:17,130 - INFO - Saved stations for Mali to rml-radio/lua/radio/stations/mali.lua
+2024-08-29 13:56:17,132 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/mali.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:17,132 - ERROR - Git repository not found.
+2024-08-29 13:56:17,279 - INFO - Saved stations for Republic Of North Macedonia to rml-radio/lua/radio/stations/republic_of_north_macedonia.lua
+2024-08-29 13:56:17,281 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/republic_of_north_macedonia.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:17,281 - ERROR - Git repository not found.
+2024-08-29 13:56:17,291 - WARNING - Rate limit exceeded (429) for Myanmar. Retrying...
+2024-08-29 13:56:17,440 - WARNING - Rate limit exceeded (429) for Mongolia. Retrying...
+2024-08-29 13:56:17,516 - INFO - Saved stations for Saint Lucia to rml-radio/lua/radio/stations/saint_lucia.lua
+2024-08-29 13:56:17,518 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/saint_lucia.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:17,518 - ERROR - Git repository not found.
+2024-08-29 13:56:17,677 - WARNING - Rate limit exceeded (429) for Macao. Retrying...
+2024-08-29 13:56:18,552 - INFO - Saved stations for Myanmar to rml-radio/lua/radio/stations/myanmar.lua
+2024-08-29 13:56:18,554 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/myanmar.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:18,554 - ERROR - Git repository not found.
+2024-08-29 13:56:18,704 - INFO - Saved stations for Mongolia to rml-radio/lua/radio/stations/mongolia.lua
+2024-08-29 13:56:18,706 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/mongolia.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:18,706 - ERROR - Git repository not found.
+2024-08-29 13:56:18,712 - WARNING - Rate limit exceeded (429) for Martinique. Retrying...
+2024-08-29 13:56:18,865 - WARNING - Rate limit exceeded (429) for Montserrat. Retrying...
+2024-08-29 13:56:19,280 - INFO - Saved stations for Macao to rml-radio/lua/radio/stations/macao.lua
+2024-08-29 13:56:19,282 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/macao.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:19,282 - ERROR - Git repository not found.
+2024-08-29 13:56:19,549 - INFO - Saved stations for Malta to rml-radio/lua/radio/stations/malta.lua
+2024-08-29 13:56:19,551 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/malta.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:19,551 - ERROR - Git repository not found.
+2024-08-29 13:56:19,710 - WARNING - Rate limit exceeded (429) for Mauritius. Retrying...
+2024-08-29 13:56:19,974 - INFO - Saved stations for Martinique to rml-radio/lua/radio/stations/martinique.lua
+2024-08-29 13:56:19,976 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/martinique.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:19,976 - ERROR - Git repository not found.
+2024-08-29 13:56:20,025 - WARNING - Rate limit exceeded (429) for Montserrat. Retrying...
+2024-08-29 13:56:20,135 - WARNING - Rate limit exceeded (429) for Malawi. Retrying...
+2024-08-29 13:56:20,269 - WARNING - Rate limit exceeded (429) for Mexico. Retrying...
+2024-08-29 13:56:21,127 - INFO - Saved stations for Mauritius to rml-radio/lua/radio/stations/mauritius.lua
+2024-08-29 13:56:21,129 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/mauritius.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:21,129 - ERROR - Git repository not found.
+2024-08-29 13:56:21,301 - WARNING - Rate limit exceeded (429) for Malawi. Retrying...
+2024-08-29 13:56:21,715 - INFO - Saved stations for Malaysia to rml-radio/lua/radio/stations/malaysia.lua
+2024-08-29 13:56:21,716 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/malaysia.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:21,717 - ERROR - Git repository not found.
+2024-08-29 13:56:21,980 - INFO - Saved stations for Mozambique to rml-radio/lua/radio/stations/mozambique.lua
+2024-08-29 13:56:21,982 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/mozambique.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:21,982 - ERROR - Git repository not found.
+2024-08-29 13:56:22,142 - WARNING - Rate limit exceeded (429) for Namibia. Retrying...
+2024-08-29 13:56:22,185 - WARNING - Rate limit exceeded (429) for Montserrat. Retrying...
+2024-08-29 13:56:22,718 - INFO - Saved stations for Mexico to rml-radio/lua/radio/stations/mexico.lua
+2024-08-29 13:56:22,720 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/mexico.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:22,720 - ERROR - Git repository not found.
+2024-08-29 13:56:22,994 - INFO - Saved stations for New Caledonia to rml-radio/lua/radio/stations/new_caledonia.lua
+2024-08-29 13:56:22,996 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/new_caledonia.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:22,996 - ERROR - Git repository not found.
+2024-08-29 13:56:23,251 - INFO - Saved stations for The Niger to rml-radio/lua/radio/stations/the_niger.lua
+2024-08-29 13:56:23,253 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/the_niger.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:23,253 - ERROR - Git repository not found.
+2024-08-29 13:56:23,302 - WARNING - Rate limit exceeded (429) for Namibia. Retrying...
+2024-08-29 13:56:23,461 - WARNING - Rate limit exceeded (429) for Malawi. Retrying...
+2024-08-29 13:56:23,528 - INFO - Saved stations for Nigeria to rml-radio/lua/radio/stations/nigeria.lua
+2024-08-29 13:56:23,529 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/nigeria.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:23,529 - ERROR - Git repository not found.
+2024-08-29 13:56:23,688 - WARNING - Rate limit exceeded (429) for Nicaragua. Retrying...
+2024-08-29 13:56:24,951 - INFO - Saved stations for Nicaragua to rml-radio/lua/radio/stations/nicaragua.lua
+2024-08-29 13:56:24,953 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/nicaragua.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:24,953 - ERROR - Git repository not found.
+2024-08-29 13:56:25,566 - INFO - Saved stations for The Netherlands to rml-radio/lua/radio/stations/the_netherlands.lua
+2024-08-29 13:56:25,567 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/the_netherlands.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:25,568 - ERROR - Git repository not found.
+2024-08-29 13:56:25,728 - INFO - Saved stations for Namibia to rml-radio/lua/radio/stations/namibia.lua
+2024-08-29 13:56:25,730 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/namibia.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:25,730 - ERROR - Git repository not found.
+2024-08-29 13:56:25,831 - INFO - Saved stations for Norway to rml-radio/lua/radio/stations/norway.lua
+2024-08-29 13:56:25,833 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/norway.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:25,833 - ERROR - Git repository not found.
+2024-08-29 13:56:25,992 - INFO - Saved stations for Nepal to rml-radio/lua/radio/stations/nepal.lua
+2024-08-29 13:56:25,993 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/nepal.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:25,994 - ERROR - Git repository not found.
+2024-08-29 13:56:25,994 - WARNING - Rate limit exceeded (429) for Niue. Retrying...
+2024-08-29 13:56:26,153 - WARNING - Rate limit exceeded (429) for New Zealand. Retrying...
+2024-08-29 13:56:26,436 - INFO - Saved stations for Montserrat to rml-radio/lua/radio/stations/montserrat.lua
+2024-08-29 13:56:26,438 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/montserrat.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:26,438 - ERROR - Git repository not found.
+2024-08-29 13:56:26,597 - WARNING - Rate limit exceeded (429) for Oman. Retrying...
+2024-08-29 13:56:26,609 - WARNING - Rate limit exceeded (429) for Panama. Retrying...
+2024-08-29 13:56:27,257 - INFO - Saved stations for Niue to rml-radio/lua/radio/stations/niue.lua
+2024-08-29 13:56:27,259 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/niue.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:27,259 - ERROR - Git repository not found.
+2024-08-29 13:56:27,312 - WARNING - Rate limit exceeded (429) for New Zealand. Retrying...
+2024-08-29 13:56:27,620 - WARNING - Rate limit exceeded (429) for Malawi. Retrying...
+2024-08-29 13:56:28,087 - WARNING - Rate limit exceeded (429) for Panama. Retrying...
+2024-08-29 13:56:28,165 - INFO - Saved stations for Peru to rml-radio/lua/radio/stations/peru.lua
+2024-08-29 13:56:28,167 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/peru.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:28,167 - ERROR - Git repository not found.
+2024-08-29 13:56:28,425 - INFO - Saved stations for French Polynesia to rml-radio/lua/radio/stations/french_polynesia.lua
+2024-08-29 13:56:28,427 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/french_polynesia.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:28,428 - ERROR - Git repository not found.
+2024-08-29 13:56:28,586 - WARNING - Rate limit exceeded (429) for Papua New Guinea. Retrying...
+2024-08-29 13:56:28,997 - INFO - Saved stations for Oman to rml-radio/lua/radio/stations/oman.lua
+2024-08-29 13:56:28,998 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/oman.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:28,999 - ERROR - Git repository not found.
+2024-08-29 13:56:29,482 - INFO - Saved stations for The Philippines to rml-radio/lua/radio/stations/the_philippines.lua
+2024-08-29 13:56:29,484 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/the_philippines.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:29,484 - ERROR - Git repository not found.
+2024-08-29 13:56:29,644 - WARNING - Rate limit exceeded (429) for Pakistan. Retrying...
+2024-08-29 13:56:29,745 - WARNING - Rate limit exceeded (429) for Papua New Guinea. Retrying...
+2024-08-29 13:56:29,897 - INFO - Saved stations for New Zealand to rml-radio/lua/radio/stations/new_zealand.lua
+2024-08-29 13:56:29,899 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/new_zealand.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:29,899 - ERROR - Git repository not found.
+2024-08-29 13:56:30,246 - WARNING - Rate limit exceeded (429) for Panama. Retrying...
+2024-08-29 13:56:30,548 - INFO - Saved stations for Poland to rml-radio/lua/radio/stations/poland.lua
+2024-08-29 13:56:30,550 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/poland.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:30,551 - ERROR - Git repository not found.
+2024-08-29 13:56:30,804 - WARNING - Rate limit exceeded (429) for Pakistan. Retrying...
+2024-08-29 13:56:30,804 - INFO - Saved stations for Saint Pierre And Miquelon to rml-radio/lua/radio/stations/saint_pierre_and_miquelon.lua
+2024-08-29 13:56:30,806 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/saint_pierre_and_miquelon.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:30,806 - ERROR - Git repository not found.
+2024-08-29 13:56:31,072 - INFO - Saved stations for Puerto Rico to rml-radio/lua/radio/stations/puerto_rico.lua
+2024-08-29 13:56:31,073 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/puerto_rico.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:31,073 - ERROR - Git repository not found.
+2024-08-29 13:56:31,232 - WARNING - Rate limit exceeded (429) for State Of Palestine. Retrying...
+2024-08-29 13:56:32,007 - INFO - Saved stations for Papua New Guinea to rml-radio/lua/radio/stations/papua_new_guinea.lua
+2024-08-29 13:56:32,009 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/papua_new_guinea.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:32,009 - ERROR - Git repository not found.
+2024-08-29 13:56:32,290 - INFO - Saved stations for Portugal to rml-radio/lua/radio/stations/portugal.lua
+2024-08-29 13:56:32,292 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/portugal.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:32,292 - ERROR - Git repository not found.
+2024-08-29 13:56:32,452 - WARNING - Rate limit exceeded (429) for Palau. Retrying...
+2024-08-29 13:56:32,498 - INFO - Saved stations for State Of Palestine to rml-radio/lua/radio/stations/state_of_palestine.lua
+2024-08-29 13:56:32,500 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/state_of_palestine.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:32,500 - ERROR - Git repository not found.
+2024-08-29 13:56:32,659 - WARNING - Rate limit exceeded (429) for Paraguay. Retrying...
+2024-08-29 13:56:33,391 - INFO - Saved stations for Pakistan to rml-radio/lua/radio/stations/pakistan.lua
+2024-08-29 13:56:33,393 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/pakistan.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:33,393 - ERROR - Git repository not found.
+2024-08-29 13:56:33,613 - WARNING - Rate limit exceeded (429) for Palau. Retrying...
+2024-08-29 13:56:33,673 - INFO - Saved stations for Qatar to rml-radio/lua/radio/stations/qatar.lua
+2024-08-29 13:56:33,675 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/qatar.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:33,675 - ERROR - Git repository not found.
+2024-08-29 13:56:33,834 - WARNING - Rate limit exceeded (429) for Reunion. Retrying...
+2024-08-29 13:56:33,909 - INFO - Saved stations for Paraguay to rml-radio/lua/radio/stations/paraguay.lua
+2024-08-29 13:56:33,911 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/paraguay.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:33,911 - ERROR - Git repository not found.
+2024-08-29 13:56:34,070 - WARNING - Rate limit exceeded (429) for Romania. Retrying...
+2024-08-29 13:56:34,505 - INFO - Saved stations for Panama to rml-radio/lua/radio/stations/panama.lua
+2024-08-29 13:56:34,507 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/panama.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:34,507 - ERROR - Git repository not found.
+2024-08-29 13:56:34,666 - WARNING - Rate limit exceeded (429) for Serbia. Retrying...
+2024-08-29 13:56:35,093 - INFO - Saved stations for Reunion to rml-radio/lua/radio/stations/reunion.lua
+2024-08-29 13:56:35,095 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/reunion.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:35,095 - ERROR - Git repository not found.
+2024-08-29 13:56:35,230 - WARNING - Rate limit exceeded (429) for Romania. Retrying...
+2024-08-29 13:56:35,254 - WARNING - Rate limit exceeded (429) for The Russian Federation. Retrying...
+2024-08-29 13:56:35,780 - WARNING - Rate limit exceeded (429) for Malawi. Retrying...
+2024-08-29 13:56:35,888 - INFO - Saved stations for Palau to rml-radio/lua/radio/stations/palau.lua
+2024-08-29 13:56:35,890 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/palau.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:35,890 - ERROR - Git repository not found.
+2024-08-29 13:56:36,049 - WARNING - Rate limit exceeded (429) for Rwanda. Retrying...
+2024-08-29 13:56:36,592 - INFO - Saved stations for Serbia to rml-radio/lua/radio/stations/serbia.lua
+2024-08-29 13:56:36,594 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/serbia.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:36,594 - ERROR - Git repository not found.
+2024-08-29 13:56:36,753 - WARNING - Rate limit exceeded (429) for Saudi Arabia. Retrying...
+2024-08-29 13:56:37,356 - INFO - Saved stations for Rwanda to rml-radio/lua/radio/stations/rwanda.lua
+2024-08-29 13:56:37,358 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/rwanda.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:37,358 - ERROR - Git repository not found.
+2024-08-29 13:56:37,517 - WARNING - Rate limit exceeded (429) for Seychelles. Retrying...
+2024-08-29 13:56:37,731 - INFO - Saved stations for The Russian Federation to rml-radio/lua/radio/stations/the_russian_federation.lua
+2024-08-29 13:56:37,733 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/the_russian_federation.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:37,733 - ERROR - Git repository not found.
+2024-08-29 13:56:37,925 - WARNING - Rate limit exceeded (429) for Saudi Arabia. Retrying...
+2024-08-29 13:56:38,013 - INFO - Saved stations for The Sudan to rml-radio/lua/radio/stations/the_sudan.lua
+2024-08-29 13:56:38,015 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/the_sudan.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:38,015 - ERROR - Git repository not found.
+2024-08-29 13:56:38,174 - WARNING - Rate limit exceeded (429) for Sweden. Retrying...
+2024-08-29 13:56:38,310 - INFO - Saved stations for Romania to rml-radio/lua/radio/stations/romania.lua
+2024-08-29 13:56:38,312 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/romania.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:38,312 - ERROR - Git repository not found.
+2024-08-29 13:56:38,585 - INFO - Saved stations for Singapore to rml-radio/lua/radio/stations/singapore.lua
+2024-08-29 13:56:38,587 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/singapore.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:38,587 - ERROR - Git repository not found.
+2024-08-29 13:56:38,677 - WARNING - Rate limit exceeded (429) for Seychelles. Retrying...
+2024-08-29 13:56:38,746 - WARNING - Rate limit exceeded (429) for Ascension And Tristan Da Cunha Saint Helena. Retrying...
+2024-08-29 13:56:39,446 - INFO - Saved stations for Sweden to rml-radio/lua/radio/stations/sweden.lua
+2024-08-29 13:56:39,448 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/sweden.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:39,448 - ERROR - Git repository not found.
+2024-08-29 13:56:39,709 - INFO - Saved stations for Slovenia to rml-radio/lua/radio/stations/slovenia.lua
+2024-08-29 13:56:39,711 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/slovenia.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:39,711 - ERROR - Git repository not found.
+2024-08-29 13:56:39,905 - WARNING - Rate limit exceeded (429) for Ascension And Tristan Da Cunha Saint Helena. Retrying...
+2024-08-29 13:56:39,988 - INFO - Saved stations for Slovakia to rml-radio/lua/radio/stations/slovakia.lua
+2024-08-29 13:56:39,989 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/slovakia.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:39,990 - ERROR - Git repository not found.
+2024-08-29 13:56:40,085 - WARNING - Rate limit exceeded (429) for Saudi Arabia. Retrying...
+2024-08-29 13:56:40,149 - WARNING - Rate limit exceeded (429) for Sierra Leone. Retrying...
+2024-08-29 13:56:40,928 - INFO - Saved stations for Seychelles to rml-radio/lua/radio/stations/seychelles.lua
+2024-08-29 13:56:40,930 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/seychelles.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:40,930 - ERROR - Git repository not found.
+2024-08-29 13:56:41,191 - INFO - Saved stations for San Marino to rml-radio/lua/radio/stations/san_marino.lua
+2024-08-29 13:56:41,192 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/san_marino.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:41,193 - ERROR - Git repository not found.
+2024-08-29 13:56:41,308 - WARNING - Rate limit exceeded (429) for Sierra Leone. Retrying...
+2024-08-29 13:56:41,444 - INFO - Saved stations for Senegal to rml-radio/lua/radio/stations/senegal.lua
+2024-08-29 13:56:41,446 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/senegal.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:41,446 - ERROR - Git repository not found.
+2024-08-29 13:56:41,605 - WARNING - Rate limit exceeded (429) for Somalia. Retrying...
+2024-08-29 13:56:42,203 - INFO - Saved stations for Ascension And Tristan Da Cunha Saint Helena to rml-radio/lua/radio/stations/ascension_and_tristan_da_cunha_saint_helena.lua
+2024-08-29 13:56:42,205 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/ascension_and_tristan_da_cunha_saint_helena.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:42,205 - ERROR - Git repository not found.
+2024-08-29 13:56:42,459 - INFO - Saved stations for Suriname to rml-radio/lua/radio/stations/suriname.lua
+2024-08-29 13:56:42,461 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/suriname.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:42,461 - ERROR - Git repository not found.
+2024-08-29 13:56:42,620 - WARNING - Rate limit exceeded (429) for South Sudan. Retrying...
+2024-08-29 13:56:42,766 - WARNING - Rate limit exceeded (429) for Somalia. Retrying...
+2024-08-29 13:56:43,569 - INFO - Saved stations for Sierra Leone to rml-radio/lua/radio/stations/sierra_leone.lua
+2024-08-29 13:56:43,571 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/sierra_leone.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:43,571 - ERROR - Git repository not found.
+2024-08-29 13:56:43,779 - WARNING - Rate limit exceeded (429) for South Sudan. Retrying...
+2024-08-29 13:56:43,845 - INFO - Saved stations for Sao Tome And Principe to rml-radio/lua/radio/stations/sao_tome_and_principe.lua
+2024-08-29 13:56:43,847 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/sao_tome_and_principe.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:43,847 - ERROR - Git repository not found.
+2024-08-29 13:56:44,246 - WARNING - Rate limit exceeded (429) for Saudi Arabia. Retrying...
+2024-08-29 13:56:44,551 - INFO - Saved stations for El Salvador to rml-radio/lua/radio/stations/el_salvador.lua
+2024-08-29 13:56:44,552 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/el_salvador.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:44,552 - ERROR - Git repository not found.
+2024-08-29 13:56:44,826 - INFO - Saved stations for Syrian Arab Republic to rml-radio/lua/radio/stations/syrian_arab_republic.lua
+2024-08-29 13:56:44,827 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/syrian_arab_republic.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:44,828 - ERROR - Git repository not found.
+2024-08-29 13:56:44,986 - WARNING - Rate limit exceeded (429) for Eswatini. Retrying...
+2024-08-29 13:56:45,092 - INFO - Saved stations for Somalia to rml-radio/lua/radio/stations/somalia.lua
+2024-08-29 13:56:45,094 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/somalia.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:45,094 - ERROR - Git repository not found.
+2024-08-29 13:56:45,253 - WARNING - Rate limit exceeded (429) for The Turks And Caicos Islands. Retrying...
+2024-08-29 13:56:46,102 - INFO - Saved stations for South Sudan to rml-radio/lua/radio/stations/south_sudan.lua
+2024-08-29 13:56:46,104 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/south_sudan.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:46,104 - ERROR - Git repository not found.
+2024-08-29 13:56:46,253 - INFO - Saved stations for Eswatini to rml-radio/lua/radio/stations/eswatini.lua
+2024-08-29 13:56:46,255 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/eswatini.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:46,255 - ERROR - Git repository not found.
+2024-08-29 13:56:46,265 - WARNING - Rate limit exceeded (429) for Chad. Retrying...
+2024-08-29 13:56:46,414 - WARNING - Rate limit exceeded (429) for The Turks And Caicos Islands. Retrying...
+2024-08-29 13:56:46,502 - INFO - Saved stations for The French Southern Territories to rml-radio/lua/radio/stations/the_french_southern_territories.lua
+2024-08-29 13:56:46,503 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/the_french_southern_territories.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:46,504 - ERROR - Git repository not found.
+2024-08-29 13:56:46,662 - WARNING - Rate limit exceeded (429) for Togo. Retrying...
+2024-08-29 13:56:47,532 - INFO - Saved stations for Chad to rml-radio/lua/radio/stations/chad.lua
+2024-08-29 13:56:47,534 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/chad.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:47,534 - ERROR - Git repository not found.
+2024-08-29 13:56:47,933 - INFO - Saved stations for Togo to rml-radio/lua/radio/stations/togo.lua
+2024-08-29 13:56:47,935 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/togo.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:47,935 - ERROR - Git repository not found.
+2024-08-29 13:56:48,095 - WARNING - Rate limit exceeded (429) for Tajikistan. Retrying...
+2024-08-29 13:56:48,355 - INFO - Saved stations for Thailand to rml-radio/lua/radio/stations/thailand.lua
+2024-08-29 13:56:48,357 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/thailand.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:48,357 - ERROR - Git repository not found.
+2024-08-29 13:56:48,573 - WARNING - Rate limit exceeded (429) for The Turks And Caicos Islands. Retrying...
+2024-08-29 13:56:48,618 - INFO - Saved stations for Timor Leste to rml-radio/lua/radio/stations/timor_leste.lua
+2024-08-29 13:56:48,620 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/timor_leste.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:48,620 - ERROR - Git repository not found.
+2024-08-29 13:56:48,779 - WARNING - Rate limit exceeded (429) for Turkmenistan. Retrying...
+2024-08-29 13:56:49,363 - INFO - Saved stations for Tajikistan to rml-radio/lua/radio/stations/tajikistan.lua
+2024-08-29 13:56:49,365 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/tajikistan.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:49,365 - ERROR - Git repository not found.
+2024-08-29 13:56:49,786 - INFO - Saved stations for Tunisia to rml-radio/lua/radio/stations/tunisia.lua
+2024-08-29 13:56:49,788 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/tunisia.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:49,788 - ERROR - Git repository not found.
+2024-08-29 13:56:49,947 - WARNING - Rate limit exceeded (429) for Turkey. Retrying...
+2024-08-29 13:56:50,055 - INFO - Saved stations for Turkmenistan to rml-radio/lua/radio/stations/turkmenistan.lua
+2024-08-29 13:56:50,057 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/turkmenistan.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:50,057 - ERROR - Git repository not found.
+2024-08-29 13:56:50,216 - WARNING - Rate limit exceeded (429) for Trinidad And Tobago. Retrying...
+2024-08-29 13:56:51,675 - INFO - Saved stations for Trinidad And Tobago to rml-radio/lua/radio/stations/trinidad_and_tobago.lua
+2024-08-29 13:56:51,677 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/trinidad_and_tobago.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:51,678 - ERROR - Git repository not found.
+2024-08-29 13:56:51,908 - INFO - Saved stations for Turkey to rml-radio/lua/radio/stations/turkey.lua
+2024-08-29 13:56:51,910 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/turkey.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:51,910 - ERROR - Git repository not found.
+2024-08-29 13:56:52,069 - WARNING - Rate limit exceeded (429) for Ukraine. Retrying...
+2024-08-29 13:56:52,202 - INFO - Saved stations for United Republic Of Tanzania to rml-radio/lua/radio/stations/united_republic_of_tanzania.lua
+2024-08-29 13:56:52,204 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/united_republic_of_tanzania.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:52,204 - ERROR - Git repository not found.
+2024-08-29 13:56:52,262 - INFO - Saved stations for Taiwan Province Of China to rml-radio/lua/radio/stations/taiwan_province_of_china.lua
+2024-08-29 13:56:52,264 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/taiwan_province_of_china.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:52,264 - ERROR - Git repository not found.
+2024-08-29 13:56:52,406 - WARNING - Rate limit exceeded (429) for Saudi Arabia. Retrying...
+2024-08-29 13:56:52,423 - WARNING - Rate limit exceeded (429) for The United States Minor Outlying Islands. Retrying...
+2024-08-29 13:56:52,733 - WARNING - Rate limit exceeded (429) for The Turks And Caicos Islands. Retrying...
+2024-08-29 13:56:52,972 - INFO - Saved stations for Uganda to rml-radio/lua/radio/stations/uganda.lua
+2024-08-29 13:56:52,974 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/uganda.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:52,974 - ERROR - Git repository not found.
+2024-08-29 13:56:53,230 - WARNING - Rate limit exceeded (429) for Ukraine. Retrying...
+2024-08-29 13:56:53,695 - INFO - Saved stations for The United States Minor Outlying Islands to rml-radio/lua/radio/stations/the_united_states_minor_outlying_islands.lua
+2024-08-29 13:56:53,697 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/the_united_states_minor_outlying_islands.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:53,697 - ERROR - Git repository not found.
+2024-08-29 13:56:54,199 - INFO - Saved stations for The United States Of America to rml-radio/lua/radio/stations/the_united_states_of_america.lua
+2024-08-29 13:56:54,201 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/the_united_states_of_america.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:54,202 - ERROR - Git repository not found.
+2024-08-29 13:56:54,471 - INFO - Saved stations for Uzbekistan to rml-radio/lua/radio/stations/uzbekistan.lua
+2024-08-29 13:56:54,473 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/uzbekistan.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:54,473 - ERROR - Git repository not found.
+2024-08-29 13:56:54,546 - INFO - Saved stations for Uruguay to rml-radio/lua/radio/stations/uruguay.lua
+2024-08-29 13:56:54,548 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/uruguay.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:54,549 - ERROR - Git repository not found.
+2024-08-29 13:56:54,632 - WARNING - Rate limit exceeded (429) for The Holy See. Retrying...
+2024-08-29 13:56:54,708 - WARNING - Rate limit exceeded (429) for Saint Vincent And The Grenadines. Retrying...
+2024-08-29 13:56:55,899 - INFO - Saved stations for The Holy See to rml-radio/lua/radio/stations/the_holy_see.lua
+2024-08-29 13:56:55,900 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/the_holy_see.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:55,900 - ERROR - Git repository not found.
+2024-08-29 13:56:56,138 - INFO - Saved stations for Ukraine to rml-radio/lua/radio/stations/ukraine.lua
+2024-08-29 13:56:56,139 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/ukraine.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:56,139 - ERROR - Git repository not found.
+2024-08-29 13:56:56,171 - INFO - Saved stations for Bolivarian Republic Of Venezuela to rml-radio/lua/radio/stations/bolivarian_republic_of_venezuela.lua
+2024-08-29 13:56:56,173 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/bolivarian_republic_of_venezuela.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:56,173 - ERROR - Git repository not found.
+2024-08-29 13:56:56,188 - WARNING - Rate limit exceeded (429) for Saint Vincent And The Grenadines. Retrying...
+2024-08-29 13:56:56,299 - WARNING - Rate limit exceeded (429) for British Virgin Islands. Retrying...
+2024-08-29 13:56:56,437 - INFO - Saved stations for US Virgin Islands to rml-radio/lua/radio/stations/us_virgin_islands.lua
+2024-08-29 13:56:56,439 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/us_virgin_islands.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:56,439 - ERROR - Git repository not found.
+2024-08-29 13:56:56,598 - WARNING - Rate limit exceeded (429) for Vietnam. Retrying...
+2024-08-29 13:56:57,626 - INFO - Saved stations for British Virgin Islands to rml-radio/lua/radio/stations/british_virgin_islands.lua
+2024-08-29 13:56:57,628 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/british_virgin_islands.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:57,628 - ERROR - Git repository not found.
+2024-08-29 13:56:57,787 - WARNING - Rate limit exceeded (429) for Vanuatu. Retrying...
+2024-08-29 13:56:58,163 - INFO - Saved stations for Vietnam to rml-radio/lua/radio/stations/vietnam.lua
+2024-08-29 13:56:58,164 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/vietnam.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:58,164 - ERROR - Git repository not found.
+2024-08-29 13:56:58,590 - INFO - Saved stations for Wallis And Futuna to rml-radio/lua/radio/stations/wallis_and_futuna.lua
+2024-08-29 13:56:58,592 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/wallis_and_futuna.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:58,592 - ERROR - Git repository not found.
+2024-08-29 13:56:58,627 - INFO - Saved stations for Saint Vincent And The Grenadines to rml-radio/lua/radio/stations/saint_vincent_and_the_grenadines.lua
+2024-08-29 13:56:58,628 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/saint_vincent_and_the_grenadines.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:58,628 - ERROR - Git repository not found.
+2024-08-29 13:56:58,751 - WARNING - Rate limit exceeded (429) for Kosovo. Retrying...
+2024-08-29 13:56:58,787 - WARNING - Rate limit exceeded (429) for Yemen. Retrying...
+2024-08-29 13:56:59,052 - INFO - Saved stations for Vanuatu to rml-radio/lua/radio/stations/vanuatu.lua
+2024-08-29 13:56:59,054 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/vanuatu.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:56:59,054 - ERROR - Git repository not found.
+2024-08-29 13:56:59,213 - WARNING - Rate limit exceeded (429) for Mayotte. Retrying...
+2024-08-29 13:57:00,142 - INFO - Saved stations for Yemen to rml-radio/lua/radio/stations/yemen.lua
+2024-08-29 13:57:00,144 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/yemen.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:57:00,144 - ERROR - Git repository not found.
+2024-08-29 13:57:00,194 - INFO - Saved stations for Kosovo to rml-radio/lua/radio/stations/kosovo.lua
+2024-08-29 13:57:00,196 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/kosovo.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:57:00,196 - ERROR - Git repository not found.
+2024-08-29 13:57:00,303 - WARNING - Rate limit exceeded (429) for South Africa. Retrying...
+2024-08-29 13:57:00,373 - WARNING - Rate limit exceeded (429) for Mayotte. Retrying...
+2024-08-29 13:57:00,453 - INFO - Saved stations for Zambia to rml-radio/lua/radio/stations/zambia.lua
+2024-08-29 13:57:00,455 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/zambia.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:57:00,455 - ERROR - Git repository not found.
+2024-08-29 13:57:00,614 - WARNING - Rate limit exceeded (429) for Zimbabwe. Retrying...
+2024-08-29 13:57:00,999 - INFO - Saved stations for The Turks And Caicos Islands to rml-radio/lua/radio/stations/the_turks_and_caicos_islands.lua
+2024-08-29 13:57:01,001 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/the_turks_and_caicos_islands.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:57:01,001 - ERROR - Git repository not found.
+2024-08-29 13:57:01,162 - WARNING - Rate limit exceeded (429) for Germany. Retrying...
+2024-08-29 13:57:01,774 - WARNING - Rate limit exceeded (429) for Zimbabwe. Retrying...
+2024-08-29 13:57:02,081 - INFO - Saved stations for South Africa to rml-radio/lua/radio/stations/south_africa.lua
+2024-08-29 13:57:02,083 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/south_africa.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:57:02,083 - ERROR - Git repository not found.
+2024-08-29 13:57:02,533 - WARNING - Rate limit exceeded (429) for Mayotte. Retrying...
+2024-08-29 13:57:02,897 - INFO - Saved stations for Greece to rml-radio/lua/radio/stations/greece.lua
+2024-08-29 13:57:02,899 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/greece.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:57:02,900 - ERROR - Git repository not found.
+2024-08-29 13:57:03,188 - INFO - Saved stations for Indonesia to rml-radio/lua/radio/stations/indonesia.lua
+2024-08-29 13:57:03,190 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/indonesia.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:57:03,191 - ERROR - Git repository not found.
+2024-08-29 13:57:03,383 - INFO - Saved stations for Italy to rml-radio/lua/radio/stations/italy.lua
+2024-08-29 13:57:03,385 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/italy.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:57:03,385 - ERROR - Git repository not found.
+2024-08-29 13:57:03,546 - WARNING - Rate limit exceeded (429) for Poland. Retrying...
+2024-08-29 13:57:04,032 - INFO - Saved stations for Zimbabwe to rml-radio/lua/radio/stations/zimbabwe.lua
+2024-08-29 13:57:04,034 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/zimbabwe.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:57:04,034 - ERROR - Git repository not found.
+2024-08-29 13:57:04,105 - INFO - Saved stations for Germany to rml-radio/lua/radio/stations/germany.lua
+2024-08-29 13:57:04,107 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/germany.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:57:04,108 - ERROR - Git repository not found.
+2024-08-29 13:57:04,193 - WARNING - Rate limit exceeded (429) for Turkey. Retrying...
+2024-08-29 13:57:04,886 - INFO - Saved stations for Poland to rml-radio/lua/radio/stations/poland.lua
+2024-08-29 13:57:04,888 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/poland.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:57:04,889 - ERROR - Git repository not found.
+2024-08-29 13:57:05,364 - INFO - Saved stations for Turkey to rml-radio/lua/radio/stations/turkey.lua
+2024-08-29 13:57:05,367 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/turkey.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:57:05,367 - ERROR - Git repository not found.
+2024-08-29 13:57:06,795 - INFO - Saved stations for Mayotte to rml-radio/lua/radio/stations/mayotte.lua
+2024-08-29 13:57:06,797 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/mayotte.lua: [Errno 2] No such file or directory: 'lua'
+2024-08-29 13:57:06,797 - ERROR - Git repository not found.
+2024-08-29 13:57:08,409 - INFO - All stations fetched and saved.
