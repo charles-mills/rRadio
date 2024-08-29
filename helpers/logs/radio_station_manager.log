@@ -4024,3 +4024,59 @@
 2024-08-29 02:18:08,443 - INFO - Saved stations for Armenia to rml-radio/lua/radio/stations\armenia.lua
 2024-08-29 02:18:08,460 - INFO - Saved stations for Antarctica to rml-radio/lua/radio/stations\antarctica.lua
 2024-08-29 02:18:08,480 - INFO - Saved stations for Albania to rml-radio/lua/radio/stations\albania.lua
+2024-08-29 17:34:37,390 - INFO - Saved stations for Anguilla to lua/radio/stations\anguilla.lua
+2024-08-29 17:34:37,391 - ERROR - Lua validation failed for lua/radio/stations\anguilla.lua: [WinError 2] The system cannot find the file specified
+2024-08-29 17:34:37,393 - ERROR - Git repository not found.
+2024-08-29 17:34:37,396 - INFO - Saved stations for Antigua And Barbuda to lua/radio/stations\antigua_and_barbuda.lua
+2024-08-29 17:34:37,396 - ERROR - Lua validation failed for lua/radio/stations\antigua_and_barbuda.lua: [WinError 2] The system cannot find the file specified
+2024-08-29 17:34:37,396 - ERROR - Git repository not found.
+2024-08-29 17:34:37,401 - INFO - Saved stations for Andorra to lua/radio/stations\andorra.lua
+2024-08-29 17:34:37,401 - ERROR - Lua validation failed for lua/radio/stations\andorra.lua: [WinError 2] The system cannot find the file specified
+2024-08-29 17:34:37,401 - ERROR - Git repository not found.
+2024-08-29 17:34:37,479 - INFO - Saved stations for Armenia to lua/radio/stations\armenia.lua
+2024-08-29 17:34:37,480 - ERROR - Lua validation failed for lua/radio/stations\armenia.lua: [WinError 2] The system cannot find the file specified
+2024-08-29 17:34:37,481 - ERROR - Git repository not found.
+2024-08-29 17:34:37,514 - INFO - Saved stations for Afghanistan to lua/radio/stations\afghanistan.lua
+2024-08-29 17:34:37,514 - ERROR - Lua validation failed for lua/radio/stations\afghanistan.lua: [WinError 2] The system cannot find the file specified
+2024-08-29 17:34:37,514 - ERROR - Git repository not found.
+2024-08-29 17:34:37,534 - INFO - Saved stations for Albania to lua/radio/stations\albania.lua
+2024-08-29 17:34:37,535 - ERROR - Lua validation failed for lua/radio/stations\albania.lua: [WinError 2] The system cannot find the file specified
+2024-08-29 17:34:37,535 - ERROR - Git repository not found.
+2024-08-29 17:34:37,579 - INFO - Saved stations for The United Arab Emirates to lua/radio/stations\the_united_arab_emirates.lua
+2024-08-29 17:34:37,580 - ERROR - Lua validation failed for lua/radio/stations\the_united_arab_emirates.lua: [WinError 2] The system cannot find the file specified
+2024-08-29 17:34:37,581 - ERROR - Git repository not found.
+2024-08-29 17:34:37,617 - INFO - Saved stations for Antarctica to lua/radio/stations\antarctica.lua
+2024-08-29 17:34:37,618 - ERROR - Lua validation failed for lua/radio/stations\antarctica.lua: [WinError 2] The system cannot find the file specified
+2024-08-29 17:34:37,618 - ERROR - Git repository not found.
+2024-08-29 17:34:37,634 - INFO - Saved stations for Angola to lua/radio/stations\angola.lua
+2024-08-29 17:34:37,635 - ERROR - Lua validation failed for lua/radio/stations\angola.lua: [WinError 2] The system cannot find the file specified
+2024-08-29 17:34:37,636 - ERROR - Git repository not found.
+2024-08-29 17:34:37,638 - WARNING - Rate limit exceeded (429) for American Samoa. Retrying...
+2024-08-29 17:34:37,677 - WARNING - Rate limit exceeded (429) for Austria. Retrying...
+2024-08-29 17:34:37,684 - WARNING - Rate limit exceeded (429) for Australia. Retrying...
+2024-08-29 17:34:37,764 - INFO - Saved stations for Argentina to lua/radio/stations\argentina.lua
+2024-08-29 17:34:37,766 - ERROR - Lua validation failed for lua/radio/stations\argentina.lua: [WinError 2] The system cannot find the file specified
+2024-08-29 17:34:37,767 - ERROR - Git repository not found.
+2024-08-29 17:34:37,820 - WARNING - Rate limit exceeded (429) for Aruba. Retrying...
+2024-08-29 17:34:38,696 - INFO - Saved stations for American Samoa to lua/radio/stations\american_samoa.lua
+2024-08-29 17:34:38,697 - ERROR - Lua validation failed for lua/radio/stations\american_samoa.lua: [WinError 2] The system cannot find the file specified
+2024-08-29 17:34:38,697 - ERROR - Git repository not found.
+2024-08-29 17:34:38,745 - WARNING - Rate limit exceeded (429) for Australia. Retrying...
+2024-08-29 17:34:38,747 - WARNING - Rate limit exceeded (429) for Aland Islands. Retrying...
+2024-08-29 17:34:38,854 - WARNING - Rate limit exceeded (429) for Aruba. Retrying...
+2024-08-29 17:34:38,899 - INFO - Saved stations for Austria to lua/radio/stations\austria.lua
+2024-08-29 17:34:38,900 - ERROR - Lua validation failed for lua/radio/stations\austria.lua: [WinError 2] The system cannot find the file specified
+2024-08-29 17:34:38,900 - ERROR - Git repository not found.
+2024-08-29 17:34:38,946 - WARNING - Rate limit exceeded (429) for Azerbaijan. Retrying...
+2024-08-29 17:34:39,871 - INFO - Saved stations for Aland Islands to lua/radio/stations\aland_islands.lua
+2024-08-29 17:34:39,874 - ERROR - Lua validation failed for lua/radio/stations\aland_islands.lua: [WinError 2] The system cannot find the file specified
+2024-08-29 17:34:39,874 - ERROR - Git repository not found.
+2024-08-29 17:34:39,986 - WARNING - Rate limit exceeded (429) for Azerbaijan. Retrying...
+2024-08-29 17:34:40,151 - INFO - Saved stations for Bosnia And Herzegovina to lua/radio/stations\bosnia_and_herzegovina.lua
+2024-08-29 17:34:40,153 - ERROR - Lua validation failed for lua/radio/stations\bosnia_and_herzegovina.lua: [WinError 2] The system cannot find the file specified
+2024-08-29 17:34:40,153 - ERROR - Git repository not found.
+2024-08-29 17:34:40,386 - INFO - Saved stations for Barbados to lua/radio/stations\barbados.lua
+2024-08-29 17:34:40,390 - ERROR - Lua validation failed for lua/radio/stations\barbados.lua: [WinError 2] The system cannot find the file specified
+2024-08-29 17:34:40,391 - ERROR - Git repository not found.
+2024-08-29 17:34:40,436 - WARNING - Rate limit exceeded (429) for Bangladesh. Retrying...
+2024-08-29 17:34:40,868 - WARNING - Rate limit exceeded (429) for Aruba. Retrying...
