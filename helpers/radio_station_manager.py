@@ -39,11 +39,11 @@ class Config:
         self.VERBOSE = self.config['DEFAULT'].getboolean('verbose', False)
         self.README_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'README.md')
 
-# Setup logging
+# Setup logging with UTF-8 encoding
 def setup_logging(log_file, verbose=False):
     print(f"Setting up logging to {log_file}...")
     os.makedirs(os.path.dirname(log_file), exist_ok=True)
-    handler = RotatingFileHandler(log_file, maxBytes=5*1024*1024, backupCount=5)
+    handler = RotatingFileHandler(log_file, maxBytes=5*1024*1024, backupCount=5, encoding='utf-8')
     logging.basicConfig(handlers=[handler], level=logging.DEBUG if verbose else logging.INFO,
                         format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -202,8 +202,16 @@ class RadioStationManager:
     async def verify_and_save_stations(self, session: aiohttp.ClientSession, country: str, pbar: tqdm):
         print(f"Verifying and saving stations for {country}...")
         file_path = os.path.join(self.config.STATIONS_DIR, f"{Utils.clean_file_name(country)}.lua")
+        
+        # Check if the file exists before attempting to open it
+        if not os.path.exists(file_path):
+            logging.warning(f"File {file_path} not found. Skipping verification for {country}.")
+            pbar.update(1)
+            return
+        
         with open(file_path, 'r', encoding='utf-8') as f:
             content = f.read()
+        
         stations = re.findall(r'\{name\s*=\s*"(.*?)",\s*url\s*=\s*"(.*?)"\}', content)
         stations = [{"name": name, "url": url} for name, url in stations]
 
@@ -212,6 +220,7 @@ class RadioStationManager:
             self.save_stations_to_file(country, verified_stations)
             self.commit_and_push_changes(file_path, f"Verified and saved stations for {country}")
         pbar.update(1)
+
 
     def get_all_countries(self) -> List[str]:
         print("Fetching list of all countries...")
