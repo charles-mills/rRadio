@@ -22,24 +22,13 @@ jobs:
         python -m pip install --upgrade pip
         pip install aiohttp tqdm configparser requests
 
-    - name: Set up Git user
-      run: |
-        git config --global user.name "GitHub Action"
-        git config --global user.email "github-actions@github.com"
-
     - name: Fetch Stations
       run: python helpers/radio_station_manager.py --auto-run --fetch
 
-    - name: Commit fetched stations if changed
+    - name: Commit fetched stations
       run: |
-        git pull origin main  # Ensure your branch is up to date
-        if [ -n "$(git status --porcelain)" ]; then
-          git add .
-          git commit -m "Fetched new radio stations"
-          git push --force
-        else
-          echo "No changes to commit"
-        fi
+        git add .
+        git commit -m "Fetched new radio stations"
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -60,24 +49,13 @@ jobs:
         python -m pip install --upgrade pip
         pip install aiohttp tqdm configparser requests
 
-    - name: Set up Git user
-      run: |
-        git config --global user.name "GitHub Action"
-        git config --global user.email "github-actions@github.com"
-
     - name: Verify Stations
       run: python helpers/radio_station_manager.py --auto-run --verify
 
-    - name: Commit verified stations if changed
+    - name: Commit verified stations
       run: |
-        git pull origin main  # Ensure your branch is up to date
-        if [ -n "$(git status --porcelain)" ]; then
-          git add .
-          git commit -m "Verified radio stations"
-          git push --force
-        else
-          echo "No changes to commit"
-        fi
+        git add .
+        git commit -m "Verified radio stations"
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -98,23 +76,18 @@ jobs:
         python -m pip install --upgrade pip
         pip install aiohttp tqdm configparser requests
 
+    - name: Update README.md
+      run: python helpers/radio_station_manager.py --auto-run --count
+
     - name: Set up Git user
       run: |
         git config --global user.name "GitHub Action"
         git config --global user.email "github-actions@github.com"
 
-    - name: Update README.md
-      run: python helpers/radio_station_manager.py --auto-run --count
-
-    - name: Commit README.md changes if changed
+    - name: Commit and Push all changes
       run: |
-        git pull origin main  # Ensure your branch is up to date
-        if [ -n "$(git status --porcelain)" ]; then
-          git add README.md
-          git commit -m "Updated README.md with latest station count"
-          git push --force
-        else
-          echo "No changes to commit"
-        fi
+        git add .
+        git commit -m "Final update: fetched, verified, and updated README.md"
+        git push --force
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
