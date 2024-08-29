@@ -4356,3 +4356,5 @@
 2024-08-29 14:09:58,984 - ERROR - Lua validation failed for rml-radio/lua/radio/stations/turkey.lua: [Errno 2] No such file or directory: 'lua'
 2024-08-29 14:09:58,984 - ERROR - Git repository not found.
 2024-08-29 14:10:08,739 - INFO - All stations fetched and saved.
+2024-08-29 14:20:23,197 - INFO - Updated README.md with the current station count: 82578
+2024-08-29 14:20:23,851 - INFO - Committed and pushed changes: Update README.md with 82578 radio stations
