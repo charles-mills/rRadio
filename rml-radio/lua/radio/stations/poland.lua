@@ -663,6 +663,7 @@ local stations = {
     {name = "RADIO ZAWIERCIE", url = "https://ssl-1.radiohost.pl:9078/live"},
     {name = "Radio ZET", url = "https://zt01.cdn.eurozet.pl/zet-net.mp3?redirected=01"},
     {name = "Radio ZET - 2000", url = "https://zt04.cdn.eurozet.pl/ZET200.mp3"},
+    {name = "Radio ZET 128", url = "https://n-11-21.dcs.redcdn.pl/sc/o2/Eurozet/live/audio.livx?audio=5"},
     {name = "Radio ZET 128 Kbps", url = "https://zt02.cdn.eurozet.pl/zet-old.mp3"},
     {name = "Radio Zet Love -Om", url = "https://zt06.cdn.eurozet.pl/ZETLOV.mp3?t=1709719922445?redirected=06"},
     {name = "Radio Zet Na Rower -Om", url = "https://zt06.cdn.eurozet.pl/ZETNAR.mp3?t=1709720397160?redirected=06"},

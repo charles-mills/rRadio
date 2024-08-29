@@ -1501,6 +1501,7 @@ local stations = {
     {name = "FDP Radio", url = "https://playerservices.streamtheworld.com/api/livestream-redirect/FDPRADIO_ONLINE.mp3"},
     {name = "Feature Story News", url = "https://www.fsnradionews.com/FSNNews/FSNWorldNews.mp3"},
     {name = "Felove Biblia En Garifuna", url = "http://radio.produccionescasaverde.com:8791/autodj"},
+    {name = "Fierro 1035 FM 1280 AM", url = "https://ice64.securenetsystems.net/KRZE"},
     {name = "Fiesta 971", url = "https://ovz.arcoshost.com/proxy/xcagarza?mp=/stream"},
     {name = "Final Fantasy", url = "http://finalfantasystation.com:8000/stream"},
     {name = "Final Fight Bible Radio", url = "https://streams.radio.co/sd7d07f6a0/listen"},

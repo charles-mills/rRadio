@@ -2335,6 +2335,7 @@ local stations = {
     {name = "NDW", url = "https://stream.laut.fm/ndw"},
     {name = "NDW RADIO", url = "https://streaming.ndwradio.de/stream"},
     {name = "NE-WS 894", url = "https://news894--di--nacs-ais-lgc--0a--cdn.cast.addradio.de/news894/live/mp3/high"},
+    {name = "Neckaralb Live Classic Rock", url = "http://neckaralblive.ip-streaming.net/classicrock"},
     {name = "Neckeralb Classik Rock", url = "https://neckaralblive.ip-streaming.net/classicrockaacp?aw_0_1st.kuid=&aw_0_1st.ksg=[]&"},
     {name = "Neckeralb Modern Rock", url = "https://frontend.streamonkey.net/neckaralblive-modernrock?aggregator=radioplayerde&=&&___cb=149397405724742"},
     {name = "Nectarine Demoscene Radio", url = "http://nectarine.from-de.com/necta192"},
