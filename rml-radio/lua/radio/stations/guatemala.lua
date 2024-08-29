@@ -2,6 +2,7 @@ local stations = {
     {name = "949 FM", url = "https://playerservices.streamtheworld.com/api/livestream-redirect/949FM_ADP.m3u8"},
     {name = "Actitud 1009", url = "https://ss.redradios.net:8002/stream?type=.mp3"},
     {name = "Así Fue Mi Vida", url = "https://sh4.radioonlinehd.com:8581/stream"},
+    {name = "Astro Radio", url = "https://sonicpanel.streamsolutions.us:10945/stream"},
     {name = "Atmósfera 965", url = "https://stream.zenolive.com/wbqp37gm8ueuv"},
     {name = "Azúcar 967 FM", url = "https://radiostreamingaac.com:8568/azucarzacapa"},
     {name = "Azúcar FM 999", url = "https://radiostreamingaac.com:8570/azucarjutiapa"},

@@ -5534,6 +5534,7 @@ local stations = {
     {name = "WWWQ 997 Q100 Atlanta, GA", url = "http://provisioning.streamtheworld.com/pls/WWWQFM.pls"},
     {name = "WWWQ-HD2 99X Atlanta, GA", url = "http://provisioning.streamtheworld.com/pls/WWWQH2.pls"},
     {name = "WWWQ-HD3 OG 979 Atlanta, GA", url = "http://provisioning.streamtheworld.com/pls/WWWQH3.pls"},
+    {name = "WWWV 975 3WV Charlottesville, VA", url = "https://player.amperwave.net/7883"},
     {name = "WWWZ 933 Z93 Jamz Summerville, SC", url = "http://playerservices.streamtheworld.com/m3u/WWWZFM.m3u"},
     {name = "WXAJ 997 The Mix Hillsboro, IL", url = "http://provisioning.streamtheworld.com/pls/WXAJFMAAC.pls"},
     {name = "WXCR-FM 923 New Martinsville, WV", url = "https://ice8.securenetsystems.net/WXCR"},
