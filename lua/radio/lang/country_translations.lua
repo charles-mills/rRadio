@@ -22,7 +22,7 @@ local CountryTranslations = {
     },
     tr = {
         ["United Kingdom"] = "Birleşik Krallık",
-        ["United States"] = "Amerika Birleşik Devletleri,
+        ["United States"] = "Amerika Birleşik Devletleri",
         ["Germany"] = "Almanya",
         ["France"] = "Fransa",
         ["Spain"] = "İspanya",
