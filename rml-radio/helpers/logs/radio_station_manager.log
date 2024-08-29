@@ -4358,3 +4358,5 @@
 2024-08-29 14:10:08,739 - INFO - All stations fetched and saved.
 2024-08-29 14:20:23,197 - INFO - Updated README.md with the current station count: 82578
 2024-08-29 14:20:23,851 - INFO - Committed and pushed changes: Update README.md with 82578 radio stations
+2024-08-29 14:31:40,126 - INFO - Updated README.md with the current station count: 82578
+2024-08-29 14:31:40,250 - ERROR - Failed to commit and push changes: Command '['git', 'commit', '-m', 'Update README.md with 82578 radio stations']' returned non-zero exit status 1.
