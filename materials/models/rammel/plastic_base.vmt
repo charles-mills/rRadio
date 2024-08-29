@@ -1,5 +1,5 @@
 "VertexLitGeneric"
 {
-	"$basetexture" "plastic_base"
-	"$normalmap" "plastic_base_n"
+	"$basetexture" "models/rammel/plastic_base"
+	"$normalmap" "models/rammel/plastic_base_n"
 }

@@ -1,5 +1,5 @@
 "VertexLitGeneric"
 {
-	"$basetexture" "boombox_base"
-	"$normalmap" "boombox_base_n"
+	"$basetexture" "models/rammel/boombox_base"
+	"$normalmap" "models/rammel/boombox_base_n"
 }
