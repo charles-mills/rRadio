@@ -8,6 +8,8 @@ on:
 jobs:
   fetch_stations:
     runs-on: ubuntu-latest
+    outputs:
+      stations_updated: ${{ steps.stations_updated.outputs.stations_updated }}
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
@@ -28,16 +30,14 @@ jobs:
         git config --global user.email "github-actions@github.com"
 
     - name: Fetch Stations
-      run: python helpers/radio_station_manager.py --auto-run --fetch
-
-    - name: Commit fetched stations
+      id: stations_updated
       run: |
-        git add rml-radio/lua/radio/stations
-        git add -u  # Stage modified files that are already tracked
-        git commit -m "Fetched new radio stations"
-        git push --force
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        python helpers/radio_station_manager.py --auto-run --fetch
+        if [ -n "$(git status --porcelain rml-radio/lua/radio/stations)" ]; then
+          echo "::set-output name=stations_updated::true"
+        else
+          echo "::set-output name=stations_updated::false"
+        fi
 
   verify_stations:
     runs-on: ubuntu-latest
@@ -63,15 +63,6 @@ jobs:
 
     - name: Verify Stations
       run: python helpers/radio_station_manager.py --auto-run --verify
-
-    - name: Commit verified stations
-      run: |
-        git add rml-radio/lua/radio/stations
-        git add -u  # Stage modified files that are already tracked
-        git commit -m "Verified radio stations"
-        git push --force
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   update_readme:
     runs-on: ubuntu-latest
@@ -99,9 +90,9 @@ jobs:
       run: python helpers/radio_station_manager.py --auto-run --count
 
     - name: Commit and Push all changes
+      if: ${{ needs.fetch_stations.outputs.stations_updated == 'true' }}
       run: |
         git add rml-radio/lua/radio/stations README.md
-        git add -u  # Stage modified files that are already tracked
         git commit -m "Final update: fetched, verified, and updated README.md"
         git push --force
       env:
