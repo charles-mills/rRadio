@@ -20,6 +20,13 @@ local CountryTranslations = {
         ["France"] = "Frankreich",
         ["Spain"] = "Spanien",
     },
+    tr = {
+        ["United Kingdom"] = "Birleşik Krallık",
+        ["United States"] = "Amerika Birleşik Devletleri,
+        ["Germany"] = "Almanya",
+        ["France"] = "Fransa",
+        ["Spain"] = "İspanya",
+    },
 }
 
 return CountryTranslations
