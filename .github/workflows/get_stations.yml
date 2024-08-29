@@ -1,9 +1,6 @@
 name: Auto Run Radio Station Manager
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch: # Allows the workflow to be triggered manually from the GitHub Actions tab
 
 jobs:
@@ -26,7 +23,7 @@ jobs:
 
     - name: Run Full Rescan, Verify, and Update README
       run: |
-        python script.py --auto-run --fetch --verify --count
+        python helpers/radio_station_manager.py --auto-run --fetch --verify --count
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
