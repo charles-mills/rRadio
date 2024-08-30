@@ -56,7 +56,7 @@
 2024-08-30 10:23:07,086 - ERROR - Station Radio Triglav (http://live.radiotriglav.si/Triglav) check failed: 
 2024-08-30 10:23:07,086 - ERROR - Station MWT Rock Station (https://stream.volnorez.com/live-app/908994?br=192) check failed: 
 2024-08-30 10:23:07,086 - ERROR - Station Monte Carlo Барнаул (https://cast.fmprod.ru/montecarlo_brn) check failed: 
-2024-08-30 10:23:07,086 - ERROR - Station Modern Talking (http://stream.dar.fm/119941) check failed: 
+2024-08-30 10:23:07,086 - ERROR - Station Modern Talking (http://stream.dar.fm/119941) checks failed: 
 2024-08-30 10:23:07,086 - ERROR - Station Mix FM (http://radio.gubernia.com:8000/radio3) check failed: 
 2024-08-30 10:23:07,086 - ERROR - Station Radio Nula Beatz (https://strm.radionula.com/lounge) check failed: 
 2024-08-30 10:23:07,086 - ERROR - Station Radio Robin (https://live.radio.si/Robin) check failed: 
