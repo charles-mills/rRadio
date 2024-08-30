@@ -102,8 +102,6 @@ local function formatCountryName(name)
     local lang = GetConVar("radio_language"):GetString() or "en"
     local translation = countryTranslations:GetCountryName(lang, formattedName)
     
-    print("Translating name " .. formattedName .. " to " .. translation)  -- Debug statement
-    
     return translation
 end
 
@@ -203,7 +201,6 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                     local entity = LocalPlayer().currentRadioEntity
 
                     if not IsValid(entity) then
-                        print("No valid entity for PlayCarRadioStation")
                         return
                     end
 
@@ -457,8 +454,6 @@ net.Receive("PlayCarRadioStation", function()
 
     local function attemptPlayStation(attempt)
         if not IsValid(entity) then
-            print("Invalid entity received for PlayCarRadioStation. Retrying... Attempt:", attempt)
-
             if attempt < entityRetryAttempts then
                 timer.Simple(entityRetryDelay, function()
                     attemptPlayStation(attempt + 1)
@@ -475,12 +470,9 @@ net.Receive("PlayCarRadioStation", function()
             currentRadioSources[entity]:Stop()
         end
 
-        print("Attempting to play radio station:", url)
-
         local function tryPlayStation(playAttempt)
             sound.PlayURL(url, "3d mono", function(station, errorID, errorName)
                 if IsValid(station) then
-                    print("Playing radio station: " .. url)
                     station:SetPos(entity:GetPos())
                     station:SetVolume(volume)
                     station:Play()
@@ -488,7 +480,6 @@ net.Receive("PlayCarRadioStation", function()
 
                     -- Set 3D fade distance according to the entity's configuration
                     station:Set3DFadeDistance(entityConfig.MinVolumeDistance, entityConfig.MaxHearingDistance)
-                    print("Radio station is now playing with 3D fade distances applied.")
 
                     -- Update the station's position relative to the entity's movement
                     hook.Add("Think", "UpdateRadioPosition_" .. entity:EntIndex(), function()
@@ -517,10 +508,7 @@ net.Receive("PlayCarRadioStation", function()
                             hook.Remove("Think", "UpdateRadioPosition_" .. entity:EntIndex())
                         end
                     end)
-                else
-                    -- Log the error and retry if the station couldn't be played
-                    print("[ERROR] Failed to play station. Attempt: " .. playAttempt .. ". Error: " .. (errorName or "Unknown error"))
-                    
+                else      
                     if playAttempt < entityConfig.RetryAttempts then
                         timer.Simple(entityConfig.RetryDelay, function()
                             tryPlayStation(playAttempt + 1)
@@ -556,4 +544,8 @@ net.Receive("OpenRadioMenu", function()
     if not radioMenuOpen then
         openRadioMenu()
     end
+end)
+
+hook.Add("PlayerInitialSpawn", "ApplySavedThemeAndLanguage", function(ply)
+    loadSavedSettings()  -- Load and apply the saved theme and language
 end)

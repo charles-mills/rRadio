@@ -35,7 +35,10 @@ local function loadSavedSettings()
     applyLanguage(languageCode)
 end
 
-loadSavedSettings()
+-- Call loadSavedSettings when the client finishes loading all entities
+hook.Add("InitPostEntity", "ApplySavedThemeAndLanguageOnJoin", function()
+    loadSavedSettings()
+end)
 
 -- Hook to update the UI when the language is changed
 hook.Add("LanguageUpdated", "UpdateCountryListOnLanguageChange", function()
