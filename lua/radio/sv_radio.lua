@@ -15,6 +15,65 @@ local function DebugPrint(msg)
     end
 end
 
+-- Function to restore the radio station if needed
+local function RestoreBoomboxRadio(entity)
+    local permaID = entity.PermaProps_ID
+    if not permaID then
+        print("Warning: Could not find PermaProps_ID for entity " .. entity:EntIndex())
+        return
+    end
+
+    if entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox" then
+        local savedState = SavedBoomboxStates[permaID]
+
+        if savedState then
+            print("Restoring station: " .. savedState.station)
+            entity:SetNWString("CurrentRadioStation", savedState.station)
+            entity:SetNWString("StationURL", savedState.url)
+            entity:SetStationName(savedState.station) -- Assuming this is defined somewhere else
+
+            if savedState.isPlaying then
+                net.Start("PlayCarRadioStation")
+                net.WriteEntity(entity)
+                net.WriteString(savedState.url)
+                net.WriteFloat(savedState.volume)
+                net.Broadcast()
+            end
+        else
+            print("No saved state found for PermaPropID " .. permaID)
+        end
+    end
+end
+
+-- Hook into OnEntityCreated to restore the boombox radio state for PermaProps
+hook.Add("OnEntityCreated", "RestoreBoomboxRadioForPermaProps", function(entity)
+    timer.Simple(0.1, function()
+        if IsValid(entity) and (entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox") then
+            RestoreBoomboxRadio(entity)
+        end
+    end)
+end)
+
+-- Function to create the boombox_states table if it doesn't exist
+hook.Add("Initialize", "CreateBoomboxStatesTable", function()
+    local createTableQuery = [[
+        CREATE TABLE IF NOT EXISTS boombox_states (
+            permaID INTEGER PRIMARY KEY,
+            station TEXT,
+            url TEXT,
+            isPlaying INTEGER,
+            volume REAL
+        )
+    ]]
+
+    local result = sql.Query(createTableQuery)
+    if result == false then
+        DebugPrint("Failed to create boombox_states table: " .. sql.LastError())
+    else
+        DebugPrint("Boombox_states table created or verified successfully")
+    end
+end)
+
 -- Function to save a boombox state to the database
 local function SaveBoomboxStateToDatabase(permaID, stationName, url, isPlaying, volume)
     local query = string.format("REPLACE INTO boombox_states (permaID, station, url, isPlaying, volume) VALUES (%d, %s, %s, %d, %f)",
@@ -50,7 +109,7 @@ local function LoadBoomboxStatesFromDatabase()
                 isPlaying = tonumber(row.isPlaying) == 1,
                 volume = tonumber(row.volume)
             }
-            DebugPrint("Loaded boombox state from database: PermaID = " .. permaID .. ", Station = " .. row.station)
+            DebugPrint("Loaded boombox state from database: PermaID = " .. permaID .. ", Station = " .. row.station .. " URL: " .. row.url)
         end
     else
         SavedBoomboxStates = {}
@@ -66,6 +125,16 @@ local function AddActiveRadio(entity, stationName, url, volume)
         url = url,
         volume = volume
     }
+
+    -- Print the contents of the ActiveRadios table
+    DebugPrint("ActiveRadios:")
+    for index, radio in pairs(ActiveRadios) do
+        DebugPrint("Index: " .. index)
+        DebugPrint("Entity: " .. tostring(radio.entity))
+        DebugPrint("Station Name: " .. radio.stationName)
+        DebugPrint("URL: " .. radio.url)
+        DebugPrint("Volume: " .. radio.volume)
+    end
 end
 
 -- Function to remove a radio from the active list
@@ -75,14 +144,28 @@ end
 
 -- Function to send active radios to a specific player
 local function SendActiveRadiosToPlayer(ply)
+    DebugPrint("Sending active radios to player: " .. ply:Nick())
+    if next(ActiveRadios) == nil then
+        DebugPrint("No active radios found. Retrying in 5 seconds.")
+        timer.Simple(5, function()
+            SendActiveRadiosToPlayer(ply)
+        end)
+        return
+    end
+
     for _, radio in pairs(ActiveRadios) do
         -- Check if the entity is valid before sending
+        DebugPrint("Checking radio entity validity in SendActiveRadiosToPlayer.")
         if IsValid(radio.entity) then
+            DebugPrint("Sending active radio: Entity " .. tostring(radio.entity:EntIndex()) .. ", Station: " .. tostring(radio.stationName) .. ", URL: " .. tostring(radio.url) .. ", Volume: " .. tostring(radio.volume))
+
             net.Start("PlayCarRadioStation")
             net.WriteEntity(radio.entity)
             net.WriteString(radio.url)  -- Send the correct URL
             net.WriteFloat(radio.volume) -- Send the actual volume
             net.Send(ply)
+        else
+            DebugPrint("Invalid radio entity detected in SendActiveRadiosToPlayer.")
         end
     end
 end
@@ -93,6 +176,7 @@ hook.Add("PlayerInitialSpawn", "SendActiveRadiosOnJoin", function(ply)
     timer.Simple(3, function()
         if IsValid(ply) then
             SendActiveRadiosToPlayer(ply)
+            DebugPrint("I'm sending you the active radios :)")
         end
     end)
 end)
@@ -108,7 +192,12 @@ net.Receive("PlayCarRadioStation", function(len, ply)
     local url = net.ReadString()
     local volume = math.Clamp(net.ReadFloat(), 0, 1)  -- Ensure volume is clamped between 0 and 1
 
-    if not IsValid(entity) then return end
+    if not IsValid(entity) then 
+        DebugPrint("Invalid entity received in PlayCarRadioStation.")
+        return 
+    end
+
+    DebugPrint("PlayCarRadioStation received. Entity: " .. entity:EntIndex() .. ", Station: " .. stationName .. ", URL: " .. url .. ", Volume: " .. volume)
 
     -- Check if the entity is a boombox or a vehicle
     if entity:GetClass() == "golden_boombox" or entity:GetClass() == "boombox" then
@@ -132,6 +221,7 @@ net.Receive("PlayCarRadioStation", function(len, ply)
         AddActiveRadio(entity, stationName, url, volume)  -- Save both station name and URL
 
         -- Broadcast the station play request to all clients
+        DebugPrint("Broadcasting PlayCarRadioStation for entity: " .. entity:EntIndex())
         net.Start("PlayCarRadioStation")
         net.WriteEntity(entity)
         net.WriteString(url)  -- Broadcast the URL
@@ -148,6 +238,7 @@ net.Receive("PlayCarRadioStation", function(len, ply)
         AddActiveRadio(entity, stationName, url, volume)  -- Save both station name and URL
 
         -- Broadcast the station play request to all clients without setting volume on the vehicle
+        DebugPrint("Broadcasting PlayCarRadioStation for vehicle: " .. entity:EntIndex())
         net.Start("PlayCarRadioStation")
         net.WriteEntity(entity)
         net.WriteString(url)  -- Broadcast the URL

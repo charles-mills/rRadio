@@ -4,7 +4,7 @@ ENT.PrintName = "Golden Boombox"
 ENT.Category = "rRadio"
 ENT.Spawnable = true
 ENT.AdminSpawnable = true
-ENT.Model = "models/rammel/boombox.mdl"
+ENT.IconOvervide = "entities/golden_boombox.png"
 ENT.Color = Color(255, 215, 0)  -- Gold color
 
 Config = include("radio/config.lua")

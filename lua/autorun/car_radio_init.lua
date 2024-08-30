@@ -10,15 +10,15 @@ if SERVER then
     AddCSLuaFile("themes.lua")
     AddCSLuaFile("radio/cl_init.lua")
     AddCSLuaFile("radio/key_names.lua")
-    
+
     -- Dynamically include all radio station files
-    local files = file.Find("radio/stations/*.lua", "LUA")
-    for _, filename in ipairs(files) do
+    local stationFiles = file.Find("radio/stations/*.lua", "LUA")
+    for _, filename in ipairs(stationFiles) do
         AddCSLuaFile("radio/stations/" .. filename)
     end
 
-    local files = file.Find("radio/lang/*.lua", "LUA")
-    for _, filename in ipairs(files) do
+    local langFiles = file.Find("radio/lang/*.lua", "LUA")
+    for _, filename in ipairs(langFiles) do
         AddCSLuaFile("radio/lang/" .. filename)
     end
     
@@ -29,15 +29,15 @@ if SERVER then
 else
     print("[RADIO] Starting client-side initialization")
     
-    -- Include all necessary files for the client
+    -- Load configuration and other necessary files in the correct order
     Config = include("radio/config.lua")
     include("language_manager.lua")
     include("country_translations.lua")
-    include("radio/cl_radio.lua")
     include("themes.lua")
     include("radio/theme_menu.lua")
     include("radio/key_names.lua")
     include("radio/cl_init.lua")
+    include("radio/cl_radio.lua")
     
     print("[RADIO] Finished client-side initialization")
 end

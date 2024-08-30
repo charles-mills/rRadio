@@ -453,9 +453,11 @@ hook.Add("Think", "OpenCarRadioMenu", function()
 end)
 
 net.Receive("PlayCarRadioStation", function()
+    print("I have recieved a request to play")
     local entity = net.ReadEntity()
     local url = net.ReadString()
     local volume = net.ReadFloat()
+    print("Here's my info: ", entity, url, volume)
 
     local entityRetryAttempts = 5
     local entityRetryDelay = 0.5  -- Delay in seconds between entity retries
