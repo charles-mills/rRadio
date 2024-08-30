@@ -38,9 +38,14 @@ local function RestoreBoomboxRadio(entity)
                 net.WriteString(savedState.url)
                 net.WriteFloat(savedState.volume)
                 net.Broadcast()
+                print("Broadcasting PlayCarRadioStation for entity: " .. entity:EntIndex())
+                print("Told clients to play this bad boy tune !")
+            else
+                print("Station is not playing. Not broadcasting PlayCarRadioStation. :(")
             end
         else
             print("No saved state found for PermaPropID " .. permaID)
+            print("NOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO!!!!!!!! WHAT THE HELL")
         end
     end
 end
