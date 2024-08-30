@@ -15,18 +15,20 @@ local rotationAngle = 0
 function ENT:Draw()
     self:DrawModel()
 
+    -- Check if the entity is a PermaProp by checking for its PermaProps_ID
+    if self.PermaProps_ID then
+        -- If it is a PermaProp, do not draw any text
+        return
+    end
+
     local pos = self:GetPos() + Vector(0, 0, 30)
     local ang = Angle(0, LocalPlayer():EyeAngles().y - 90, 90)
 
-    local interact = Config.Lang and Config.Lang["Interact"] or "Interact"
-    if not Config.Lang then
-        print("Fallback: Lang not found")
-    end
-
     cam.Start3D2D(pos, ang, 0.1)
-        local text = self:GetStationName() == "" and interact or self:GetStationName()
+        local stationName = self:GetNWString("CurrentRadioStation", "")
+        local text = stationName ~= "" and stationName or (Config.Lang and Config.Lang["Interact"] or "Press E to Interact")
 
-        if self:GetStationName() ~= "" then
+        if stationName ~= "" then
             local rainbowColor = GetRainbowColor(2)
             rotationAngle = rotationAngle + 2
             if rotationAngle >= 360 then rotationAngle = 0 end
@@ -48,7 +50,8 @@ net.Receive("UpdateRadioStatus", function()
     local entity = net.ReadEntity()
     local stationName = net.ReadString()
 
-    if IsValid(entity) and entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox" then
-        entity:SetStationName(stationName)
+    if IsValid(entity) and (entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox") then
+        entity:SetNWString("CurrentRadioStation", stationName)
+        print("[Debug] Received station name: " .. stationName)
     end
 end)
