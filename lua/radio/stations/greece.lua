@@ -1,9 +1,11 @@
 local stations = {
-    {name = "Σύλογγος Ραδιοφωνίας ΑΜ", url = "http://solid67.streamupsolutions.com:15019/live"},
-    {name = "Korinthos Radio", url = "https://sonic.streams.ovh/9926/stream"},
-    {name = "Shook", url = "http://s1.onweb.gr:8812/;"},
-    {name = "Amartia", url = "http://cast.innviweb.com:9030/stream?type=http&nocache=624478"},
-    {name = "Athens Radio Trance", url = "https://cast.streams.ovh:8008/;"},
+    {name = "Notes", url = "https://neos.win:48720/stream"},
+    {name = "Ertopen Web Radio", url = "http://radio.ertopen.com/erasport"},
+    {name = "Pepper 966", url = "http://pepper966.live24.gr/pepper9660"},
+    {name = "Blues Radio Alternative", url = "https://i4.streams.ovh/sc/bluesrad/stream"},
+    {name = "Cosmos 995", url = "http://solid2.streamupsolutions.com:24896/stream"},
+    {name = "Mood Radio", url = "http://198.7.59.28:10034/stream"},
+    {name = "Clearjet", url = "http://fra-pioneer01.dedicateware.com:1090/stream"},
 }
 
 return stations

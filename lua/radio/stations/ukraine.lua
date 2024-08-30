@@ -1,7 +1,6 @@
 local stations = {
-    {name = "Radio ROKS Тернопіль 103,5 Мгц", url = "http://195.95.206.25/RadioROKS-Te_HD"},
-    {name = "Relife Решетилівка", url = "http://176.102.194.71:44808/radio"},
-    {name = "FM Disco Melody", url = "https://online.melodiafm.ua/MelodiaFM_Disco"},
+    {name = "Радіо Накипіло Radio Nakypilo", url = "https://radiostream.nakypilo.ua/full"},
+    {name = "Informator FM", url = "https://main.inf.fm:8101/;?type=http&nocache=221893"},
 }
 
 return stations

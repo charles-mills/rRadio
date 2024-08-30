@@ -1,5 +1,5 @@
 local stations = {
-    {name = "קול השפלה - Kol Hashfela", url = "http://1036kh.cdnwz.net/1036kh"},
+    {name = "Kabbalah Fr", url = "http://icecast.kab.tv/live1-spa-574bcfd5.mp3"},
 }
 
 return stations
