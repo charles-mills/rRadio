@@ -3,6 +3,9 @@ AddCSLuaFile("shared.lua")
 
 include("shared.lua")
 
+-- Ensure SavedBoomboxStates is initialized
+SavedBoomboxStates = SavedBoomboxStates or {}
+
 -- Table to track the last time a player received a "no permission" message
 local lastPermissionMessageTime = {}
 
@@ -30,6 +33,44 @@ function ENT:Initialize()
         self:SetNWEntity("Owner", self.Owner)
     end
 end
+
+-- Function to restore the radio station if needed
+local function RestoreBoomboxRadio(entity)
+    local permaID = entity.PermaProps_ID
+    if not permaID then
+        print("Warning: Could not find PermaProps_ID for entity " .. entity:EntIndex())
+        return
+    end
+
+    if entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox" then
+        local savedState = SavedBoomboxStates[permaID]
+
+        if savedState then
+            print("Restoring station: " .. savedState.station)
+            entity:SetNWString("CurrentRadioStation", savedState.station)
+            entity:SetNWString("StationURL", savedState.url)
+
+            if savedState.isPlaying then
+                net.Start("PlayCarRadioStation")
+                net.WriteEntity(entity)
+                net.WriteString(savedState.url)
+                net.WriteFloat(savedState.volume)
+                net.Broadcast()
+            end
+        else
+            print("No saved state found for PermaPropID " .. permaID)
+        end
+    end
+end
+
+-- Ensure RestoreBoomboxRadio is called during entity creation
+hook.Add("OnEntityCreated", "RestoreBoomboxRadioOnSpawn", function(entity)
+    timer.Simple(0.1, function()
+        if IsValid(entity) and (entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox") then
+            RestoreBoomboxRadio(entity)
+        end
+    end)
+end)
 
 -- Only allow the owner or a superadmin to use the boombox
 function ENT:Use(activator, caller)
