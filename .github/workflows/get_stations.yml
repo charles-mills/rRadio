@@ -1,12 +1,18 @@
-name: Auto Run Radio Station Manager
+name: Radio Station Manager
 
 on:
-  workflow_dispatch:
   schedule:
-    - cron: '0 0 * * *'
+    - cron: '0 0 * * *'  # Runs every day at midnight
+  workflow_dispatch:
+    inputs:
+      run_only_fetch:
+        description: 'Run only fetch stations and update README'
+        required: false
+        default: 'false'
 
 jobs:
-  fetch_and_verify:
+  main_task:
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && github.event.inputs.run_only_fetch == 'false')
     runs-on: ubuntu-latest
 
     steps:
@@ -44,9 +50,9 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  fetch_only:
+  fetch_only_task:
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.run_only_fetch == 'true'
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch'  # Only runs on manual trigger
 
     steps:
     - name: Checkout Repository
