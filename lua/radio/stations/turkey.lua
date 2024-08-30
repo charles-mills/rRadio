@@ -1,5 +1,5 @@
 local stations = {
-    {name = "HOS MİX", url = "https://anadolu.liderhost.com.tr:10871/"},
+    {name = "Özgür Radyo", url = "http://95.173.188.170:9898/"},
 }
 
 return stations

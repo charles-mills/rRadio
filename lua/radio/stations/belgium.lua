@@ -1,5 +1,5 @@
 local stations = {
-    {name = "RADIO MARIA BELGIUM", url = "http://dreamsiteradiocp.com:8042/stream"},
+    {name = "Instrumentals Forever 64Kbp", url = "http://quincy.torontocast.com:1920/stream"},
 }
 
 return stations

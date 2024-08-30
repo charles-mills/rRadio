@@ -1,5 +1,5 @@
 local stations = {
-    {name = "La Grande De Tabasco Villahermosa - 897 FM - XHVX-FM - Grupo VX - Villahermosa, TB", url = "http://radio.golsystems.com.mx:8202/"},
+    {name = "Cadena Azul Atlacomulco - 957 FM - XHATF-FM - Grupo Rotativo - Atlacomulco, Estado De México", url = "https://01.solumedia.com.ar:10023/stream"},
 }
 
 return stations

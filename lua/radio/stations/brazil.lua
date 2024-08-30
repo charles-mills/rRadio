@@ -1,7 +1,7 @@
 local stations = {
-    {name = "Rádio Itapoan 975 FM", url = "http://cast.radiu.live:9300/stream"},
-    {name = "Sociedade Top FM 91,3", url = "https://sv11.hdradios.net:7246/stream"},
-    {name = "Rádio Nova Onda 1019", url = "http://148.72.158.239:8008/live"},
+    {name = "RÁDIO SÓ MPB", url = "https://s27.maxcast.com.br:8103/live"},
+    {name = "Radio Trans Mundial", url = "https://video.midiaserverbr.com:3975/live/rtmbrlive.m3u8"},
+    {name = "Rádio Cidade 101", url = "https://stream.jmhost.com.br/listen/rc101/radio/;?1708355082012"},
 }
 
 return stations

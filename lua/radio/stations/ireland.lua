@@ -1225,7 +1225,6 @@ local stations = {
     {name = "Runnradio", url = "http://stream.radiojar.com/h2czvm3wpg8uv"},
     {name = "Rustfm", url = "https://listen.rustfm.com/listen/rustfm/radio.mp3"},
     {name = "Rustradio", url = "https://listen.rustradio.co.uk:8443/stream"},
-    {name = "S1Lhoutte FM", url = "https://s1lhouttefm.radiostream123.com/"},
     {name = "SAB RADIO", url = "https://spectrum.radioca.st/stream"},
     {name = "SAB RADIO 2", url = "http://cressida.shoutca.st:8835/stream"},
     {name = "Sabotage", url = "https://parg.co/U8fG"},

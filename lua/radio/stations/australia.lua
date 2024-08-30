@@ -1,5 +1,5 @@
 local stations = {
-    {name = "Australian Open Radio", url = "https://aoradio.out.airtime.pro/aoradio_a"},
+    {name = "Radio Mansfield 997FM", url = "https://c7.radioboss.fm:18291/stream"},
 }
 
 return stations
