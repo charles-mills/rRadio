@@ -2,8 +2,6 @@ local Config = {}
 
 Config.RadioStations = {}
 
-Config.Language = "en" -- Default language
-
 local function loadLanguage()
     local lang = Config.Language or GetConVar("gmod_language"):GetString() or "en"
     local path = "radio/lang/" .. lang .. ".lua"
