@@ -1,5 +1,5 @@
 local stations = {
-    {name = "BNR Radio Shumen", url = "http://stream.bnr.bg:8033/radio-shumen.aac"},
+    {name = "Radio Winbet", url = "http://79.98.108.170:8010/autodj"},
 }
 
 return stations

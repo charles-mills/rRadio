@@ -67,6 +67,7 @@ local stations = {
     {name = "Lister FM", url = "http://www.adhocstreaming.co.za:8000/LuisterFM"},
     {name = "LM Radio", url = "https://streaming.fabrik.fm/lm-radio/echocast/audio/low/index.m3u8"},
     {name = "LM Radio 878FM Komatipoort South Africa#", url = "http://cast.fabrik.fm:8008/"},
+    {name = "Loca FM", url = "https://s3.we4stream.com:2020/stream/locafm"},
     {name = "Mabopane Rise Radio", url = "https://stream.zeno.fm/kyap8zs093yvv"},
     {name = "Magic 828", url = "https://streaming.fabrik.fm/magic828/echocast/audio/low/index.m3u8"},
     {name = "Metro FM SA", url = "https://27993.live.streamtheworld.com/METROFMAAC.aac?dist=triton-widget&tdsdk=js-2.9&swm=false&pname=tdwidgets&pversion=2.9&banners=none&burst-time=15&sbmid=496fec8c-5809-460a-beb7-3545115118ca"},

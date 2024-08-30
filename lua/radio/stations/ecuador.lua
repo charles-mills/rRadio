@@ -1,5 +1,5 @@
 local stations = {
-    {name = "La Voz Del Tomebamba 1070 AM", url = "https://streamingecuador.net:8074/lavozdeltomebamba"},
+    {name = "Radio Magica 877 Ecuador", url = "http://usa10.fastcast4u.com:1680/"},
 }
 
 return stations

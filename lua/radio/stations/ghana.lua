@@ -19,6 +19,7 @@ local stations = {
     {name = "Ofoforo Radio", url = "http://stream.zeno.fm/4x1v4czbvhbtv"},
     {name = "Onua 951 FM", url = "http://64.150.176.192:8039/;"},
     {name = "Oroko Radio", url = "https://s5.radio.co/s23b8ada46/listen"},
+    {name = "Peace 1043 FM", url = "https://peacefm-atunwadigital.streamguys1.com/peacefm"},
     {name = "Pluzz FM", url = "https://a00.w3-gh.com/a11.mp3"},
     {name = "Sweet Melodies", url = "http://sweetmelodies.tk/stream1"},
 }

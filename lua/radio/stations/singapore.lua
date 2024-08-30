@@ -34,6 +34,8 @@ local stations = {
     {name = "Radio Melody With Brother Bjorn", url = "http://ssl.geckohost.nz:9191/autodj"},
     {name = "RIA 897", url = "https://22393.live.streamtheworld.com/RIA897FM_SC"},
     {name = "Ria 897 Radio", url = "http://playerservices.streamtheworld.com/api/livestream-redirect/RIA897FMAAC.aac"},
+    {name = "Singapore Chinese POP YES FM 933", url = "https://22893.live.streamtheworld.com/YES933_SC?dist=radiosingapore"},
+    {name = "Singapore Classical Radio 924", url = "https://www.melisten.sg/radio/symphony924"},
     {name = "SPH 963 Radio", url = "http://playerservices.streamtheworld.com/api/livestream-redirect/HAO_963AAC.aac"},
     {name = "Symphony 924 Radio", url = "http://playerservices.streamtheworld.com/api/livestream-redirect/SYMPHONY924AAC.aac"},
     {name = "UFM 1003 Radio", url = "http://playerservices.streamtheworld.com/api/livestream-redirect/UFM_1003AAC.aac"},

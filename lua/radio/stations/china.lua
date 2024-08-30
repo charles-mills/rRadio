@@ -1,5 +1,5 @@
 local stations = {
-    {name = "CNR-4 经典音乐广播", url = "http://ngcdn004.cnr.cn/live/dszs/index.m3u8"},
+    {name = "有线新闻台", url = "http://cm61-10-2-143.hkcable.com.hk/live_freedirect/freehd209_h.live/playlist.m3u8"},
 }
 
 return stations
