@@ -319,6 +319,7 @@ local stations = {
     {name = "Inradio", url = "https://stream.zeno.fm/n1f4vputgqbuv"},
     {name = "Infopico Radio 999", url = "https://streaming3.locucionar.com/proxy/infopico999?mp=/stream"},
     {name = "Infopico Radio 999 - General Pico", url = "https://streaming3.locucionar.com/proxy/infopico999?mp=%2Fstream"},
+    {name = "Isonica 1021 FM", url = "https://alpha.radioplayer.com.ar:9122/isonica1021"},
     {name = "Itunes TOP 40 FFH 128K AAC Argentina", url = "https://mp3.ffh.de/ffhchannels/hqtop40.aac"},
     {name = "Jaja Cba", url = "https://streaming5.locucionar.com/proxy/radiojaja?mp=/stream"},
     {name = "Javeriana Estereo", url = "https://radio06.cehis.net:9001/stream"},

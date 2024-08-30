@@ -288,7 +288,6 @@ local stations = {
     {name = "Sunrise Lounge", url = "https://sonic-cl.streaming-chile.com/8098/stream"},
     {name = "Super Stereo 5", url = "https://streams.radiomast.io/radioblues-flac"},
     {name = "Super45Fm", url = "https://s4.radio.co/s421105570/listen"},
-    {name = "Texto Plano", url = "http://texto-plano.xyz:8000/live.ogg"},
     {name = "UCV Radio", url = "https://sonando-us.digitalproserver.com/ucvradio"},
     {name = "UCV Radio Vivan Los Lentos", url = "https://sonando-us.digitalproserver.com/ucvradio2"},
     {name = "Universidad Católica De Valparaíso", url = "http://sonando.us.digitalproserver.com/ucvradio"},

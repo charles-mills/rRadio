@@ -29,6 +29,7 @@ local stations = {
     {name = "Fabu 1057 FM", url = "https://alba-ec-fabu-fabuguayaquil.stream.mediatiquestream.com/chunks.m3u8"},
     {name = "Favorita 983 FM", url = "https://streamingecuador.com:7002/stream"},
     {name = "FB Radio 1057 FM", url = "https://streamingecuador.com:7032/stream"},
+    {name = "Flama Plus 1045 FM", url = "https://streaming.viphosting.cl/8286/stream?ver=541539"},
     {name = "Gualaceo Stereo 927", url = "https://stream.zeno.fm/s74szs5uquhvv"},
     {name = "HCJB La Voz De Los Andes 893 FM", url = "https://streamingecuador.net:8287/hcjb.m3u"},
     {name = "JC La Bruja", url = "http://s7.yesstreaming.net:8040/stream?1655753305283"},

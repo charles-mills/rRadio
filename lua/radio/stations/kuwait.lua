@@ -16,6 +16,7 @@ local stations = {
     {name = "اذاعة القرآن الكريم", url = "http://stream.radiojar.com/0tpy1h0kxtzuv"},
     {name = "الكويت - البرنامج الثاني", url = "https://montecarlodoualiya128k.ice.infomaniak.ch/mc-doualiya.mp3"},
     {name = "تفسير بن عثيمين رحمه الله", url = "https://qurango.net/radio/tafseer"},
+    {name = "دار الاذاعة الكويتية", url = "https://51.com.kw/radio-live/373/%D8%AF%D8%A7%D8%B1-%D8%A7%D9%84%D8%A5%D8%B0%D8%A7%D8%B9%D8%A9"},
 }
 
 return stations
