@@ -18,7 +18,10 @@ function ENT:Draw()
     local pos = self:GetPos() + Vector(0, 0, 30)
     local ang = Angle(0, LocalPlayer():EyeAngles().y - 90, 90)
 
-    local interact = Config.Lang["Interact"]
+    local interact = Config.Lang and Config.Lang["Interact"] or "Interact"
+    if not Config.Lang then
+        print("Fallback: Lang not found")
+    end
 
     cam.Start3D2D(pos, ang, 0.1)
         local text = self:GetStationName() == "" and interact or self:GetStationName()

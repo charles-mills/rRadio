@@ -1,6 +1,7 @@
 include("radio/key_names.lua")
 include("radio/config.lua")
 local countryTranslations = include("country_translations.lua")
+local LanguageManager = include("language_manager.lua")
 
 surface.CreateFont("Roboto18", {
     font = "Roboto",
@@ -282,14 +283,21 @@ local function openRadioMenu()
         surface.SetDrawColor(Config.UI.TextColor)
         surface.DrawTexturedRect(iconOffsetX, iconOffsetY, iconSize, iconSize)
         
-        draw.SimpleText(selectedCountry and formatCountryName(selectedCountry) or Config.Lang["SelectCountry"], "HeaderFont", iconOffsetX + iconSize + Scale(5), iconOffsetY, Config.UI.TextColor, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
+        local countryText = Config.Lang["SelectCountry"] or "Select Country"
+        draw.SimpleText(selectedCountry and formatCountryName(selectedCountry) or countryText, "HeaderFont", iconOffsetX + iconSize + Scale(5), iconOffsetY, Config.UI.TextColor, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
+        if not Config.Lang then
+            print("[DEBUG] Language not found")
+        end
     end
     
     local searchBox = vgui.Create("DTextEntry", frame)
     searchBox:SetPos(Scale(10), Scale(50))
     searchBox:SetSize(Scale(Config.UI.FrameSize.width) - Scale(20), Scale(30))
     searchBox:SetFont("Roboto18")
-    searchBox:SetPlaceholderText(Config.Lang["SearchPlaceholder"])
+    searchBox:SetPlaceholderText(Config.Lang and Config.Lang["SearchPlaceholder"] or "Search")
+    if not Config.Lang then
+        print("[DEBUG] Language not found")
+    end
     searchBox:SetTextColor(Config.UI.TextColor)
     searchBox:SetDrawBackground(false)
     searchBox.Paint = function(self, w, h)

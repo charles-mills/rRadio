@@ -16,6 +16,11 @@ if SERVER then
     for _, filename in ipairs(files) do
         AddCSLuaFile("radio/stations/" .. filename)
     end
+
+    local files = file.Find("radio/lang/*.lua", "LUA")
+    for _, filename in ipairs(files) do
+        AddCSLuaFile("radio/lang/" .. filename)
+    end
     
     -- Include the server-side radio logic
     include("radio/sv_radio.lua")
