@@ -16,7 +16,6 @@ local stations = {
     {name = "Arrow FM 927", url = "https://live.accessmedia.nz/ArrowFM.stream_aac/playlist.m3u8"},
     {name = "Ati Awa Toa FM", url = "https://ais-nzme.streamguys1.com/nz_144_aac"},
     {name = "AWA FM", url = "https://wowza.iwi.radio/icecast-to-hls/ngrp:AwaFM.stream/playlist.m3u8"},
-    {name = "Base FM", url = "http://stream.basefm.co.nz:8000/BaseHi"},
     {name = "Bay FM 1007", url = "https://s38.myradiostream.com:8876/;;?listening-from-radio-garden=1686796930"},
     {name = "Beachfm 1063", url = "http://s8.myradiostream.com:58408/"},
     {name = "Big River FM", url = "http://bigriver.broadcast.co.nz/bigriverfm.mp3"},
