@@ -1,10 +1,9 @@
 local stations = {
-    {name = "Novum FM", url = "http://fm-broadcast.com:8000/novumfm.mp3"},
-    {name = "RADIO SCHWABEN", url = "http://144.76.92.71/radioschwaben.mp3"},
-    {name = "Oldiefans", url = "http://178.63.53.48:28937/stream"},
-    {name = "Radio Music Road", url = "http://bayern.streampanel.net:10772/"},
-    {name = "Radio Osthofen", url = "http://176.9.148.80:8140/stream"},
-    {name = "Radio Alpenwelle", url = "http://live.alpenwelle.de/alpenwelle128.mp3"},
+    {name = "Top20Club", url = "http://server8.blitz-stream.de:9150/"},
+    {name = "Leas´S FOX SCHLAGER", url = "https://radio2.myhitmusic.de/Fresh-Hit.mp3"},
+    {name = "ICE RADIO WALDKRAIBURG 6 CLUB DANCE", url = "https://irw.tunefm.de:8510/stream"},
+    {name = "EPIC CLASSICAL - Classical Background Music", url = "https://stream.epic-classical.com/classical-background-music"},
+    {name = "Neckaralb Live 70Er", url = "https://edge18.streamonkey.net/neckaralblive-70er/stream/mp3?aggregator=RDhofmeir"},
 }
 
 return stations

@@ -1,6 +1,5 @@
 local stations = {
-    {name = "KRALFM", url = "http://kralwmp.radyotvonline.com/"},
-    {name = "Radyo Mezopotamya", url = "https://anadolu.liderhost.com.tr/9404/stream"},
+    {name = "HOS MİX", url = "https://anadolu.liderhost.com.tr:10871/"},
 }
 
 return stations

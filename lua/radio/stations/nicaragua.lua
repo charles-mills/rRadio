@@ -3,6 +3,7 @@ local stations = {
     {name = "Clasica 1019FM", url = "http://streaming.clasicafm.com.ni:8050/clasica.mp3"},
     {name = "Estéreo Romance", url = "https://stereoromance.radioca.st/streams/128kbps.m3u"},
     {name = "Exa FM", url = "https://playerservices.streamtheworld.com/api/livestream-redirect/XHPSFMAAC.aac"},
+    {name = "Fiesta Latina 891 FM", url = "https://radios.solumedia.com/6596/stream"},
     {name = "La Nueva Radio | Nicaragua", url = "https://stream.zenolive.com/axr92qawesmtv"},
     {name = "La Voz Del Norte", url = "https://stream.zeno.fm/cbd1wweamzzuv"},
     {name = "Masaya Rebelde", url = "https://stream.zeno.fm/bhutktvbfv8uv"},
