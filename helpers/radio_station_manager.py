@@ -4,10 +4,8 @@ import aiohttp
 import asyncio
 import requests
 import configparser
-import logging
 import argparse
 from tqdm import tqdm
-from logging.handlers import RotatingFileHandler
 from typing import List, Dict, Tuple, Optional
 import shutil
 import subprocess
@@ -26,7 +24,7 @@ class Config:
             print(f"Reading config file: {config_file}")
             self.config.read(config_file)
         else:
-            logging.warning(f"Config file not found: {config_file}")
+            print(f"Config file not found: {config_file}")
         self.load_defaults()
 
     def load_defaults(self):
@@ -36,17 +34,7 @@ class Config:
         self.API_BASE_URL = self.config['DEFAULT'].get('api_base_url', 'https://de1.api.radio-browser.info/json')
         self.REQUEST_TIMEOUT = int(self.config['DEFAULT'].get('request_timeout', 10))
         self.BATCH_DELAY = int(self.config['DEFAULT'].get('batch_delay', 5))
-        self.LOG_FILE = self.config['DEFAULT'].get('log_file', 'logs/radio_station_manager.log')
-        self.VERBOSE = self.config['DEFAULT'].getboolean('verbose', False)
         self.README_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'README.md')
-
-# Setup logging with UTF-8 encoding
-def setup_logging(log_file, verbose=False):
-    print(f"Setting up logging to {log_file}...")
-    os.makedirs(os.path.dirname(log_file), exist_ok=True)
-    handler = RotatingFileHandler(log_file, maxBytes=5*1024*1024, backupCount=5, encoding='utf-8')
-    logging.basicConfig(handlers=[handler], level=logging.DEBUG if verbose else logging.INFO,
-                        format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Utility functions
 class Utils:
@@ -60,7 +48,7 @@ class Utils:
         try:
             cleaned_name = ' '.join([word if word.isupper() else word.title() for word in cleaned_name.split()])
         except Exception as e:
-            logging.error(f"Error applying title case to name '{name}': {e}")
+            print(f"Error applying title case to name '{name}': {e}")
         return cleaned_name
 
     @staticmethod
@@ -74,11 +62,11 @@ class Utils:
         try:
             result = subprocess.run(['lua', '-p', file_path], check=True, capture_output=True, text=True)
             if result.returncode == 0:
-                logging.info(f"Lua file {file_path} is valid.")
+                print(f"Lua file {file_path} is valid.")
             else:
-                logging.error(f"Lua validation failed for {file_path}: {result.stderr}")
+                print(f"Lua validation failed for {file_path}: {result.stderr}")
         except Exception as e:
-            logging.error(f"Lua validation failed for {file_path}: {e}")
+            print(f"Lua validation failed for {file_path}: {e}")
 
 # Radio station management class
 class RadioStationManager:
@@ -97,13 +85,13 @@ class RadioStationManager:
                         print(f"Successfully fetched stations for {country_name}")
                         return await response.json()
                     elif response.status == 429:
-                        logging.warning(f"Rate limit exceeded (429) for {country_name}. Retrying...")
+                        print(f"Rate limit exceeded (429) for {country_name}. Retrying...")
                     elif response.status == 502:
-                        logging.warning(f"Bad Gateway (502) for {country_name}. Retrying...")
+                        print(f"Bad Gateway (502) for {country_name}. Retrying...")
                     else:
-                        logging.warning(f"Unexpected response ({response.status}) for {country_name}")
+                        print(f"Unexpected response ({response.status}) for {country_name}")
             except (aiohttp.ClientError, asyncio.TimeoutError) as e:
-                logging.error(f"Attempt {attempt + 1} failed for {country_name}: {e}")
+                print(f"Attempt {attempt + 1} failed for {country_name}: {e}")
             await asyncio.sleep(2 ** attempt)
         print(f"Failed to fetch stations for {country_name} after {retries} attempts.")
         return []
@@ -135,7 +123,7 @@ class RadioStationManager:
                 f.write(f'    {{name = "{Utils.escape_lua_string(station["name"])}", url = "{Utils.escape_lua_string(station["url"])}"}},\n')
             f.write("}\n\nreturn stations\n")
 
-        logging.info(f"Saved stations for {country or 'Other'} to {file_path}")
+        print(f"Saved stations for {country or 'Other'} to {file_path}")
         Utils.validate_lua_file(file_path)
 
     def commit_and_push_changes(self, file_path: str, message: str):
@@ -145,14 +133,14 @@ class RadioStationManager:
             while not os.path.exists(os.path.join(repo_dir, '.git')):
                 repo_dir = os.path.dirname(repo_dir)
                 if repo_dir == '/' or repo_dir == '':
-                    logging.error("Git repository not found.")
+                    print("Git repository not found.")
                     return
             subprocess.run(["git", "add", file_path], check=True, cwd=repo_dir)
             subprocess.run(["git", "commit", "-m", message], check=True, cwd=repo_dir)
             subprocess.run(["git", "push"], check=True, cwd=repo_dir)
-            logging.info(f"Committed and pushed changes: {message}")
+            print(f"Committed and pushed changes: {message}")
         except subprocess.CalledProcessError as e:
-            logging.error(f"Failed to commit and push changes: {e}")
+            print(f"Failed to commit and push changes: {e}")
 
     async def verify_stations(self, session: aiohttp.ClientSession, stations: List[Dict[str, str]]) -> List[Dict[str, str]]:
         print(f"Verifying {len(stations)} stations...")
@@ -168,9 +156,9 @@ class RadioStationManager:
                 if response.status == 200:
                     verified_stations.append(station)
                 else:
-                    logging.warning(f"Station {station['name']} ({station['url']}) not responsive. Status: {response.status}")
+                    print(f"Station {station['name']} ({station['url']}) not responsive. Status: {response.status}")
         except (aiohttp.ClientError, asyncio.TimeoutError) as e:
-            logging.error(f"Station {station['name']} ({station['url']}) check failed: {e}")
+            print(f"Station {station['name']} ({station['url']}) check failed: {e}")
 
     async def fetch_all_stations(self):
         print("Starting to fetch all stations...")
@@ -179,7 +167,7 @@ class RadioStationManager:
             async with aiohttp.ClientSession() as session:
                 tasks = [self.fetch_save_stations(session, country, pbar) for country in countries]
                 await asyncio.gather(*tasks)
-        logging.info("All stations fetched and saved.")
+        print("All stations fetched and saved.")
 
     async def fetch_save_stations(self, session: aiohttp.ClientSession, country: str, pbar: tqdm):
         print(f"Fetching and saving stations for {country}...")
@@ -198,7 +186,7 @@ class RadioStationManager:
             async with aiohttp.ClientSession() as session:
                 tasks = [self.verify_and_save_stations(session, country, pbar) for country in countries]
                 await asyncio.gather(*tasks)
-        logging.info("All stations verified and saved.")
+        print("All stations verified and saved.")
 
     async def verify_and_save_stations(self, session: aiohttp.ClientSession, country: str, pbar: tqdm):
         print(f"Verifying and saving stations for {country}...")
@@ -206,7 +194,7 @@ class RadioStationManager:
         
         # Check if the file exists before attempting to open it
         if not os.path.exists(file_path):
-            logging.warning(f"File {file_path} not found. Skipping verification for {country}.")
+            print(f"File {file_path} not found. Skipping verification for {country}.")
             pbar.update(1)
             return
         
@@ -234,7 +222,6 @@ class RadioStationManager:
 async def main_async(auto_run=False, fetch=False, verify=False, count=False):
     print("Starting the Radio Station Manager...")
     config = Config()
-    setup_logging(config.LOG_FILE, config.VERBOSE)
     manager = RadioStationManager(config)
 
     if auto_run:
@@ -310,7 +297,7 @@ def count_stations_in_file(file_path: str) -> int:
 def update_readme_with_station_count(readme_path: str, total_stations: int):
     print(f"Updating README.md at {readme_path} with station count: {total_stations}")
     if not os.path.exists(readme_path):
-        logging.error(f"README.md not found at {readme_path}")
+        print(f"README.md not found at {readme_path}")
         return
 
     try:
@@ -339,9 +326,9 @@ def update_readme_with_station_count(readme_path: str, total_stations: int):
         with open(readme_path, "w", encoding="utf-8") as f:
             f.write(new_readme_content)
 
-        logging.info(f"Updated README.md with the current station count: {total_stations}")
+        print(f"Updated README.md with the current station count: {total_stations}")
     except Exception as e:
-        logging.error(f"Failed to update README.md: {e}")
+        print(f"Failed to update README.md: {e}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Radio Station Manager')
