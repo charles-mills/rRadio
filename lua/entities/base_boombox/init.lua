@@ -3,6 +3,12 @@ AddCSLuaFile("shared.lua")
 
 include("shared.lua")
 
+-- Table to track the last time a player received a "no permission" message
+local lastPermissionMessageTime = {}
+
+-- Cooldown period for permission messages in seconds
+local permissionMessageCooldown = 5
+
 -- Set the owner when the entity is initialized
 function ENT:Initialize()
     self:SetModel(self.Model or "models/rammel/boombox.mdl")
@@ -36,7 +42,13 @@ function ENT:Use(activator, caller)
             net.WriteEntity(self)
             net.Send(activator)
         else
-            activator:ChatPrint("You do not have permission to use this boombox.")
+            local currentTime = CurTime()
+
+            -- Check if the player has recently received a "no permission" message
+            if not lastPermissionMessageTime[activator] or (currentTime - lastPermissionMessageTime[activator] > permissionMessageCooldown) then
+                activator:ChatPrint("You do not have permission to use this boombox.")
+                lastPermissionMessageTime[activator] = currentTime
+            end
         end
     end
 end

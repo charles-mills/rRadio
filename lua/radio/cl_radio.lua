@@ -466,8 +466,6 @@ net.Receive("PlayCarRadioStation", function()
                 timer.Simple(entityRetryDelay, function()
                     attemptPlayStation(attempt + 1)
                 end)
-            else
-                print("[ERROR] Maximum retry attempts reached. Failed to validate entity.")
             end
             return
         end
@@ -521,8 +519,6 @@ net.Receive("PlayCarRadioStation", function()
                         timer.Simple(entityConfig.RetryDelay, function()
                             tryPlayStation(playAttempt + 1)
                         end)
-                    else
-                        print("[ERROR] Maximum retry attempts reached. Failed to play station: " .. url)
                     end
                 end
             end)
