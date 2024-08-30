@@ -5,5 +5,6 @@ LANG["StopRadio"] = "FERMARE"
 LANG["SearchPlaceholder"] = "Cerca..."
 LANG["PressKeyToOpen"] = "Premi {key} per scegliere una stazione"
 LANG["NoStations"] = "Avviso: Nessuna stazione trovata per {country}"
+LANG["Interact"] = "Premi E per interagire"
 
 return LANG

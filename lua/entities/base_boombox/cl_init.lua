@@ -17,8 +17,10 @@ function ENT:Draw()
     local pos = self:GetPos() + Vector(0, 0, 30)
     local ang = Angle(0, LocalPlayer():EyeAngles().y - 90, 90)
 
+    local interact = Config.Lang["Interact"]
+
     cam.Start3D2D(pos, ang, 0.1)
-        local text = self:GetStationName() == "" and "E to Interact" or self:GetStationName()
+        local text = self:GetStationName() == "" and interact or self:GetStationName()
 
         if self:GetStationName() ~= "" then
             local rainbowColor = GetRainbowColor(2)

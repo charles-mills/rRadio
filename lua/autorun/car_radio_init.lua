@@ -3,6 +3,8 @@ if SERVER then
     
     -- Add all the necessary Lua files for the client
     AddCSLuaFile("radio/config.lua")
+    AddCSLuaFile("language_manager.lua")  -- Update the path
+    AddCSLuaFile("country_translations.lua")  -- Update the path if using country translations
     AddCSLuaFile("radio/cl_radio.lua")
     AddCSLuaFile("radio/theme_menu.lua")
     AddCSLuaFile("themes.lua")
@@ -24,6 +26,8 @@ else
     
     -- Include all necessary files for the client
     Config = include("radio/config.lua")
+    include("language_manager.lua")  -- Update the path
+    include("country_translations.lua")  -- Update the path if using country translations
     include("radio/cl_init.lua")
     include("radio/cl_radio.lua")
     include("themes.lua")

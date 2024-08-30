@@ -1,5 +1,6 @@
 include("radio/key_names.lua")
 include("radio/config.lua")
+local countryTranslations = include("country_translations.lua")
 
 surface.CreateFont("Roboto18", {
     font = "Roboto",
@@ -95,21 +96,15 @@ local function Scale(value)
     return value * (ScrW() / 2560)
 end
 
-local CountryTranslations = {
-    en = {
-        ["the_united_kingdom"] = "United Kingdom",
-        ["the_united_states_of_america"] = "United States of America",
-    },
-    es = {
-        ["the_united_kingdom"] = "Reino Unido",
-        ["the_united_states_of_america"] = "Estados Unidos de América",
-    },
-}
-
 local function formatCountryName(name)
+    -- Reformat and then translate the country name
+    local formattedName = name:gsub("_", " "):gsub("(%a)([%w_']*)", function(a, b) return string.upper(a) .. string.lower(b) end)
     local lang = GetConVar("radio_language"):GetString() or "en"
-    local translation = CountryTranslations[lang] and CountryTranslations[lang][name] or name
-    return translation:gsub("_", " "):gsub("(%a)([%w_']*)", function(a, b) return string.upper(a) .. string.lower(b) end)
+    local translation = countryTranslations:GetCountryName(lang, formattedName)
+    
+    print("Translating name " .. formattedName .. " to " .. translation)  -- Debug statement
+    
+    return translation
 end
 
 local function populateList(stationListPanel, backButton, searchBox, resetSearch)
@@ -124,11 +119,12 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
     end
 
     local filterText = searchBox:GetText()
+    local lang = GetConVar("radio_language"):GetString() or "en"
 
     if selectedCountry == nil then
         local countries = {}
         for country, _ in pairs(Config.RadioStations) do
-            local translatedCountry = formatCountryName(country)
+            local translatedCountry = formatCountryName(country)  -- Reformat and translate the country name
             if filterText == "" or string.find(translatedCountry:lower(), filterText:lower(), 1, true) then
                 table.insert(countries, { original = country, translated = translatedCountry })
             end
@@ -160,7 +156,7 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
             countryButton:Dock(TOP)
             countryButton:DockMargin(Scale(5), Scale(5), Scale(5), 0)
             countryButton:SetTall(Scale(40))
-            countryButton:SetText(country.translated)
+            countryButton:SetText(country.translated)  -- Use the translated country name
             countryButton:SetFont("Roboto18")
             countryButton:SetTextColor(Config.UI.TextColor)
 
@@ -192,9 +188,7 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                 local currentlyPlayingStations = {}
 
                 stationButton.Paint = function(self, w, h)
-                    if currentlyPlayingStations[LocalPlayer().currentRadioEntity] and
-                       station.name == currentlyPlayingStations[LocalPlayer().currentRadioEntity].name and
-                       station.url == currentlyPlayingStations[LocalPlayer().currentRadioEntity].url then
+                    if station == currentlyPlayingStations[LocalPlayer().currentRadioEntity] then
                         draw.RoundedBox(8, 0, 0, w, h, Config.UI.PlayingButtonColor)
                     else
                         draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonColor)
@@ -202,23 +196,23 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                             draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonHoverColor)
                         end
                     end
-                end                
+                end
 
                 stationButton.DoClick = function()
                     surface.PlaySound("buttons/button17.wav")
                     local entity = LocalPlayer().currentRadioEntity
-                
+
                     if not IsValid(entity) then
                         print("No valid entity for PlayCarRadioStation")
                         return
                     end
-                
+
                     if currentlyPlayingStations[entity] then
                         net.Start("StopCarRadioStation")
                         net.WriteEntity(entity)
                         net.SendToServer()
                     end
-                
+
                     local volume = entityVolumes[entity] or getEntityConfig(entity).Volume
                     net.Start("PlayCarRadioStation")
                     net.WriteEntity(entity)
@@ -226,8 +220,8 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                     net.WriteString(station.url)
                     net.WriteFloat(volume)
                     net.SendToServer()
-                
-                    currentlyPlayingStations[entity] = { name = station.name, url = station.url }
+
+                    currentlyPlayingStations[entity] = station
                     populateList(stationListPanel, backButton, searchBox, false)
                 end
             end
@@ -481,6 +475,8 @@ net.Receive("PlayCarRadioStation", function()
             currentRadioSources[entity]:Stop()
         end
 
+        print("Attempting to play radio station:", url)
+
         local function tryPlayStation(playAttempt)
             sound.PlayURL(url, "3d mono", function(station, errorID, errorName)
                 if IsValid(station) then
@@ -492,6 +488,7 @@ net.Receive("PlayCarRadioStation", function()
 
                     -- Set 3D fade distance according to the entity's configuration
                     station:Set3DFadeDistance(entityConfig.MinVolumeDistance, entityConfig.MaxHearingDistance)
+                    print("Radio station is now playing with 3D fade distances applied.")
 
                     -- Update the station's position relative to the entity's movement
                     hook.Add("Think", "UpdateRadioPosition_" .. entity:EntIndex(), function()

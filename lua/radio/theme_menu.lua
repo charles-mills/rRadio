@@ -1,19 +1,5 @@
 local themes = include("themes.lua")
-
--- Table to define available languages
-local languages = {
-    de = "Deutsch",
-    en = "English",
-    es = "Español",
-    fr = "Français",
-    it = "Italiano",
-    ja = "日本語",
-    ko = "한국어",
-    pt_br = "Português (Brasil)",
-    ru = "Русский",
-    zh_cn = "简体中文",
-    tr = "Türkçe",
-}
+local languageManager = include("language_manager.lua")
 
 -- Create the client convar to enable/disable chat messages
 CreateClientConVar("car_radio_show_messages", "1", true, false, "Enable or disable car radio messages.")
@@ -23,7 +9,6 @@ CreateClientConVar("radio_language", "en", true, false, "Select the language for
 local function applyTheme(themeName)
     if themes[themeName] then
         Config.UI = themes[themeName]
-        -- You may need to refresh your UI elements to apply the new theme
         hook.Run("ThemeChanged", themeName)
     else
         print("Invalid theme name: " .. themeName)
@@ -32,11 +17,10 @@ end
 
 -- Function to apply the selected language
 local function applyLanguage(languageCode)
-    local path = "radio/lang/" .. languageCode .. ".lua"
-    if file.Exists(path, "LUA") then
-        Config.Lang = include(path)
-        -- You may need to refresh your UI elements to apply the new language
+    if languageManager.languages[languageCode] then
+        Config.Lang = languageManager.translations[languageCode]  -- Get the translations from the language manager
         hook.Run("LanguageChanged", languageCode)
+        hook.Run("LanguageUpdated")  -- Custom hook to trigger list update
     else
         print("Invalid language code: " .. languageCode)
     end
@@ -53,19 +37,25 @@ end
 
 loadSavedSettings()
 
+-- Hook to update the UI when the language is changed
+hook.Add("LanguageUpdated", "UpdateCountryListOnLanguageChange", function()
+    if radioMenuOpen then
+        populateList(stationListPanel, backButton, searchBox, true)  -- Repopulate the list
+    end
+end)
+
 -- Create a new tool menu in the "Utilities" section
 hook.Add("PopulateToolMenu", "AddThemeAndVolumeSelectionMenu", function()
     spawnmenu.AddToolMenuOption("Utilities", "Rammel's Radio", "ThemeVolumeSelection", "Settings", "", "", function(panel)
         panel:ClearControls()
         
-        -- Adding padding and margin for better spacing
         panel:DockPadding(10, 0, 30, 10)
 
-        -- Section Header for Theme Selection
+        -- Theme Selection Section
         local themeHeader = vgui.Create("DLabel", panel)
         themeHeader:SetText("Theme Selection")
         themeHeader:SetFont("Trebuchet18")
-        themeHeader:SetTextColor(Color(50, 50, 50))  -- Darker color for visibility on light background
+        themeHeader:SetTextColor(Color(50, 50, 50))
         themeHeader:Dock(TOP)
         themeHeader:DockMargin(0, 0, 0, 0)
         panel:AddItem(themeHeader)
@@ -74,14 +64,13 @@ hook.Add("PopulateToolMenu", "AddThemeAndVolumeSelectionMenu", function()
         themeDropdown:SetValue("Select Theme")
         themeDropdown:Dock(TOP)
         themeDropdown:SetTall(30)
-        themeDropdown:SetTooltip("Select the theme for the radio UI.") -- Tooltip text
+        themeDropdown:SetTooltip("Select the theme for the radio UI.")
 
         -- Dynamically add all available themes to the dropdown
         for themeName, _ in pairs(themes) do
-            themeDropdown:AddChoice(themeName:gsub("^%l", string.upper)) -- Capitalizes the first letter of the theme name for display
+            themeDropdown:AddChoice(themeName:gsub("^%l", string.upper))
         end
 
-        -- Set the current value to the saved theme
         local currentTheme = GetConVar("radio_theme"):GetString()
         if currentTheme and themes[currentTheme] then
             themeDropdown:SetValue(currentTheme:gsub("^%l", string.upper))
@@ -97,11 +86,11 @@ hook.Add("PopulateToolMenu", "AddThemeAndVolumeSelectionMenu", function()
 
         panel:AddItem(themeDropdown)
 
-        -- Section Header for Language Selection
+        -- Language Selection Section
         local languageHeader = vgui.Create("DLabel", panel)
         languageHeader:SetText("Language Selection")
         languageHeader:SetFont("Trebuchet18")
-        languageHeader:SetTextColor(Color(50, 50, 50))  -- Darker color for visibility on light background
+        languageHeader:SetTextColor(Color(50, 50, 50))
         languageHeader:Dock(TOP)
         languageHeader:DockMargin(0, 20, 0, 0)
         panel:AddItem(languageHeader)
@@ -110,17 +99,16 @@ hook.Add("PopulateToolMenu", "AddThemeAndVolumeSelectionMenu", function()
         languageDropdown:SetValue("Select Language")
         languageDropdown:Dock(TOP)
         languageDropdown:SetTall(30)
-        languageDropdown:SetTooltip("Select the language for the radio UI.") -- Tooltip text
+        languageDropdown:SetTooltip("Select the language for the radio UI.")
 
         -- Dynamically add all available languages to the dropdown
-        for code, name in pairs(languages) do
+        for code, name in pairs(languageManager.languages) do
             languageDropdown:AddChoice(name, code)
         end
 
-        -- Set the current value to the saved language
         local currentLanguage = GetConVar("radio_language"):GetString()
-        if currentLanguage and languages[currentLanguage] then
-            languageDropdown:SetValue(languages[currentLanguage])
+        if currentLanguage and languageManager.languages[currentLanguage] then
+            languageDropdown:SetValue(languageManager.languages[currentLanguage])
         end
 
         languageDropdown.OnSelect = function(panel, index, value, data)
@@ -130,11 +118,11 @@ hook.Add("PopulateToolMenu", "AddThemeAndVolumeSelectionMenu", function()
 
         panel:AddItem(languageDropdown)
 
-        -- Section Header for Volume Control
+        -- Volume Control Section
         local volumeHeader = vgui.Create("DLabel", panel)
         volumeHeader:SetText("Volume Control")
         volumeHeader:SetFont("Trebuchet18")
-        volumeHeader:SetTextColor(Color(50, 50, 50))  -- Darker color for visibility on light background
+        volumeHeader:SetTextColor(Color(50, 50, 50))
         volumeHeader:Dock(TOP)
         volumeHeader:DockMargin(0, 20, 0, 0)
         panel:AddItem(volumeHeader)
@@ -144,30 +132,30 @@ hook.Add("PopulateToolMenu", "AddThemeAndVolumeSelectionMenu", function()
         volumeSlider:SetMin(0)
         volumeSlider:SetMax(1)
         volumeSlider:SetDecimals(2)
-        volumeSlider:SetConVar("radio_max_volume") -- Bind to the ConVar
+        volumeSlider:SetConVar("radio_max_volume")
         volumeSlider:Dock(TOP)
         volumeSlider:DockMargin(0, 0, 0, 10)
-        volumeSlider:SetValue(GetConVar("radio_max_volume"):GetFloat()) -- Set initial value
-        volumeSlider:SetTooltip("Adjust the maximum volume level for the radio.") -- Tooltip text
+        volumeSlider:SetValue(GetConVar("radio_max_volume"):GetFloat())
+        volumeSlider:SetTooltip("Adjust the maximum volume level for the radio.")
 
         panel:AddItem(volumeSlider)
 
-        -- Section Header for Chat Message Toggle
+        -- Chat Message Toggle Section
         local chatHeader = vgui.Create("DLabel", panel)
         chatHeader:SetText("Chat Message Settings")
         chatHeader:SetFont("Trebuchet18")
-        chatHeader:SetTextColor(Color(50, 50, 50))  -- Darker color for visibility on light background
+        chatHeader:SetTextColor(Color(50, 50, 50))
         chatHeader:Dock(TOP)
         chatHeader:DockMargin(0, 20, 0, 0)
         panel:AddItem(chatHeader)
 
         local chatMessageCheckbox = vgui.Create("DCheckBoxLabel", panel)
         chatMessageCheckbox:SetText("Show Car Radio Messages")
-        chatMessageCheckbox:SetConVar("car_radio_show_messages") -- Bind to the ConVar
+        chatMessageCheckbox:SetConVar("car_radio_show_messages")
         chatMessageCheckbox:Dock(TOP)
         chatMessageCheckbox:DockMargin(0, 0, 0, 0)
-        chatMessageCheckbox:SetValue(GetConVar("car_radio_show_messages"):GetBool()) -- Set initial value
-        chatMessageCheckbox:SetTooltip("Enable or disable the display of car radio messages.") -- Tooltip text
+        chatMessageCheckbox:SetValue(GetConVar("car_radio_show_messages"):GetBool())
+        chatMessageCheckbox:SetTooltip("Enable or disable the display of car radio messages.")
 
         panel:AddItem(chatMessageCheckbox)
     end)
