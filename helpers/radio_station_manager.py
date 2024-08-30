@@ -6,10 +6,8 @@ import requests
 import configparser
 import argparse
 from tqdm import tqdm
-from typing import List, Dict, Tuple, Optional
-import shutil
+from typing import List, Dict, Optional
 import subprocess
-import datetime
 from asyncio import Semaphore
 import platform
 
@@ -57,17 +55,6 @@ class Utils:
         name = name.replace(' ', '_')
         return name.lower()
 
-    @staticmethod
-    def validate_lua_file(file_path: str):
-        try:
-            result = subprocess.run(['lua', '-p', file_path], check=True, capture_output=True, text=True)
-            if result.returncode == 0:
-                print(f"Lua file {file_path} is valid.")
-            else:
-                print(f"Lua validation failed for {file_path}: {result.stderr}")
-        except Exception as e:
-            print(f"Lua validation failed for {file_path}: {e}")
-
 # Radio station management class
 class RadioStationManager:
     def __init__(self, config: Config):
@@ -97,11 +84,16 @@ class RadioStationManager:
         return []
 
     def save_stations_to_file(self, country: str, stations: List[Dict[str, str]]):
+        # Skip files that don't have an associated country name
+        if not country:
+            print(f"No country provided for stations. Skipping file creation.")
+            return
+
         print(f"Saving stations for country: {country}")
         directory = self.config.STATIONS_DIR
         os.makedirs(directory, exist_ok=True)
         cleaned_country_name = Utils.clean_file_name(country)
-        file_name = f"{cleaned_country_name}.lua" if country else "other.lua"
+        file_name = f"{cleaned_country_name}.lua"
         file_path = os.path.join(directory, file_name)
 
         # Use sets to ensure no duplicates
@@ -133,9 +125,7 @@ class RadioStationManager:
 
             f.write("}\n\nreturn stations\n")
 
-        print(f"Saved stations for {country or 'Other'} to {file_path}")
-        Utils.validate_lua_file(file_path)
-
+        print(f"Saved stations for {country} to {file_path}")
 
     def commit_and_push_changes(self, file_path: str, message: str):
         print(f"Committing and pushing changes for file: {file_path}")
