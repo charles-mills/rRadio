@@ -106,6 +106,13 @@ local function formatCountryName(name)
     return translation
 end
 
+-- Client-side variable to store favorite countries
+local favoriteCountries = {}
+
+net.Receive("SendFavoriteCountries", function()
+    favoriteCountries = net.ReadTable()
+end)
+
 local function populateList(stationListPanel, backButton, searchBox, resetSearch)
     if backButton and selectedCountry == nil then
         backButton:SetVisible(false)
@@ -123,39 +130,31 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
     if selectedCountry == nil then
         local countries = {}
         for country, _ in pairs(Config.RadioStations) do
-            local translatedCountry = formatCountryName(country)  -- Reformat and translate the country name
+            local translatedCountry = formatCountryName(country)
             if filterText == "" or string.find(translatedCountry:lower(), filterText:lower(), 1, true) then
                 table.insert(countries, { original = country, translated = translatedCountry })
             end
         end
 
-        if Config.UKAndUSPrioritised then
-            table.sort(countries, function(a, b)
-                local UK_OPTIONS = {"United Kingdom", "The United Kingdom", "The_united_kingdom"}
-                local US_OPTIONS = {"United States", "The United States Of America", "The_united_states_of_america"}
+        table.sort(countries, function(a, b)
+            local aIsPrioritized = table.HasValue(favoriteCountries, a.original)
+            local bIsPrioritized = table.HasValue(favoriteCountries, b.original)
 
-                if table.HasValue(UK_OPTIONS, a.original) then
-                    return true
-                elseif table.HasValue(UK_OPTIONS, b.original) then
-                    return false
-                elseif table.HasValue(US_OPTIONS, a.original) then
-                    return true
-                elseif table.HasValue(US_OPTIONS, b.original) then
-                    return false 
-                else
-                    return a.translated < b.translated
-                end
-            end)
-        else
-            table.sort(countries, function(a, b) return a.translated < b.translated end)
-        end
+            if aIsPrioritized and not bIsPrioritized then
+                return true
+            elseif not aIsPrioritized and bIsPrioritized then
+                return false
+            else
+                return a.translated < b.translated
+            end
+        end)
 
         for _, country in ipairs(countries) do
             local countryButton = vgui.Create("DButton", stationListPanel)
             countryButton:Dock(TOP)
             countryButton:DockMargin(Scale(5), Scale(5), Scale(5), 0)
             countryButton:SetTall(Scale(40))
-            countryButton:SetText(country.translated)  -- Use the translated country name
+            countryButton:SetText(country.translated)
             countryButton:SetFont("Roboto18")
             countryButton:SetTextColor(Config.UI.TextColor)
 
@@ -164,6 +163,23 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                 if self:IsHovered() then
                     draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonHoverColor)
                 end
+            end
+
+            -- Add favorite star icon (left-aligned)
+            local starIcon = vgui.Create("DImageButton", countryButton)
+            starIcon:SetSize(Scale(24), Scale(24))
+            starIcon:SetPos(Scale(8), (Scale(40) - Scale(24)) / 2)  -- Positioned on the left
+            starIcon:SetImage(table.HasValue(favoriteCountries, country.original) and "hud/star_full.png" or "hud/star.png")
+
+            starIcon.DoClick = function()
+                net.Start("ToggleFavoriteCountry")
+                net.WriteString(country.original)
+                net.SendToServer()
+
+                -- Repopulate the list to reflect the change immediately
+                timer.Simple(0.1, function()
+                    populateList(stationListPanel, backButton, searchBox, false)
+                end)
             end
 
             countryButton.DoClick = function()
