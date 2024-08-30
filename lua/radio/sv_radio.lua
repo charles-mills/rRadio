@@ -5,12 +5,56 @@ util.AddNetworkString("OpenRadioMenu")
 util.AddNetworkString("UpdateRadioStatus")
 
 local ActiveRadios = {}
-local debug_mode = false  -- Set to true to enable debug statements
+local debug_mode = true  -- Set to true to enable debug statements
+SavedBoomboxStates = SavedBoomboxStates or {}
 
 -- Debug function to print messages if debug_mode is enabled
 local function DebugPrint(msg)
     if debug_mode then
         print("[CarRadio Debug] " .. msg)
+    end
+end
+
+-- Function to save a boombox state to the database
+local function SaveBoomboxStateToDatabase(permaID, stationName, url, isPlaying, volume)
+    local query = string.format("REPLACE INTO boombox_states (permaID, station, url, isPlaying, volume) VALUES (%d, %s, %s, %d, %f)",
+        permaID, sql.SQLStr(stationName), sql.SQLStr(url), isPlaying and 1 or 0, volume)
+    local result = sql.Query(query)
+    if result == false then
+        DebugPrint("Failed to save boombox state: " .. sql.LastError())
+    else
+        DebugPrint("Saved boombox state to database: PermaID = " .. permaID .. ", Station = " .. stationName .. ", URL = " .. url)
+    end
+end
+
+-- Function to remove a boombox state from the database
+local function RemoveBoomboxStateFromDatabase(permaID)
+    local query = string.format("DELETE FROM boombox_states WHERE permaID = %d", permaID)
+    local result = sql.Query(query)
+    if result == false then
+        DebugPrint("Failed to remove boombox state: " .. sql.LastError())
+    else
+        DebugPrint("Removed boombox state from database: PermaID = " .. permaID)
+    end
+end
+
+-- Function to load boombox states from the database into the SavedBoomboxStates table
+local function LoadBoomboxStatesFromDatabase()
+    local rows = sql.Query("SELECT * FROM boombox_states")
+    if rows then
+        for _, row in ipairs(rows) do
+            local permaID = tonumber(row.permaID)
+            SavedBoomboxStates[permaID] = {
+                station = row.station,
+                url = row.url,
+                isPlaying = tonumber(row.isPlaying) == 1,
+                volume = tonumber(row.volume)
+            }
+            DebugPrint("Loaded boombox state from database: PermaID = " .. permaID .. ", Station = " .. row.station)
+        end
+    else
+        SavedBoomboxStates = {}
+        DebugPrint("No saved boombox states found in the database.")
     end
 end
 
@@ -68,6 +112,20 @@ net.Receive("PlayCarRadioStation", function(len, ply)
 
     -- Check if the entity is a boombox or a vehicle
     if entity:GetClass() == "golden_boombox" or entity:GetClass() == "boombox" then
+        local permaID = entity.PermaProps_ID
+        if permaID then
+            -- Save the station, URL, and playing state using the PermaProps ID
+            SavedBoomboxStates[permaID] = {
+                station = stationName,
+                url = url,               -- Save the URL here
+                isPlaying = true,
+                volume = volume
+            }
+
+            -- Save to database
+            SaveBoomboxStateToDatabase(permaID, stationName, url, true, volume)
+        end
+
         entity:SetVolume(volume)
         entity:SetStationName(stationName)
 
@@ -111,6 +169,13 @@ net.Receive("StopCarRadioStation", function(len, ply)
 
     -- Check if the entity is a boombox or a vehicle
     if entity:GetClass() == "golden_boombox" or entity:GetClass() == "boombox" then
+        local permaID = entity.PermaProps_ID
+        if permaID and SavedBoomboxStates[permaID] then
+            -- Update the saved state to reflect that the station is not playing
+            SavedBoomboxStates[permaID].isPlaying = false
+            SaveBoomboxStateToDatabase(permaID, SavedBoomboxStates[permaID].station, SavedBoomboxStates[permaID].url, false, SavedBoomboxStates[permaID].volume)
+        end
+
         entity:SetStationName("")
         RemoveActiveRadio(entity)
 
@@ -145,5 +210,44 @@ end)
 hook.Add("EntityRemoved", "CleanupActiveRadioOnEntityRemove", function(entity)
     if ActiveRadios[entity:EntIndex()] then
         RemoveActiveRadio(entity)
+    end
+end)
+
+hook.Add("Initialize", "LoadBoomboxStatesOnStartup", function()
+    DebugPrint("Attempting to load Boombox States from the database")
+    
+    LoadBoomboxStatesFromDatabase()
+
+    DebugPrint("Boombox States Loaded")
+    for permaID, savedState in pairs(SavedBoomboxStates) do
+        if savedState.isPlaying then
+            DebugPrint("Checking saved state for PermaProps_ID: " .. permaID)
+            for _, entity in pairs(ents.GetAll()) do
+                if entity.PermaProps_ID == permaID then
+                    DebugPrint("Adding active radio for PermaProps_ID: " .. permaID)
+                    AddActiveRadio(entity, savedState.station, savedState.url, savedState.volume)
+                    break
+                end
+            end
+        end
+    end
+    DebugPrint("Finished restoring active radios")
+end)
+
+-- Console command to clear all boombox states from the database
+concommand.Add("rradio_remove_all", function(ply, cmd, args)
+    if ply:IsAdmin() then
+        local result = sql.Query("DELETE FROM boombox_states")
+        if result == false then
+            print("[CarRadio] Failed to clear boombox states: " .. sql.LastError())
+        else
+            print("[CarRadio] All boombox states cleared successfully.")
+            -- Clear the in-memory states as well
+            SavedBoomboxStates = {}
+            -- Clear ActiveRadios as well
+            ActiveRadios = {}
+        end
+    else
+        ply:ChatPrint("You do not have permission to run this command.")
     end
 end)

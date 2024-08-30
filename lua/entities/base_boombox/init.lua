@@ -12,6 +12,45 @@ local lastPermissionMessageTime = {}
 -- Cooldown period for permission messages in seconds
 local permissionMessageCooldown = 5
 
+-- Function to restore the radio station if needed
+local function RestoreBoomboxRadio(entity)
+    local permaID = entity.PermaProps_ID
+    if not permaID then
+        print("Warning: Could not find PermaProps_ID for entity " .. entity:EntIndex())
+        return
+    end
+
+    if entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox" then
+        local savedState = SavedBoomboxStates[permaID]
+
+        if savedState then
+            print("Restoring station: " .. savedState.station)
+            entity:SetNWString("CurrentRadioStation", savedState.station)
+            entity:SetNWString("StationURL", savedState.url)
+            entity:SetStationName(savedState.station) -- Assuming this is defined somewhere else
+
+            if savedState.isPlaying then
+                net.Start("PlayCarRadioStation")
+                net.WriteEntity(entity)
+                net.WriteString(savedState.url)
+                net.WriteFloat(savedState.volume)
+                net.Broadcast()
+            end
+        else
+            print("No saved state found for PermaPropID " .. permaID)
+        end
+    end
+end
+
+-- Hook into OnEntityCreated to restore the boombox radio state for PermaProps
+hook.Add("OnEntityCreated", "RestoreBoomboxRadioForPermaProps", function(entity)
+    timer.Simple(0.1, function()
+        if IsValid(entity) and (entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox") then
+            RestoreBoomboxRadio(entity)
+        end
+    end)
+end)
+
 -- Set the owner when the entity is initialized
 function ENT:Initialize()
     self:SetModel(self.Model or "models/rammel/boombox.mdl")
@@ -33,44 +72,6 @@ function ENT:Initialize()
         self:SetNWEntity("Owner", self.Owner)
     end
 end
-
--- Function to restore the radio station if needed
-local function RestoreBoomboxRadio(entity)
-    local permaID = entity.PermaProps_ID
-    if not permaID then
-        print("Warning: Could not find PermaProps_ID for entity " .. entity:EntIndex())
-        return
-    end
-
-    if entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox" then
-        local savedState = SavedBoomboxStates[permaID]
-
-        if savedState then
-            print("Restoring station: " .. savedState.station)
-            entity:SetNWString("CurrentRadioStation", savedState.station)
-            entity:SetNWString("StationURL", savedState.url)
-
-            if savedState.isPlaying then
-                net.Start("PlayCarRadioStation")
-                net.WriteEntity(entity)
-                net.WriteString(savedState.url)
-                net.WriteFloat(savedState.volume)
-                net.Broadcast()
-            end
-        else
-            print("No saved state found for PermaPropID " .. permaID)
-        end
-    end
-end
-
--- Ensure RestoreBoomboxRadio is called during entity creation
-hook.Add("OnEntityCreated", "RestoreBoomboxRadioOnSpawn", function(entity)
-    timer.Simple(0.1, function()
-        if IsValid(entity) and (entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox") then
-            RestoreBoomboxRadio(entity)
-        end
-    end)
-end)
 
 -- Only allow the owner or a superadmin to use the boombox
 function ENT:Use(activator, caller)
