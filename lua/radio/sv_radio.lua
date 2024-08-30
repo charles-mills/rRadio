@@ -10,8 +10,7 @@ local ActiveRadios = {}
 local debug_mode = false  -- Set to true to enable debug statements
 SavedBoomboxStates = SavedBoomboxStates or {}
 
-local defaultFavorites = {"The_united_kingdom", "The_united_states_of_america"}
-local playerFavorites = {}
+local playerFavoritesCache = {}
 
 -- Debug function to print messages if debug_mode is enabled
 local function DebugPrint(msg)
@@ -20,7 +19,7 @@ local function DebugPrint(msg)
     end
 end
 
--- Add radio to active list and log details if in debug mode
+-- Function to add a radio to the active list
 local function AddActiveRadio(entity, stationName, url, volume)
     ActiveRadios[entity:EntIndex()] = {
         entity = entity,
@@ -28,12 +27,13 @@ local function AddActiveRadio(entity, stationName, url, volume)
         url = url,
         volume = volume
     }
-    DebugPrint("Active Radios Updated: " .. table.Count(ActiveRadios) .. " active radios")
+    DebugPrint("Added active radio: Entity " .. tostring(entity:EntIndex()) .. ", Station: " .. stationName)
 end
 
--- Remove radio from active list
+-- Function to remove a radio from the active list
 local function RemoveActiveRadio(entity)
     ActiveRadios[entity:EntIndex()] = nil
+    DebugPrint("Removed active radio: Entity " .. tostring(entity:EntIndex()))
 end
 
 -- Restore boombox radio state using saved data
@@ -142,27 +142,28 @@ end
 -- Save player favorites to a file
 local function SavePlayerFavorites(ply)
     local steamID = ply:SteamID()
-    file.Write("radio_favorites/" .. steamID .. ".txt", util.TableToJSON(playerFavorites[steamID]))
+    file.Write("radio_favorites/" .. steamID .. ".txt", util.TableToJSON(playerFavoritesCache[steamID]))
+    DebugPrint("Saved favorites for " .. steamID)
 end
 
 -- Load player favorites from a file
 local function LoadPlayerFavorites(ply)
     local steamID = ply:SteamID()
-    if not playerFavorites[steamID] then
+    if not playerFavoritesCache[steamID] then
         if file.Exists("radio_favorites/" .. steamID .. ".txt", "DATA") then
             local data = file.Read("radio_favorites/" .. steamID .. ".txt", "DATA")
-            playerFavorites[steamID] = util.JSONToTable(data)
+            playerFavoritesCache[steamID] = util.JSONToTable(data) or {}
         else
-            playerFavorites[steamID] = table.Copy(defaultFavorites)
-            SavePlayerFavorites(ply)
+            playerFavoritesCache[steamID] = {}
         end
     end
+    return playerFavoritesCache[steamID]
 end
 
 hook.Add("PlayerInitialSpawn", "LoadPlayerRadioFavorites", function(ply)
-    LoadPlayerFavorites(ply)
+    local favorites = LoadPlayerFavorites(ply)
     net.Start("SendFavoriteCountries")
-    net.WriteTable(playerFavorites[ply:SteamID()])
+    net.WriteTable(favorites)
     net.Send(ply)
 end)
 
@@ -171,17 +172,17 @@ net.Receive("ToggleFavoriteCountry", function(len, ply)
     local steamID = ply:SteamID()
     local country = net.ReadString()
 
-    playerFavorites[steamID] = playerFavorites[steamID] or {}
+    playerFavoritesCache[steamID] = playerFavoritesCache[steamID] or {}
 
-    if table.HasValue(playerFavorites[steamID], country) then
-        table.RemoveByValue(playerFavorites[steamID], country)
+    if table.HasValue(playerFavoritesCache[steamID], country) then
+        table.RemoveByValue(playerFavoritesCache[steamID], country)
     else
-        table.insert(playerFavorites[steamID], country)
+        table.insert(playerFavoritesCache[steamID], country)
     end
 
     SavePlayerFavorites(ply)
     net.Start("SendFavoriteCountries")
-    net.WriteTable(playerFavorites[steamID])
+    net.WriteTable(playerFavoritesCache[steamID])
     net.Send(ply)
 end)
 
@@ -191,7 +192,9 @@ local function SendActiveRadiosToPlayer(ply)
     if next(ActiveRadios) == nil then
         DebugPrint("No active radios found. Retrying in 5 seconds.")
         timer.Simple(5, function()
-            SendActiveRadiosToPlayer(ply)
+            if IsValid(ply) then
+                SendActiveRadiosToPlayer(ply)
+            end
         end)
         return
     end
@@ -233,6 +236,8 @@ net.Receive("PlayCarRadioStation", function(len, ply)
         return 
     end
 
+    DebugPrint("PlayCarRadioStation received: Entity " .. entity:EntIndex())
+
     if entity:GetClass() == "golden_boombox" or entity:GetClass() == "boombox" then
         local permaID = entity.PermaProps_ID
         if permaID then
@@ -258,22 +263,27 @@ net.Receive("PlayCarRadioStation", function(len, ply)
         end
 
         AddActiveRadio(entity, stationName, url, volume)
+
         net.Start("PlayCarRadioStation")
         net.WriteEntity(entity)
         net.WriteString(url)
         net.WriteFloat(volume)
         net.Broadcast()
+
         net.Start("UpdateRadioStatus")
         net.WriteEntity(entity)
         net.WriteString(stationName)
         net.Broadcast()
+
     elseif entity:IsVehicle() then
         AddActiveRadio(entity, stationName, url, volume)
+
         net.Start("PlayCarRadioStation")
         net.WriteEntity(entity)
         net.WriteString(url)
         net.WriteFloat(volume)
         net.Broadcast()
+
         net.Start("UpdateRadioStatus")
         net.WriteEntity(entity)
         net.WriteString(stationName)
@@ -300,18 +310,23 @@ net.Receive("StopCarRadioStation", function(len, ply)
         end
 
         RemoveActiveRadio(entity)
+
         net.Start("StopCarRadioStation")
         net.WriteEntity(entity)
         net.Broadcast()
+
         net.Start("UpdateRadioStatus")
         net.WriteEntity(entity)
         net.WriteString("")
         net.Broadcast()
+
     elseif entity:IsVehicle() then
         RemoveActiveRadio(entity)
+
         net.Start("StopCarRadioStation")
         net.WriteEntity(entity)
         net.Broadcast()
+
         net.Start("UpdateRadioStatus")
         net.WriteEntity(entity)
         net.WriteString("")
