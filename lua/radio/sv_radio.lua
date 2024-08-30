@@ -5,7 +5,7 @@ util.AddNetworkString("OpenRadioMenu")
 util.AddNetworkString("UpdateRadioStatus")
 
 local ActiveRadios = {}
-local debug_mode = true  -- Set to true to enable debug statements
+local debug_mode = false  -- Set to true to enable debug statements
 
 -- Debug function to print messages if debug_mode is enabled
 local function DebugPrint(msg)
@@ -16,7 +16,6 @@ end
 
 -- Function to add a radio to the active list
 local function AddActiveRadio(entity, stationName, url, volume)
-    DebugPrint("Adding radio: " .. tostring(entity) .. " Station: " .. stationName .. " Volume: " .. tostring(volume))
     ActiveRadios[entity:EntIndex()] = {
         entity = entity,
         stationName = stationName,
@@ -27,13 +26,11 @@ end
 
 -- Function to remove a radio from the active list
 local function RemoveActiveRadio(entity)
-    DebugPrint("Removing radio: " .. tostring(entity))
     ActiveRadios[entity:EntIndex()] = nil
 end
 
 -- Function to send active radios to a specific player
 local function SendActiveRadiosToPlayer(ply)
-    DebugPrint("Sending active radios to player: " .. tostring(ply))
     for _, radio in pairs(ActiveRadios) do
         -- Check if the entity is valid before sending
         if IsValid(radio.entity) then
@@ -147,7 +144,6 @@ end)
 -- Hook to clean up active radios if an entity is removed
 hook.Add("EntityRemoved", "CleanupActiveRadioOnEntityRemove", function(entity)
     if ActiveRadios[entity:EntIndex()] then
-        DebugPrint("Cleaning up radio for removed entity: " .. tostring(entity))
         RemoveActiveRadio(entity)
     end
 end)
