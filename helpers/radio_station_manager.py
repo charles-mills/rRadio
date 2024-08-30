@@ -119,12 +119,23 @@ class RadioStationManager:
 
         with open(file_path, "w", encoding="utf-8") as f:
             f.write("local stations = {\n")
+
             for station in filtered_stations:
-                f.write(f'    {{name = "{Utils.escape_lua_string(station["name"])}", url = "{Utils.escape_lua_string(station["url"])}"}},\n')
+                line = f'    {{name = "{Utils.escape_lua_string(station["name"])}", url = "{Utils.escape_lua_string(station["url"])}"}},\n'
+                f.write(line)
+
+                # Check the current file size
+                current_size = f.tell()
+
+                if current_size > 63 * 1024:  # 63KB limit
+                    print(f"File size limit reached (63KB). Stopping station addition for {country}.")
+                    break
+
             f.write("}\n\nreturn stations\n")
 
         print(f"Saved stations for {country or 'Other'} to {file_path}")
         Utils.validate_lua_file(file_path)
+
 
     def commit_and_push_changes(self, file_path: str, message: str):
         print(f"Committing and pushing changes for file: {file_path}")
