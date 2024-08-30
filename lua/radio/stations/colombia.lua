@@ -301,6 +301,7 @@ local stations = {
     {name = "Paisa Estereo", url = "http://radiolatina.info:7094/"},
     {name = "Paz De Selva Verde", url = "https://mediacp15.rootservers.co:8064/stream"},
     {name = "Pingüino Estéreo", url = "http://radiolatina.info:9750/"},
+    {name = "PLANETA RADIO", url = "http://stremo.decibeles.net:8001/Radioplaneta"},
     {name = "Potencia Latina 1380 AM", url = "https://radiohd.streaminghd.co:7132/stream"},
     {name = "PUERTO ESTEREO 984 FM", url = "https://radiohd.streaminghd.co:7286/stream"},
     {name = "R2 Audiovisual - Radio Tunja", url = "https://stream.zeno.fm/bufaptza04zuv"},
