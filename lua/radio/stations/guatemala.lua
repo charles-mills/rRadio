@@ -29,6 +29,7 @@ local stations = {
     {name = "Eventos Catolicos Radio 940 AM", url = "https://stream.zeno.fm/1g9cduy10bruv"},
     {name = "Exa FM 1017 Guatemala", url = "https://stream.zeno.fm/czdkk32qduhvv"},
     {name = "Felove Biblia En Quiché", url = "http://radio.produccionescasaverde.com:8788/autodj"},
+    {name = "Flix 939 Y 987 FM", url = "https://alba-gt-chapinradio-flix939.stream.mediatiquestream.com/chunks.m3u8"},
     {name = "Gaiteros De Guatemala", url = "https://radio.forensedigital.gt:8030/stream"},
     {name = "Globo 989 Guatemala", url = "https://playerservices.streamtheworld.com/api/livestream-redirect/GLOBO_989AAC.aac"},
     {name = "Hacker Por Cristo Network", url = "https://radio.forensedigital.gt:8010/stream"},

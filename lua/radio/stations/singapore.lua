@@ -1,5 +1,6 @@
 local stations = {
     {name = "938 Now Radio", url = "http://playerservices.streamtheworld.com/api/livestream-redirect/938NOWAAC.aac"},
+    {name = "963 Hao FM", url = "https://www.963haofm.sg/"},
     {name = "973FM Blasts That Last", url = "http://c16.radioboss.fm:8115/autodj"},
     {name = "973FM: Blasts That Last Radio", url = "https://c16.radioboss.fm:18115/stream?icecast"},
     {name = "987", url = "https://14033.live.streamtheworld.com/987FM_SC"},

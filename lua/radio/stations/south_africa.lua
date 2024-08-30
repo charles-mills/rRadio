@@ -81,6 +81,7 @@ local stations = {
     {name = "Pitch Radio", url = "http://stream.zeno.fm/etw8vx9knm0uv"},
     {name = "Power 987", url = "https://edge.iono.fm/xice/65_medium.aac"},
     {name = "Pretoria FM", url = "http://capeant.antfarm.co.za:8000/ptafm"},
+    {name = "PSH Radio", url = "https://radio2.whazup.mobi/listen/psh_radio/pshlive.aac?1725024971931"},
     {name = "Radio 2000", url = "http://27743.live.streamtheworld.com/RADIO2000AAC.aac?dist=triton-widget&tdsdk=js-2.9&swm=false&pname=tdwidgets&pversion=2.9&banners=none&burst-time=15&sbmid=8310c16e-1928-4209-9339-97787465358b"},
     {name = "Radio 2000 SABC", url = "http://25483.live.streamtheworld.com/RADIO2000AAC.aac?dist=triton-widget&tdsdk=js-2.9&pname=tdwidgets&pversion=2.9&banners=none&burst-time=15&sbmid=3e99e625-68d3-4273-8866-a73f7d8fe4d8"},
     {name = "Radio 786", url = "http://stream.krypton.co.za:8040/stream/"},

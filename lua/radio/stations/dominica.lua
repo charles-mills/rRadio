@@ -101,7 +101,6 @@ local stations = {
     {name = "Super K 1007 FM", url = "https://stream-144.zeno.fm/7xnmbku8na0uv?zs=WeNbP6cZT3u4TgvRNSxcJA"},
     {name = "Super K FM", url = "https://grupomedrano.stream-audio.com:8856/SuperK"},
     {name = "Teleantillas", url = "https://radio.gmsiptv.com/teleantillas"},
-    {name = "Telemicro", url = "https://radio.gmsiptv.com/telemicro"},
     {name = "Top Bachata Radio", url = "https://radio.dominiserver.com/proxy/topbachata?mp=/stream"},
     {name = "Top Balada Radio", url = "https://radio.dominiserver.com/proxy/topbaladaradio?mp=/stream"},
     {name = "Top Cristiano Radio", url = "https://radio.dominiserver.com/proxy/topcristianoradio?mp=/stream"},

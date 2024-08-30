@@ -20,6 +20,7 @@ local stations = {
     {name = "INOLVIDABLE BOLIVIA", url = "https://zoyradio.online:8020/inolvidablebolivia.mp3"},
     {name = "Maritima Fm", url = "https://spanel.gcomstreaming.com/8004/stream"},
     {name = "Oxígeno 1075 FM", url = "https://stream-160.zeno.fm/up7we7qvsg0uv?zs=gjBe9XCDQEOMJM1x8F8W1A"},
+    {name = "PURPURA", url = "https://zoyradio.online:8110/purpura.mp3"},
     {name = "Quechua FM", url = "https://stream-174.zeno.fm/e78z1h3drd0uv?zs=ikWueaMmSDeduBx58DWGtQ"},
     {name = "Radio Cumbia 90S", url = "https://emiteradio.com/proxy/cumbia90s?mp=/stream"},
     {name = "Radio Andina Bolivia", url = "https://stm3.srvif.com:8302/stream"},
