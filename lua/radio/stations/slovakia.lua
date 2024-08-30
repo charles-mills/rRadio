@@ -1,6 +1,6 @@
 local stations = {
-    {name = "Rádio Beta", url = "http://109.71.67.102:8000/beta_live_high.mp3"},
-    {name = "SUB:FM", url = "http://stream.subfm.sk/subfm"},
+    {name = "Detské Rádio", url = "https://stream.21.sk/detskeradio-192.mp3"},
+    {name = "TV Doktor", url = "https://live.tvdoktor.sk/high/index.m3u8"},
 }
 
 return stations

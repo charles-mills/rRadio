@@ -1,7 +1,7 @@
 local stations = {
-    {name = "1044 Kaboozi Fm", url = "http://162.244.80.52:8732/;stream.mp3"},
-    {name = "Kids Bible Songs", url = "http://streams.abidingradio.org:7810/1"},
-    {name = "NBC NEWS", url = "http://stream.revma.ihrhls.com/zc6043"},
+    {name = "Yofochm", url = "https://c13.radioboss.fm:18053/stream"},
+    {name = "Power FM - Kampala - 1041 FM MP3", url = "https://securestreams5.autopo.st:1941/stream"},
+    {name = "MTV Base", url = "https://listen.nonstopstreaming.net/nsd"},
 }
 
 return stations

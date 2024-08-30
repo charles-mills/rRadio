@@ -1,7 +1,7 @@
 local stations = {
-    {name = "L'Ultima È Radio Radio Hit", url = "http://46.105.111.94:8120/stream/1/"},
-    {name = "Stella FM", url = "http://178.32.138.88:8057/;stream.mp3"},
-    {name = "Studioradio - The Vintage Station", url = "http://91.121.38.216:8060/stream"},
+    {name = "Giornale Radio Piemonte Melody", url = "http://onair15.xdevel.com:8226/"},
+    {name = "Radio Finestraperta", url = "http://94.23.67.172:9114/;stream.mp3"},
+    {name = "Radio Dora", url = "http://195.201.29.94:9000/;"},
 }
 
 return stations

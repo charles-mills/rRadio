@@ -1,10 +1,10 @@
 local stations = {
-    {name = "EXA FM 985 Oaxaca - 985 FM - XHNR-FM - Organización Radiofónica De Oaxaca ORO - Oaxaca, Oaxaca", url = "http://ororadio2.serverroom.us:4638/"},
-    {name = "La Bestia Grupera León - 903 FM - XHML-FM - Grupo Audiorama Comunicaciones - León, GT", url = "https://ss1.audiorama.com.mx:6636/"},
-    {name = "La Raza Los Reyes - 925 FM - XHGQ-FM - Los Reyes, MI", url = "http://radiohosting.online:8574/stream"},
-    {name = "Titán Villahermosa - 1063 FM - XHRVI-FM - Publilu Medios - Villahermosa, Tabasco", url = "http://master.shoutcast.com:8000/titan-fm-106-3"},
-    {name = "La Favorita", url = "http://streamvortex.com:10500/listen.pls?sid=1"},
-    {name = "RADIO PESCA 947 DE FM", url = "http://radio.ministeriotv.com:8127/stream"},
+    {name = "DK 1250 Guadalajara - 1250 AM - XEDK-AM - Radiorama - Guadalajara, JC", url = "http://192.99.16.17:9880/"},
+    {name = "Imagen Radio Puebla - 1051 FM [Puebla, Puebla]", url = "http://puebla.radio.wnsol.com:8280/;stream.mp3"},
+    {name = "Acustik Radio - 1150 AM - XEJP-AM - Grupo Acustik - Ciudad De México", url = "https://server2.sit-mexico.com:2199/proxy/acustik"},
+    {name = "Candela Uruapan - 911 FM - XHFN-FM - Cadena RASA - Uruapan, MI", url = "http://167.114.116.223:3334/"},
+    {name = "Imagen Radio Laguna - 1003 FM", url = "http://radio.wnsol.com:8068/;stream.mp3"},
+    {name = "Éxtasis Digital Guadalajara - 1059 FM - XHQJ-FM - Radiorama - Guadalajara, JC", url = "http://192.99.16.17:3414/;"},
 }
 
 return stations
