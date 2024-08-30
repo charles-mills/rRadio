@@ -5,17 +5,14 @@ Config.RadioStations = {}
 Config.Language = "en" -- Default language
 
 local function loadLanguage()
-    print("[DEBUG] Attempting to load language...")
     local lang = Config.Language or GetConVar("gmod_language"):GetString() or "en"
-    print("[DEBUG] Selected language: " .. lang)
     local path = "radio/lang/" .. lang .. ".lua"
     
     if file.Exists(path, "LUA") then
-        print("[DEBUG] Language file found: " .. path)
         Config.Lang = include(path)
     else
         print("[DEBUG] Language file not found, falling back to English.")
-        Config.Lang = include("radio/lang/en.lua") -- Fallback to English if the specified language file doesn't exist
+        Config.Lang = include("radio/lang/en.lua")
     end
     
     if Config.Lang then
