@@ -9,8 +9,9 @@ AddCSLuaFile("entities/golden_boombox/shared.lua")
 if SERVER then
     resource.AddFile("materials/entities/boombox.png")
     resource.AddFile("materials/entities/golden_boombox.png")
+    resource.AddFile("materials/hud/star.png")
+    resource.AddFile("materials/hud/star_full.png")
 end
-
 
 list.Set("SpawnableEntities", "boombox", {
     PrintName = "Boombox",

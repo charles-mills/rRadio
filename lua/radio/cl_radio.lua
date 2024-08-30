@@ -3,46 +3,63 @@ include("radio/config.lua")
 local countryTranslations = include("country_translations.lua")
 local LanguageManager = include("language_manager.lua")
 
-surface.CreateFont("Roboto18", {
-    font = "Roboto",
-    size = ScreenScale(5),
-    weight = 500,
-})
+-- Font creation
+local function createFonts()
+    surface.CreateFont("Roboto18", {
+        font = "Roboto",
+        size = ScreenScale(5),
+        weight = 500,
+    })
 
-surface.CreateFont("HeaderFont", {
-    font = "Roboto",
-    size = ScreenScale(8),
-    weight = 700,
-})
+    surface.CreateFont("HeaderFont", {
+        font = "Roboto",
+        size = ScreenScale(8),
+        weight = 700,
+    })
+end
 
+createFonts()
+
+-- State Variables
 local selectedCountry = nil
 local radioMenuOpen = false
 local currentlyPlayingStation = nil
-
 local currentRadioSources = {}
 local entityVolumes = {}
-
 local lastMessageTime = -math.huge
+local favoriteCountries = {}  -- Client-side variable to store favorite countries
+
+-- Utility Functions
+local function Scale(value)
+    return value * (ScrW() / 2560)
+end
 
 local function getEntityConfig(entity)
-    if entity:GetClass() == "golden_boombox" then
+    local entityClass = entity:GetClass()
+    if entityClass == "golden_boombox" then
         return Config.GoldenBoombox
-    elseif entity:GetClass() == "boombox" then
+    elseif entityClass == "boombox" then
         return Config.Boombox
     elseif entity:IsVehicle() then
         return Config.VehicleRadio
-    else
-        return nil
     end
+    return nil
+end
+
+local function formatCountryName(name)
+    -- Reformat and then translate the country name
+    local formattedName = name:gsub("_", " "):gsub("(%a)([%w_']*)", function(a, b) 
+        return string.upper(a) .. string.lower(b) 
+    end)
+    local lang = GetConVar("radio_language"):GetString() or "en"
+    return countryTranslations:GetCountryName(lang, formattedName)
 end
 
 local function updateRadioVolume(station, distance, isPlayerInCar, entity)
     local entityConfig = getEntityConfig(entity)
-    
     if not entityConfig then return end
 
     local volume = entityVolumes[entity] or entityConfig.Volume
-
     if volume <= 0.02 then
         station:SetVolume(0)
         return
@@ -69,51 +86,142 @@ local function PrintCarRadioMessage()
     if not GetConVar("car_radio_show_messages"):GetBool() then return end
 
     local currentTime = CurTime()
-
     if (currentTime - lastMessageTime) < Config.MessageCooldown and lastMessageTime ~= -math.huge then
         return
     end
 
     lastMessageTime = currentTime
 
-    local prefixColor = Color(0, 255, 128)
-    local keyColor = Color(255, 165, 0)
-    local messageColor = Color(255, 255, 255)
     local keyName = GetKeyName(Config.OpenKey)
-
     local message = Config.Lang["PressKeyToOpen"]:gsub("{key}", keyName)
 
     chat.AddText(
-        prefixColor, "[CAR RADIO] ",
-        messageColor, message
+        Color(0, 255, 128), "[CAR RADIO] ",
+        Color(255, 255, 255), message
     )
 end
 
-net.Receive("CarRadioMessage", function()
-    PrintCarRadioMessage()
-end)
+-- Network Handlers
+net.Receive("CarRadioMessage", PrintCarRadioMessage)
 
-local function Scale(value)
-    return value * (ScrW() / 2560)
+local function calculateFontSizeForStopButton(text, buttonWidth, buttonHeight)
+    local maxFontSize = buttonHeight * 0.7
+    local fontName = "DynamicStopButtonFont"
+
+    surface.CreateFont(fontName, {
+        font = "Roboto",
+        size = maxFontSize,
+        weight = 700,
+    })
+
+    surface.SetFont(fontName)
+    local textWidth, _ = surface.GetTextSize(text)
+
+    while textWidth > buttonWidth * 0.9 do
+        maxFontSize = maxFontSize - 1
+        surface.CreateFont(fontName, {
+            font = "Roboto",
+            size = maxFontSize,
+            weight = 700,
+        })
+        surface.SetFont(fontName)
+        textWidth, _ = surface.GetTextSize(text)
+    end
+
+    return fontName
 end
 
-local function formatCountryName(name)
-    -- Reformat and then translate the country name
-    local formattedName = name:gsub("_", " "):gsub("(%a)([%w_']*)", function(a, b) return string.upper(a) .. string.lower(b) end)
-    local lang = GetConVar("radio_language"):GetString() or "en"
-    local translation = countryTranslations:GetCountryName(lang, formattedName)
-    
-    return translation
-end
-
--- Client-side variable to store favorite countries
-local favoriteCountries = {}
-
+-- Update favorite countries when received from server
 net.Receive("SendFavoriteCountries", function()
     favoriteCountries = net.ReadTable()
+    if stationListPanel and populateList then
+        populateList(stationListPanel, backButton, searchBox, false)  -- Repopulate the list with updated data
+    end
 end)
 
-local function populateList(stationListPanel, backButton, searchBox, resetSearch)
+local function createStarIcon(parent, country, stationListPanel, backButton, searchBox)
+    local starIcon = vgui.Create("DImageButton", parent)
+    starIcon:SetSize(Scale(24), Scale(24))
+    starIcon:SetPos(Scale(8), (Scale(40) - Scale(24)) / 2)
+    starIcon:SetImage(table.HasValue(favoriteCountries, country) and "hud/star_full.png" or "hud/star.png")
+
+    starIcon.DoClick = function()
+        net.Start("ToggleFavoriteCountry")
+        net.WriteString(country)
+        net.SendToServer()
+
+        -- Update the favorite status immediately on the client-side
+        if table.HasValue(favoriteCountries, country) then
+            table.RemoveByValue(favoriteCountries, country)
+        else
+            table.insert(favoriteCountries, country)
+        end
+
+        -- Repopulate the list to reflect the change immediately
+        if stationListPanel then
+            populateList(stationListPanel, backButton, searchBox, false)
+        end
+    end
+
+    return starIcon
+end
+
+local function createStationButton(stationListPanel, station, backButton, searchBox)
+    local stationButton = vgui.Create("DButton", stationListPanel)
+    stationButton:Dock(TOP)
+    stationButton:DockMargin(Scale(5), Scale(5), Scale(5), 0)
+    stationButton:SetTall(Scale(40))
+    stationButton:SetText(station.name)
+    stationButton:SetFont("Roboto18")
+    stationButton:SetTextColor(Config.UI.TextColor)
+
+    local currentlyPlayingStations = {}
+
+    stationButton.Paint = function(self, w, h)
+        if station == currentlyPlayingStations[LocalPlayer().currentRadioEntity] then
+            draw.RoundedBox(8, 0, 0, w, h, Config.UI.PlayingButtonColor)
+        else
+            draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonColor)
+            if self:IsHovered() then
+                draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonHoverColor)
+            end
+        end
+    end
+
+    stationButton.DoClick = function()
+        surface.PlaySound("buttons/button17.wav")
+        local entity = LocalPlayer().currentRadioEntity
+
+        if not IsValid(entity) then
+            return
+        end
+
+        if currentlyPlayingStations[entity] then
+            net.Start("StopCarRadioStation")
+            net.WriteEntity(entity)
+            net.SendToServer()
+        end
+
+        local volume = entityVolumes[entity] or getEntityConfig(entity).Volume
+        net.Start("PlayCarRadioStation")
+        net.WriteEntity(entity)
+        net.WriteString(station.name)
+        net.WriteString(station.url)
+        net.WriteFloat(volume)
+        net.SendToServer()
+
+        currentlyPlayingStations[entity] = station
+        populateList(stationListPanel, backButton, searchBox, false)
+    end
+end
+
+function populateList(stationListPanel, backButton, searchBox, resetSearch)
+    -- Ensure stationListPanel is not nil
+    if not stationListPanel then
+        print("[DEBUG] stationListPanel is nil in populateList.")
+        return
+    end
+
     if backButton and selectedCountry == nil then
         backButton:SetVisible(false)
     end
@@ -165,10 +273,10 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                 end
             end
 
-            -- Add favorite star icon (left-aligned)
+            -- Add the star icon
             local starIcon = vgui.Create("DImageButton", countryButton)
             starIcon:SetSize(Scale(24), Scale(24))
-            starIcon:SetPos(Scale(8), (Scale(40) - Scale(24)) / 2)  -- Positioned on the left
+            starIcon:SetPos(Scale(8), (Scale(40) - Scale(24)) / 2)
             starIcon:SetImage(table.HasValue(favoriteCountries, country.original) and "hud/star_full.png" or "hud/star.png")
 
             starIcon.DoClick = function()
@@ -176,10 +284,15 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                 net.WriteString(country.original)
                 net.SendToServer()
 
+                -- Immediately reflect the change by toggling the icon and repopulating the list
+                if table.HasValue(favoriteCountries, country.original) then
+                    table.RemoveByValue(favoriteCountries, country.original)
+                else
+                    table.insert(favoriteCountries, country.original)
+                end
+
                 -- Repopulate the list to reflect the change immediately
-                timer.Simple(0.1, function()
-                    populateList(stationListPanel, backButton, searchBox, false)
-                end)
+                populateList(stationListPanel, backButton, searchBox, false)
             end
 
             countryButton.DoClick = function()
@@ -243,33 +356,6 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
     end
 end
 
-local function calculateFontSizeForStopButton(text, buttonWidth, buttonHeight)
-    local maxFontSize = buttonHeight * 0.7
-    local fontName = "DynamicStopButtonFont"
-
-    surface.CreateFont(fontName, {
-        font = "Roboto",
-        size = maxFontSize,
-        weight = 700,
-    })
-
-    surface.SetFont(fontName)
-    local textWidth, _ = surface.GetTextSize(text)
-
-    while textWidth > buttonWidth * 0.9 do
-        maxFontSize = maxFontSize - 1
-        surface.CreateFont(fontName, {
-            font = "Roboto",
-            size = maxFontSize,
-            weight = 700,
-        })
-        surface.SetFont(fontName)
-        textWidth, _ = surface.GetTextSize(text)
-    end
-
-    return fontName
-end
-
 local function openRadioMenu()
     if radioMenuOpen then return end
     radioMenuOpen = true
@@ -301,9 +387,6 @@ local function openRadioMenu()
         
         local countryText = Config.Lang["SelectCountry"] or "Select Country"
         draw.SimpleText(selectedCountry and formatCountryName(selectedCountry) or countryText, "HeaderFont", iconOffsetX + iconSize + Scale(5), iconOffsetY, Config.UI.TextColor, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
-        if not Config.Lang then
-            print("[DEBUG] Language not found")
-        end
     end
     
     local searchBox = vgui.Create("DTextEntry", frame)
@@ -311,9 +394,6 @@ local function openRadioMenu()
     searchBox:SetSize(Scale(Config.UI.FrameSize.width) - Scale(20), Scale(30))
     searchBox:SetFont("Roboto18")
     searchBox:SetPlaceholderText(Config.Lang and Config.Lang["SearchPlaceholder"] or "Search")
-    if not Config.Lang then
-        print("[DEBUG] Language not found")
-    end
     searchBox:SetTextColor(Config.UI.TextColor)
     searchBox:SetDrawBackground(false)
     searchBox.Paint = function(self, w, h)
