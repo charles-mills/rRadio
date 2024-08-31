@@ -3,16 +3,10 @@ util.AddNetworkString("StopCarRadioStation")
 util.AddNetworkString("CarRadioMessage")
 util.AddNetworkString("OpenRadioMenu")
 util.AddNetworkString("UpdateRadioStatus")
-util.AddNetworkString("ToggleFavoriteCountry")
-util.AddNetworkString("SendFavoriteCountries")
 
 local ActiveRadios = {}
 local debug_mode = false  -- Set to true to enable debug statements
-SavedBoomboxStates = SavedBoomboxStates or {}
 
-local playerFavoritesCache = {}
-
--- Debug function to print messages if debug_mode is enabled
 local function DebugPrint(msg)
     if debug_mode then
         print("[CarRadio Debug] " .. msg)
@@ -35,156 +29,6 @@ local function RemoveActiveRadio(entity)
     ActiveRadios[entity:EntIndex()] = nil
     DebugPrint("Removed active radio: Entity " .. tostring(entity:EntIndex()))
 end
-
--- Restore boombox radio state using saved data
-local function RestoreBoomboxRadio(entity)
-    local permaID = entity.PermaProps_ID
-    if not permaID then
-        DebugPrint("Warning: Could not find PermaProps_ID for entity " .. entity:EntIndex())
-        return
-    end
-
-    local savedState = SavedBoomboxStates[permaID]
-    if savedState then
-        entity:SetNWString("CurrentRadioStation", savedState.station)
-        entity:SetNWString("StationURL", savedState.url)
-
-        if entity.SetStationName then
-            entity:SetStationName(savedState.station)
-        else
-            DebugPrint("Warning: SetStationName function not found for entity: " .. entity:EntIndex())
-        end
-
-        if savedState.isPlaying then
-            net.Start("PlayCarRadioStation")
-            net.WriteEntity(entity)
-            net.WriteString(savedState.url)
-            net.WriteFloat(savedState.volume)
-            net.Broadcast()
-            AddActiveRadio(entity, savedState.station, savedState.url, savedState.volume)
-            DebugPrint("Restored and added active radio for PermaProps_ID: " .. permaID)
-        else
-            DebugPrint("Station is not playing. Not broadcasting PlayCarRadioStation.")
-        end
-    end
-end
-
--- Hook to restore boombox radio state on entity creation
-hook.Add("OnEntityCreated", "RestoreBoomboxRadioForPermaProps", function(entity)
-    timer.Simple(0.5, function()
-        if IsValid(entity) and (entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox") then
-            RestoreBoomboxRadio(entity)
-        end
-    end)
-end)
-
--- Create boombox_states table if not exists
-local function CreateBoomboxStatesTable()
-    local createTableQuery = [[
-        CREATE TABLE IF NOT EXISTS boombox_states (
-            permaID INTEGER PRIMARY KEY,
-            station TEXT,
-            url TEXT,
-            isPlaying INTEGER,
-            volume REAL
-        )
-    ]]
-    if sql.Query(createTableQuery) == false then
-        DebugPrint("Failed to create boombox_states table: " .. sql.LastError())
-    else
-        DebugPrint("Boombox_states table created or verified successfully")
-    end
-end
-
-hook.Add("Initialize", "CreateBoomboxStatesTable", CreateBoomboxStatesTable)
-
--- Save boombox state to database
-local function SaveBoomboxStateToDatabase(permaID, stationName, url, isPlaying, volume)
-    local query = string.format("REPLACE INTO boombox_states (permaID, station, url, isPlaying, volume) VALUES (%d, %s, %s, %d, %f)",
-        permaID, sql.SQLStr(stationName), sql.SQLStr(url), isPlaying and 1 or 0, volume)
-    if sql.Query(query) == false then
-        DebugPrint("Failed to save boombox state: " .. sql.LastError())
-    else
-        DebugPrint("Saved boombox state to database: PermaID = " .. permaID)
-    end
-end
-
--- Remove boombox state from database
-local function RemoveBoomboxStateFromDatabase(permaID)
-    local query = string.format("DELETE FROM boombox_states WHERE permaID = %d", permaID)
-    if sql.Query(query) == false then
-        DebugPrint("Failed to remove boombox state: " .. sql.LastError())
-    else
-        DebugPrint("Removed boombox state from database: PermaID = " .. permaID)
-    end
-end
-
--- Load boombox states from the database into SavedBoomboxStates table
-local function LoadBoomboxStatesFromDatabase()
-    local rows = sql.Query("SELECT * FROM boombox_states")
-    if rows then
-        for _, row in ipairs(rows) do
-            local permaID = tonumber(row.permaID)
-            SavedBoomboxStates[permaID] = {
-                station = row.station,
-                url = row.url,
-                isPlaying = tonumber(row.isPlaying) == 1,
-                volume = tonumber(row.volume)
-            }
-            DebugPrint("Loaded boombox state from database: PermaID = " .. permaID)
-        end
-    else
-        SavedBoomboxStates = {}
-        DebugPrint("No saved boombox states found in the database.")
-    end
-end
-
--- Save player favorites to a file
-local function SavePlayerFavorites(ply)
-    local steamID = ply:SteamID()
-    file.Write("radio_favorites/" .. steamID .. ".txt", util.TableToJSON(playerFavoritesCache[steamID]))
-    DebugPrint("Saved favorites for " .. steamID)
-end
-
--- Load player favorites from a file
-local function LoadPlayerFavorites(ply)
-    local steamID = ply:SteamID()
-    if not playerFavoritesCache[steamID] then
-        if file.Exists("radio_favorites/" .. steamID .. ".txt", "DATA") then
-            local data = file.Read("radio_favorites/" .. steamID .. ".txt", "DATA")
-            playerFavoritesCache[steamID] = util.JSONToTable(data) or {}
-        else
-            playerFavoritesCache[steamID] = {}
-        end
-    end
-    return playerFavoritesCache[steamID]
-end
-
-hook.Add("PlayerInitialSpawn", "LoadPlayerRadioFavorites", function(ply)
-    local favorites = LoadPlayerFavorites(ply)
-    net.Start("SendFavoriteCountries")
-    net.WriteTable(favorites)
-    net.Send(ply)
-end)
-
--- Toggle favorite country and save the player's favorites
-net.Receive("ToggleFavoriteCountry", function(len, ply)
-    local steamID = ply:SteamID()
-    local country = net.ReadString()
-
-    playerFavoritesCache[steamID] = playerFavoritesCache[steamID] or {}
-
-    if table.HasValue(playerFavoritesCache[steamID], country) then
-        table.RemoveByValue(playerFavoritesCache[steamID], country)
-    else
-        table.insert(playerFavoritesCache[steamID], country)
-    end
-
-    SavePlayerFavorites(ply)
-    net.Start("SendFavoriteCountries")
-    net.WriteTable(playerFavoritesCache[steamID])
-    net.Send(ply)
-end)
 
 -- Send active radios to a specific player
 local function SendActiveRadiosToPlayer(ply)
@@ -239,17 +83,6 @@ net.Receive("PlayCarRadioStation", function(len, ply)
     DebugPrint("PlayCarRadioStation received: Entity " .. entity:EntIndex())
 
     if entity:GetClass() == "golden_boombox" or entity:GetClass() == "boombox" then
-        local permaID = entity.PermaProps_ID
-        if permaID then
-            SavedBoomboxStates[permaID] = {
-                station = stationName,
-                url = url,
-                isPlaying = true,
-                volume = volume
-            }
-            SaveBoomboxStateToDatabase(permaID, stationName, url, true, volume)
-        end
-
         if entity.SetVolume then
             entity:SetVolume(volume)
         else
@@ -297,12 +130,6 @@ net.Receive("StopCarRadioStation", function(len, ply)
     if not IsValid(entity) then return end
 
     if entity:GetClass() == "golden_boombox" or entity:GetClass() == "boombox" then
-        local permaID = entity.PermaProps_ID
-        if permaID and SavedBoomboxStates[permaID] then
-            SavedBoomboxStates[permaID].isPlaying = false
-            SaveBoomboxStateToDatabase(permaID, SavedBoomboxStates[permaID].station, SavedBoomboxStates[permaID].url, false, SavedBoomboxStates[permaID].volume)
-        end
-
         if entity.SetStationName then
             entity:SetStationName("")
         else
@@ -337,38 +164,5 @@ end)
 hook.Add("EntityRemoved", "CleanupActiveRadioOnEntityRemove", function(entity)
     if ActiveRadios[entity:EntIndex()] then
         RemoveActiveRadio(entity)
-    end
-end)
-
-hook.Add("Initialize", "LoadBoomboxStatesOnStartup", function()
-    DebugPrint("Attempting to load Boombox States from the database")
-    LoadBoomboxStatesFromDatabase()
-
-    for permaID, savedState in pairs(SavedBoomboxStates) do
-        if savedState.isPlaying then
-            for _, entity in pairs(ents.GetAll()) do
-                if entity.PermaProps_ID == permaID then
-                    AddActiveRadio(entity, savedState.station, savedState.url, savedState.volume)
-                    break
-                end
-            end
-        end
-    end
-    DebugPrint("Finished restoring active radios")
-end)
-
--- Clear all boombox states from the database
-concommand.Add("rradio_remove_all", function(ply, cmd, args)
-    if not ply or ply:IsAdmin() then
-        local result = sql.Query("DELETE FROM boombox_states")
-        if result == false then
-            print("[CarRadio] Failed to clear boombox states: " .. sql.LastError())
-        else
-            print("[CarRadio] All boombox states cleared successfully.")
-            SavedBoomboxStates = {}
-            ActiveRadios = {}
-        end
-    else
-        ply:ChatPrint("You do not have permission to run this command.")
     end
 end)
