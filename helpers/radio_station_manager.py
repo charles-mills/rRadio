@@ -62,10 +62,10 @@ class RadioStationManager:
         self.config = config
         self.semaphore = Semaphore(self.config.MAX_CONCURRENT_REQUESTS)
 
-    async def fetch_stations(self, session: aiohttp.ClientSession, country_name: str, retries: int = 5, by_popularity: bool = False) -> List[Dict[str, str]]:
+    async def fetch_stations(self, session: aiohttp.ClientSession, country_name: str, retries: int = 5, by_popularity: bool = True) -> List[Dict[str, str]]:
         print(f"Fetching stations for country: {country_name} {'by popularity' if by_popularity else ''}")
         
-        # Adjust the API URL based on whether we want to order by popularity
+        # Adjust the API URL to order by popularity (clickcount)
         if by_popularity:
             url = f"{self.config.API_BASE_URL}/stations/bycountry/{country_name.replace(' ', '%20')}?order=clickcount&reverse=true"
         else:
@@ -90,9 +90,14 @@ class RadioStationManager:
         return []
 
     def save_stations_to_file(self, country: str, stations: List[Dict[str, str]]):
+    # Map the long country name to the desired short name
+        if country.lower() == "the united kingdom of great britain and northern ireland":
+            print(f"Reformatting country name '{country}' to 'The United Kingdom'")
+            country = "The United Kingdom"
+
         # Skip files that don't have an associated country name
         if not country:
-            print(f"No country provided for stations. Skipping file creation.")
+            print("No country provided for stations. Skipping file creation.")
             return
 
         print(f"Saving stations for country: {country}")
@@ -130,8 +135,8 @@ class RadioStationManager:
                     break
 
             f.write("}\n\nreturn stations\n")
-
         print(f"Saved stations for {country} to {file_path}")
+
 
     def commit_and_push_changes(self, file_path: str, message: str):
         print(f"Committing and pushing changes for file: {file_path}")
@@ -140,7 +145,6 @@ class RadioStationManager:
             while not os.path.exists(os.path.join(repo_dir, '.git')):
                 repo_dir = os.path.dirname(repo_dir)
                 if repo_dir == '/' or repo_dir == '':
-                    print("Git repository not found.")
                     return
             subprocess.run(["git", "add", file_path], check=True, cwd=repo_dir)
             subprocess.run(["git", "commit", "-m", message], check=True, cwd=repo_dir)
@@ -179,11 +183,8 @@ class RadioStationManager:
     async def fetch_save_stations(self, session: aiohttp.ClientSession, country: str, pbar: tqdm):
         print(f"Fetching and saving stations for {country}...")
         async with self.semaphore:
-            # Fetch stations for the USA with priority on popularity
-            if country.lower() == "united states":
-                stations = await self.fetch_stations(session, country, by_popularity=True)
-            else:
-                stations = await self.fetch_stations(session, country)
+            # Fetch stations by popularity for all countries
+            stations = await self.fetch_stations(session, country, by_popularity=True)
 
             if stations:
                 self.save_stations_to_file(country, stations)
