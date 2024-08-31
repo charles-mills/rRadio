@@ -1,4 +1,5 @@
 local stations = {
+<<<<<<< HEAD
     {name = "Äripäeva Raadio", url = "https://www.aripaev.ee/raadio/stream.mp3"},
     {name = "DFM", url = "https://le10.euddn.net/6ba757fbb07c38b4203333f8da597dfe02364614545d611faee0cae3d5054c28998483e6a36ae77e8017007b680acfd8f3d9469776bc6bf03bec160af728b4e948a98efed04587b8dfe7a058ed6643a614aa6443b182f8f2ae0ccbd5fbb35c505217badbf4aff456020c96c0a214f787619f1c7ac0b589b36b9388395e577132f54b72799791f65ab27e574488f80f605c7d5d207c982f533fa02509dd85d1d6/dfm.mp3"},
     {name = "Duo Party", url = "https://router.euddn.net/8103046e16b71d15d692b57c187875c7/duodance.aac"},
@@ -69,6 +70,9 @@ local stations = {
     {name = "Vikerraadio 128 Kbps Ogg Opus | Eesti Rahvusringhääling | Vikerraadioerree", url = "http://icecast.err.ee/vikerraadio.opus"},
     {name = "Võmba FM", url = "https://c4.radioboss.fm:18123/stream.m3u"},
     {name = "Радио 4 Raadio 4 128 Kbps Ogg Opus | Eesti Rahvusringhääling | R4Erree", url = "http://icecast.err.ee/raadio4.opus"},
+=======
+    {name = "Võmba FM", url = "https://c4.radioboss.fm:18123/stream.m3u"},
+>>>>>>> 7d1f32cebb0f314e8136a3afc632dac88694d724
 }
 
 return stations

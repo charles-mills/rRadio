@@ -1,4 +1,5 @@
 local stations = {
+<<<<<<< HEAD
     {name = "Most 1058 FM Jakarta", url = "https://wz.mari.co.id:1936/web_mostfm/mostfm/chunklist_w405836415.m3u8"},
     {name = "Wawa Radio 1012 FM", url = "https://xn--tmz.xn--6frz82g/streams"},
     {name = "101 Jak FM Streaming Online – Jakarta", url = "https://wz.mari.co.id:1936/web_jakfm/jakfm/playlist.m3u8"},
@@ -333,6 +334,13 @@ local stations = {
     {name = "WILDAM027", url = "https://stream.zeno.fm/kfqbt7g637zuv"},
     {name = "YASKI Radio", url = "https://stream.heartline.co.id:8443/radio_yaski_stereo"},
     {name = "اذاعة القرآن الكريم", url = "http://stream.radiojar.com/0tpy1h0kxtzuv"},
+=======
+    {name = "CLASSY Netradio", url = "https://streaming.classynetradio.com:8000/classySD"},
+    {name = "V Radio", url = "http://202.147.199.100:8000/;stream.nsv"},
+    {name = "Radio Rodja 756 AM", url = "https://radioislamindonesia.com/rodja-low.mp3?_=1"},
+    {name = "Mandarin Station", url = "https://stream01-ssl.arenastreaming.com:8043/stream"},
+    {name = "GCD Yogyakarta 986 FM", url = "https://studio1.indostreamers.com:8014/stream/1/"},
+>>>>>>> 7d1f32cebb0f314e8136a3afc632dac88694d724
 }
 
 return stations

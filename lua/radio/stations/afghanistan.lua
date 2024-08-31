@@ -1,4 +1,5 @@
 local stations = {
+<<<<<<< HEAD
     {name = "RADIO MARIAM ARABIC", url = "http://dreamsiteradiocp4.com:8046/stream"},
     {name = "EXA FM: په انګلیسي او هسپانوي کې پاپ موزیک", url = "https://playerservices.streamtheworld.com/api/livestream-redirect/XHPSFMAAC.aac"},
     {name = "Afgan Fm", url = "https://canli.arabeskinmerkezi.com/9180/stream"},
@@ -151,6 +152,12 @@ local stations = {
     {name = "新加坡亚洲新闻台（英语）", url = "https://mediacorp-videosbclive.akamaized.net/f4abbc22204c49e2b337203b0ebbf14b/ap-southeast-1/6057994443001/profile_0/chunklist.m3u8"},
     {name = "月南之音", url = "https://stream.vovmedia.vn/vov5"},
     {name = "香港电台第一台", url = "https://rthkradio1-live.akamaized.net/hls/live/2035313/radio1/master.m3u8"},
+=======
+    {name = "80S Forever Radio", url = "http://premium.shoutcastsolutions.com:8050/256.mp3"},
+    {name = "Spogmai Radio", url = "http://ca10.rcast.net:8026/"},
+    {name = "KQED", url = "http://streams.kqed.org/kqedradio.m3u"},
+    {name = "0-24 2000ER POP ROCK", url = "https://0-242000erpoprock.stream.laut.fm/0-24_2000er_pop_rock"},
+>>>>>>> 7d1f32cebb0f314e8136a3afc632dac88694d724
 }
 
 return stations

@@ -1,4 +1,5 @@
 local stations = {
+<<<<<<< HEAD
     {name = "Mooz Dance TV - Sunet ONLINE By Romaniaradioro", url = "http://109.103.178.66:8018/listen.pls"},
     {name = "247 FM Exotic", url = "http://exotic.radio247international.com:9810/;stream.mp3"},
     {name = "90S 3Nergy", url = "https://s11.ssl-stream.com/ssl/90s_energy?mp=/stream"},
@@ -441,6 +442,10 @@ local stations = {
     {name = "We Radio", url = "http://93.115.175.106:8000/player"},
     {name = "West City Radio", url = "http://live.westcityradio.ro:8000/mp3"},
     {name = "You FM Romania", url = "https://asculta.muzicaok.de:8034/listen.pls"},
+=======
+    {name = "Radio Tequila Hip-Hop", url = "http://necenzurat.radiotequila.ro:7000/;"},
+    {name = "Radio Arges", url = "http://89.39.189.53:8000/listen.pls"},
+>>>>>>> 7d1f32cebb0f314e8136a3afc632dac88694d724
 }
 
 return stations

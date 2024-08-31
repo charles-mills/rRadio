@@ -1,4 +1,5 @@
 local stations = {
+<<<<<<< HEAD
     {name = "1002 Galaxy Fm", url = "https://sc.galaxyfm.co.ug/"},
     {name = "1002 Radio West", url = "https://stream.hydeinnovations.com:2020/stream/radiowest/stream"},
     {name = "1005 Bukedde FM", url = "https://stream.hydeinnovations.com:2020/stream/bukeddefm/stream"},
@@ -264,6 +265,10 @@ local stations = {
     {name = "Yofochm", url = "https://c13.radioboss.fm:18053/stream"},
     {name = "Yofochm Radio Uganda MP3", url = "http://c13.radioboss.fm:18053/stream"},
     {name = "YOUNG MONEY RADIO", url = "http://ice55.securenetsystems.net/DASH82"},
+=======
+    {name = "Christian Life Radio", url = "https://ice64.securenetsystems.net/CLR1MP3"},
+    {name = "Dove Fm", url = "https://ice64.securenetsystems.net/DOVEMAIN"},
+>>>>>>> 7d1f32cebb0f314e8136a3afc632dac88694d724
 }
 
 return stations

@@ -1,4 +1,5 @@
 local stations = {
+<<<<<<< HEAD
     {name = "Radio Disney 943 - Buenos Aires, Argentina", url = "https://playerservices.streamtheworld.com/api/livestream-redirect/DISNEY_ARG_BA_ADP.aac"},
     {name = "EXA FM: En Todas Partes Ponte Exa", url = "https://playerservices.streamtheworld.com/api/livestream-redirect/XHPSFMAAC.aac"},
     {name = "Stereorey: 1009 FM - Aguascalientes, México La Máxima Dimensión Del Radio", url = "https://hls.gvstream.live/radiouniversal/life1009.stream/playlist.m3u8"},
@@ -451,6 +452,13 @@ local stations = {
     {name = "La Caliente Reynosa - 931 FM - XHAAA-FM - Multimedios Radio - Reynosa, Tamaulipas", url = "https://playerservices.streamtheworld.com/api/livestream-redirect/XHAAAFMAAC.aac"},
     {name = "La Caliente Tepic - 1057 FM - XHXT-FM - Multimedios Radio - Tepic, Nayarit", url = "https://playerservices.streamtheworld.com/api/livestream-redirect/XHXTFMAAC.aac"},
     {name = "La Cañona Escuinapa", url = "https://sp2.servidorrprivado.com/8112/stream"},
+=======
+    {name = "KISS Online Querétaro - Online - Multimundo Radio - Querétaro, QR", url = "http://192.99.44.11:9861/;stream.mp3"},
+    {name = "Horizonte Ciudad De México - 1079 FM - XHIMR-FM - IMER - Ciudad De México", url = "http://s2.mexside.net/8014/stream"},
+    {name = "GBR Gamebytesradio", url = "https://cp10.shoutcheap.com:2199/tunein/gbrgameb.pls"},
+    {name = "La Bestia Grupera Cuautla - 1045 FM - XHCU-FM - Grupo Audiorama Comunicaciones - Cuautla, MO", url = "https://ss1.audiorama.com.mx:6624/"},
+    {name = "EXA FM 955 Querétaro - 955 FM - XHOE-FM - Multimundo Radio - Querétaro, Querétaro", url = "http://144.217.67.108:9260/stream"},
+>>>>>>> 7d1f32cebb0f314e8136a3afc632dac88694d724
 }
 
 return stations

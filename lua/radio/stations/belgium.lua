@@ -1,4 +1,5 @@
 local stations = {
+<<<<<<< HEAD
     {name = "Studio Brussel", url = "http://icecast.vrtcdn.be/stubru-high.mp3"},
     {name = "1013 BRUGGE FM", url = "https://canli.arabeskinmerkezi.com/9180/stream"},
     {name = "'T Is Vloms", url = "https://bluford.torontocast.com/proxy/iimfoptl/stream"},
@@ -309,6 +310,14 @@ local stations = {
     {name = "Zen Garden Mynoise Radio", url = "https://zengarden-mynoise.radioca.st/stream"},
     {name = "Zenfm", url = "http://str.topradio.be/zenfm.mp3"},
     {name = "Zoe FM", url = "https://icecast.movemedia.be/zoe128"},
+=======
+    {name = "Radio Minerva", url = "http://streaming.radiominerva.be/minerva"},
+    {name = "Warm FM 1042", url = "http://stream05.warm.fm:9002/warm"},
+    {name = "Cdance", url = "http://198.100.145.187:18304/;"},
+    {name = "Radio Sud", url = "http://streaming.domainepublic.net:8000/radiosud.mp3"},
+    {name = "Belgian Dance Radio", url = "https://s4.radio.co/sf5a880a25/listen"},
+    {name = "Joe FM", url = "https://25593.live.streamtheworld.com/JOE.mp3"},
+>>>>>>> 7d1f32cebb0f314e8136a3afc632dac88694d724
 }
 
 return stations

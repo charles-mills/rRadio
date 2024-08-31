@@ -1,4 +1,5 @@
 local stations = {
+<<<<<<< HEAD
     {name = "Squirrel FM", url = "http://s25.myradiostream.com:10092/stream"},
     {name = "# 70S 80S 90S Rdmix Network", url = "https://cast1.torontocast.com:1830/stream"},
     {name = "# Rdmix Classic Rock 70S 80S 90S", url = "https://cast1.torontocast.com:4610/stream"},
@@ -617,6 +618,11 @@ local stations = {
     {name = "CJLF LIFE 1003 Barrie, ON", url = "https://netstream.lifeonline.fm/CJLF/ogg_high"},
     {name = "CJLI Am700 The Light", url = "https://shinefm.streamguys1.com/cjli"},
     {name = "CJLL 979 CHIN Radio Ottawa, ON", url = "http://ice7.securenetsystems.net/CJLLFM"},
+=======
+    {name = "Citr 1019 FM", url = "http://137.82.188.97:8000/live.mp3"},
+    {name = "CIDC-FM Z-1035 Orangeville, ON", url = "https://evanov.leanstream.co/CIDCFM"},
+    {name = "#1 Rdmix Love Songs", url = "https://maggie.torontocast.com:2020/stream/rdmixlovesongs"},
+>>>>>>> 7d1f32cebb0f314e8136a3afc632dac88694d724
 }
 
 return stations

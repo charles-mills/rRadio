@@ -1,4 +1,5 @@
 local stations = {
+<<<<<<< HEAD
     {name = "WDR Sportschau - 2 Fussball Bundesliga-Konferenz LIVE", url = "http://wdr-sportschau-liga2konferenz.icecastssl.wdr.de/wdr/sportschau/liga2konferenz/mp3/high"},
     {name = "ROCKANTENNE Alternative Mp3", url = "https://stream.rockantenne.de/alternative/stream/mp3"},
     {name = "01 ARABESKİN MERKEZİ FM", url = "https://canli.arabeskinmerkezi.com/9180/stream"},
@@ -549,6 +550,11 @@ local stations = {
     {name = "Antenne Bayern - Lovesongs", url = "http://stream.antenne.de/lovesongs/stream/aacp"},
     {name = "Antenne Bayern - Nur Die Musik", url = "http://stream.antenne.de/nur-die-musik/stream/aacp"},
     {name = "Antenne Bayern - Oldies But Goldies", url = "http://stream.antenne.de/oldies-but-goldies/stream/aacp"},
+=======
+    {name = "PARTYHITS By Rautemusik Rmfm", url = "https://partyhits-high.rautemusik.fm/?ref=radiobrowser"},
+    {name = "- 0 N - Top 40 On Radio", url = "https://0n-top40.radionetz.de/0n-top40.mp3"},
+    {name = "14482 Babelsberg Hitradio", url = "http://46.163.75.84:8000/"},
+>>>>>>> 7d1f32cebb0f314e8136a3afc632dac88694d724
 }
 
 return stations

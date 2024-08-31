@@ -1,4 +1,5 @@
 local stations = {
+<<<<<<< HEAD
     {name = "1007 Love Radio Lucena", url = "https://loveradiolucena.radioca.st/"},
     {name = "1007 My FM Bataan", url = "https://stream.zeno.fm/vvsqe5qk7yzuv"},
     {name = "1007 XFM Tagum", url = "https://us1.amfmph.com:2199/tunein/xfmdavao-stream.pls"},
@@ -596,6 +597,13 @@ local stations = {
     {name = "Yes The Best Zamboanga", url = "https://yesfmzamboanga.radioca.st/listen.pls"},
     {name = "Zagitsit News Fm Legazpi", url = "https://stream.zeno.fm/n247mp8smd0uv"},
     {name = "Zradio Philippines", url = "http://streamnavs.net:8091/live"},
+=======
+    {name = "CCTN 47 Cebu", url = "http://122.55.252.134:8443/live/bba5b536faeacb9b56a3239f1ee8e3b3/1.m3u8"},
+    {name = "EWTN Philippines", url = "https://ewtn-ice.streamguys1.com/philippines-aac"},
+    {name = "AMFMPH Streams Online", url = "http://us1.amfmph.com:8005/stream"},
+    {name = "987 DZFE The Master'S Touch", url = "http://sg-icecast.eradioportal.com:8000/febc_dzfe"},
+    {name = "Love Radio Malaybalay", url = "https://lovemalaybalay.radioca.st/listen.pls?sid=1"},
+>>>>>>> 7d1f32cebb0f314e8136a3afc632dac88694d724
 }
 
 return stations

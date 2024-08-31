@@ -65,7 +65,10 @@ local stations = {
     {name = "Lifefm", url = "http://rhema-radio.streamguys1.com/rhema-lifefm.mp3"},
     {name = "MAD FM Auckland 1067", url = "https://madfm-gecko.radioca.st/stream"},
     {name = "Magic", url = "https://digitalstreams.mediaworks.nz/mmusic_net/playlist.m3u8"},
+<<<<<<< HEAD
     {name = "Magic Muzik Madness", url = "https://eu10.fastcast4u.com/3mfm"},
+=======
+>>>>>>> 7d1f32cebb0f314e8136a3afc632dac88694d724
     {name = "Mai FM", url = "https://ais-sa1.streamon.fm/7102_128k.aac"},
     {name = "Metalradioconz", url = "http://curiosity.shoutca.st:9073/stream"},
     {name = "MFM Te Reo O Te Iwi", url = "https://stream-150.zeno.fm/utfkkxfawp8uv?zs=K14ATu12TS2dc8uy0OiMBw"},

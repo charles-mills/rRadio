@@ -1,4 +1,5 @@
 local stations = {
+<<<<<<< HEAD
     {name = "BBC Radio 5 Live Proper", url = "http://as-hls-ww-live.akamaized.net/pool_904/live/ww/bbc_radio_five_live/bbc_radio_five_live.isml/bbc_radio_five_live-audio%3d96000.norewind.m3u8"},
     {name = "My Genre Radio FM", url = "https://c5.radioboss.fm:8075/stream"},
     {name = "Quasar Radio", url = "https://ec2.yesstreaming.net:1935/stream"},
@@ -636,6 +637,18 @@ local stations = {
     {name = "Hospital Radio Perth", url = "http://streaming.broadcastradio.com:9222/perth"},
     {name = "Hospital Radio Plymouth", url = "https://hospitalradioplymouth.radioca.st/stream"},
     {name = "Hot FM UK", url = "https://hotfmuk.radioca.st/;"},
+=======
+    {name = "Bayside Radio Colwyn Bay", url = "http://stream2.hippynet.co.uk:8202/;stream"},
+    {name = "60 NORTH RADIO - FLAC", url = "http://r5.zetcast.net/flac"},
+    {name = "Bristol Sound Webradio", url = "https://thebristolsoundwebradio.stream.laut.fm/thebristolsoundwebradio"},
+    {name = "Fun Kids Junior", url = "http://listen-funkids.sharp-stream.com/funkidsjunior.mp3"},
+    {name = "Derby Sound", url = "https://uk7.internet-radio.com/proxy/in2derbyradio?mp=%2Fstream%3B"},
+    {name = "Cam FM", url = "https://stream.camfm.co.uk/camfm"},
+    {name = "901 Hope FM", url = "http://stream-hfm.tune-in.co.uk:19020/;"},
+    {name = "80'S On Dash", url = "http://ice55.securenetsystems.net/DASH7"},
+    {name = "1018 WCR FM", url = "https://stream3.themediasite.co.uk:8312/stream?_=580911"},
+    {name = "Capital Nottinghamshire", url = "https://media-ice.musicradio.com/CapitalNottinghamshireMP3"},
+>>>>>>> 7d1f32cebb0f314e8136a3afc632dac88694d724
 }
 
 return stations

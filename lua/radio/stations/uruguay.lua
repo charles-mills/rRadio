@@ -1,4 +1,5 @@
 local stations = {
+<<<<<<< HEAD
     {name = "1023 FM CORONILLA", url = "https://streaming01.shockmedia.com.ar/9184/stream"},
     {name = "24 De Agosto", url = "https://24deagosto-zikoxweb.radioca.st/stream"},
     {name = "893 Del Molino FM", url = "http://stream.zeno.fm/8s61u5bvlvytv"},
@@ -131,6 +132,10 @@ local stations = {
     {name = "Stereo Tropical Radio", url = "http://144.91.98.151:8023/live"},
     {name = "ZOE FM 915", url = "https://sp.unoredcdn.net/8012/stream"},
     {name = "Zorrilla De San Martin", url = "https://server-usa2.radioseninternet.net/9312/stream"},
+=======
+    {name = "Cien Punto Cinco", url = "http://emisiones.com.uy:8143/cien"},
+    {name = "Radio San Carlos", url = "http://198.49.65.43:10396/;"},
+>>>>>>> 7d1f32cebb0f314e8136a3afc632dac88694d724
 }
 
 return stations

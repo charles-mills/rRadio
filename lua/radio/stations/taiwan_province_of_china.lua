@@ -1,4 +1,5 @@
 local stations = {
+<<<<<<< HEAD
     {name = "1766線上電臺-百家知識", url = "http://livestream.1766.today:1768/live1.mp3"},
     {name = "1766線上電臺-私房音樂", url = "http://livestream.1766.today:1769/live1.mp3"},
     {name = "Boss Online Radio", url = "https://stream.radiojar.com/ehzvurp9tv8uv"},
@@ -73,6 +74,10 @@ local stations = {
     {name = "非凡音電台", url = "http://43.254.16.40:8000/TC.FM98.5"},
     {name = "鳳鳴廣播電台1台", url = "https://am1161.ddns.net:9005/stream.ogg"},
     {name = "鳳鳴廣播電台2台", url = "https://am981.ddns.net:9005/stream.ogg"},
+=======
+    {name = "屏東大武山廣播", url = "http://59.120.255.171:8081/"},
+    {name = "台中廣播", url = "http://211.20.119.101:8081/"},
+>>>>>>> 7d1f32cebb0f314e8136a3afc632dac88694d724
 }
 
 return stations

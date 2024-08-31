@@ -1,4 +1,5 @@
 local stations = {
+<<<<<<< HEAD
     {name = "", url = "https://video2.51daao.com/btt1/2020/10/20201026/n3yTtZsh/index.m3u8"},
     {name = "Wawa Radio 1012 FM", url = "https://xn--tmz.xn--6frz82g/streams"},
     {name = "Quran", url = "https://backup.qurango.net/radio/ahmad_khader_altarabulsi"},
@@ -690,6 +691,11 @@ local stations = {
     {name = "天津卫视", url = "http://ottrrs.hl.chinamobile.com/PLTV/88888888/224/3221225740/index.m3u8"},
     {name = "天津卫视伴音", url = "https://piccpndali.v.myalicdn.com/audio/tianjin_2.m3u8"},
     {name = "天津静海区广播电台", url = "http://lhttp.qingting.fm/live/20212227/64k.mp3"},
+=======
+    {name = "Hk", url = "https://rthkradiocnrhk-live.akamaized.net/hls/live/2046111/radiocnrhk/master.m3u8"},
+    {name = "Old-Timers Radio", url = "https://servidor31.brlogic.com:7150/live"},
+    {name = "CGTN Spanish", url = "http://livees.cgtn.com/200e/prog_index.m3u8"},
+>>>>>>> 7d1f32cebb0f314e8136a3afc632dac88694d724
 }
 
 return stations

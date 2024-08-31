@@ -1,4 +1,5 @@
 local stations = {
+<<<<<<< HEAD
     {name = "Melody FM Chi Classic 70", url = "https://n20a-eu.rcs.revma.com/dd3nf88711uvv/32_kxpwgqf9f9ci02/playlist.m3u8?rj-ttl=5&rj-tok=AAABkBpcqIoAqbaf9pJ97iPNzQ"},
     {name = "8FM", url = "http://mediaprima.rastream.com/mediaprima-onefm"},
     {name = "988 FM", url = "https://28103.live.streamtheworld.com/988_FMAAC.aac"},
@@ -139,6 +140,10 @@ local stations = {
     {name = "Zayan", url = "https://astro3.rastream.com/astro-zayan.web.hls/playlist.m3u8"},
     {name = "Zetya FM", url = "https://stream.zeno.fm/atem3gb7srhvv"},
     {name = "اذاعة القرآن الكريم", url = "http://stream.radiojar.com/0tpy1h0kxtzuv"},
+=======
+    {name = "Gemersik FM", url = "http://gemersikfm.iradio.work:8000/;"},
+    {name = "Bakawali Radio", url = "http://167.114.131.90:5744/;stream.mp3"},
+>>>>>>> 7d1f32cebb0f314e8136a3afc632dac88694d724
 }
 
 return stations

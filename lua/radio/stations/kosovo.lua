@@ -1,4 +1,5 @@
 local stations = {
+<<<<<<< HEAD
     {name = "921 Capital FM", url = "http://cfm.albaservers.com:8010/"},
     {name = "Glam Radio", url = "https://stream.glamradio.fm:8443/glamradio"},
     {name = "KLAN Kosova FM", url = "http://s4.radio.co/sd1d1904dc/listen.m3u"},
@@ -13,6 +14,9 @@ local stations = {
     {name = "Radio Zëri I Shtimes", url = "http://radio.1dhe1.com:8090/listen.pls"},
     {name = "RTK Radio Kosova 1", url = "http://82.114.72.2:8088/;.mp3"},
     {name = "RTK Radio Kosova 2", url = "http://82.114.72.2:8098/;stream.mp3"},
+=======
+    {name = "Radio Zëri I Shtimes", url = "http://radio.1dhe1.com:8090/listen.pls"},
+>>>>>>> 7d1f32cebb0f314e8136a3afc632dac88694d724
 }
 
 return stations

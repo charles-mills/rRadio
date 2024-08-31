@@ -1,4 +1,5 @@
 local stations = {
+<<<<<<< HEAD
     {name = "Active Radio Bečej", url = "http://active96-naxinacional.streaming.rs:8555/"},
     {name = "Ami Naxi Radio Kikinda", url = "http://185.119.88.88:8005/"},
     {name = "Antena Krusevac", url = "http://antenaradio.org:4560/;stream.nsv"},
@@ -292,6 +293,11 @@ local stations = {
     {name = "РТС - Радио Београд - Плетеница", url = "https://rtsradio-live.morescreens.com/RTS_2_005/audio/chunklist.m3u8"},
     {name = "РТС - Радио Београд - Рокенролер", url = "https://rtsradio-live.morescreens.com/RTS_2_006/audio/chunklist.m3u8"},
     {name = "РТС - Радио Београд - Џубокс", url = "https://rtsradio-live.morescreens.com/RTS_2_007/audio/chunklist.m3u8"},
+=======
+    {name = "AS FM", url = "https://mastermedia.shoutca.st/proxy/radioasfm?mp=/stream"},
+    {name = "Cool Radio Serbia", url = "http://live.coolradio.rs/cool320"},
+    {name = "Radio Džuboks", url = "http://176.9.59.144:8090/dzuboks"},
+>>>>>>> 7d1f32cebb0f314e8136a3afc632dac88694d724
 }
 
 return stations

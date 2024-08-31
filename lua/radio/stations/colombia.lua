@@ -1,4 +1,5 @@
 local stations = {
+<<<<<<< HEAD
     {name = "1041 Emisora Comunitaria - La Radio De Todos", url = "https://streamyes.alsolnet.com/comunitariafm/live/chunklist_w7037173.m3u8"},
     {name = "123 Vallenato", url = "http://radiolatina.info:7087/;"},
     {name = "123Vallenato", url = "https://radiolatina.info:10903/;"},
@@ -418,6 +419,12 @@ local stations = {
     {name = "Yacopi Stereo 1078 FM", url = "https://play8.tikast.com:20033/stream/1/"},
     {name = "Zonasalsa", url = "http://s40.myradiostream.com:8520/listen.mp3?1507069161743"},
     {name = "Zonasalsa Radio", url = "https://cast6.asurahosting.com/proxy/salsafou/stream"},
+=======
+    {name = "Cerro Azul Stereo 1074 FM", url = "http://radiolatina.info:9025/;"},
+    {name = "Dulce Stereo 1063 FM", url = "https://mediacp15.rootservers.co:8104/stream"},
+    {name = "Radio Bolivariana AM 1110 Khz", url = "https://streaming.codigoe-marketing.co:8620/test.mp3"},
+    {name = "Cartago Stereo Colombia", url = "http://51.15.160.78:8584/stream"},
+>>>>>>> 7d1f32cebb0f314e8136a3afc632dac88694d724
 }
 
 return stations

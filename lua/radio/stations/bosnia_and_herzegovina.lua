@@ -1,4 +1,5 @@
 local stations = {
+<<<<<<< HEAD
     {name = "Radio Tešanj 922Mhz", url = "http://radio.daj.ba:8082/stream"},
     {name = "1021 TUZLA FM", url = "https://canli.arabeskinmerkezi.com/9180/stream"},
     {name = "Radio DAŠ", url = "http://158.69.119.6:8095/;&type=mp3"},
@@ -130,6 +131,11 @@ local stations = {
     {name = "Thrash Metal", url = "http://79.120.77.11:8000/thrashmetal"},
     {name = "TNT Travnik", url = "http://server1.tnt.ba/proxy/tntradio?mp=/stream1"},
     {name = "Velkaton", url = "http://188.40.62.20:8044/;stream.mp3?_=1"},
+=======
+    {name = "Radio Merak", url = "http://176.9.113.180:8084/stream"},
+    {name = "Velkaton", url = "http://188.40.62.20:8044/;stream.mp3?_=1"},
+    {name = "Kalman Radio", url = "https://ssl.surfmusic.de/s.php?s=http://188.40.62.20:8004/stream?1707015516"},
+>>>>>>> 7d1f32cebb0f314e8136a3afc632dac88694d724
 }
 
 return stations

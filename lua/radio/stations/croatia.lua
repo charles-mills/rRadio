@@ -1,4 +1,5 @@
 local stations = {
+<<<<<<< HEAD
     {name = ":: CLUB MUSIC RADIO :::: 70S 80S 90S ::", url = "http://cmr-hosting.com:8030/stream?type=http&nocache=773949"},
     {name = ":: CLUB MUSIC RADIO :::: CRO HITS ::", url = "http://cmr-hosting.com:8060/stream?type=http&nocache=823456"},
     {name = ":: CLUB MUSIC RADIO :::: Exyu POP-ROCK ::", url = "http://cmr-hosting.com:8080/stream?type=http&nocache=13098"},
@@ -213,6 +214,13 @@ local stations = {
     {name = "Zagorski Radio", url = "https://s8.iqstreaming.com:2020/stream/zagorski/stream"},
     {name = "ZFM", url = "https://ec2s.crolive.com.hr:7015/stream"},
     {name = "Županijski Radio Virovitica", url = "https://radio.icv.hr/9300/stream"},
+=======
+    {name = ":: CLUB MUSIC RADIO :::: CRO HITS ::", url = "http://cmr-hosting.com:8060/stream?type=http&nocache=823456"},
+    {name = "Club Music Radio - Dance", url = "https://cmr-hosting.com:7002/;stream/1"},
+    {name = "Soundset Ragusa", url = "http://178.218.163.171:8012/stream"},
+    {name = "Radio Rojc", url = "https://cf.widecastcdn.live/Z07ww1NUNl/live.m3u8"},
+    {name = "Radio Tvornica", url = "https://c8.hostingcentar.com/streams/radiotvornica?type=http&nocache=50001"},
+>>>>>>> 7d1f32cebb0f314e8136a3afc632dac88694d724
 }
 
 return stations

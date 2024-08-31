@@ -1,4 +1,5 @@
 local stations = {
+<<<<<<< HEAD
     {name = "1001 ABC Stereo", url = "https://streaming.rcs.com.sv/8008/stream"},
     {name = "1007 Stereo", url = "https://stream20.usastreams.com/8138/stream"},
     {name = "102 Nueve", url = "https://streaming.rcs.com.sv/8012/stream"},
@@ -47,6 +48,10 @@ local stations = {
     {name = "Taylor Swift Radio", url = "https://stream.zeno.fm/xiothj9jrxfvv"},
     {name = "Xtremevibes", url = "https://c17.radioboss.fm:8162/stream"},
     {name = "YXY 1057", url = "http://158.69.200.1:8020/stream"},
+=======
+    {name = "Radio El Mundo - 937 FM", url = "http://streaming.mundoclasicaupa.com:8000/radioelmundo"},
+    {name = "Scan 961", url = "http://158.69.200.1:8022/stream"},
+>>>>>>> 7d1f32cebb0f314e8136a3afc632dac88694d724
 }
 
 return stations

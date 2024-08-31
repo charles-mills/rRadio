@@ -1,4 +1,5 @@
 local stations = {
+<<<<<<< HEAD
     {name = "1009 Play FM", url = "https://mdstrm.com/audio/5c8d6406f98fbf269f57c82c/icecast.audio"},
     {name = "13C", url = "https://us-b4-p-e-qg12-audio.cdn.mdstrm.com/live-audio-aw/5c915497c6fd7c085b29169d/playlist.m3u8"},
     {name = "13C Radio", url = "https://mdstrm.com/audio/5c915497c6fd7c085b29169d/live.m3u8"},
@@ -297,6 +298,15 @@ local stations = {
     {name = "VLN Radio", url = "https://sonando-us.digitalproserver.com/vln_lo"},
     {name = "World Hits Radio", url = "https://stream.zeno.fm/6vytsnbkb8zuv"},
     {name = "Yamato", url = "https://yamato.cl/play"},
+=======
+    {name = "Libelulachilecom Señal 2", url = "https://streaming.viphosting.cl:7124/;"},
+    {name = "La Más Kaliente", url = "https://audio1stream.com/8002/stream"},
+    {name = "Radio BBN", url = "https://audio-edge-es6pf.mia.g.radiomast.io/475ebed1-595e-4717-b888-64fe8fc6b09f"},
+    {name = "La Voz Del Cipres De Las Guaitecas", url = "https://live.lavozdelcipres.cl/radiomelinka.ogv"},
+    {name = "Radio Cobremar - Chañaral FM 899", url = "https://audio.bitsur.cl/8066/stream"},
+    {name = "Bio Bio Valparaíso", url = "http://unlimited11-cl.dps.live/biobiovalparaiso/aac/icecast.audio"},
+    {name = "RADIO MAXIMA FM +51-925691328 PERU", url = "https://servermax2.azuracast.com.es/listen/maximafm/antofagasta"},
+>>>>>>> 7d1f32cebb0f314e8136a3afc632dac88694d724
 }
 
 return stations

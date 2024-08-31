@@ -1,4 +1,5 @@
 local stations = {
+<<<<<<< HEAD
     {name = "100 HITŲ", url = "https://transliacija.relaxfm.lt/100-hitu"},
     {name = "Beveik Radijas", url = "https://azura.shoutca.st/radio/8420/radio.mp3"},
     {name = "Easy FM", url = "https://netradio.ziniur.lt/easyfm.mp3"},
@@ -64,6 +65,9 @@ local stations = {
     {name = "Zipfm", url = "https://stream2.zipfm.lt/zipfm128.mp3"},
     {name = "Радио Лента Stream 2", url = "https://streaming.broadcastrd.com/audio/radio-lenta.mp3"},
     {name = "Радио Сигнал", url = "https://streaming.broadcastrd.com/audio/radio-singnal.mp3"},
+=======
+    {name = "MANO FM LT", url = "http://stream.manofm.lt/listen?"},
+>>>>>>> 7d1f32cebb0f314e8136a3afc632dac88694d724
 }
 
 return stations

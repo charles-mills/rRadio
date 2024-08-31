@@ -1,4 +1,5 @@
 local stations = {
+<<<<<<< HEAD
     {name = "103 FM 1031", url = "https://playerservices.streamtheworld.com/api/livestream-redirect/CRC_103_1AAC.aac"},
     {name = "1047 HIT", url = "http://streams.y2kwebs.com:9310/stream/1/"},
     {name = "1047Hit", url = "https://live.turadio.stream:7004/stream;"},
@@ -55,6 +56,9 @@ local stations = {
     {name = "Urbano 106 - 1059 FM - San José, Costa Rica", url = "https://usa18.fastcast4u.com/proxy/rmoohhrw?mp=/1"},
     {name = "Vox FM Costa Rica - 1055 FM - San José, Costa Rica", url = "http://okradio.rtvhd.net:8130/;"},
     {name = "Zeta FM 951", url = "https://virtualtronics.net/proxy/zetafm?mp=/stream"},
+=======
+    {name = "Urbano 106 - 1059 FM - San José, Costa Rica", url = "https://usa18.fastcast4u.com/proxy/rmoohhrw?mp=/1"},
+>>>>>>> 7d1f32cebb0f314e8136a3afc632dac88694d724
 }
 
 return stations

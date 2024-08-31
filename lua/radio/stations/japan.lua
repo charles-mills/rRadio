@@ -1,4 +1,5 @@
 local stations = {
+<<<<<<< HEAD
     {name = "Quran", url = "https://backup.qurango.net/radio/ahmad_khader_altarabulsi"},
     {name = "#Radio Quran", url = "https://n0a.radiojar.com/0tpy1h0kxtzuv?rj-ttl=5&rj-tok=AAABhdgGORQA-2acfyF3_4WY2g"},
     {name = "775ライブリーFM", url = "https://mtist.as.smartstream.ne.jp/30026/livestream/playlist.m3u8"},
@@ -163,6 +164,9 @@ local stations = {
     {name = "調布FM", url = "https://mtist.as.smartstream.ne.jp/30039/livestream/playlist.m3u8"},
     {name = "超！AG+", url = "http://www.uniqueradio.jp/agplayerf/hls/Active.m3u8?"},
     {name = "鹿角きりたんぽFM", url = "https://mtist.as.smartstream.ne.jp/30089/livestream/playlist.m3u8"},
+=======
+    {name = "Rainwave All", url = "https://relay.rainwave.cc/all.mp3?1:MF0d8GHw2d"},
+>>>>>>> 7d1f32cebb0f314e8136a3afc632dac88694d724
 }
 
 return stations

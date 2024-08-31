@@ -1,4 +1,5 @@
 local stations = {
+<<<<<<< HEAD
     {name = "DJ PERVERSA", url = "http://jpdofunk3.com.br:8032/stream"},
     {name = "RVALE VERDE FM 96,66", url = "https://ice.fabricahost.com.br/valeverdefm"},
     {name = "Rádio Lance Oficial", url = "https://stm16.xcast.com.br:9928/stream"},
@@ -691,6 +692,17 @@ local stations = {
     {name = "Rádio Like Brazil", url = "https://str02.kfmidia.com.br:8000/stream"},
     {name = "Rádio Litoral 1023 FM Vitória ES", url = "https://27273.live.streamtheworld.com/LITORAL_VITORIA.mp3?dist=web"},
     {name = "Rádio Litoral Paulista", url = "https://servidor23-3.brlogic.com:7036/live?source=website"},
+=======
+    {name = "Morena FM 98", url = "https://ssl1.transmissaodigital.com:2692/stream"},
+    {name = "Canarinho FM 1023 Mhz Divinésia - MG ZYE339", url = "https://paineldj.com.br:20196/stream"},
+    {name = "Rádio Gospel", url = "http://148.72.158.239:8120/live"},
+    {name = "ENERGY BRASIL 98FM", url = "https://s11.w3bserver.com/listen/energy_brasil_fm/nrjbrasil_64kbps.mp3"},
+    {name = "FM O DIA 1005", url = "http://streaming.livespanel.com:20000/live"},
+    {name = "Rádio BBN 923 FM", url = "https://audio-edge-es6pf.mia.g.radiomast.io/ec065d59-f358-48c9-a288-4efc797e5860"},
+    {name = "Jovem Pan FM - Brasília - DF - 1063", url = "https://ssl1.transmissaodigital.com:2274/stream"},
+    {name = "Rádio Fox Rock", url = "https://brapostreaming.com.br/radio/8000/radio.mp3"},
+    {name = "ESTUDIO FM", url = "http://srv8.ipstm.net:29560/"},
+>>>>>>> 7d1f32cebb0f314e8136a3afc632dac88694d724
 }
 
 return stations

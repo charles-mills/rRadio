@@ -1,4 +1,5 @@
 local stations = {
+<<<<<<< HEAD
     {name = "إذاعة مشاري العفاسي", url = "https://qurango.net/radio/mishary_alafasi"},
     {name = "1015 ARABİC FM", url = "https://canli.arabeskinmerkezi.com/9180/stream"},
     {name = "---تراتيل قصيرة متميزة---", url = "https://qurango.net/radio/tarateel"},
@@ -50,6 +51,9 @@ local stations = {
     {name = "تفسير بن عثيمين", url = "https://qurango.net/radio/tafseer"},
     {name = "تكبيرات العيد", url = "http://live.mp3quran.net:9728/"},
     {name = "هواها بيطري", url = "https://s44.myradiostream.com/:9204/listen.mp3?listening-from-radio-garden-1696014326?nocache-1696021004"},
+=======
+    {name = "927 Mega FM", url = "http://nebula.shoutca.st:8211/mp3"},
+>>>>>>> 7d1f32cebb0f314e8136a3afc632dac88694d724
 }
 
 return stations

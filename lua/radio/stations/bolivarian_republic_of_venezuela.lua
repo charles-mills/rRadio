@@ -1,4 +1,5 @@
 local stations = {
+<<<<<<< HEAD
     {name = "1027 DIGITAL FM", url = "https://cp4.lorini.net:36187/stream"},
     {name = "935 La Gran FM", url = "https://stream-55.zeno.fm/hcddm386za0uv?%20zs=_PyMMSYIRRmVntwZ85BL8g"},
     {name = "973 FM Maracay", url = "http://station.asawstreaming.com:8010/;"},
@@ -123,6 +124,10 @@ local stations = {
     {name = "Unión Radio 903 FM Caracas", url = "http://ur58.lorini.net:2080/stream"},
     {name = "VTV Venezuela", url = "https://radio.gmsiptv.com/vtvve"},
     {name = "Zona Musical Fm", url = "https://stream-149.zeno.fm/t9fhqcsiao2uv?zs=gyKTx5SuR4SIvrC0xE8KfQ"},
+=======
+    {name = "Espacio Network", url = "https://acp2.lorini.net:28050/stream"},
+    {name = "Rocafm Clasicos Caracas", url = "http://protostar.shoutca.st:8370/"},
+>>>>>>> 7d1f32cebb0f314e8136a3afc632dac88694d724
 }
 
 return stations
