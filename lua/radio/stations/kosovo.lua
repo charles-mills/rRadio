@@ -1,5 +1,5 @@
 local stations = {
-    {name = "Glam Radio", url = "https://stream.glamradio.fm:8443/glamradio"},
+    {name = "Radio Zëri I Shtimes", url = "http://radio.1dhe1.com:8090/listen.pls"},
 }
 
 return stations

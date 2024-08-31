@@ -1,8 +1,9 @@
 local stations = {
-    {name = "TOP ROCK", url = "http://116.202.235.114:8408/"},
-    {name = "Pitomi Radio", url = "http://194.145.208.251:8022/stream?1580651040750.mp3"},
-    {name = "Radio Samobor", url = "http://185.150.235.162/"},
-    {name = "Antena Zagreb - Xmas", url = "http://live.antenazagreb.hr:8015/;"},
+    {name = ":: CLUB MUSIC RADIO :::: CRO HITS ::", url = "http://cmr-hosting.com:8060/stream?type=http&nocache=823456"},
+    {name = "Club Music Radio - Dance", url = "https://cmr-hosting.com:7002/;stream/1"},
+    {name = "Soundset Ragusa", url = "http://178.218.163.171:8012/stream"},
+    {name = "Radio Rojc", url = "https://cf.widecastcdn.live/Z07ww1NUNl/live.m3u8"},
+    {name = "Radio Tvornica", url = "https://c8.hostingcentar.com/streams/radiotvornica?type=http&nocache=50001"},
 }
 
 return stations

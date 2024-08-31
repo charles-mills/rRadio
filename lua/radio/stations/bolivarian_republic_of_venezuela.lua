@@ -1,8 +1,6 @@
 local stations = {
-    {name = "Andes 893 FM", url = "http://streamingned.com:7098/;"},
-    {name = "Época FM 887", url = "https://sp.wnetserver.com/8026/stream"},
-    {name = "CADENA DIGITAL FM 995", url = "https://server6.globalhostla.com:9288/stream"},
-    {name = "Bella FM 969", url = "https://server6.globalhostla.com:9380/stream"},
+    {name = "Espacio Network", url = "https://acp2.lorini.net:28050/stream"},
+    {name = "Rocafm Clasicos Caracas", url = "http://protostar.shoutca.st:8370/"},
 }
 
 return stations

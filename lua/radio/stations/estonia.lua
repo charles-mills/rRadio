@@ -1,5 +1,5 @@
 local stations = {
-    {name = "Sss-Radio", url = "http://217.146.76.112:8000/sss-radio"},
+    {name = "Võmba FM", url = "https://c4.radioboss.fm:18123/stream.m3u"},
 }
 
 return stations

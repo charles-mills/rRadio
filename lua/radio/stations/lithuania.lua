@@ -1,5 +1,5 @@
 local stations = {
-    {name = "Palanga Street Radio", url = "https://stream.palanga.live:8443/palanga128.mp3"},
+    {name = "MANO FM LT", url = "http://stream.manofm.lt/listen?"},
 }
 
 return stations

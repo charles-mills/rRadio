@@ -1,11 +1,13 @@
 local stations = {
-    {name = "Rádio Girassol Belo Horizonte", url = "http://s02.transmissaodigital.com:6754/live"},
-    {name = "Jovem Pan - São José Dos Campos", url = "https://r15.ciclano.io:14355/stream"},
-    {name = "Rádio Geografia Rock", url = "https://servidor20.brlogic.com:7354/live"},
-    {name = "Rádio Cidade 670 AM", url = "http://cast.youngtech.radio.br:8550/radio"},
-    {name = "Rádio Difusora 960", url = "https://s23.maxcast.com.br:8130/live"},
-    {name = "Bíblia Em Áudio Rádio Web", url = "https://stm3.voxhd.com.br:8062/stream"},
-    {name = "POP 95,1", url = "https://servidor39.brlogic.com:8152/live"},
+    {name = "Morena FM 98", url = "https://ssl1.transmissaodigital.com:2692/stream"},
+    {name = "Canarinho FM 1023 Mhz Divinésia - MG ZYE339", url = "https://paineldj.com.br:20196/stream"},
+    {name = "Rádio Gospel", url = "http://148.72.158.239:8120/live"},
+    {name = "ENERGY BRASIL 98FM", url = "https://s11.w3bserver.com/listen/energy_brasil_fm/nrjbrasil_64kbps.mp3"},
+    {name = "FM O DIA 1005", url = "http://streaming.livespanel.com:20000/live"},
+    {name = "Rádio BBN 923 FM", url = "https://audio-edge-es6pf.mia.g.radiomast.io/ec065d59-f358-48c9-a288-4efc797e5860"},
+    {name = "Jovem Pan FM - Brasília - DF - 1063", url = "https://ssl1.transmissaodigital.com:2274/stream"},
+    {name = "Rádio Fox Rock", url = "https://brapostreaming.com.br/radio/8000/radio.mp3"},
+    {name = "ESTUDIO FM", url = "http://srv8.ipstm.net:29560/"},
 }
 
 return stations

@@ -1,5 +1,5 @@
 local stations = {
-    {name = "Basto Studio Salsa", url = "http://65.21.163.60:5618/stream"},
+    {name = "Criolla 1061 FM", url = "https://streaming.grupomediosdelnorte.com:8002/stream"},
 }
 
 return stations

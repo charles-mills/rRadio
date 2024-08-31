@@ -1,5 +1,6 @@
 local stations = {
     {name = "100% Reggaeton Radio", url = "https://stream-148.zeno.fm/qmhf2yd9dm0uv"},
+    {name = "1140Am Central Radio", url = "https://stream.zeno.fm/blkeeuikomhvv"},
     {name = "943 FM Del Este", url = "http://radio.cdehosting.net:8040/;"},
     {name = "Así Es Atyrá FM 875", url = "https://stream.zeno.fm/zq4prvq3ss8uv"},
     {name = "Capiitindy FM 909", url = "https://stream.zeno.fm/ng91kwbvwrhvv"},

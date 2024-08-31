@@ -1,12 +1,18 @@
 local stations = {
-    {name = "4Fun Dance TV", url = "http://85.14.116.58:8001/4fundance.m3u"},
-    {name = "Radio Gra Torun", url = "http://31.192.216.7:8000/radio_gra"},
-    {name = "Chrześcijanin Smooth Jazz", url = "http://51.255.8.139:9760/"},
-    {name = "Radio Opole 1", url = "http://193.47.151.4:9000/ro1mp3.m3u"},
-    {name = "Radio Fara", url = "http://62.133.128.22:8000/"},
-    {name = "Radio UWM FM", url = "http://213.184.18.156:8000/"},
-    {name = "Akademickie Radio Centrum UMCS", url = "http://5.201.13.191/live"},
-    {name = "Radio Łódź", url = "http://217.113.224.171/RadioLodz-1.mp3"},
+    {name = "Radio Danielka", url = "http://s3.slotex.pl:7088/"},
+    {name = "Radiopartypl Energy2000", url = "http://energy2000.radioparty.pl:8005/"},
+    {name = "RADIO ZAWIERCIE", url = "https://ssl-1.radiohost.pl:9078/live"},
+    {name = "Radiopartypl House Party", url = "http://house.radioparty.pl:8010/"},
+    {name = "Radiokulturapl", url = "http://51.255.8.139:9772/"},
+    {name = "Radio Armageddon", url = "https://ssl-1.radiohost.pl:11608/"},
+    {name = "Radio Pasja - Relaks", url = "http://91.232.4.33:8102/"},
+    {name = "Radio Karolinka", url = "http://91.232.4.33:8358/stream"},
+    {name = "Radio Rekord FM", url = "http://stream2.nadaje.com:8108/"},
+    {name = "Radio Pasja - Relaks 128Kbs", url = "http://91.232.4.33:8102/stream2"},
+    {name = "Radiospacja", url = "https://rdsp.out.airtime.pro/rdsp_a"},
+    {name = "Polskie Radio Dla Ukrainyпольське Радіо Для України", url = "https://stream85.polskieradio.pl/radio_ukraina/ukraina.stream/playlist.m3u8"},
+    {name = "Radiopartypl Dj Mixes Party", url = "http://djmixes.radioparty.pl:8035/"},
+    {name = "Radio Pasja - Chillout", url = "http://91.232.4.33:8108/"},
 }
 
 return stations

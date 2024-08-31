@@ -1,13 +1,13 @@
 local stations = {
-    {name = "Ellinadiko FM", url = "http://ellinadikofm.gr:8020/stream"},
-    {name = "Difono", url = "http://live.radio-difono.gr:8059/stream"},
-    {name = "D-Code 962", url = "https://s15.myradiostream.com/:13980/listen.mp3"},
-    {name = "Hit Radio Greece", url = "https://solid2.streamupsolutions.com:2199/tunein/lposuiem.pls"},
-    {name = "Hit Radio", url = "http://solid2.streamupsolutions.com:24952/stream"},
-    {name = "Fly Σπάρτη", url = "http://eco.onestreaming.com:8272/;"},
-    {name = "Movementradio 1", url = "https://movementathens.out.airtime.pro/movementathens_a"},
-    {name = "Metropolis 972", url = "http://s6.onweb.gr:8092/;stream.nsv&type=mp3"},
-    {name = "981 Radio 1", url = "http://proradio.gr:8004/radio981m"},
+    {name = "Aqua", url = "https://s2.e-resellers.gr:18888/stream"},
+    {name = "1Ο Ερασιτεχνικό Πρόγραμμα Γαργαλιάνων 888", url = "https://i2.streams.ovh:2200/ssl/trelostwnfm?mp=/stream&1671747517218"},
+    {name = "Musicartclub Radio", url = "http://eu9.fastcast4u.com:8090/;"},
+    {name = "Antenna 94", url = "https://ant1grevena.live24.gr/ant1grevena"},
+    {name = "Imagine 897 Thessaloniki,Gr", url = "https://www.imagine897.gr/webplayer/?pl=winamp&c=IMAGINE897"},
+    {name = "Olympos 1015", url = "https://streamer.stordia.net/listen/olympos/radio.mp3"},
+    {name = "Kiss 89", url = "https://kiss-89-kalamata.live24.gr/kiss89kalamata"},
+    {name = "Mixalhs FBI", url = "http://shoutcast.24radio.gr:8018/live"},
+    {name = "Alma GR", url = "https://neos.win:48222/autodj"},
 }
 
 return stations

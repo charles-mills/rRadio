@@ -1,5 +1,6 @@
 local stations = {
-    {name = "La Mejor FM 989", url = "http://158.69.219.162:8024/stream"},
+    {name = "Radio El Mundo - 937 FM", url = "http://streaming.mundoclasicaupa.com:8000/radioelmundo"},
+    {name = "Scan 961", url = "http://158.69.200.1:8022/stream"},
 }
 
 return stations

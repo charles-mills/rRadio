@@ -1,5 +1,5 @@
 local stations = {
-    {name = "Radio القارئ علي حجاج السويسي", url = "http://live.mp3quran.net:9842/"},
+    {name = "927 Mega FM", url = "http://nebula.shoutca.st:8211/mp3"},
 }
 
 return stations

@@ -1,5 +1,5 @@
 local stations = {
-    {name = "Japan City Pop BOX Radio", url = "https://ss-edge.joeycast.com/citypop.mp3"},
+    {name = "Rainwave All", url = "https://relay.rainwave.cc/all.mp3?1:MF0d8GHw2d"},
 }
 
 return stations

@@ -1,14 +1,13 @@
 local stations = {
-    {name = "Breacore", url = "https://radio.mosco.win/play"},
-    {name = "Badbeatradio", url = "http://misato.ru-hoster.com:8061/badbeatradio"},
+    {name = "La Radio De L’Amour", url = "https://stream.audiodiz.ru/listen/light/radio"},
+    {name = "Pub Rock - Caprice Radio", url = "http://79.120.12.130:8000/pubrock"},
     {name = "Megapolis Samara", url = "https://online.radio-megapolis.ru/megapolis_mp3"},
-    {name = "DFM 1012", url = "https://dfm.hostingradio.ru/dfm128.mp3"},
+    {name = "Chekhov Kometa Fm", url = "http://online.kometa.fm:8000/live"},
     {name = "Pilot Fm Dance Channel", url = "https://online.pilotfm.ru/pilot_dance"},
-    {name = "N-Radio 1079 FM", url = "http://178.47.34.174:8000/n-radio"},
-    {name = "Radio Caprice - African Folk Ethnic Music 320K", url = "http://79.120.39.202:8004/africanfolk"},
-    {name = "Hitradio Center Megamix", url = "http://212.30.80.195:8066/stream"},
-    {name = "Caprice Radio - Dark Dubstep", url = "http://79.120.39.202:8002/darkdubstep"},
-    {name = "Heart FM Barnaul", url = "https://icecast.gtrk22.ru:8443/heartfm"},
+    {name = "Megapolis 895 FM", url = "https://megapolisfm.hostingradio.ru/megapolisfm96.aacp"},
+    {name = "ПГТРК Радио 1", url = "http://217.19.211.252:8022/Radio1"},
+    {name = "Radio 107", url = "http://62.183.34.109:8000/radio107.mp3?1702219488275"},
+    {name = "Caprice Radio - Forest Psy", url = "http://213.141.131.10:8002/forestpsytrance"},
 }
 
 return stations

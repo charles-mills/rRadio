@@ -1,12 +1,9 @@
 local stations = {
-    {name = "Громадське Радіо", url = "http://5.9.8.20:8000/stream"},
-    {name = "Avtoradio", url = "https://cast.mediaonline.net.ua/avtoradio"},
-    {name = "Наше Радіо 107,9", url = "https://online.nasheradio.ua/NasheRadio_HD"},
-    {name = "Тиса-Fm", url = "http://91.218.213.49:8000/tysafm-mp3"},
-    {name = "Garmonia Mira", url = "https://garmonia-stream.fakel.com.ua/1"},
-    {name = "Radio Mariia", url = "http://91.203.4.121:8000/stream160"},
-    {name = "Радіо Файне Місто", url = "https://online.fainemisto.tv:8443/faine.ogg?"},
-    {name = "Українське Радіо - Івано-Франківськ", url = "http://91.218.213.49:8000/ur1-if-mp3"},
+    {name = "Надвірна FM", url = "http://195.114.96.114:7878/"},
+    {name = "Relife Решетилівка", url = "http://176.102.194.71:44808/radio"},
+    {name = "TVA FM Чернівці", url = "http://51.83.132.157/128"},
+    {name = "Ax Radio", url = "https://m.axradio.net/stream.mp3"},
+    {name = "Radio 10 Chernivtsi Ukraine", url = "http://91.205.207.98:8081/acc.mp3"},
 }
 
 return stations

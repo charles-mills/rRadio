@@ -1,5 +1,6 @@
 local stations = {
-    {name = "Ascultă-Radio Unison", url = "http://audio.radiounisonro.bisericilive.com:8080/radiounisonro.mp3"},
+    {name = "Radio Tequila Hip-Hop", url = "http://necenzurat.radiotequila.ro:7000/;"},
+    {name = "Radio Arges", url = "http://89.39.189.53:8000/listen.pls"},
 }
 
 return stations

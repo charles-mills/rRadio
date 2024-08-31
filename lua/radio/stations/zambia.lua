@@ -1,5 +1,5 @@
 local stations = {
-    {name = "Power FM Zambia", url = "http://41.60.195.11:8000/stream.ogg"},
+    {name = "5Fm Radio Zambia", url = "http://ca9.rcast.net:8014/;stream.mp3"},
 }
 
 return stations
