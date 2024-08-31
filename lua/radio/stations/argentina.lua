@@ -1,5 +1,4 @@
 local stations = {
-<<<<<<< HEAD
     {name = "Radio Disney 943 - Buenos Aires, Argentina", url = "https://playerservices.streamtheworld.com/api/livestream-redirect/DISNEY_ARG_BA_ADP.aac"},
     {name = "FM 943 Radio Municipal De Toay", url = "http://servidor.ilive.com.ar:9678/;"},
     {name = "La Supersonica", url = "https://c11.radioboss.fm:8093/stream"},
@@ -677,17 +676,6 @@ local stations = {
     {name = "X1 Radio ELECTRO", url = "https://x1.xsminternet.com:58091/stream/3/"},
     {name = "XRADIO 991", url = "https://radios.streamingdha.com.ar/9826/;"},
     {name = "Yo Argentino Radio", url = "http://argentina.republicahosting.com:8285/stream"},
-=======
-    {name = "Latina 1011 Argentina", url = "http://streaming.latina101.com.ar:8080/RadioLatina"},
-    {name = "Cienradios - The Beatles Y Artistas Relacionados", url = "https://24233.live.streamtheworld.com/JOHNPAULGEORGERINGO_PYTAAC.aac?"},
-    {name = "Modo Radio 1069", url = "https://streaming01.shockmedia.com.ar:10609/stream"},
-    {name = "FM Ahijuna 947", url = "http://stream.ahijuna.fm/aire.mp3"},
-    {name = "Fisherton Classic Rosario", url = "https://media425.digitar.net:8081/fishertonclassic.mp3"},
-    {name = "Horizonte 1031 - Santa Rosa", url = "http://sslstream.online:8204/live"},
-    {name = "Fm Ciudad", url = "https://streaming6.locucionar.com:24028/stream"},
-    {name = "Ndr Radio", url = "https://streamconex.com:8096/;?listening-from-radio-garden=1640125124"},
-    {name = "DNA Radio FM", url = "https://usa13.fastcast4u.com/proxy/dnaradiofm?mp=/;"},
->>>>>>> 7d1f32cebb0f314e8136a3afc632dac88694d724
 }
 
 return stations

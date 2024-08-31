@@ -1,5 +1,4 @@
 local stations = {
-<<<<<<< HEAD
     {name = "1 Rock Bulgaria", url = "http://31.13.223.148:8000/1_rock.mp3"},
     {name = "ARABESKİN MERKEZİ FM BULGARİA", url = "https://canli.arabeskinmerkezi.com/9180/stream"},
     {name = "ARHEA ORG", url = "http://stream.zeno.fm/na6nbx6qqwzuv"},
@@ -214,9 +213,6 @@ local stations = {
     {name = "Радио Пайнер", url = "http://87.120.6.86:8000/hq"},
     {name = "Радио Пияника", url = "http://mpc1.mediacp.eu:8024/;"},
     {name = "Радио Хоро", url = "http://g5.turbohost.eu:8020/stream256.m3u"},
-=======
-    {name = "Radio Favorit", url = "http://79.98.108.170:8235/listen.pls"},
->>>>>>> 7d1f32cebb0f314e8136a3afc632dac88694d724
 }
 
 return stations

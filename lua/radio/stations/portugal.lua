@@ -1,5 +1,4 @@
 local stations = {
-<<<<<<< HEAD
     {name = "M80 Rádio – 60S", url = "https://stream-icy.bauermedia.pt/m8060.aac"},
     {name = "M80 Rádio – 80S", url = "https://stream-icy.bauermedia.pt/m8080.aac"},
     {name = "M80 Rádio – Ballads", url = "https://stream-icy.bauermedia.pt/m80ballads.aac"},
@@ -239,11 +238,6 @@ local stations = {
     {name = "VFM 946", url = "http://cast.redewt.net:9141/live"},
     {name = "Wonder 80'S", url = "https://80.streeemer.com/listen/80s/radio.mp3"},
     {name = "XL FM Lisboa", url = "http://radios2.justweb.pt:8028/stream"},
-=======
-    {name = "Alto Tamega FM", url = "http://188.93.231.97:9300/;"},
-    {name = "RADIO SAO MIGUEL", url = "https://nl.digitalrm.pt:8140/stream"},
-    {name = "Rádio Miudos", url = "http://109.71.41.6:8020/live"},
->>>>>>> 7d1f32cebb0f314e8136a3afc632dac88694d724
 }
 
 return stations

@@ -1,5 +1,4 @@
 local stations = {
-<<<<<<< HEAD
     {name = "Ars", url = "http://mp3.rtvslo.si/ars"},
     {name = "Best FM Ljubljana", url = "https://live.radio.si/BestFM"},
     {name = "Gorenjska TV", url = "http://91.220.221.60/gtv_hls/gtv.m3u8"},
@@ -88,9 +87,6 @@ local stations = {
     {name = "Toti Radio", url = "https://live.radio.si/Toti"},
     {name = "VAL 202", url = "http://mp3.rtvslo.si:8000/val202"},
     {name = "Zeleni Val", url = "https://jurepeterka.radioca.st/stream"},
-=======
-    {name = "Best FM Ljubljana", url = "https://live.radio.si/BestFM"},
->>>>>>> 7d1f32cebb0f314e8136a3afc632dac88694d724
 }
 
 return stations

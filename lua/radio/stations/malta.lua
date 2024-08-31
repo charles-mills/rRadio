@@ -1,5 +1,4 @@
 local stations = {
-<<<<<<< HEAD
     {name = "Bay 897", url = "https://stream.v3.network/proxy/897bay/stream.mp3?_=1"},
     {name = "Bay Easy 1002", url = "https://stream.v3.network/proxy/easy/stream.mp3"},
     {name = "Bay Retro", url = "https://stream.v3.network/proxy/retro/stream.mp3?_=1"},
@@ -14,9 +13,6 @@ local stations = {
     {name = "Radju Maria Malta", url = "http://dreamsiteradiocp.com:8102/"},
     {name = "RADJU MARIJA MALTA", url = "http://dreamsiteradiocp.com:8102/stream"},
     {name = "Vibe FM", url = "https://s9.voscast.com:7825/1"},
-=======
-    {name = "One Radio", url = "http://cdn.voscast.com/resources/?key=249f148a69ad7268c63c10098840e4d6&c=wmp"},
->>>>>>> 7d1f32cebb0f314e8136a3afc632dac88694d724
 }
 
 return stations

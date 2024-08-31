@@ -1,5 +1,4 @@
 local stations = {
-<<<<<<< HEAD
     {name = "1037 Da Beat", url = "http://s1.voscast.com:8580/;"},
     {name = "1065 Kiss FM", url = "https://online.kissfm.ua/KissFM_HD"},
     {name = "109FM", url = "https://solid48.streamupsolutions.com/proxy/cfujtbgw/109fm"},
@@ -229,13 +228,6 @@ local stations = {
     {name = "Хіт ФМ Українські Хіти", url = "http://online.hitfm.ua/HitFM_Ukr"},
     {name = "Хомякс ФМ Луганск 1023", url = "https://radio.play-fm.ru:8001/homyak"},
     {name = "Явір FM", url = "https://complex.in.ua/Yavir320"},
-=======
-    {name = "Надвірна FM", url = "http://195.114.96.114:7878/"},
-    {name = "Relife Решетилівка", url = "http://176.102.194.71:44808/radio"},
-    {name = "TVA FM Чернівці", url = "http://51.83.132.157/128"},
-    {name = "Ax Radio", url = "https://m.axradio.net/stream.mp3"},
-    {name = "Radio 10 Chernivtsi Ukraine", url = "http://91.205.207.98:8081/acc.mp3"},
->>>>>>> 7d1f32cebb0f314e8136a3afc632dac88694d724
 }
 
 return stations

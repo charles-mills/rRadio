@@ -1,5 +1,4 @@
 local stations = {
-<<<<<<< HEAD
     {name = "1061 ARABESKİN MERKEZİ FM", url = "https://canli.arabeskinmerkezi.com/9180/stream"},
     {name = "ASPOR", url = "http://trkvz-radyolar.ercdn.net/asporradyo/playlist.m3u8"},
     {name = "GİMSA RADYO", url = "http://yayin1.canliyayin.org:9482/stream"},
@@ -359,16 +358,6 @@ local stations = {
     {name = "Yön Radyo", url = "https://stream.radyolarburada.com/radio/8020/yonradyo"},
     {name = "Zafer Radyo", url = "https://radyozafer.ozelip.com:8034/stream?/;stream.mp3"},
     {name = "اذاعة القرآن الكريم 🇹🇷", url = "http://stream.radiojar.com/0tpy1h0kxtzuv"},
-=======
-    {name = "Radyo Kur'An", url = "http://yayin.liderhost.net:8555/;*.mp3"},
-    {name = "Trakyafm", url = "http://trakyafm.canliyayinda.com:9039/"},
-    {name = "KRAL POP ALTERNATİF 2", url = "https://ssldyg.radyotvonline.com/smil/smil:kralpop.smil/playlist.m3u8"},
-    {name = "Radyozergan", url = "http://yayin1.yayindakiler.com:3194/stream"},
-    {name = "Https:Turkmedya-Liveercdnnettv24Tv24M3U8", url = "https://turkmedya-live.ercdn.net/tv24/tv24.m3u8"},
-    {name = "GOLD TÜRK", url = "http://dijimedya.radyotvonline.net/goldturk"},
-    {name = "Özgür Radyo", url = "http://95.173.188.170:9898/"},
-    {name = "Radyo Voyage", url = "https://ssldyg.radyotvonline.com/pozitif/smil:voyage.smil/playlist.m3u8"},
->>>>>>> 7d1f32cebb0f314e8136a3afc632dac88694d724
 }
 
 return stations

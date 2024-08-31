@@ -1,5 +1,4 @@
 local stations = {
-<<<<<<< HEAD
     {name = "1015 AEK POP FM", url = "https://canli.arabeskinmerkezi.com/9180/stream"},
     {name = "Alexandroupolis Dee Jay 948", url = "https://stream.myip.gr/proxy/deejay?mp=/stream"},
     {name = "ΕΝΑ 905", url = "https://rdst.win:48000/stream?type=.mp3"},
@@ -732,17 +731,6 @@ local stations = {
     {name = "Pepper 966", url = "http://pepper966.live24.gr/pepper9660"},
     {name = "Perfect Radio 1033 FM", url = "http://solid1.streamupsolutions.com:54987/stream"},
     {name = "Peripou", url = "https://stream-57.zeno.fm/kq2q7zuyh4duv?zs=ClHbI2YMRSe65pxGBWkN8A&acu-uid=727435602967&triton-uid=cookie%3A83ca5b14-582e-4c12-a5ab-255cdb39e2cb"},
-=======
-    {name = "Aqua", url = "https://s2.e-resellers.gr:18888/stream"},
-    {name = "1Ο Ερασιτεχνικό Πρόγραμμα Γαργαλιάνων 888", url = "https://i2.streams.ovh:2200/ssl/trelostwnfm?mp=/stream&1671747517218"},
-    {name = "Musicartclub Radio", url = "http://eu9.fastcast4u.com:8090/;"},
-    {name = "Antenna 94", url = "https://ant1grevena.live24.gr/ant1grevena"},
-    {name = "Imagine 897 Thessaloniki,Gr", url = "https://www.imagine897.gr/webplayer/?pl=winamp&c=IMAGINE897"},
-    {name = "Olympos 1015", url = "https://streamer.stordia.net/listen/olympos/radio.mp3"},
-    {name = "Kiss 89", url = "https://kiss-89-kalamata.live24.gr/kiss89kalamata"},
-    {name = "Mixalhs FBI", url = "http://shoutcast.24radio.gr:8018/live"},
-    {name = "Alma GR", url = "https://neos.win:48222/autodj"},
->>>>>>> 7d1f32cebb0f314e8136a3afc632dac88694d724
 }
 
 return stations

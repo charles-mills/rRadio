@@ -1,5 +1,4 @@
 local stations = {
-<<<<<<< HEAD
     {name = "EXA FM: POP MUSIC In Spanish And English", url = "https://playerservices.streamtheworld.com/api/livestream-redirect/XHPSFMAAC.aac"},
     {name = "907 FM KWMU-1", url = "https://kwmu1-ice.streamguys1.com/kwmu1.m3u"},
     {name = "Iheart Radio Café", url = "http://stream.revma.ihrhls.com/zc6951/hls.m3u8"},
@@ -671,12 +670,6 @@ local stations = {
     {name = "Abiding Radio Kids' Songs And Bible Stories", url = "http://streams.abidingradio.org:7810/1"},
     {name = "Abiding Radio Sacred Hymns", url = "http://streams.abidingradio.org:7820/1"},
     {name = "Abiding Radio Seasonal", url = "http://streams.abidingradio.org:7830/1"},
-=======
-    {name = "919 KUDR", url = "http://kdurradio.fortlewis.edu/stream"},
-    {name = "3ABN Music Channel Non SSL", url = "http://war.str3am.com:7180/MC01"},
-    {name = "22 West Radio", url = "https://16603.live.streamtheworld.com/22WESTRADIOONLINEAAC.aac"},
-    {name = "899 WDAV", url = "https://wdav-ice.streamguys1.com/live-mp3"},
->>>>>>> 7d1f32cebb0f314e8136a3afc632dac88694d724
 }
 
 return stations

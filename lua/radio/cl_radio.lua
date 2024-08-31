@@ -3,6 +3,39 @@ include("radio/config.lua")
 local countryTranslations = include("country_translations.lua")
 local LanguageManager = include("language_manager.lua")
 
+local favoriteCountries = {}
+local favoriteStations = {}
+
+local dataDir = "rradio"
+local favoriteCountriesFile = dataDir .. "/favorite_countries.txt"
+local favoriteStationsFile = dataDir .. "/favorite_stations.txt"
+
+-- Ensure the data directory exists
+if not file.IsDir(dataDir, "DATA") then
+    file.CreateDir(dataDir)
+end
+
+-- Load favorites from file
+local function loadFavorites()
+    if file.Exists(favoriteCountriesFile, "DATA") then
+        favoriteCountries = util.JSONToTable(file.Read(favoriteCountriesFile, "DATA")) or {}
+        print("[Radio] Loaded favorite countries from file.")
+        PrintTable(favoriteCountries)  -- Debugging output
+    end
+
+    if file.Exists(favoriteStationsFile, "DATA") then
+        favoriteStations = util.JSONToTable(file.Read(favoriteStationsFile, "DATA")) or {}
+        print("[Radio] Loaded favorite stations from file.")
+        PrintTable(favoriteStations)  -- Debugging output
+    end
+end
+
+-- Save favorites to file
+local function saveFavorites()
+    file.Write(favoriteCountriesFile, util.TableToJSON(favoriteCountries))
+    file.Write(favoriteStationsFile, util.TableToJSON(favoriteStations))
+end
+
 -- Font creation
 local function createFonts()
     surface.CreateFont("Roboto18", {
@@ -27,7 +60,7 @@ local currentlyPlayingStation = nil
 local currentRadioSources = {}
 local entityVolumes = {}
 local lastMessageTime = -math.huge
-local favoriteCountries = {}  -- Client-side variable to store favorite countries
+local lastStationSelectTime = 0  -- Variable to store the time of the last station selection
 
 -- Utility Functions
 local function Scale(value)
@@ -48,7 +81,7 @@ end
 
 local function formatCountryName(name)
     -- Reformat and then translate the country name
-    local formattedName = name:gsub("_", " "):gsub("(%a)([%w_']*)", function(a, b) 
+    local formattedName = name:gsub("_", " "):gsub("(%a)([%w_\']*)", function(a, b) 
         return string.upper(a) .. string.lower(b) 
     end)
     local lang = GetConVar("radio_language"):GetString() or "en"
@@ -131,9 +164,15 @@ local function calculateFontSizeForStopButton(text, buttonWidth, buttonHeight)
     return fontName
 end
 
--- Update favorite countries when received from server
+-- Update favorite countries and stations when received from server
 net.Receive("SendFavoriteCountries", function()
-    favoriteCountries = net.ReadTable()
+    local serverFavorites = net.ReadTable()
+    -- Ensure server data does not overwrite local data if it is empty
+    if serverFavorites and next(serverFavorites) then
+        favoriteCountries = serverFavorites
+        print("[Radio] Favorite countries updated from server.")
+    end
+
     if stationListPanel and populateList then
         populateList(stationListPanel, backButton, searchBox, false)  -- Repopulate the list with updated data
     end
@@ -157,6 +196,8 @@ local function createStarIcon(parent, country, stationListPanel, backButton, sea
             table.insert(favoriteCountries, country)
         end
 
+        saveFavorites()
+
         -- Repopulate the list to reflect the change immediately
         if stationListPanel then
             populateList(stationListPanel, backButton, searchBox, false)
@@ -166,53 +207,35 @@ local function createStarIcon(parent, country, stationListPanel, backButton, sea
     return starIcon
 end
 
-local function createStationButton(stationListPanel, station, backButton, searchBox)
-    local stationButton = vgui.Create("DButton", stationListPanel)
-    stationButton:Dock(TOP)
-    stationButton:DockMargin(Scale(5), Scale(5), Scale(5), 0)
-    stationButton:SetTall(Scale(40))
-    stationButton:SetText(station.name)
-    stationButton:SetFont("Roboto18")
-    stationButton:SetTextColor(Config.UI.TextColor)
+local function createStationStarIcon(parent, country, station, stationListPanel, backButton, searchBox)
+    local starIcon = vgui.Create("DImageButton", parent)
+    starIcon:SetSize(Scale(24), Scale(24))
+    starIcon:SetPos(Scale(8), (Scale(40) - Scale(24)) / 2)
+    starIcon:SetImage(favoriteStations[country] and table.HasValue(favoriteStations[country], station.name) and "hud/star_full.png" or "hud/star.png")
 
-    local currentlyPlayingStations = {}
+    starIcon.DoClick = function()
+        if not favoriteStations[country] then
+            favoriteStations[country] = {}
+        end
 
-    stationButton.Paint = function(self, w, h)
-        if station == currentlyPlayingStations[LocalPlayer().currentRadioEntity] then
-            draw.RoundedBox(8, 0, 0, w, h, Config.UI.PlayingButtonColor)
-        else
-            draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonColor)
-            if self:IsHovered() then
-                draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonHoverColor)
+        if table.HasValue(favoriteStations[country], station.name) then
+            table.RemoveByValue(favoriteStations[country], station.name)
+            if #favoriteStations[country] == 0 then
+                favoriteStations[country] = nil
             end
+        else
+            table.insert(favoriteStations[country], station.name)
+        end
+
+        saveFavorites()
+
+        -- Repopulate the list to reflect the change immediately
+        if stationListPanel then
+            populateList(stationListPanel, backButton, searchBox, false)
         end
     end
 
-    stationButton.DoClick = function()
-        surface.PlaySound("buttons/button17.wav")
-        local entity = LocalPlayer().currentRadioEntity
-
-        if not IsValid(entity) then
-            return
-        end
-
-        if currentlyPlayingStations[entity] then
-            net.Start("StopCarRadioStation")
-            net.WriteEntity(entity)
-            net.SendToServer()
-        end
-
-        local volume = entityVolumes[entity] or getEntityConfig(entity).Volume
-        net.Start("PlayCarRadioStation")
-        net.WriteEntity(entity)
-        net.WriteString(station.name)
-        net.WriteString(station.url)
-        net.WriteFloat(volume)
-        net.SendToServer()
-
-        currentlyPlayingStations[entity] = station
-        populateList(stationListPanel, backButton, searchBox, false)
-    end
+    return starIcon
 end
 
 function populateList(stationListPanel, backButton, searchBox, resetSearch)
@@ -274,26 +297,7 @@ function populateList(stationListPanel, backButton, searchBox, resetSearch)
             end
 
             -- Add the star icon
-            local starIcon = vgui.Create("DImageButton", countryButton)
-            starIcon:SetSize(Scale(24), Scale(24))
-            starIcon:SetPos(Scale(8), (Scale(40) - Scale(24)) / 2)
-            starIcon:SetImage(table.HasValue(favoriteCountries, country.original) and "hud/star_full.png" or "hud/star.png")
-
-            starIcon.DoClick = function()
-                net.Start("ToggleFavoriteCountry")
-                net.WriteString(country.original)
-                net.SendToServer()
-
-                -- Immediately reflect the change by toggling the icon and repopulating the list
-                if table.HasValue(favoriteCountries, country.original) then
-                    table.RemoveByValue(favoriteCountries, country.original)
-                else
-                    table.insert(favoriteCountries, country.original)
-                end
-
-                -- Repopulate the list to reflect the change immediately
-                populateList(stationListPanel, backButton, searchBox, false)
-            end
+            local starIcon = createStarIcon(countryButton, country.original, stationListPanel, backButton, searchBox)
 
             countryButton.DoClick = function()
                 surface.PlaySound("buttons/button3.wav")
@@ -303,54 +307,84 @@ function populateList(stationListPanel, backButton, searchBox, resetSearch)
             end
         end
     else
+        -- List favorite stations first
+        local stations = {}
         for _, station in ipairs(Config.RadioStations[selectedCountry]) do
             if filterText == "" or string.find(station.name:lower(), filterText:lower(), 1, true) then
-                local stationButton = vgui.Create("DButton", stationListPanel)
-                stationButton:Dock(TOP)
-                stationButton:DockMargin(Scale(5), Scale(5), Scale(5), 0)
-                stationButton:SetTall(Scale(40))
-                stationButton:SetText(station.name)
-                stationButton:SetFont("Roboto18")
-                stationButton:SetTextColor(Config.UI.TextColor)
+                local isFavorite = favoriteStations[selectedCountry] and table.HasValue(favoriteStations[selectedCountry], station.name)
+                table.insert(stations, { station = station, favorite = isFavorite })
+            end
+        end
 
-                local currentlyPlayingStations = {}
+        table.sort(stations, function(a, b)
+            if a.favorite and not b.favorite then
+                return true
+            elseif not a.favorite and b.favorite then
+                return false
+            else
+                return a.station.name < b.station.name
+            end
+        end)
 
-                stationButton.Paint = function(self, w, h)
-                    if station == currentlyPlayingStations[LocalPlayer().currentRadioEntity] then
-                        draw.RoundedBox(8, 0, 0, w, h, Config.UI.PlayingButtonColor)
-                    else
-                        draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonColor)
-                        if self:IsHovered() then
-                            draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonHoverColor)
-                        end
+        for _, stationData in ipairs(stations) do
+            local station = stationData.station
+            local stationButton = vgui.Create("DButton", stationListPanel)
+            stationButton:Dock(TOP)
+            stationButton:DockMargin(Scale(5), Scale(5), Scale(5), 0)
+            stationButton:SetTall(Scale(40))
+            stationButton:SetText(station.name)
+            stationButton:SetFont("Roboto18")
+            stationButton:SetTextColor(Config.UI.TextColor)
+
+            local currentlyPlayingStations = {}
+
+            stationButton.Paint = function(self, w, h)
+                if station == currentlyPlayingStations[LocalPlayer().currentRadioEntity] then
+                    draw.RoundedBox(8, 0, 0, w, h, Config.UI.PlayingButtonColor)
+                else
+                    draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonColor)
+                    if self:IsHovered() then
+                        draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonHoverColor)
                     end
                 end
+            end
 
-                stationButton.DoClick = function()
-                    surface.PlaySound("buttons/button17.wav")
-                    local entity = LocalPlayer().currentRadioEntity
+            -- Add the star icon
+            local starIcon = createStationStarIcon(stationButton, selectedCountry, station, stationListPanel, backButton, searchBox)
 
-                    if not IsValid(entity) then
-                        return
-                    end
+            stationButton.DoClick = function()
+                local currentTime = CurTime()
 
-                    if currentlyPlayingStations[entity] then
-                        net.Start("StopCarRadioStation")
-                        net.WriteEntity(entity)
-                        net.SendToServer()
-                    end
+                -- Check if the cooldown has passed
+                if currentTime - lastStationSelectTime < 1 then
+                    print("[Radio] Station selection cooldown active.")
+                    return  -- Exit the function if the cooldown hasn't passed
+                end
 
-                    local volume = entityVolumes[entity] or getEntityConfig(entity).Volume
-                    net.Start("PlayCarRadioStation")
+                surface.PlaySound("buttons/button17.wav")
+                local entity = LocalPlayer().currentRadioEntity
+
+                if not IsValid(entity) then
+                    return
+                end
+
+                if currentlyPlayingStations[entity] then
+                    net.Start("StopCarRadioStation")
                     net.WriteEntity(entity)
-                    net.WriteString(station.name)
-                    net.WriteString(station.url)
-                    net.WriteFloat(volume)
                     net.SendToServer()
-
-                    currentlyPlayingStations[entity] = station
-                    populateList(stationListPanel, backButton, searchBox, false)
                 end
+
+                local volume = entityVolumes[entity] or getEntityConfig(entity).Volume
+                net.Start("PlayCarRadioStation")
+                net.WriteEntity(entity)
+                net.WriteString(station.name)
+                net.WriteString(station.url)
+                net.WriteFloat(volume)
+                net.SendToServer()
+
+                currentlyPlayingStations[entity] = station
+                lastStationSelectTime = currentTime  -- Update the last station select time
+                populateList(stationListPanel, backButton, searchBox, false)
             end
         end
     end
@@ -648,4 +682,10 @@ end)
 
 hook.Add("PlayerInitialSpawn", "ApplySavedThemeAndLanguage", function(ply)
     loadSavedSettings()  -- Load and apply the saved theme and language
+end)
+
+loadFavorites()  -- Load the favorite stations and countries when the script initializes
+
+hook.Add("InitPostEntity", "InitializeFavorites", function()
+    populateList(stationListPanel, backButton, searchBox, true)  -- Ensure UI is updated with the loaded favorites after entities have loaded
 end)

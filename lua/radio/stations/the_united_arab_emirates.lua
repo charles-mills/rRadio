@@ -14,7 +14,6 @@ local stations = {
     {name = "Berlin Philharmonic Orchestra - Classical Radio", url = "https://drive.uber.radio/uber/crberlinphilharmonic/icecast.audio"},
     {name = "Big FM 1062 UAE", url = "https://funasia.streamguys1.com/live4"},
     {name = "Big FM UAE", url = "https://cast5.asurahosting.com/proxy/spooler/stream"},
-<<<<<<< HEAD
     {name = "Bob Dylan", url = "https://streaming.exclusive.radio/er/bobdylan/icecast.audio"},
     {name = "Boomerang 20'S", url = "https://drive.uber.radio/uber/boomerang1920s/icecast.audio"},
     {name = "Boomerang 2000S", url = "https://drive.uber.radio/uber/boomerang2000s/icecast.audio"},
@@ -522,10 +521,6 @@ local stations = {
     {name = "Virgin Radio Dubai 1044 FM", url = "https://radio.virginradio.co.uk/stream"},
     {name = "الشرق", url = "https://bcovlive-a.akamaihd.net/0b75ef0a49e24704a4ca023d3a82c2df/ap-south-1/6203311941001/profile_3/chunklist.m3u8"},
     {name = "راديو الآن - Radio Al Aan", url = "https://c20.radioboss.fm/stream/543"},
-=======
-    {name = "Abu Dhabi FM", url = "https://vo-live.cdb.cdn.orange.com/Content/Channel/abu_dhabi_fm/HLS/stream_02/index.m3u8"},
-    {name = "الشرق", url = "https://bcovlive-a.akamaihd.net/0b75ef0a49e24704a4ca023d3a82c2df/ap-south-1/6203311941001/profile_3/chunklist.m3u8"},
->>>>>>> 7d1f32cebb0f314e8136a3afc632dac88694d724
 }
 
 return stations

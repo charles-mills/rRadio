@@ -1,5 +1,4 @@
 local stations = {
-<<<<<<< HEAD
     {name = "1015 Chula Radio", url = "http://radio11.plathong.net:7590/;stream.mp3"},
     {name = "1025 Get FM", url = "https://radio12.plathong.net/7172/;stream"},
     {name = "106 Family News Radio", url = "https://radio11.plathong.net/7138/;stream.mp3"},
@@ -73,10 +72,6 @@ local stations = {
     {name = "สวท ลำพูน FM95", url = "https://radio-org-01-ott.prd.go.th/lpn_fm95"},
     {name = "สวพ91", url = "http://122.155.16.48:8955/;stream.mp3"},
     {name = "สังฆทานธรม", url = "https://cdn-th2.livestreaming.in.th/shoutcast/8615"},
-=======
-    {name = "Talay 9025FM", url = "https://stream.talay.asia/talay"},
-    {name = "FM ONE", url = "https://apps4.mcot.net/stream578.aac"},
->>>>>>> 7d1f32cebb0f314e8136a3afc632dac88694d724
 }
 
 return stations

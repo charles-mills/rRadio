@@ -1,5 +1,4 @@
 local stations = {
-<<<<<<< HEAD
     {name = "570 AM Radio Crystal", url = "https://stream.zeno.fm/fu9hfhw8na0uv"},
     {name = "710 AM Radio Nacional Cristiana RD", url = "https://node-09.zeno.fm/03yn1w98swzuv"},
     {name = "810 AM Radio Salvación Internacional RD", url = "http://ph1.ministeriotv.com:8031/salvacion.mp3"},
@@ -118,9 +117,6 @@ local stations = {
     {name = "Voice Of Life Radio", url = "https://cdn.comeseetv.com:8000/vol"},
     {name = "Zol FM", url = "https://ss3.domint.net:3108/zol_str/vzol/chunklist_w1811974493.m3u8"},
     {name = "ZTV AUDIO Z101", url = "https://radio.gmsiptv.com/ztv"},
-=======
-    {name = "Criolla 1061 FM", url = "https://streaming.grupomediosdelnorte.com:8002/stream"},
->>>>>>> 7d1f32cebb0f314e8136a3afc632dac88694d724
 }
 
 return stations

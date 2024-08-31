@@ -1,5 +1,4 @@
 local stations = {
-<<<<<<< HEAD
     {name = "Győr+ Rádió", url = "https://stream.42netmedia.com:8443/sc_gyor1"},
     {name = "1039 Rock", url = "https://icast.connectmedia.hu/5301/live.mp3"},
     {name = "99,4 Sunshinefm", url = "http://195.56.193.129:8100/sunshine"},
@@ -257,11 +256,6 @@ local stations = {
     {name = "Xtradio", url = "https://xtrad.io/high.mp3"},
     {name = "Youventus Rádió", url = "http://s2.audiostream.hu/juventus_192k"},
     {name = "Zugrádió", url = "http://zuglofm.netregator.hu:7812/zuglofm128.mp3.m3u"},
-=======
-    {name = "Rádió Like", url = "https://cdn-node-44.hififm.hu:8080/stream001.mp3"},
-    {name = "Test Radio Station", url = "https://videos.prd.dlivecdn.com/dlive/live.m3u8"},
-    {name = "Dombrádió-Online-Dombrád", url = "http://dombradio.dyndns.tv:8000/live.mp3"},
->>>>>>> 7d1f32cebb0f314e8136a3afc632dac88694d724
 }
 
 return stations

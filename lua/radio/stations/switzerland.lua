@@ -1,5 +1,4 @@
 local stations = {
-<<<<<<< HEAD
     {name = "A Fine Jazz Gumbo Radio", url = "https://streaming.smartradio.ch:9502/stream"},
     {name = "1014 YOUNG FM", url = "https://canli.arabeskinmerkezi.com/9180/stream"},
     {name = "Al Quran Radio", url = "https://n0a.radiojar.com/0tpy1h0kxtzuv?rj-ttl=5&rj-tok=AAABhdgGORQA-2acfyF3_4WY2g"},
@@ -394,13 +393,6 @@ local stations = {
     {name = "World Radio Switzerland", url = "https://uksouth.streaming.broadcast.radio:10290/wrs"},
     {name = "WRS Swiss Radio In English", url = "https://uksouth.streaming.broadcast.radio:10290/wrs?_=443217"},
     {name = "ஊரி தமிழ் வானொலி URI TAMIL RADIO", url = "http://stream.zenolive.com/u8nt64f6sfeuv"},
-=======
-    {name = "Radio Top Two", url = "http://77.109.144.109:8000/twosrp128"},
-    {name = "Vibration 108", url = "http://vibration108-high.ice.infomaniak.ch/vibration108-high.mp3"},
-    {name = "Toxicfm", url = "http://toxicfm.ice.infomaniak.ch/toxicfm-128"},
-    {name = "Spoon Radio - Modern Rock", url = "https://spoonradiomodernrock.ice.infomaniak.ch/spoon-modernrock-hd.aac"},
-    {name = "GRRIF", url = "https://rjb.ice.infomaniak.ch/rjb-high.mp3"},
->>>>>>> 7d1f32cebb0f314e8136a3afc632dac88694d724
 }
 
 return stations

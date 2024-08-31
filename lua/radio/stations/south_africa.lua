@@ -1,5 +1,4 @@
 local stations = {
-<<<<<<< HEAD
     {name = "5FM", url = "http://25483.live.streamtheworld.com/5FMAAC.aac"},
     {name = "702 Johannesburg", url = "http://playerservices.streamtheworld.com/m3u/FM702.m3u"},
     {name = "702 Talk Radio Johannesburg", url = "https://23543.live.streamtheworld.com/FM702AAC.aac"},
@@ -119,10 +118,6 @@ local stations = {
     {name = "Uniquefive HD Radio", url = "http://stream.zeno.fm/a4t818ymva0uv"},
     {name = "Viva Nation Radio", url = "https://servidor34-3.brlogic.com:7056/live?source=website"},
     {name = "YFM", url = "http://streaming.fabrik.fm/yfm/echocast/audio/index.m3u8"},
-=======
-    {name = "Radio Orania", url = "https://saukradio.com/wp-content/uploads/2021/07/5-Julie-Orania.mp3"},
-    {name = "Bloem Radio Digital", url = "https://9300.co.za/listen/bloem_radio_digital/radio.mp3"},
->>>>>>> 7d1f32cebb0f314e8136a3afc632dac88694d724
 }
 
 return stations

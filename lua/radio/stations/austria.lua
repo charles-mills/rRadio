@@ -1,5 +1,4 @@
 local stations = {
-<<<<<<< HEAD
     {name = "01 SALZBURG FM", url = "https://canli.arabeskinmerkezi.com/9180/stream"},
     {name = "1000 ELECTRONIC DANCE MUSIC", url = "http://stream.laut.fm/1000-electronic-dance-music"},
     {name = "1000-ELECTRONIC-DANCE-MUSIC", url = "http://stream.laut.fm/1000-electronic-dance-music.m3u"},
@@ -261,14 +260,6 @@ local stations = {
     {name = "Welle 1 Salzburg", url = "https://live.welle1.at:18256/stream"},
     {name = "Yeshuaat Radio", url = "https://yeshua.at:8443/stream"},
     {name = "Yu Radio", url = "https://stream.radiotechnikum.at:80/YURADIO"},
-=======
-    {name = "Freies Radio Freistadt", url = "http://212.89.182.114:8008/frf"},
-    {name = "CR 944", url = "https://cr944.at:50443/cr944"},
-    {name = "Replayscape 64", url = "http://radio.replayscape.com:8064/listen.pls"},
-    {name = "ORF - Radio Wien", url = "https://orf-live-wie.mdn.ors.at/out/u/wie/q4a/manifest.m3u8?player=sound_v1"},
-    {name = "Radio Klassik Stephansdom", url = "http://radioklassikstephansdom.ice.infomaniak.ch/radioklassikstephansdom.mp3"},
-    {name = "PENNY Live", url = "http://listen.radiomax.technology/penny"},
->>>>>>> 7d1f32cebb0f314e8136a3afc632dac88694d724
 }
 
 return stations
