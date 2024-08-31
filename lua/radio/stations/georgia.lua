@@ -1,7 +1,7 @@
 local stations = {
     {name = "რადიო ძველი ქალაქი Старый Город", url = "http://iis.ge:8000/radiodk.mp3"},
-    {name = "Radio Amra", url = "https://streamer.radio.co/s34b5469e0/listen"},
     {name = "1011 RADİO TURKEY FM", url = "https://canli.arabeskinmerkezi.com/9180/stream"},
+    {name = "Radio Amra", url = "https://streamer.radio.co/s34b5469e0/listen"},
     {name = "Dardimandi", url = "https://nue01-edge01.itdc.ge/fm-dardimandi-97.1/mono.m3u8"},
     {name = "არდაიდარდო", url = "https://tv.cdn.xsg.ge/cld9-0386/ardaidardo/tracks-a1/mono.m3u8"},
     {name = "Voice Of Abkhazia", url = "http://109.172.136.60:8081/broadwavelow.mp3"},

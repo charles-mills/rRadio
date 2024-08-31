@@ -1,6 +1,6 @@
 local stations = {
-    {name = "Fresh FM 1043 Oranjestad", url = "http://www.fresharuba.com:8006/;"},
     {name = "Dimusic Club Aruba 🇦🇼", url = "http://stream1.dimusic.club:11496/live?type=.aac"},
+    {name = "Fresh FM 1043 Oranjestad", url = "http://www.fresharuba.com:8006/;"},
     {name = "VIP Radio Online Dance - Noord", url = "http://s02.whooshserver.net:8054/dance"},
     {name = "Top95 FM", url = "http://198.245.51.58:10995/topfm?type=.mp3"},
     {name = "Yhju", url = "http://52.0.120.216:8000/stream/4/"},

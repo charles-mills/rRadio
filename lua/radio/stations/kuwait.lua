@@ -13,8 +13,8 @@ local stations = {
     {name = "اذاعة القرآن الكريم", url = "http://stream.radiojar.com/0tpy1h0kxtzuv"},
     {name = "Quran Radio راديو القرآن - Yasser Aldosari - ياسر الدوسري", url = "https://radio.mp3islam.com/listen/yaser/radio.mp3"},
     {name = "Marina FM", url = "http://31.14.40.102:8006/stream.ogg"},
-    {name = "Quran Radio راديو القرآن - Maher Al Mueaqly - ماهر المعيقلي", url = "https://radio.mp3islam.com/listen/maher/radio.mp3"},
     {name = "تفسير بن عثيمين رحمه الله", url = "https://qurango.net/radio/tafseer"},
+    {name = "Quran Radio راديو القرآن - Maher Al Mueaqly - ماهر المعيقلي", url = "https://radio.mp3islam.com/listen/maher/radio.mp3"},
     {name = "OFW Radio", url = "https://s3.voscast.com:7711/live"},
     {name = "دار الاذاعة الكويتية", url = "https://51.com.kw/radio-live/373/%D8%AF%D8%A7%D8%B1-%D8%A7%D9%84%D8%A5%D8%B0%D8%A7%D8%B9%D8%A9"},
 }

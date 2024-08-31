@@ -6,9 +6,9 @@ local stations = {
     {name = "Mega Hit FM 1011", url = "http://megaspice.primcast.com:5216/"},
     {name = "RTV Purmerend", url = "http://stream.zxp.nl:8000/radiopurmerend_bb"},
     {name = "Mega Hit FM", url = "http://megaspice.primcast.com:5216/listen.pls?sid=1"},
+    {name = "Non Stop Hits Alex FM", url = "https://radioalexfm.stream.laut.fm/radioalexfm?ref=web-app&start_time=1709718045653"},
     {name = "TROPICAL SPICE RADIO", url = "https://auds1.intacs.com/tropicalspiceradio"},
     {name = "Caprice Spacesynth", url = "http://79.120.39.202:9111/"},
-    {name = "Non Stop Hits Alex FM", url = "https://radioalexfm.stream.laut.fm/radioalexfm?ref=web-app&start_time=1709718045653"},
 }
 
 return stations

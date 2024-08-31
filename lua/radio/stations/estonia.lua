@@ -50,6 +50,7 @@ local stations = {
     {name = "Kuma FM 1010", url = "http://5.39.16.62:8004/tre"},
     {name = "Tre Raadio Ring FM", url = "https://cdn.treraadio.ee/ringfm"},
     {name = "Tre Raadio Ruut FM", url = "https://cdn.treraadio.ee/ruutfm"},
+    {name = "Klara Klassika 128 Kbps Ogg Opus | Eesti Rahvusringhääling | Erree", url = "http://icecast.err.ee/klaraklassika.opus"},
     {name = "NRJ", url = "https://edge01.cdn.bitflip.ee:8888/NRJ?_i=5b8169cb"},
     {name = "ERR Klassikaraadio", url = "http://icecast.err.ee/klassikaraadio.mp3"},
     {name = "Semeinoje Radio", url = "http://icecast.pereraadio.ee:8000/Semeinoje"},
@@ -57,7 +58,6 @@ local stations = {
     {name = "R2 Eesti", url = "https://icecast.err.ee/r2eestikorge.mp3"},
     {name = "R2Rock", url = "http://icecast.err.ee/r2rock.opus"},
     {name = "Duo Rock", url = "http://router.euddn.net/8103046e16b71d15d692b57c187875c7/rokk.aac"},
-    {name = "Klara Klassika 128 Kbps Ogg Opus | Eesti Rahvusringhääling | Erree", url = "http://icecast.err.ee/klaraklassika.opus"},
     {name = "Raadio 2 128 Kbps Ogg Opus | Eesti Rahvusringhääling | R2Erree", url = "http://icecast.err.ee/raadio2.opus"},
     {name = "Raadio Tallinn 128 Kbps Ogg Opus | Eesti Rahvusringhääling | Raadiotallinnerree", url = "http://icecast.err.ee/raadiotallinn.opus"},
     {name = "R2Extra Altpop", url = "https://lonestarr.err.ee/live/r2altkorge/index.m3u8?id=95846420454178&short=true"},
@@ -65,9 +65,9 @@ local stations = {
     {name = "Klara Klassika", url = "https://icecast.err.ee/klaraklassika.mp3"},
     {name = "R2Pop", url = "http://icecast.err.ee/r2pop.opus"},
     {name = "Duo Party", url = "https://router.euddn.net/8103046e16b71d15d692b57c187875c7/duodance.aac"},
+    {name = "Klara Nostalgia 128 Kbps Ogg Opus | Eesti Rahvusringhääling | Erree", url = "http://icecast.err.ee/klaranostalgia.opus"},
     {name = "R2Chill", url = "http://icecast.err.ee/r2chill.opus"},
     {name = "R2Altpop", url = "http://icecast.err.ee/r2alternatiiv.opus"},
-    {name = "Klara Nostalgia 128 Kbps Ogg Opus | Eesti Rahvusringhääling | Erree", url = "http://icecast.err.ee/klaranostalgia.opus"},
     {name = "Vikerraadio 128 Kbps Ogg Opus | Eesti Rahvusringhääling | Vikerraadioerree", url = "http://icecast.err.ee/vikerraadio.opus"},
 }
 
