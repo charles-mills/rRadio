@@ -14,11 +14,11 @@ local stations = {
     {name = "Radio Active 1045 FM", url = "https://kadushi.westream.cloud/listen/radioactive/RadioActive"},
     {name = "Paradise FM 60S 70S", url = "https://stream.paradisefm.cw/60s70s"},
     {name = "Paradise FM 00'S 10'S", url = "https://stream.paradisefm.cw/00s10s"},
+    {name = "Paradise FM Nonstop", url = "https://stream.paradisefm.cw/ParadiseNonstop"},
     {name = "Paradise FM Disco Inferno", url = "https://stream.paradisefm.cw/ParadiseDiscoInferno"},
     {name = "Radio Semiya 985 FM", url = "http://11331.cloudrad.io:9172/"},
     {name = "Radio Hoyer 2 1051", url = "https://s1.voscast.com:10489/live"},
     {name = "Paradise FM 80'S 90'S", url = "https://stream.paradisefm.cw/80s90s"},
-    {name = "Paradise FM Nonstop", url = "https://stream.paradisefm.cw/ParadiseNonstop"},
     {name = "Paradise FM Latin", url = "https://stream.paradisefm.cw/ParadiseLatin"},
     {name = "Radio Semiya FM 985", url = "http://11331.cloudrad.io:9172/live"},
 }

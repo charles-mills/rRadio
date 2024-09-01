@@ -8,10 +8,10 @@ local stations = {
     {name = "Royal FM 943 Rwanda", url = "http://80.241.215.175:3000/;"},
     {name = "907 Magic FM", url = "http://listen.rba.co.rw:8080/;"},
     {name = "Heaven FM Radio Rwanda", url = "http://stream.zeno.fm/eequgfw72hhvv"},
-    {name = "Country FM 1057", url = "https://radio.garden/api/ara/content/listen/neJlRqje/channel.mp3?1692198466055"},
-    {name = "Gendana N'Igihe Radio", url = "http://stream.zeno.fm/1ev107turnhvv"},
     {name = "DFM Radio", url = "https://stream.zeno.fm/mtrcigb9yhitv"},
-    {name = "DFM Radio Rwanda", url = "https://stream.zeno.fm/fygodpmrgcquv"},
+    {name = "Gendana N'Igihe Radio", url = "http://stream.zeno.fm/1ev107turnhvv"},
+    {name = "Country FM 1057", url = "https://radio.garden/api/ara/content/listen/neJlRqje/channel.mp3?1692198466055"},
+    {name = "DFM Radio RW", url = "https://stream.zeno.fm/fygodpmrgcquv"},
     {name = "Bachwezi Radio", url = "http://stream.zeno.fm/4vcb1euurnhvv"},
 }
 
