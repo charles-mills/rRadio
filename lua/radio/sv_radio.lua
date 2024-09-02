@@ -3,14 +3,10 @@ util.AddNetworkString("StopCarRadioStation")
 util.AddNetworkString("CarRadioMessage")
 util.AddNetworkString("OpenRadioMenu")
 util.AddNetworkString("UpdateRadioStatus")
-util.AddNetworkString("ToggleFavoriteCountry")
-util.AddNetworkString("SendFavoriteCountries")
 
 local ActiveRadios = {}
 local debug_mode = false  -- Set to true to enable debug statements
 SavedBoomboxStates = SavedBoomboxStates or {}
-
-local playerFavoritesCache = {}
 
 -- Debug function to print messages if debug_mode is enabled
 local function DebugPrint(msg)
@@ -138,53 +134,6 @@ local function LoadBoomboxStatesFromDatabase()
         DebugPrint("No saved boombox states found in the database.")
     end
 end
-
--- Save player favorites to a file
-local function SavePlayerFavorites(ply)
-    local steamID = ply:SteamID()
-    file.Write("radio_favorites/" .. steamID .. ".txt", util.TableToJSON(playerFavoritesCache[steamID]))
-    DebugPrint("Saved favorites for " .. steamID)
-end
-
--- Load player favorites from a file
-local function LoadPlayerFavorites(ply)
-    local steamID = ply:SteamID()
-    if not playerFavoritesCache[steamID] then
-        if file.Exists("radio_favorites/" .. steamID .. ".txt", "DATA") then
-            local data = file.Read("radio_favorites/" .. steamID .. ".txt", "DATA")
-            playerFavoritesCache[steamID] = util.JSONToTable(data) or {}
-        else
-            playerFavoritesCache[steamID] = {}
-        end
-    end
-    return playerFavoritesCache[steamID]
-end
-
-hook.Add("PlayerInitialSpawn", "LoadPlayerRadioFavorites", function(ply)
-    local favorites = LoadPlayerFavorites(ply)
-    net.Start("SendFavoriteCountries")
-    net.WriteTable(favorites)
-    net.Send(ply)
-end)
-
--- Toggle favorite country and save the player's favorites
-net.Receive("ToggleFavoriteCountry", function(len, ply)
-    local steamID = ply:SteamID()
-    local country = net.ReadString()
-
-    playerFavoritesCache[steamID] = playerFavoritesCache[steamID] or {}
-
-    if table.HasValue(playerFavoritesCache[steamID], country) then
-        table.RemoveByValue(playerFavoritesCache[steamID], country)
-    else
-        table.insert(playerFavoritesCache[steamID], country)
-    end
-
-    SavePlayerFavorites(ply)
-    net.Start("SendFavoriteCountries")
-    net.WriteTable(playerFavoritesCache[steamID])
-    net.Send(ply)
-end)
 
 -- Send active radios to a specific player
 local function SendActiveRadiosToPlayer(ply)
