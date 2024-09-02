@@ -5,14 +5,14 @@ local stations = {
     {name = "KT Radio 967 Mhz FM, Kigali", url = "http://197.243.1.130:8006/k2dlivemp3"},
     {name = "Magic FM", url = "http://listen.rba.co.rw:8080/"},
     {name = "RADIO MARIA RWANDA", url = "http://dreamsiteradiocp.com:8044/stream"},
-    {name = "Royal FM 943 Rwanda", url = "http://80.241.215.175:3000/;"},
     {name = "907 Magic FM", url = "http://listen.rba.co.rw:8080/;"},
     {name = "Heaven FM Radio Rwanda", url = "http://stream.zeno.fm/eequgfw72hhvv"},
+    {name = "Royal FM 943 Rwanda", url = "http://80.241.215.175:3000/;"},
     {name = "DFM Radio", url = "https://stream.zeno.fm/mtrcigb9yhitv"},
+    {name = "DFM Radio Rwanda", url = "https://stream.zeno.fm/fygodpmrgcquv"},
     {name = "Gendana N'Igihe Radio", url = "http://stream.zeno.fm/1ev107turnhvv"},
-    {name = "Country FM 1057", url = "https://radio.garden/api/ara/content/listen/neJlRqje/channel.mp3?1692198466055"},
-    {name = "DFM Radio RW", url = "https://stream.zeno.fm/fygodpmrgcquv"},
     {name = "Bachwezi Radio", url = "http://stream.zeno.fm/4vcb1euurnhvv"},
+    {name = "Country FM 1057", url = "https://radio.garden/api/ara/content/listen/neJlRqje/channel.mp3?1692198466055"},
 }
 
 return stations
