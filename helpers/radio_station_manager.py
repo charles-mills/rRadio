@@ -55,6 +55,24 @@ class Utils:
         name = name.replace(' ', '_')
         return name.lower()
 
+    @staticmethod
+    async def check_audio_stream(session: aiohttp.ClientSession, url: str) -> bool:
+        """
+        Check if the provided URL is a valid audio stream.
+        """
+        try:
+            async with session.get(url, timeout=10, ssl=True) as response:
+                content_type = response.headers.get('Content-Type', '').lower()
+                if 'audio' in content_type:
+                    print(f"URL {url} is a valid audio stream.")
+                    return True
+                else:
+                    print(f"URL {url} is not an audio stream. Content-Type: {content_type}")
+                    return False
+        except Exception as e:
+            print(f"Error checking URL {url}: {e}")
+            return False
+
 # Radio station management class
 class RadioStationManager:
     def __init__(self, config: Config):
@@ -89,13 +107,11 @@ class RadioStationManager:
         print(f"Failed to fetch stations for {country_name} after {retries} attempts.")
         return []
 
-    def save_stations_to_file(self, country: str, stations: List[Dict[str, str]]):
-    # Map the long country name to the desired short name
+    async def save_stations_to_file(self, session: aiohttp.ClientSession, country: str, stations: List[Dict[str, str]]):
         if country.lower() == "the united kingdom of great britain and northern ireland":
             print(f"Reformatting country name '{country}' to 'The United Kingdom'")
             country = "The United Kingdom"
 
-        # Skip files that don't have an associated country name
         if not country:
             print("No country provided for stations. Skipping file creation.")
             return
@@ -107,7 +123,6 @@ class RadioStationManager:
         file_name = f"{cleaned_country_name}.lua"
         file_path = os.path.join(directory, file_name)
 
-        # Use sets to ensure no duplicates
         unique_names = set()
         unique_urls = set()
         filtered_stations = []
@@ -115,6 +130,12 @@ class RadioStationManager:
         for station in stations:
             name = Utils.clean_station_name(station["name"])
             url = station["url"]
+
+            # Check if the URL is a valid audio stream
+            if not await Utils.check_audio_stream(session, url):
+                print(f"Skipping station {name} due to invalid audio stream.")
+                continue
+
             if name.lower() not in unique_names and url not in unique_urls:
                 unique_names.add(name.lower())
                 unique_urls.add(url)
@@ -127,7 +148,6 @@ class RadioStationManager:
                 line = f'    {{name = "{Utils.escape_lua_string(station["name"])}", url = "{Utils.escape_lua_string(station["url"])}"}},\n'
                 f.write(line)
 
-                # Check the current file size
                 current_size = f.tell()
 
                 if current_size > 63 * 1024:  # 63KB limit
@@ -136,7 +156,6 @@ class RadioStationManager:
 
             f.write("}\n\nreturn stations\n")
         print(f"Saved stations for {country} to {file_path}")
-
 
     def commit_and_push_changes(self, file_path: str, message: str):
         print(f"Committing and pushing changes for file: {file_path}")
@@ -153,23 +172,16 @@ class RadioStationManager:
         except subprocess.CalledProcessError as e:
             print(f"Failed to commit and push changes: {e}")
 
-    async def verify_stations(self, session: aiohttp.ClientSession, stations: List[Dict[str, str]]) -> List[Dict[str, str]]:
-        print(f"Verifying {len(stations)} stations...")
-        verified_stations = []
-        tasks = [self.check_and_add_station(session, station, verified_stations) for station in stations]
-        await asyncio.gather(*tasks)
-        print(f"Verified {len(verified_stations)} stations successfully.")
-        return verified_stations
+    async def fetch_save_stations(self, session: aiohttp.ClientSession, country: str, pbar: tqdm):
+        print(f"Fetching and saving stations for {country}...")
+        async with self.semaphore:
+            stations = await self.fetch_stations(session, country, by_popularity=True)
 
-    async def check_and_add_station(self, session: aiohttp.ClientSession, station: Dict[str, str], verified_stations: List[Dict[str, str]]):
-        try:
-            async with session.get(station["url"], timeout=self.config.REQUEST_TIMEOUT, ssl=True) as response:
-                if response.status == 200:
-                    verified_stations.append(station)
-                else:
-                    print(f"Station {station['name']} ({station['url']}) not responsive. Status: {response.status}")
-        except (aiohttp.ClientError, asyncio.TimeoutError) as e:
-            print(f"Station {station['name']} ({station['url']}) check failed: {e}")
+            if stations:
+                await self.save_stations_to_file(session, country, stations)
+                file_path = os.path.join(self.config.STATIONS_DIR, f"{Utils.clean_file_name(country)}.lua")
+                self.commit_and_push_changes(file_path, f"Fetched and saved stations for {country}")
+            pbar.update(1)
 
     async def fetch_all_stations(self):
         print("Starting to fetch all stations...")
@@ -180,32 +192,10 @@ class RadioStationManager:
                 await asyncio.gather(*tasks)
         print("All stations fetched and saved.")
 
-    async def fetch_save_stations(self, session: aiohttp.ClientSession, country: str, pbar: tqdm):
-        print(f"Fetching and saving stations for {country}...")
-        async with self.semaphore:
-            # Fetch stations by popularity for all countries
-            stations = await self.fetch_stations(session, country, by_popularity=True)
-
-            if stations:
-                self.save_stations_to_file(country, stations)
-                file_path = os.path.join(self.config.STATIONS_DIR, f"{Utils.clean_file_name(country)}.lua")
-                self.commit_and_push_changes(file_path, f"Fetched and saved stations for {country}")
-            pbar.update(1)
-
-    async def verify_all_stations(self):
-        print("Starting to verify all stations...")
-        countries = self.get_all_countries()
-        with tqdm(total=len(countries), desc="Verifying stations") as pbar:
-            async with aiohttp.ClientSession() as session:
-                tasks = [self.verify_and_save_stations(session, country, pbar) for country in countries]
-                await asyncio.gather(*tasks)
-        print("All stations verified and saved.")
-
     async def verify_and_save_stations(self, session: aiohttp.ClientSession, country: str, pbar: tqdm):
         print(f"Verifying and saving stations for {country}...")
         file_path = os.path.join(self.config.STATIONS_DIR, f"{Utils.clean_file_name(country)}.lua")
         
-        # Check if the file exists before attempting to open it
         if not os.path.exists(file_path):
             print(f"File {file_path} not found. Skipping verification for {country}.")
             pbar.update(1)
@@ -219,9 +209,30 @@ class RadioStationManager:
 
         verified_stations = await self.verify_stations(session, stations)
         if verified_stations:
-            self.save_stations_to_file(country, verified_stations)
+            await self.save_stations_to_file(session, country, verified_stations)
             self.commit_and_push_changes(file_path, f"Verified and saved stations for {country}")
         pbar.update(1)
+
+    async def verify_stations(self, session: aiohttp.ClientSession, stations: List[Dict[str, str]]) -> List[Dict[str, str]]:
+        print(f"Verifying {len(stations)} stations...")
+        verified_stations = []
+        tasks = [self.check_and_add_station(session, station, verified_stations) for station in stations]
+        await asyncio.gather(*tasks)
+        print(f"Verified {len(verified_stations)} stations successfully.")
+        return verified_stations
+
+    async def check_and_add_station(self, session: aiohttp.ClientSession, station: Dict[str, str], verified_stations: List[Dict[str, str]]):
+        if await Utils.check_audio_stream(session, station["url"]):
+            verified_stations.append(station)
+
+    async def verify_all_stations(self):
+        print("Starting to verify all stations...")
+        countries = self.get_all_countries()
+        with tqdm(total=len(countries), desc="Verifying stations") as pbar:
+            async with aiohttp.ClientSession() as session:
+                tasks = [self.verify_and_save_stations(session, country, pbar) for country in countries]
+                await asyncio.gather(*tasks)
+        print("All stations verified and saved.")
 
     def get_all_countries(self) -> List[str]:
         print("Fetching list of all countries...")

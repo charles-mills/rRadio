@@ -31,7 +31,7 @@ jobs:
 
     - name: Fetch Stations and Update README
       run: |
-        python helpers/radio_station_manager.py --auto-run --fetch --count
+        python helpers/radio_station_manager.py --auto-run --fetch --verify --count
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
