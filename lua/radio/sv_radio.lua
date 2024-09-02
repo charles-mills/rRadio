@@ -340,20 +340,45 @@ hook.Add("EntityRemoved", "CleanupActiveRadioOnEntityRemove", function(entity)
     end
 end)
 
+if not PermaProps then PermaProps = {} end
+PermaProps.SpecialENTSSpawn = PermaProps.SpecialENTSSpawn or {}
+
+-- Add handling for boombox entities via a PermaProps hook
+PermaProps.SpecialENTSSpawn["boombox"] = function(ent, data)
+    local permaID = ent.PermaProps_ID
+    if not permaID then return end
+
+    local savedState = SavedBoomboxStates[permaID]
+    if savedState then
+        ent:SetNWString("CurrentRadioStation", savedState.station)
+        ent:SetNWString("StationURL", savedState.url)
+
+        if ent.SetStationName then
+            ent:SetStationName(savedState.station)
+        end
+
+        if savedState.isPlaying then
+            net.Start("PlayCarRadioStation")
+            net.WriteEntity(ent)
+            net.WriteString(savedState.url)
+            net.WriteFloat(savedState.volume)
+            net.Broadcast()
+
+            AddActiveRadio(ent, savedState.station, savedState.url, savedState.volume)
+        end
+    end
+end
+
+-- Add handling for golden_boombox entities
+PermaProps.SpecialENTSSpawn["golden_boombox"] = PermaProps.SpecialENTSSpawn["boombox"]
+
+-- Similar entries can be added for other custom radio entities if needed
+
 hook.Add("Initialize", "LoadBoomboxStatesOnStartup", function()
     DebugPrint("Attempting to load Boombox States from the database")
     LoadBoomboxStatesFromDatabase()
 
-    for permaID, savedState in pairs(SavedBoomboxStates) do
-        if savedState.isPlaying then
-            for _, entity in pairs(ents.GetAll()) do
-                if entity.PermaProps_ID == permaID then
-                    AddActiveRadio(entity, savedState.station, savedState.url, savedState.volume)
-                    break
-                end
-            end
-        end
-    end
+    -- Existing boombox states will be restored by PermaProps.SpecialENTSSpawn functions when they are spawned
     DebugPrint("Finished restoring active radios")
 end)
 
