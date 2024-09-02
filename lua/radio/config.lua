@@ -9,14 +9,7 @@ local function loadLanguage()
     if file.Exists(path, "LUA") then
         Config.Lang = include(path)
     else
-        print("[DEBUG] Language file not found, falling back to English.")
         Config.Lang = include("radio/lang/en.lua")
-    end
-    
-    if Config.Lang then
-        print("[DEBUG] Language loaded successfully.")
-    else
-        print("[ERROR] Failed to load language.")
     end
 end
 
@@ -34,8 +27,6 @@ local function loadStationsForCountry(country)
     if file.Exists(path, "LUA") then
         local stations = include(path)
         Config.RadioStations[formatCountryName(country)] = stations -- Store with formatted name for UI
-    else
-        print("[WARNING] No stations found for " .. country)
     end
 end
 
@@ -84,7 +75,5 @@ Config.VehicleRadio = {
     RetryAttempts = 3, -- Number of retry attempts to play a station in case of failure
     RetryDelay = 2 -- Delay in seconds between retry attempts
 }
-
-print("[DEBUG] Config initialization complete.")
 
 return Config

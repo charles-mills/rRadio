@@ -4,6 +4,7 @@ local languageManager = include("language_manager.lua")
 -- Create the client convar to enable/disable chat messages
 CreateClientConVar("car_radio_show_messages", "1", true, false, "Enable or disable car radio messages.")
 CreateClientConVar("radio_language", "en", true, false, "Select the language for the radio UI.")
+CreateClientConVar("boombox_show_text", "1", true, false, "Show or hide the text above the boombox.")
 
 -- Function to apply the selected theme
 local function applyTheme(themeName)
@@ -51,7 +52,6 @@ end)
 hook.Add("PopulateToolMenu", "AddThemeAndVolumeSelectionMenu", function()
     spawnmenu.AddToolMenuOption("Utilities", "Rammel's Radio", "ThemeVolumeSelection", "Settings", "", "", function(panel)
         panel:ClearControls()
-        
         panel:DockPadding(10, 0, 30, 10)
 
         -- Theme Selection Section
@@ -60,7 +60,7 @@ hook.Add("PopulateToolMenu", "AddThemeAndVolumeSelectionMenu", function()
         themeHeader:SetFont("Trebuchet18")
         themeHeader:SetTextColor(Color(50, 50, 50))
         themeHeader:Dock(TOP)
-        themeHeader:DockMargin(0, 0, 0, 0)
+        themeHeader:DockMargin(0, 0, 0, 5)
         panel:AddItem(themeHeader)
 
         local themeDropdown = vgui.Create("DComboBox", panel)
@@ -95,7 +95,7 @@ hook.Add("PopulateToolMenu", "AddThemeAndVolumeSelectionMenu", function()
         languageHeader:SetFont("Trebuchet18")
         languageHeader:SetTextColor(Color(50, 50, 50))
         languageHeader:Dock(TOP)
-        languageHeader:DockMargin(0, 20, 0, 0)
+        languageHeader:DockMargin(0, 20, 0, 5)
         panel:AddItem(languageHeader)
 
         local languageDropdown = vgui.Create("DComboBox", panel)
@@ -121,45 +121,35 @@ hook.Add("PopulateToolMenu", "AddThemeAndVolumeSelectionMenu", function()
 
         panel:AddItem(languageDropdown)
 
-        -- Volume Control Section
-        local volumeHeader = vgui.Create("DLabel", panel)
-        volumeHeader:SetText("Volume Control")
-        volumeHeader:SetFont("Trebuchet18")
-        volumeHeader:SetTextColor(Color(50, 50, 50))
-        volumeHeader:Dock(TOP)
-        volumeHeader:DockMargin(0, 20, 0, 0)
-        panel:AddItem(volumeHeader)
+        -- General Options Section
+        local generalOptionsHeader = vgui.Create("DLabel", panel)
+        generalOptionsHeader:SetText("General Options")
+        generalOptionsHeader:SetFont("Trebuchet18")
+        generalOptionsHeader:SetTextColor(Color(50, 50, 50))
+        generalOptionsHeader:Dock(TOP)
+        generalOptionsHeader:DockMargin(0, 20, 0, 5)
+        panel:AddItem(generalOptionsHeader)
 
-        local volumeSlider = vgui.Create("DNumSlider", panel)
-        volumeSlider:SetText("Max Radio Volume")
-        volumeSlider:SetMin(0)
-        volumeSlider:SetMax(1)
-        volumeSlider:SetDecimals(2)
-        volumeSlider:SetConVar("radio_max_volume")
-        volumeSlider:Dock(TOP)
-        volumeSlider:DockMargin(0, 0, 0, 10)
-        volumeSlider:SetValue(GetConVar("radio_max_volume"):GetFloat())
-        volumeSlider:SetTooltip("Adjust the maximum volume level for the radio.")
-
-        panel:AddItem(volumeSlider)
-
-        -- Chat Message Toggle Section
-        local chatHeader = vgui.Create("DLabel", panel)
-        chatHeader:SetText("Chat Message Settings")
-        chatHeader:SetFont("Trebuchet18")
-        chatHeader:SetTextColor(Color(50, 50, 50))
-        chatHeader:Dock(TOP)
-        chatHeader:DockMargin(0, 20, 0, 0)
-        panel:AddItem(chatHeader)
-
+        -- Show Car Radio Messages Toggle
         local chatMessageCheckbox = vgui.Create("DCheckBoxLabel", panel)
         chatMessageCheckbox:SetText("Show Car Radio Messages")
         chatMessageCheckbox:SetConVar("car_radio_show_messages")
         chatMessageCheckbox:Dock(TOP)
-        chatMessageCheckbox:DockMargin(0, 0, 0, 0)
+        chatMessageCheckbox:DockMargin(0, 0, 0, 5)
+        chatMessageCheckbox:SetTextColor(Color(0, 0, 0))  -- Set text color to black
         chatMessageCheckbox:SetValue(GetConVar("car_radio_show_messages"):GetBool())
         chatMessageCheckbox:SetTooltip("Enable or disable the display of car radio messages.")
-
         panel:AddItem(chatMessageCheckbox)
+
+        -- Show Boombox Hover Text Toggle
+        local showTextCheckbox = vgui.Create("DCheckBoxLabel", panel)
+        showTextCheckbox:SetText("Show Boombox Hover Text")
+        showTextCheckbox:SetConVar("boombox_show_text")
+        showTextCheckbox:Dock(TOP)
+        showTextCheckbox:DockMargin(0, 0, 0, 0)
+        showTextCheckbox:SetTextColor(Color(0, 0, 0))  -- Set text color to black
+        showTextCheckbox:SetValue(GetConVar("boombox_show_text"):GetBool())
+        showTextCheckbox:SetTooltip("Enable or disable the display of text above the boombox.")
+        panel:AddItem(showTextCheckbox)
     end)
 end)

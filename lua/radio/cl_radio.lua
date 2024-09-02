@@ -19,14 +19,10 @@ end
 local function loadFavorites()
     if file.Exists(favoriteCountriesFile, "DATA") then
         favoriteCountries = util.JSONToTable(file.Read(favoriteCountriesFile, "DATA")) or {}
-        print("[Radio] Loaded favorite countries from file.")
-        PrintTable(favoriteCountries)  -- Debugging output
     end
 
     if file.Exists(favoriteStationsFile, "DATA") then
         favoriteStations = util.JSONToTable(file.Read(favoriteStationsFile, "DATA")) or {}
-        print("[Radio] Loaded favorite stations from file.")
-        PrintTable(favoriteStations)  -- Debugging output
     end
 end
 
@@ -170,7 +166,6 @@ net.Receive("SendFavoriteCountries", function()
     -- Ensure server data does not overwrite local data if it is empty
     if serverFavorites and next(serverFavorites) then
         favoriteCountries = serverFavorites
-        print("[Radio] Favorite countries updated from server.")
     end
 
     if stationListPanel and populateList then
@@ -239,9 +234,7 @@ local function createStationStarIcon(parent, country, station, stationListPanel,
 end
 
 function populateList(stationListPanel, backButton, searchBox, resetSearch)
-    -- Ensure stationListPanel is not nil
     if not stationListPanel then
-        print("[DEBUG] stationListPanel is nil in populateList.")
         return
     end
 
@@ -357,7 +350,6 @@ function populateList(stationListPanel, backButton, searchBox, resetSearch)
 
                 -- Check if the cooldown has passed
                 if currentTime - lastStationSelectTime < 1 then
-                    print("[Radio] Station selection cooldown active.")
                     return  -- Exit the function if the cooldown hasn't passed
                 end
 
