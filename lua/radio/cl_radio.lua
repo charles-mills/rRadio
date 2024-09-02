@@ -121,7 +121,8 @@ local function PrintCarRadioMessage()
 
     lastMessageTime = currentTime
 
-    local keyName = GetKeyName(Config.OpenKey)
+    local openKey = GetConVar("car_radio_open_key"):GetInt()
+    local keyName = GetKeyName(openKey)
     local message = Config.Lang["PressKeyToOpen"]:gsub("{key}", keyName)
 
     chat.AddText(
@@ -568,7 +569,8 @@ local function openRadioMenu()
 end
 
 hook.Add("Think", "OpenCarRadioMenu", function()
-    if input.IsKeyDown(Config.OpenKey) and not radioMenuOpen and IsValid(LocalPlayer():GetVehicle()) then
+    local openKey = GetConVar("car_radio_open_key"):GetInt()
+    if input.IsKeyDown(openKey) and not radioMenuOpen and IsValid(LocalPlayer():GetVehicle()) then
         LocalPlayer().currentRadioEntity = LocalPlayer():GetVehicle()
         openRadioMenu()
     end

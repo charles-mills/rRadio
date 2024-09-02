@@ -100,3 +100,5 @@ local keyCodeMapping = {
 function GetKeyName(keyCode)
     return keyCodeMapping[keyCode] or "the Open Key"
 end
+
+return keyCodeMapping
