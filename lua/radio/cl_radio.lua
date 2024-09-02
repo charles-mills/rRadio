@@ -174,8 +174,6 @@ net.Receive("SendFavoriteCountries", function()
     end
 end)
 
-
-
 local function createStarIcon(parent, country, stationListPanel, backButton, searchBox)
     local starIcon = vgui.Create("DImageButton", parent)
     starIcon:SetSize(Scale(24), Scale(24))
@@ -389,7 +387,6 @@ local function openRadioMenu()
     if radioMenuOpen then return end
     radioMenuOpen = true
 
-    -- Main Radio Menu Frame
     local frame = vgui.Create("DFrame")
     frame:SetTitle("")
     frame:SetSize(Scale(Config.UI.FrameSize.width), Scale(Config.UI.FrameSize.height))
@@ -397,12 +394,7 @@ local function openRadioMenu()
     frame:SetDraggable(true)
     frame:ShowCloseButton(false)
     frame:MakePopup()
-    frame.OnClose = function()
-        radioMenuOpen = false
-        if customUrlFrame and IsValid(customUrlFrame) then
-            customUrlFrame:Close()  -- Close the custom URL panel when the main panel is closed
-        end
-    end
+    frame.OnClose = function() radioMenuOpen = false end
 
     frame.Paint = function(self, w, h)
         draw.RoundedBox(8, 0, 0, w, h, Config.UI.BackgroundColor)
@@ -574,78 +566,8 @@ local function openRadioMenu()
     searchBox.OnChange = function(self)
         populateList(stationListPanel, backButton, searchBox, false)
     end
-
-    -- Custom URL Panel Frame
-    local customUrlFrame = vgui.Create("DFrame")
-    customUrlFrame:SetTitle("Custom URL")
-    customUrlFrame:SetSize(Scale(Config.UI.FrameSize.width * 0.8), Scale(Config.UI.FrameSize.height * 0.6))
-
-    -- Positioning the custom URL frame to the right of the main frame
-    local x, y = frame:GetPos()
-    customUrlFrame:SetPos(x + frame:GetWide() + Scale(10), y)  -- Position it to the right of the main frame
-    customUrlFrame:SetDraggable(true)
-    customUrlFrame:ShowCloseButton(false)
-    customUrlFrame:SetParent(frame)  -- Ensure it closes with the main panel
-    customUrlFrame:MakePopup()
-
-    customUrlFrame.Paint = function(self, w, h)
-        draw.RoundedBox(8, 0, 0, w, h, Config.UI.BackgroundColor)
-    end
-
-    -- Custom URL Text Entry
-    local urlEntry = vgui.Create("DTextEntry", customUrlFrame)
-    urlEntry:SetSize(customUrlFrame:GetWide() - Scale(20), Scale(30))
-    urlEntry:SetPos(Scale(10), Scale(40))
-    urlEntry:SetFont("Roboto18")
-    urlEntry:SetPlaceholderText("Enter custom stream URL")
-    urlEntry:SetTextColor(Config.UI.TextColor)
-    urlEntry:SetDrawBackground(true)
-    urlEntry.Paint = function(self, w, h)
-        draw.RoundedBox(8, 0, 0, w, h, Config.UI.SearchBoxColor)
-        self:DrawTextEntryText(Config.UI.TextColor, Color(120, 120, 120), Config.UI.TextColor)
-    end
-
-    -- Play Custom URL Button
-    local playUrlButton = vgui.Create("DButton", customUrlFrame)
-    playUrlButton:SetSize(customUrlFrame:GetWide() - Scale(20), Scale(30))
-    playUrlButton:SetPos(Scale(10), Scale(80))
-    playUrlButton:SetText("Play URL")
-    playUrlButton:SetFont("Roboto18")
-    playUrlButton:SetTextColor(Config.UI.TextColor)
-    playUrlButton.Paint = function(self, w, h)
-        draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonColor)
-        if self:IsHovered() then
-            draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonHoverColor)
-        end
-    end
-
-    playUrlButton.DoClick = function()
-        local entity = LocalPlayer().currentRadioEntity
-        local url = urlEntry:GetText()
-
-        if url == "" then return end
-
-        if IsValid(entity) then
-            if currentlyPlayingStation then
-                net.Start("StopCarRadioStation")
-                net.WriteEntity(entity)
-                net.SendToServer()
-            end
-
-            local volume = entityVolumes[entity] or getEntityConfig(entity).Volume
-            net.Start("PlayCarRadioStation")
-            net.WriteEntity(entity)
-            net.WriteString("Custom URL")
-            net.WriteString(url)
-            net.WriteFloat(volume)
-            net.SendToServer()
-
-            currentlyPlayingStation = { name = "Custom URL", url = url }
-        end
-    end
 end
 
--- Hook to open the radio menu
 hook.Add("Think", "OpenCarRadioMenu", function()
     local openKey = GetConVar("car_radio_open_key"):GetInt()
     if input.IsKeyDown(openKey) and not radioMenuOpen and IsValid(LocalPlayer():GetVehicle()) then
