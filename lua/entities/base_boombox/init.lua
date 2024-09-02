@@ -12,13 +12,12 @@ local lastPermissionMessageTime = {}
 -- Cooldown period for permission messages in seconds
 local permissionMessageCooldown = 5
 
--- Set the owner when the entity is initialized
 function ENT:Initialize()
     self:SetModel(self.Model or "models/rammel/boombox.mdl")
     self:PhysicsInit(SOLID_VPHYSICS)
     self:SetMoveType(MOVETYPE_VPHYSICS)
     self:SetSolid(SOLID_VPHYSICS)
-    
+
     if self.Color then
         self:SetColor(self.Color)
     end
@@ -27,18 +26,32 @@ function ENT:Initialize()
     if phys:IsValid() then
         phys:Wake()
     end
+end
 
-    -- Set the owner of the boombox
-    if IsValid(self.Owner) then
-        self:SetNWEntity("Owner", self.Owner)
-    end
+-- Spawn function called when the entity is created via the Spawn Menu or other means
+function ENT:SpawnFunction(ply, tr, className)
+    if not tr.Hit then return end
+
+    local spawnPos = tr.HitPos + tr.HitNormal * 16
+
+    local ent = ents.Create(className)
+    ent:SetPos(spawnPos)
+    ent:SetAngles(Angle(0, ply:EyeAngles().y - 90, 0))
+    ent:Spawn()
+    ent:Activate()
+
+    -- Set the owner of the entity
+    ent:SetOwner(ply)
+    ent:SetNWEntity("Owner", ply)
+
+    return ent
 end
 
 -- Only allow the owner or a superadmin to use the boombox
 function ENT:Use(activator, caller)
     if activator:IsPlayer() then
         local owner = self:GetNWEntity("Owner")
-        
+
         -- Check if the player is the owner or a superadmin
         if activator == owner or activator:IsSuperAdmin() then
             net.Start("OpenRadioMenu")
