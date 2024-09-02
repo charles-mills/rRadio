@@ -602,7 +602,7 @@ net.Receive("PlayCarRadioStation", function()
 
         local function tryPlayStation(playAttempt)
             sound.PlayURL(url, "3d mono", function(station, errorID, errorName)
-                if IsValid(station) then
+                if IsValid(station) and IsValid(entity) then
                     station:SetPos(entity:GetPos())
                     station:SetVolume(volume)
                     station:Play()
@@ -653,6 +653,7 @@ net.Receive("PlayCarRadioStation", function()
 
     attemptPlayStation(1)
 end)
+
 
 net.Receive("StopCarRadioStation", function()
     local entity = net.ReadEntity()

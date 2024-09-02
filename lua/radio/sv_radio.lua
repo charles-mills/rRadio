@@ -3,6 +3,7 @@ util.AddNetworkString("StopCarRadioStation")
 util.AddNetworkString("CarRadioMessage")
 util.AddNetworkString("OpenRadioMenu")
 util.AddNetworkString("UpdateRadioStatus")
+util.AddNetworkString("ToggleFavoriteCountry")
 
 local ActiveRadios = {}
 local debug_mode = false  -- Set to true to enable debug statements

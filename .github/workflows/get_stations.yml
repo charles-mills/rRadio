@@ -2,7 +2,7 @@ name: Radio Station Manager
 
 on:
   schedule:
-    - cron: '0 0 * * *'  # Runs fetch_only_task every day at midnight
+    - cron: '0 0 * * 5'  # Runs fetch_only_task every Friday at midnight
   workflow_dispatch:  # Allows manual trigger of main_task
     inputs:
       run_main_task:
