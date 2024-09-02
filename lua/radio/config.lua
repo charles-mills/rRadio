@@ -51,7 +51,7 @@ Config.MessageCooldown = 300 -- Cooldown time in seconds before the chat message
 local openKeyConvar = GetConVar("car_radio_open_key")
 
 if not openKeyConvar then
-    CreateClientConVar("car_radio_open_key", "107", true, false, "Select the key to open the car radio menu.")
+    CreateClientConVar("car_radio_open_key", "21", true, false, "Select the key to open the car radio menu.")
     openKeyConvar = GetConVar("car_radio_open_key")
 end
 

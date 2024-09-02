@@ -8,7 +8,7 @@ CreateClientConVar("radio_language", "en", true, false, "Select the language for
 CreateClientConVar("boombox_show_text", "1", true, false, "Show or hide the text above the boombox.")
 
 -- Create a client convar to select the key for opening the radio menu
-CreateClientConVar("car_radio_open_key", KEY_K, true, false, "Select the key to open the car radio menu.") -- Default is KEY_K
+CreateClientConVar("car_radio_open_key", "21", true, false, "Select the key to open the car radio menu.") -- Default is KEY_K
 
 -- Function to apply the selected theme
 local function applyTheme(themeName)
