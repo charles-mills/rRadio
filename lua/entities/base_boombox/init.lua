@@ -26,6 +26,9 @@ function ENT:Initialize()
     if phys:IsValid() then
         phys:Wake()
     end
+
+    -- Ensure the collision group allows interaction with the Physgun
+    self:SetCollisionGroup(COLLISION_GROUP_NONE)
 end
 
 -- Spawn function called when the entity is created via the Spawn Menu or other means
@@ -40,11 +43,23 @@ function ENT:SpawnFunction(ply, tr, className)
     ent:Spawn()
     ent:Activate()
 
-    -- Set the owner of the entity
-    ent:SetOwner(ply)
-    ent:SetNWEntity("Owner", ply)
+    -- Set the owner of the entity using NWEntity if a valid player is available
+    if IsValid(ply) then
+        ent:SetNWEntity("Owner", ply)
+    end
 
     return ent
+end
+
+-- Ensure only the owner or a superadmin can pick up the boombox with the Physgun
+function ENT:PhysgunPickup(ply)
+    local owner = self:GetNWEntity("Owner")
+    
+    if not IsValid(owner) or ply == owner or ply:IsSuperAdmin() then
+        return true
+    end
+
+    return false
 end
 
 -- Only allow the owner or a superadmin to use the boombox

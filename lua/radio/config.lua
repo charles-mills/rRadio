@@ -70,8 +70,8 @@ Config.Boombox = {
 -- Golden Boombox Settings
 Config.GoldenBoombox = {
     Volume = 1, -- Default radio volume (range: 0.0 to 1.0)
-    MaxHearingDistance = 15000, -- Increased maximum distance at which the radio can be heard (in units)
-    MinVolumeDistance = 10000, -- Increased distance at which the radio volume starts to drop off (in units)
+    MaxHearingDistance = 1500000, -- Increased maximum distance at which the radio can be heard (in units)
+    MinVolumeDistance = 1500000, -- Increased distance at which the radio volume starts to drop off (in units)
     RetryAttempts = 3, -- Number of retry attempts to play a station in case of failure
     RetryDelay = 2 -- Delay in seconds between retry attempts
 }
