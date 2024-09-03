@@ -226,5 +226,17 @@ hook.Add("PopulateToolMenu", "AddThemeAndVolumeSelectionMenu", function()
         showTextCheckbox:SetValue(GetConVar("boombox_show_text"):GetBool())
         showTextCheckbox:SetTooltip("Enable or disable the display of text above the boombox.")
         panel:AddItem(showTextCheckbox)
+
+        -- Allow Custom URLs Toggle (Superadmin Only)
+        if LocalPlayer():IsSuperAdmin() then
+            local customURLsCheckbox = vgui.Create("DCheckBoxLabel", panel)
+            customURLsCheckbox:SetText("Allow Custom URLs (Superadmin)")
+            customURLsCheckbox:SetConVar("rradio_allow_custom_urls")
+            customURLsCheckbox:Dock(TOP)
+            customURLsCheckbox:DockMargin(0, 0, 0, 0)
+            customURLsCheckbox:SetTextColor(Color(0, 0, 0))
+            customURLsCheckbox:SetTooltip("Allow or disallow clients from playing custom URLs.")
+            panel:AddItem(customURLsCheckbox)
+        end
     end)
 end)

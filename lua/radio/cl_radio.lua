@@ -473,7 +473,7 @@ local function openRadioMenu()
     urlEntry:SetPos(Scale(10), Scale(60))
     urlEntry:SetSize(Scale(Config.UI.FrameSize.width) - Scale(20), Scale(30))
     urlEntry:SetFont("Roboto18")
-    urlEntry:SetPlaceholderText("Enter a custom URL (Discord Sound Link)")
+    urlEntry:SetPlaceholderText("Enter a custom URL (Discord Sound)")
     urlEntry:SetTextColor(Config.UI.TextColor)
     urlEntry:SetDrawBackground(false)
     urlEntry.Paint = function(self, w, h)
@@ -951,6 +951,5 @@ loadCustomURLs()  -- Load the custom URLs when the script initializes
 
 hook.Add("InitPostEntity", "InitializeFavoritesAndCustomURLs", function()
     populateList(stationListPanel, backButton, searchBox, true)  -- Ensure UI is updated with the loaded favorites after entities have loaded
-    populateSavedURLs()  -- Ensure the custom URLs list is populated
 end)
 

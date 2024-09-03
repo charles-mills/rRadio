@@ -9,6 +9,12 @@ local ActiveRadios = {}
 local debug_mode = false  -- Set to true to enable debug statements
 SavedBoomboxStates = SavedBoomboxStates or {}
 
+CreateConVar("rradio_allow_custom_urls", "1", FCVAR_ARCHIVE, "Allow clients to play custom URLs. 1 = Allowed, 0 = Not Allowed")
+
+local function CanPlayCustomURLs()
+    return GetConVar("rradio_allow_custom_urls"):GetBool()
+end
+
 -- Debug function to print messages if debug_mode is enabled
 local function DebugPrint(msg)
     if debug_mode then
