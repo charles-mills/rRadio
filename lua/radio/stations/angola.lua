@@ -9,9 +9,9 @@ local stations = {
     {name = "EXA FM: Música Pop Em Inglês E Espanhol", url = "https://playerservices.streamtheworld.com/api/livestream-redirect/XHPSFMAAC.aac"},
     {name = "Rádio Fé Angola", url = "http://stream.zeno.fm/gsndh1xvczetv"},
     {name = "Radio Sem Anestesia", url = "https://radios.vpn.sapo.pt/AO/radio7.mp3"},
-    {name = "Rádio Unia 923 Mhz FM, Luanda Universidade Independente De Angola", url = "http://radios.vpn.sapo.pt/AO/radio2.mp3"},
     {name = "Dimusic Club Angola 🇦🇴", url = "http://stream1.dimusic.club:11496/live?type=.aac"},
     {name = "Ebnézer Rádio", url = "http://08.stmip.net:10028/;;"},
+    {name = "Rádio Unia 923 Mhz FM, Luanda Universidade Independente De Angola", url = "http://radios.vpn.sapo.pt/AO/radio2.mp3"},
     {name = "Radio N'Gola Yetu", url = "https://radios.vpn.sapo.pt/AO/radio12.mp3"},
 }
 

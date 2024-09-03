@@ -7,7 +7,6 @@ local stations = {
     {name = "Radio Mix Congolaise", url = "https://stream.zeno.fm/qe5g83upga0uv"},
     {name = "Tzgospel Congo Drc", url = "https://stream.zeno.fm/swfn5pb4tchvv"},
     {name = "Viunga Business Radio", url = "https://stream-172.zeno.fm/r6vaqx5zbg0uv?zs=WjrAW1N0QX-x4o-HQ4IMiw&zt=eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJaZW5vTWVkaWEiLCJtYXhBZ2UiOjg2NDAwMDAwLCJob3N0IjoiaHR0cHM6Ly9zdHJlYW0tMTcyLnplbm8uZm0iLCJpZCI6Ildqc"},
-    {name = "Radio Elikya", url = "https://stream4.xdevel.com/audio0s976222-1078/stream/icecast.audio"},
     {name = "Watoto Radio", url = "https://stream-47.zeno.fm/xwx18us91k8uv?zs=D6hP5IeET_CVAjQuCUtmkg"},
     {name = "MILLENIUM RADIO", url = "http://stream.zeno.fm/471pmgfd5f8uv"},
 }

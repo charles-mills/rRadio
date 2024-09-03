@@ -13,12 +13,12 @@ local stations = {
     {name = "Visir FM 957 Extra Reykjavik", url = "http://icecast.365net.is:8000/orbFmExtra.aac"},
     {name = "Gull Bylgjan 909 Reykjavik", url = "http://icecast.365net.is:8000/orbGullBylgjan.aac.m3u"},
     {name = "Trolli FM 1037 Siglufjordu", url = "http://live.trolli.is:8200/;"},
-    {name = "Flashback 90'S Online Reykjavik", url = "http://www.radio.is:443/90flashback"},
     {name = "K 100", url = "https://ice-11.spilarinn.is/kaninnmobile"},
-    {name = "Flashback 919 Reykjavik", url = "http://www.radio.is:443/flashback"},
+    {name = "Flashback 90'S Online Reykjavik", url = "http://www.radio.is:443/90flashback"},
     {name = "Létt Bylgjan", url = "http://icecast.365net.is:8000/orbLettBylgjan.aac.m3u"},
-    {name = "Fred Film Radio-26 Íslenska", url = "https://s10.webradio-hosting.com/proxy/fredradiois/stream"},
     {name = "Apparatid", url = "http://icecast.365net.is:8000/orbApparatid.aac"},
+    {name = "Flashback 919 Reykjavik", url = "http://www.radio.is:443/flashback"},
+    {name = "Fred Film Radio-26 Íslenska", url = "https://s10.webradio-hosting.com/proxy/fredradiois/stream"},
 }
 
 return stations

@@ -12,10 +12,10 @@ local stations = {
     {name = "Baku Retro Fm", url = "http://5.191.241.101:8000/bakuretrofm"},
     {name = "Dimusic Club Azerbaijan 🇦🇿", url = "http://stream1.dimusic.club:11496/live?type=.aac"},
     {name = "Media Fm 1055", url = "https://icecast.livetv.az/mediafm"},
-    {name = "Caspian Business Radio BOSS", url = "https://myradio24.org/bosscomaz"},
     {name = "Coderadio From Freecodecamp", url = "https://coderadio-admin-v2.freecodecamp.org/listen/coderadio/radio.mp3"},
-    {name = "Baku Jukebox", url = "http://78.109.52.73:8000/listening-from-radio-garden-1696020096"},
+    {name = "Caspian Business Radio BOSS", url = "https://myradio24.org/bosscomaz"},
     {name = "Cipcip", url = "https://stream.zeno.fm/bqrnn6cx868uv"},
+    {name = "Baku Jukebox", url = "http://78.109.52.73:8000/listening-from-radio-garden-1696020096"},
     {name = "Radiocto", url = "https://yayin.girenizfm.com.tr/8196/stream"},
 }
 
