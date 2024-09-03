@@ -387,6 +387,7 @@ local function openRadioMenu()
     if radioMenuOpen then return end
     radioMenuOpen = true
 
+    -- Main frame
     local frame = vgui.Create("DFrame")
     frame:SetTitle("")
     frame:SetSize(Scale(Config.UI.FrameSize.width), Scale(Config.UI.FrameSize.height))
@@ -396,6 +397,86 @@ local function openRadioMenu()
     frame:MakePopup()
     frame.OnClose = function() radioMenuOpen = false end
 
+    -- Radio Selection Panel (Existing Content)
+    local radioSelectionPanel = vgui.Create("DPanel", frame)
+    radioSelectionPanel:SetPos(0, 0)
+    radioSelectionPanel:SetSize(frame:GetWide(), frame:GetTall())
+    radioSelectionPanel.Paint = function() end  -- Disable background painting
+    radioSelectionPanel:SetVisible(true)
+
+    local searchBox = vgui.Create("DTextEntry", radioSelectionPanel)
+    searchBox:SetPos(Scale(10), Scale(50))
+    searchBox:SetSize(Scale(Config.UI.FrameSize.width) - Scale(20), Scale(30))
+    searchBox:SetFont("Roboto18")
+    searchBox:SetPlaceholderText(Config.Lang and Config.Lang["SearchPlaceholder"] or "Search")
+    searchBox:SetTextColor(Config.UI.TextColor)
+    searchBox:SetDrawBackground(false)
+    searchBox.Paint = function(self, w, h)
+        draw.RoundedBox(8, 0, 0, w, h, Config.UI.SearchBoxColor)
+        self:DrawTextEntryText(Config.UI.TextColor, Color(120, 120, 120), Config.UI.TextColor)
+
+        if self:GetText() == "" then
+            draw.SimpleText(self:GetPlaceholderText(), self:GetFont(), Scale(5), h / 2, Config.UI.TextColor, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+        end
+    end
+
+    local stationListPanel = vgui.Create("DScrollPanel", radioSelectionPanel)
+    stationListPanel:SetPos(Scale(5), Scale(90))
+    stationListPanel:SetSize(Scale(Config.UI.FrameSize.width) - Scale(20), Scale(Config.UI.FrameSize.height) - Scale(200))
+
+    -- Custom URL Panel (New Content)
+    local customURLPanel = vgui.Create("DPanel", frame)
+    customURLPanel:SetPos(0, 0)
+    customURLPanel:SetSize(frame:GetWide(), frame:GetTall())
+    customURLPanel.Paint = function() end  -- Disable background painting
+    customURLPanel:SetVisible(false)
+
+    local urlEntry = vgui.Create("DTextEntry", customURLPanel)
+    urlEntry:SetPos(Scale(10), Scale(50))
+    urlEntry:SetSize(Scale(Config.UI.FrameSize.width) - Scale(20), Scale(30))
+    urlEntry:SetFont("Roboto18")
+    urlEntry:SetPlaceholderText("Enter custom radio URL")
+    urlEntry:SetTextColor(Config.UI.TextColor)
+    urlEntry:SetDrawBackground(false)
+    urlEntry.Paint = function(self, w, h)
+        draw.RoundedBox(8, 0, 0, w, h, Config.UI.SearchBoxColor)
+        self:DrawTextEntryText(Config.UI.TextColor, Color(120, 120, 120), Config.UI.TextColor)
+
+        if self:GetText() == "" then
+            draw.SimpleText(self:GetPlaceholderText(), self:GetFont(), Scale(5), h / 2, Config.UI.TextColor, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+        end
+    end
+
+    local playURLButton = vgui.Create("DButton", customURLPanel)
+    playURLButton:SetPos(Scale(10), Scale(100))
+    playURLButton:SetSize(Scale(200), Scale(40))
+    playURLButton:SetText("Play URL")
+    playURLButton:SetFont("Roboto18")
+    playURLButton:SetTextColor(Config.UI.TextColor)
+    playURLButton.Paint = function(self, w, h)
+        draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonColor)
+        if self:IsHovered() then
+            draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonHoverColor)
+        end
+    end
+
+    playURLButton.DoClick = function()
+        local entity = LocalPlayer().currentRadioEntity
+        local url = urlEntry:GetText()
+
+        if IsValid(entity) and url ~= "" then
+            local volume = entityVolumes[entity] or getEntityConfig(entity).Volume
+            net.Start("PlayCarRadioStation")
+            net.WriteEntity(entity)
+            net.WriteString("Custom URL")
+            net.WriteString(url)
+            net.WriteFloat(volume)
+            net.SendToServer()
+            currentlyPlayingStation = {name = "Custom URL", url = url}
+        end
+    end
+
+    -- Frame Paint - includes the default header
     frame.Paint = function(self, w, h)
         draw.RoundedBox(8, 0, 0, w, h, Config.UI.BackgroundColor)
         draw.RoundedBoxEx(8, 0, 0, w, Scale(40), Config.UI.HeaderColor, true, true, false, false)
@@ -412,29 +493,63 @@ local function openRadioMenu()
         surface.SetDrawColor(Config.UI.TextColor)
         surface.DrawTexturedRect(iconOffsetX, iconOffsetY, iconSize, iconSize)
         
-        local countryText = Config.Lang["SelectCountry"] or "Select Country"
-        draw.SimpleText(selectedCountry and formatCountryName(selectedCountry) or countryText, "HeaderFont", iconOffsetX + iconSize + Scale(5), iconOffsetY, Config.UI.TextColor, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
-    end
-    
-    local searchBox = vgui.Create("DTextEntry", frame)
-    searchBox:SetPos(Scale(10), Scale(50))
-    searchBox:SetSize(Scale(Config.UI.FrameSize.width) - Scale(20), Scale(30))
-    searchBox:SetFont("Roboto18")
-    searchBox:SetPlaceholderText(Config.Lang and Config.Lang["SearchPlaceholder"] or "Search")
-    searchBox:SetTextColor(Config.UI.TextColor)
-    searchBox:SetDrawBackground(false)
-    searchBox.Paint = function(self, w, h)
-        draw.RoundedBox(8, 0, 0, w, h, Config.UI.SearchBoxColor)
-        self:DrawTextEntryText(Config.UI.TextColor, Color(120, 120, 120), Config.UI.TextColor)
-
-        if self:GetText() == "" then
-            draw.SimpleText(self:GetPlaceholderText(), self:GetFont(), Scale(5), h / 2, Config.UI.TextColor, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+        local headerText
+        if customURLPanel:IsVisible() then
+            headerText = "Enter your URL"
+        else
+            headerText = selectedCountry and formatCountryName(selectedCountry) or (Config.Lang["SelectCountry"] or "Select Country")
         end
+        
+        draw.SimpleText(headerText, "HeaderFont", iconOffsetX + iconSize + Scale(5), iconOffsetY, Config.UI.TextColor, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
     end
 
-    local stationListPanel = vgui.Create("DScrollPanel", frame)
-    stationListPanel:SetPos(Scale(5), Scale(90))
-    stationListPanel:SetSize(Scale(Config.UI.FrameSize.width) - Scale(20), Scale(Config.UI.FrameSize.height) - Scale(200))
+    -- Second frame for the buttons
+    local buttonFrame = vgui.Create("DFrame")
+    buttonFrame:SetTitle("")
+    buttonFrame:SetSize(Scale(Config.UI.FrameSize.width), Scale(50))  -- Adjust the height as needed
+    buttonFrame:SetPos(frame:GetPos())  -- Position it relative to the main frame
+    buttonFrame:SetDraggable(false)
+    buttonFrame:ShowCloseButton(false)
+    buttonFrame:MakePopup()
+    buttonFrame.Paint = function() end  -- Disable background painting
+
+    -- Floating Tab Buttons in the second frame
+    local radioButton = vgui.Create("DButton", buttonFrame)
+    radioButton:SetSize(Scale(150), Scale(40))
+    radioButton:SetPos(Scale(10), Scale(10))  -- Position within the button frame
+    radioButton:SetText("Radio Selection")
+    radioButton:SetFont("Roboto18")
+    radioButton:SetTextColor(Config.UI.TextColor)
+    radioButton.Paint = function(self, w, h)
+        draw.RoundedBoxEx(8, 0, 0, w, h, self:IsHovered() and Config.UI.ButtonHoverColor or Config.UI.HeaderColor, true, true, false, false)
+    end
+
+    local customURLButton = vgui.Create("DButton", buttonFrame)
+    customURLButton:SetSize(Scale(150), Scale(40))
+    customURLButton:SetPos(Scale(165), Scale(10))  -- Position within the button frame
+    customURLButton:SetText("Custom URL")
+    customURLButton:SetFont("Roboto18")
+    customURLButton:SetTextColor(Config.UI.TextColor)
+    customURLButton.Paint = function(self, w, h)
+        draw.RoundedBoxEx(8, 0, 0, w, h, self:IsHovered() and Config.UI.ButtonHoverColor or Config.UI.HeaderColor, true, true, false, false)
+    end
+
+    -- Toggle Panels with Tabs
+    radioButton.DoClick = function()
+        radioSelectionPanel:SetVisible(true)
+        customURLPanel:SetVisible(false)
+    end
+
+    customURLButton.DoClick = function()
+        radioSelectionPanel:SetVisible(false)
+        customURLPanel:SetVisible(true)
+    end
+
+    -- Ensure button frame follows the main frame
+    frame.Think = function(self)
+        local x, y = self:GetPos()
+        buttonFrame:SetPos(x, y - Scale(50))  -- Adjust the position as needed
+    end
 
     local stopButtonHeight = Scale(Config.UI.FrameSize.width) / 8
     local stopButtonWidth = Scale(Config.UI.FrameSize.width) / 4
@@ -552,6 +667,7 @@ local function openRadioMenu()
     closeButton.DoClick = function()
         surface.PlaySound("buttons/lightswitch2.wav")
         frame:Close()
+        buttonFrame:Close()  -- Close the button frame as well
     end
 
     local sbar = stationListPanel:GetVBar()
