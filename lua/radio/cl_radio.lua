@@ -350,7 +350,7 @@ function populateList(stationListPanel, backButton, searchBox, resetSearch)
                 local currentTime = CurTime()
 
                 -- Check if the cooldown has passed
-                if currentTime - lastStationSelectTime < 1 then
+                if currentTime - lastStationSelectTime < 2 then
                     return  -- Exit the function if the cooldown hasn't passed
                 end
 

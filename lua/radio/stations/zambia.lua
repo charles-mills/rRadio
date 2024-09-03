@@ -6,7 +6,6 @@ local stations = {
     {name = "5Fm Radio Zambia", url = "http://ca9.rcast.net:8014/;stream.mp3"},
     {name = "Thabiggradio", url = "http://stream.zeno.fm/c17yxm6rrg0uv"},
     {name = "Energy Broadcst Accouant", url = "https://sv2.famcast.co.za/proxy/energyfm?mp=/stream"},
-    {name = "Flava Kitwe", url = "http://s2.voscast.com:9304/;"},
 }
 
 return stations

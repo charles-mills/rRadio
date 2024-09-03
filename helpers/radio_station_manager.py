@@ -10,6 +10,8 @@ from typing import List, Dict
 import subprocess
 from asyncio import Semaphore
 import platform
+import logging
+from urllib.parse import urlparse
 
 # Configuration setup
 class Config:
@@ -56,21 +58,37 @@ class Utils:
         return name.lower()
 
     @staticmethod
+    def is_valid_url(url: str) -> bool:
+        parsed_url = urlparse(url)
+        return all([parsed_url.scheme, parsed_url.netloc]) and len(url) < 2048
+
+    @staticmethod
     async def check_audio_stream(session: aiohttp.ClientSession, url: str) -> bool:
         """
         Check if the provided URL is a valid audio stream.
         """
+        if not Utils.is_valid_url(url):
+            logging.error(f"Invalid or malformed URL: {url}")
+            return False
+
         try:
+            # Wrap the session.get call with asyncio.wait_for to enforce a timeout
             async with session.get(url, timeout=10, ssl=True) as response:
                 content_type = response.headers.get('Content-Type', '').lower()
                 if 'audio' in content_type:
-                    print(f"URL {url} is a valid audio stream.")
+                    logging.info(f"URL {url} is a valid audio stream.")
                     return True
                 else:
-                    print(f"URL {url} is not an audio stream. Content-Type: {content_type}")
+                    logging.warning(f"URL {url} is not an audio stream. Content-Type: {content_type}")
                     return False
+        except asyncio.TimeoutError:
+            logging.error(f"Timeout while checking URL: {url}")
+            return False
+        except aiohttp.TooManyRedirects:
+            logging.error(f"Too many redirects for URL: {url}")
+            return False
         except Exception as e:
-            print(f"Error checking URL {url}: {e}")
+            logging.error(f"Error checking URL {url}: {e}")
             return False
 
 # Radio station management class
