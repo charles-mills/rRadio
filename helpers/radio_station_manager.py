@@ -72,7 +72,6 @@ class Utils:
             return False
 
         try:
-            # Wrap the session.get call with asyncio.wait_for to enforce a timeout
             async with session.get(url, timeout=10, ssl=True) as response:
                 content_type = response.headers.get('Content-Type', '').lower()
                 if 'audio' in content_type:
@@ -101,7 +100,6 @@ class RadioStationManager:
     async def fetch_stations(self, session: aiohttp.ClientSession, country_name: str, retries: int = 5, by_popularity: bool = True) -> List[Dict[str, str]]:
         print(f"Fetching stations for country: {country_name} {'by popularity' if by_popularity else ''}")
         
-        # Adjust the API URL to order by popularity (clickcount)
         if by_popularity:
             url = f"{self.config.API_BASE_URL}/stations/bycountry/{country_name.replace(' ', '%20')}?order=clickcount&reverse=true"
         else:
@@ -210,58 +208,16 @@ class RadioStationManager:
                 await asyncio.gather(*tasks)
         print("All stations fetched and saved.")
 
-    async def verify_and_save_stations(self, session: aiohttp.ClientSession, country: str, pbar: tqdm):
-        print(f"Verifying and saving stations for {country}...")
-        file_path = os.path.join(self.config.STATIONS_DIR, f"{Utils.clean_file_name(country)}.lua")
-        
-        if not os.path.exists(file_path):
-            print(f"File {file_path} not found. Skipping verification for {country}.")
-            pbar.update(1)
-            return
-        
-        with open(file_path, 'r', encoding='utf-8') as f:
-            content = f.read()
-        
-        stations = re.findall(r'\{name\s*=\s*"(.*?)",\s*url\s*=\s*"(.*?)"\}', content)
-        stations = [{"name": name, "url": url} for name, url in stations]
-
-        verified_stations = await self.verify_stations(session, stations)
-        if verified_stations:
-            await self.save_stations_to_file(session, country, verified_stations)
-            self.commit_and_push_changes(file_path, f"Verified and saved stations for {country}")
-        pbar.update(1)
-
-    async def verify_stations(self, session: aiohttp.ClientSession, stations: List[Dict[str, str]]) -> List[Dict[str, str]]:
-        print(f"Verifying {len(stations)} stations...")
-        verified_stations = []
-        tasks = [self.check_and_add_station(session, station, verified_stations) for station in stations]
-        await asyncio.gather(*tasks)
-        print(f"Verified {len(verified_stations)} stations successfully.")
-        return verified_stations
-
-    async def check_and_add_station(self, session: aiohttp.ClientSession, station: Dict[str, str], verified_stations: List[Dict[str, str]]):
-        if await Utils.check_audio_stream(session, station["url"]):
-            verified_stations.append(station)
-
-    async def verify_all_stations(self):
-        print("Starting to verify all stations...")
-        countries = self.get_all_countries()
-        with tqdm(total=len(countries), desc="Verifying stations") as pbar:
-            async with aiohttp.ClientSession() as session:
-                tasks = [self.verify_and_save_stations(session, country, pbar) for country in countries]
-                await asyncio.gather(*tasks)
-        print("All stations verified and saved.")
-
     def get_all_countries(self) -> List[str]:
         print("Fetching list of all countries...")
         url = f"{self.config.API_BASE_URL}/countries"
-        response = requests.get(url, verify=True)
+        response = requests.get(url)
         countries = response.json()
         print(f"Found {len(countries)} countries.")
         return [country['name'] for country in countries if Utils.clean_file_name(country['name']) != "the_democratic_peoples_republic_of_korea"]
 
 # Main application logic
-async def main_async(auto_run=False, fetch=False, verify=False, count=False):
+async def main_async(auto_run=False, fetch=False, count=False):
     print("Starting the Radio Station Manager...")
     config = Config()
     manager = RadioStationManager(config)
@@ -271,9 +227,6 @@ async def main_async(auto_run=False, fetch=False, verify=False, count=False):
         if fetch:
             print("Fetching stations...")
             await manager.fetch_all_stations()
-        if verify:
-            print("Verifying stations...")
-            await manager.verify_all_stations()
         if count:
             print("Counting stations and updating README...")
             total_stations = count_total_stations(config.STATIONS_DIR)
@@ -284,38 +237,34 @@ async def main_async(auto_run=False, fetch=False, verify=False, count=False):
         while True:
             print("\n--- Radio Station Manager ---")
             print("1 - Fetch and Save Stations")
-            print("2 - Verify Stations")
-            print("3 - Count Total Stations and Update README")
-            print("4 - Full Rescan, Verify, Update README, and Push Changes")
-            print("5 - Exit")
+            print("2 - Count Total Stations and Update README")
+            print("3 - Full Rescan, Update README, and Push Changes")
+            print("4 - Exit")
             
             choice = input("Select an option: ")
 
             if choice == '1':
                 await manager.fetch_all_stations()
             elif choice == '2':
-                await manager.verify_all_stations()
-            elif choice == '3':
                 total_stations = count_total_stations(config.STATIONS_DIR)
                 update_readme_with_station_count(config.README_PATH, total_stations)
-            elif choice == '4':
+            elif choice == '3':
                 await manager.fetch_all_stations()
-                await manager.verify_all_stations()
                 total_stations = count_total_stations(config.STATIONS_DIR)
                 update_readme_with_station_count(config.README_PATH, total_stations)
                 manager.commit_and_push_changes(config.README_PATH, f"Update README.md with {total_stations} radio stations")
-            elif choice == '5':
+            elif choice == '4':
                 print("Exiting...")
                 break
             else:
                 print("Invalid option. Please try again.")
 
-def main(auto_run=False, fetch=False, verify=False, count=False):
+def main(auto_run=False, fetch=False, count=False):
     # Setting the appropriate event loop policy based on the platform
     if platform.system() == "Windows":
         asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
-    asyncio.run(main_async(auto_run=auto_run, fetch=fetch, verify=verify, count=count))
+    asyncio.run(main_async(auto_run=auto_run, fetch=fetch, count=count))
 
 # Helper functions
 def count_total_stations(directory: str) -> int:
@@ -376,8 +325,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Radio Station Manager')
     parser.add_argument('--auto-run', action='store_true', help='Automatically run full rescan, save, and verify')
     parser.add_argument('--fetch', action='store_true', help='Fetch and save stations')
-    parser.add_argument('--verify', action='store_true', help='Verify saved stations')
     parser.add_argument('--count', action='store_true', help='Count total stations and update README')
     args = parser.parse_args()
 
-    main(auto_run=args.auto_run, fetch=args.fetch, verify=args.verify, count=args.count)
+    main(auto_run=args.auto_run, fetch=args.fetch, count=args.count)
