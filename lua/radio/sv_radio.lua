@@ -4,25 +4,10 @@ util.AddNetworkString("CarRadioMessage")
 util.AddNetworkString("OpenRadioMenu")
 util.AddNetworkString("UpdateRadioStatus")
 util.AddNetworkString("ToggleFavoriteCountry")
-util.AddNetworkString("Radio_SendCustomURLStatus")
 
 local ActiveRadios = {}
 local debug_mode = false  -- Set to true to enable debug statements
 SavedBoomboxStates = SavedBoomboxStates or {}
-
-CreateConVar("rradio_allow_custom_urls", "1", FCVAR_ARCHIVE, "Allow clients to play custom URLs. 1 = Allowed, 0 = Not Allowed")
-
-local function CanPlayCustomURLs()
-    return GetConVar("rradio_allow_custom_urls"):GetBool()
-end
-
--- Function to send the custom URL allowance status to a client
-local function SendCustomURLStatus(ply)
-    local allowCustomURLS = CanPlayCustomURLs()
-    net.Start("Radio_SendCustomURLStatus")
-    net.WriteBool(allowCustomURLS)
-    net.Send(ply)
-end
 
 -- Debug function to print messages if debug_mode is enabled
 local function DebugPrint(msg)
@@ -181,7 +166,6 @@ hook.Add("PlayerInitialSpawn", "SendActiveRadiosOnJoin", function(ply)
     timer.Simple(3, function()
         if IsValid(ply) then
             SendActiveRadiosToPlayer(ply)
-            SendCustomURLStatus(ply)
         end
     end)
 end)

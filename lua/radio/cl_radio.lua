@@ -5,27 +5,17 @@ local LanguageManager = include("language_manager.lua")
 
 local favoriteCountries = {}
 local favoriteStations = {}
-local customURLs = {}
 
 local dataDir = "rradio"
 local favoriteCountriesFile = dataDir .. "/favorite_countries.txt"
 local favoriteStationsFile = dataDir .. "/favorite_stations.txt"
-local customURLsFile = dataDir .. "/custom_urls.txt"
-
-local allowCustomURLS = false
-
--- Network message receiver to update the ConVar value
-net.Receive("Radio_SendCustomURLStatus", function()
-    allowCustomURLS = net.ReadBool()
-end)
-
 
 -- Ensure the data directory exists
 if not file.IsDir(dataDir, "DATA") then
     file.CreateDir(dataDir)
 end
 
--- Load favorites and custom URLs from file
+-- Load favorites from file
 local function loadFavorites()
     if file.Exists(favoriteCountriesFile, "DATA") then
         favoriteCountries = util.JSONToTable(file.Read(favoriteCountriesFile, "DATA")) or {}
@@ -36,20 +26,10 @@ local function loadFavorites()
     end
 end
 
-local function loadCustomURLs()
-    if file.Exists(customURLsFile, "DATA") then
-        customURLs = util.JSONToTable(file.Read(customURLsFile, "DATA")) or {}
-    end
-end
-
--- Save favorites and custom URLs to file
+-- Save favorites to file
 local function saveFavorites()
     file.Write(favoriteCountriesFile, util.TableToJSON(favoriteCountries))
     file.Write(favoriteStationsFile, util.TableToJSON(favoriteStations))
-end
-
-local function saveCustomURLs()
-    file.Write(customURLsFile, util.TableToJSON(customURLs))
 end
 
 -- Font creation
@@ -403,64 +383,10 @@ function populateList(stationListPanel, backButton, searchBox, resetSearch)
     end
 end
 
-local function generateUntitledName()
-    local baseName = "Untitled"
-    local index = 1
-
-    while true do
-        local name = baseName .. " " .. index
-        local exists = false
-
-        for _, urlData in ipairs(customURLs) do
-            if urlData.name == name then
-                exists = true
-                break
-            end
-        end
-
-        if not exists then
-            return name
-        end
-
-        index = index + 1
-    end
-end
-
-local lastCustomURLClickTime = 0  -- Variable to store the last time a custom URL was selected
-
--- Function to handle playing the custom URL with cooldown
-local function handleCustomURLClick(urlData)
-    local currentTime = CurTime()
-
-    -- Check if the cooldown has passed
-    if currentTime - lastCustomURLClickTime < 2 then
-        return  -- Exit the function if the cooldown hasn't passed
-    end
-
-    local entity = LocalPlayer().currentRadioEntity
-
-    if IsValid(entity) and urlData.url ~= "" then
-        local volume = entityVolumes[entity] or getEntityConfig(entity).Volume
-        net.Start("PlayCarRadioStation")
-        net.WriteEntity(entity)
-        net.WriteString(urlData.name or "Custom URL")
-        net.WriteString(urlData.url)
-        net.WriteFloat(volume)
-        net.SendToServer()
-        currentlyPlayingStation = {name = urlData.name or "Custom URL", url = urlData.url}
-
-        lastCustomURLClickTime = currentTime  -- Update the last custom URL click time
-    end
-end
-
--- State variable to track rename request
-local renameRequest = {active = false, index = nil, newName = ""}
-
 local function openRadioMenu()
     if radioMenuOpen then return end
     radioMenuOpen = true
 
-    -- Main frame
     local frame = vgui.Create("DFrame")
     frame:SetTitle("")
     frame:SetSize(Scale(Config.UI.FrameSize.width), Scale(Config.UI.FrameSize.height))
@@ -470,18 +396,31 @@ local function openRadioMenu()
     frame:MakePopup()
     frame.OnClose = function() radioMenuOpen = false end
 
-    -- Radio Selection Panel (Existing Content)
-    local radioSelectionPanel = vgui.Create("DPanel", frame)
-    radioSelectionPanel:SetPos(0, 0)
-    radioSelectionPanel:SetSize(frame:GetWide(), frame:GetTall())
-    radioSelectionPanel.Paint = function() end  -- Disable background painting
-    radioSelectionPanel:SetVisible(true)
-
-    local searchBox = vgui.Create("DTextEntry", radioSelectionPanel)
+    frame.Paint = function(self, w, h)
+        draw.RoundedBox(8, 0, 0, w, h, Config.UI.BackgroundColor)
+        draw.RoundedBoxEx(8, 0, 0, w, Scale(40), Config.UI.HeaderColor, true, true, false, false)
+        
+        local iconSize = Scale(25)
+        local iconOffsetX = Scale(10)
+        
+        surface.SetFont("HeaderFont")
+        local textHeight = select(2, surface.GetTextSize("H"))
+        
+        local iconOffsetY = Scale(2) + textHeight - iconSize
+        
+        surface.SetMaterial(Material("hud/radio"))
+        surface.SetDrawColor(Config.UI.TextColor)
+        surface.DrawTexturedRect(iconOffsetX, iconOffsetY, iconSize, iconSize)
+        
+        local countryText = Config.Lang["SelectCountry"] or "Select Country"
+        draw.SimpleText(selectedCountry and formatCountryName(selectedCountry) or countryText, "HeaderFont", iconOffsetX + iconSize + Scale(5), iconOffsetY, Config.UI.TextColor, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
+    end
+    
+    local searchBox = vgui.Create("DTextEntry", frame)
     searchBox:SetPos(Scale(10), Scale(50))
     searchBox:SetSize(Scale(Config.UI.FrameSize.width) - Scale(20), Scale(30))
     searchBox:SetFont("Roboto18")
-    searchBox:SetPlaceholderText(Config.Lang["SearchPlaceholder"] or "Search...")
+    searchBox:SetPlaceholderText(Config.Lang and Config.Lang["SearchPlaceholder"] or "Search")
     searchBox:SetTextColor(Config.UI.TextColor)
     searchBox:SetDrawBackground(false)
     searchBox.Paint = function(self, w, h)
@@ -493,243 +432,9 @@ local function openRadioMenu()
         end
     end
 
-    local stationListPanel = vgui.Create("DScrollPanel", radioSelectionPanel)
+    local stationListPanel = vgui.Create("DScrollPanel", frame)
     stationListPanel:SetPos(Scale(5), Scale(90))
     stationListPanel:SetSize(Scale(Config.UI.FrameSize.width) - Scale(20), Scale(Config.UI.FrameSize.height) - Scale(200))
-
-    -- Custom URL Panel (New Content)
-    local customURLPanel = vgui.Create("DPanel", frame)
-    customURLPanel:SetPos(0, 0)
-    customURLPanel:SetSize(frame:GetWide(), frame:GetTall())
-    customURLPanel.Paint = function() end  -- Disable background painting
-    customURLPanel:SetVisible(false)
-
-    local urlEntry = vgui.Create("DTextEntry", customURLPanel)
-    urlEntry:SetPos(Scale(10), Scale(60))
-    urlEntry:SetSize(Scale(Config.UI.FrameSize.width) - Scale(20), Scale(30))
-    urlEntry:SetFont("Roboto18")
-    urlEntry:SetPlaceholderText(Config.Lang["EnterCustomURLPlaceholder"] or "Enter a custom URL (Discord Sound URL)")
-    urlEntry:SetTextColor(Config.UI.TextColor)
-    urlEntry:SetDrawBackground(false)
-    urlEntry.Paint = function(self, w, h)
-        draw.RoundedBox(8, 0, 0, w, h, Config.UI.SearchBoxColor)
-        self:DrawTextEntryText(Config.UI.TextColor, Color(120, 120, 120), Config.UI.TextColor)
-
-        if self:GetText() == "" then
-            draw.SimpleText(self:GetPlaceholderText(), self:GetFont(), Scale(5), h / 2, Config.UI.TextColor, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
-        end
-    end
-
-    local playURLButton = vgui.Create("DButton", customURLPanel)
-    playURLButton:SetPos(Scale(10), Scale(100))
-    playURLButton:SetSize(Scale(285), Scale(40))
-    playURLButton:SetText(Config.Lang["PlayURL"] or "Play URL")
-    playURLButton:SetFont("Roboto18")
-    playURLButton:SetTextColor(Config.UI.TextColor)
-    playURLButton.Paint = function(self, w, h)
-        draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonColor)
-        if self:IsHovered() then
-            draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonHoverColor)
-        end
-    end
-
-    playURLButton.DoClick = function()
-        local entity = LocalPlayer().currentRadioEntity
-        local url = urlEntry:GetText()
-
-        if IsValid(entity) and url ~= "" then
-            local volume = entityVolumes[entity] or getEntityConfig(entity).Volume
-            net.Start("PlayCarRadioStation")
-            net.WriteEntity(entity)
-            net.WriteString("Custom URL")
-            net.WriteString(url)
-            net.WriteFloat(volume)
-            net.SendToServer()
-            currentlyPlayingStation = {name = "Custom URL", url = url}
-        end
-    end
-
-    -- Scroll panel for saved custom URLs
-    local savedURLsPanel = vgui.Create("DScrollPanel", customURLPanel)
-    savedURLsPanel:SetPos(Scale(10), Scale(160))
-    savedURLsPanel:SetSize(Scale(Config.UI.FrameSize.width) - Scale(20), Scale(Config.UI.FrameSize.height) - Scale(250))
-
-    -- Updated custom URL button creation to use the cooldown
-    local function populateSavedURLs()
-        savedURLsPanel:Clear()
-
-        for index, urlData in ipairs(customURLs) do
-            local urlButton = vgui.Create("DButton", savedURLsPanel)
-            urlButton:Dock(TOP)
-            urlButton:DockMargin(Scale(5), Scale(5), Scale(5), 0)
-            urlButton:SetTall(Scale(40))
-            urlButton:SetText(urlData.name or urlData.url)
-            urlButton:SetFont("Roboto18")
-            urlButton:SetTextColor(Config.UI.TextColor)
-            urlButton.Paint = function(self, w, h)
-                draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonColor)
-                if self:IsHovered() then
-                    draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonHoverColor)
-                end
-            end
-
-            urlButton.DoClick = function()
-                handleCustomURLClick(urlData)
-            end
-
-            -- Delete button
-            local deleteButton = vgui.Create("DImageButton", urlButton)
-            deleteButton:SetSize(Scale(24), Scale(24))
-            deleteButton:SetPos(urlButton:GetWide() - Scale(30), (Scale(40) - Scale(24)) / 2)
-            deleteButton:SetImage("icon16/cross.png")
-            deleteButton:SetTooltip(Config.Lang["Delete"] or "Delete")
-            deleteButton.DoClick = function()
-                table.remove(customURLs, index)
-                saveCustomURLs()
-                populateSavedURLs()
-            end
-
-            -- Rename button
-            local renameButton = vgui.Create("DImageButton", urlButton)
-            renameButton:SetSize(Scale(24), Scale(24))
-            renameButton:SetPos(urlButton:GetWide() - Scale(60), (Scale(40) - Scale(24)) / 2)
-            renameButton:SetImage("icon16/pencil.png")
-            renameButton:SetTooltip(Config.Lang["Rename"] or "Rename")
-            renameButton.DoClick = function()
-                local renameFrame = vgui.Create("DFrame")
-                renameFrame:SetTitle(Config.Lang["RenameStation"] or "Rename Station")
-                renameFrame:SetSize(300, 100)
-                renameFrame:Center()
-                renameFrame:MakePopup()
-
-                local textEntry = vgui.Create("DTextEntry", renameFrame)
-                textEntry:SetPos(10, 30)
-                textEntry:SetSize(280, 30)
-                textEntry:SetText(urlData.name or Config.Lang["Untitled"] or "Untitled")
-
-                local confirmButton = vgui.Create("DButton", renameFrame)
-                confirmButton:SetPos(100, 70)
-                confirmButton:SetSize(100, 20)
-                confirmButton:SetText(Config.Lang["Confirm"] or "Confirm")
-
-                confirmButton.DoClick = function()
-                    local newName = textEntry:GetText()
-                    if newName ~= "" then
-                        customURLs[index].name = newName
-                        saveCustomURLs()
-                        populateSavedURLs()
-                        renameFrame:Close()
-                    end
-                end
-            end
-        end
-    end
-
-    -- Populate initially
-    populateSavedURLs()
-
-    -- Button to add the current URL to the saved list
-    local saveURLButton = vgui.Create("DButton", customURLPanel)
-    saveURLButton:SetPos(Scale(300), Scale(100))
-    saveURLButton:SetSize(Scale(285), Scale(40))
-    saveURLButton:SetText(Config.Lang["SaveURL"] or "Save URL")
-    saveURLButton:SetFont("Roboto18")
-    saveURLButton:SetTextColor(Config.UI.TextColor)
-    saveURLButton.Paint = function(self, w, h)
-        draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonColor)
-        if self:IsHovered() then
-            draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonHoverColor)
-        end
-    end
-
-    saveURLButton.DoClick = function()
-        local url = urlEntry:GetText()
-        if url ~= "" then
-            local name = generateUntitledName()
-            table.insert(customURLs, {url = url, name = name})
-            saveCustomURLs()
-            populateSavedURLs()
-        end
-    end
-
-    -- Frame Paint - includes the default header
-    frame.Paint = function(self, w, h)
-        draw.RoundedBoxEx(8, 0, 0, w, h, Config.UI.BackgroundColor, false, true, true, true)
-        draw.RoundedBoxEx(8, 0, 0, w, Scale(40), Config.UI.HeaderColor, false, true, false, false)
-
-        local iconSize = Scale(25)
-        local iconOffsetX = Scale(10)
-
-        surface.SetFont("HeaderFont")
-        local textHeight = select(2, surface.GetTextSize("H"))
-
-        local iconOffsetY = Scale(2) + textHeight - iconSize
-
-        surface.SetMaterial(Material("hud/radio"))
-        surface.SetDrawColor(Config.UI.TextColor)
-        surface.DrawTexturedRect(iconOffsetX, iconOffsetY, iconSize, iconSize)
-
-        local headerText
-        if customURLPanel:IsVisible() then
-            headerText = Config.Lang["EnterYourURL"] or "Enter your URL"
-        else
-            headerText = selectedCountry and formatCountryName(selectedCountry) or (Config.Lang["SelectCountry"] or "Select Country")
-        end
-
-        draw.SimpleText(headerText, "HeaderFont", iconOffsetX + iconSize + Scale(5), iconOffsetY, Config.UI.TextColor, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
-    end
-
-    local buttonFrame = nil
-
-    if allowCustomURLS then
-        -- Second frame for the buttons
-        buttonFrame = vgui.Create("DFrame")
-        buttonFrame:SetTitle("")
-        buttonFrame:SetSize(Scale(Config.UI.FrameSize.width), Scale(50))
-        buttonFrame:SetPos(frame:GetPos())  -- Position it relative to the main frame
-        buttonFrame:SetDraggable(false)
-        buttonFrame:ShowCloseButton(false)
-        buttonFrame:MakePopup()
-        buttonFrame.Paint = function() end  -- Disable background painting
-
-        -- Floating Tab Buttons in the second frame
-        local radioButton = vgui.Create("DButton", buttonFrame)
-        radioButton:SetSize(Scale(150), Scale(40))
-        radioButton:SetPos(Scale(0), Scale(10))  -- Position within the button frame
-        radioButton:SetText(Config.Lang["RadioSelection"] or "Radio Selection")
-        radioButton:SetFont("Roboto18")
-        radioButton:SetTextColor(Config.UI.TextColor)
-        radioButton.Paint = function(self, w, h)
-            draw.RoundedBoxEx(8, 0, 0, w, h, self:IsHovered() and Config.UI.ButtonHoverColor or Config.UI.HeaderColor, true, true, false, false)
-        end
-
-        local customURLButton = vgui.Create("DButton", buttonFrame)
-        customURLButton:SetSize(Scale(150), Scale(40))
-        customURLButton:SetPos(Scale(152), Scale(10))  -- Position within the button frame
-        customURLButton:SetText(Config.Lang["CustomURL"] or "Custom URL")
-        customURLButton:SetFont("Roboto18")
-        customURLButton:SetTextColor(Config.UI.TextColor)
-        customURLButton.Paint = function(self, w, h)
-            draw.RoundedBoxEx(8, 0, 0, w, h, self:IsHovered() and Config.UI.ButtonHoverColor or Config.UI.HeaderColor, true, true, false, false)
-        end
-
-        -- Toggle Panels with Tabs
-        radioButton.DoClick = function()
-            radioSelectionPanel:SetVisible(true)
-            customURLPanel:SetVisible(false)
-        end
-
-        customURLButton.DoClick = function()
-            radioSelectionPanel:SetVisible(false)
-            customURLPanel:SetVisible(true)
-        end
-
-        -- Ensure button frame follows the main frame
-        frame.Think = function(self)
-            local x, y = self:GetPos()
-            buttonFrame:SetPos(x, y - Scale(50))
-        end
-    end
 
     local stopButtonHeight = Scale(Config.UI.FrameSize.width) / 8
     local stopButtonWidth = Scale(Config.UI.FrameSize.width) / 4
@@ -847,10 +552,6 @@ local function openRadioMenu()
     closeButton.DoClick = function()
         surface.PlaySound("buttons/lightswitch2.wav")
         frame:Close()
-        
-        if allowCustomURLS then
-            buttonFrame:Close()
-        end
     end
 
     local sbar = stationListPanel:GetVBar()
@@ -866,7 +567,6 @@ local function openRadioMenu()
         populateList(stationListPanel, backButton, searchBox, false)
     end
 end
-
 
 hook.Add("Think", "OpenCarRadioMenu", function()
     local openKey = GetConVar("car_radio_open_key"):GetInt()
@@ -980,9 +680,7 @@ hook.Add("PlayerInitialSpawn", "ApplySavedThemeAndLanguage", function(ply)
 end)
 
 loadFavorites()  -- Load the favorite stations and countries when the script initializes
-loadCustomURLs()  -- Load the custom URLs when the script initializes
 
-hook.Add("InitPostEntity", "InitializeFavoritesAndCustomURLs", function()
+hook.Add("InitPostEntity", "InitializeFavorites", function()
     populateList(stationListPanel, backButton, searchBox, true)  -- Ensure UI is updated with the loaded favorites after entities have loaded
 end)
-
