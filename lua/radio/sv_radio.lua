@@ -6,7 +6,7 @@ util.AddNetworkString("UpdateRadioStatus")
 util.AddNetworkString("ToggleFavoriteCountry")
 
 local ActiveRadios = {}
-local debug_mode = false  -- Set to true to enable debug statements
+local debug_mode = true  -- Set to true to enable debug statements
 SavedBoomboxStates = SavedBoomboxStates or {}
 
 -- Debug function to print messages if debug_mode is enabled
@@ -17,20 +17,62 @@ local function DebugPrint(msg)
 end
 
 -- Function to add a radio to the active list
-local function AddActiveRadio(entity, stationName, url, volume)
-    ActiveRadios[entity:EntIndex()] = {
-        entity = entity,
+local function AddActiveRadio(vehicle, stationName, url, volume)
+    if not IsValid(vehicle) then
+        DebugPrint("Attempted to add a radio to an invalid vehicle entity.")
+        return
+    end
+
+    -- Ensure we are working with the main vehicle entity
+    local mainVehicle = vehicle:IsVehicle() and vehicle or vehicle:GetParent()
+
+    -- Special case: Driver's seat might not have a parent, so use the vehicle itself
+    if not IsValid(mainVehicle) then
+        mainVehicle = vehicle
+    end
+
+    if not IsValid(mainVehicle) then
+        DebugPrint("The main vehicle entity is invalid.")
+        return
+    end
+
+    if ActiveRadios[mainVehicle:EntIndex()] then
+        -- A radio is already active for this vehicle, so do not start a new one
+        DebugPrint("Radio is already playing for vehicle: Entity " .. tostring(mainVehicle:EntIndex()))
+        return
+    end
+
+    ActiveRadios[mainVehicle:EntIndex()] = {
+        entity = mainVehicle,
         stationName = stationName,
         url = url,
         volume = volume
     }
-    DebugPrint("Added active radio: Entity " .. tostring(entity:EntIndex()) .. ", Station: " .. stationName)
+
+    DebugPrint("Added active radio: Vehicle " .. tostring(mainVehicle:EntIndex()) .. ", Station: " .. stationName)
 end
 
 -- Function to remove a radio from the active list
-local function RemoveActiveRadio(entity)
-    ActiveRadios[entity:EntIndex()] = nil
-    DebugPrint("Removed active radio: Entity " .. tostring(entity:EntIndex()))
+local function RemoveActiveRadio(vehicle)
+    if not IsValid(vehicle) then
+        DebugPrint("Attempted to remove a radio from an invalid vehicle entity.")
+        return
+    end
+
+    local mainVehicle = vehicle:IsVehicle() and vehicle or vehicle:GetParent()
+
+    -- Special case: Driver's seat might not have a parent, so use the vehicle itself
+    if not IsValid(mainVehicle) then
+        mainVehicle = vehicle
+    end
+
+    if not IsValid(mainVehicle) then
+        DebugPrint("The main vehicle entity is invalid.")
+        return
+    end
+
+    ActiveRadios[mainVehicle:EntIndex()] = nil
+    DebugPrint("Removed active radio: Vehicle " .. tostring(mainVehicle:EntIndex()))
 end
 
 -- Restore boombox radio state using saved data
@@ -175,6 +217,7 @@ hook.Add("PlayerEnteredVehicle", "CarRadioMessageOnEnter", function(ply, vehicle
     net.Send(ply)
 end)
 
+-- Handle PlayCarRadioStation for both vehicles and boomboxes
 net.Receive("PlayCarRadioStation", function(len, ply)
     local entity = net.ReadEntity()
     local stationName = net.ReadString()
@@ -226,21 +269,37 @@ net.Receive("PlayCarRadioStation", function(len, ply)
         net.Broadcast()
 
     elseif entity:IsVehicle() then
-        AddActiveRadio(entity, stationName, url, volume)
+        -- Get the main vehicle entity (parent of the seat or the vehicle itself)
+        local mainVehicle = entity:GetParent() or entity
+
+        if not IsValid(mainVehicle) then
+            mainVehicle = entity
+        end
+
+        if ActiveRadios[mainVehicle:EntIndex()] then
+            -- Stop the currently playing radio before starting a new one
+            net.Start("StopCarRadioStation")
+            net.WriteEntity(mainVehicle)
+            net.Broadcast()
+            RemoveActiveRadio(mainVehicle)
+        end
+
+        AddActiveRadio(mainVehicle, stationName, url, volume)
 
         net.Start("PlayCarRadioStation")
-        net.WriteEntity(entity)
+        net.WriteEntity(mainVehicle)
         net.WriteString(url)
         net.WriteFloat(volume)
         net.Broadcast()
 
         net.Start("UpdateRadioStatus")
-        net.WriteEntity(entity)
+        net.WriteEntity(mainVehicle)
         net.WriteString(stationName)
         net.Broadcast()
     end
 end)
 
+-- Handle StopCarRadioStation for both vehicles and boomboxes
 net.Receive("StopCarRadioStation", function(len, ply)
     local entity = net.ReadEntity()
 
@@ -271,22 +330,35 @@ net.Receive("StopCarRadioStation", function(len, ply)
         net.Broadcast()
 
     elseif entity:IsVehicle() then
-        RemoveActiveRadio(entity)
+        -- Ensure we're working with the main vehicle entity (either the seat's parent or the vehicle itself)
+        local mainVehicle = entity:GetParent() or entity
+
+        if not IsValid(mainVehicle) then
+            mainVehicle = entity
+        end
+
+        RemoveActiveRadio(mainVehicle)
 
         net.Start("StopCarRadioStation")
-        net.WriteEntity(entity)
+        net.WriteEntity(mainVehicle)
         net.Broadcast()
 
         net.Start("UpdateRadioStatus")
-        net.WriteEntity(entity)
+        net.WriteEntity(mainVehicle)
         net.WriteString("")
         net.Broadcast()
     end
 end)
 
+-- Cleanup active radios when an entity is removed
 hook.Add("EntityRemoved", "CleanupActiveRadioOnEntityRemove", function(entity)
-    if ActiveRadios[entity:EntIndex()] then
-        RemoveActiveRadio(entity)
+    local mainVehicle = entity:GetParent() or entity
+    if not IsValid(mainVehicle) then
+        mainVehicle = entity
+    end
+
+    if ActiveRadios[mainVehicle:EntIndex()] then
+        RemoveActiveRadio(mainVehicle)
     end
 end)
 

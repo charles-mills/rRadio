@@ -70,8 +70,8 @@ Config.Boombox = {
 -- Golden Boombox Settings
 Config.GoldenBoombox = {
     Volume = 1, -- Default radio volume (range: 0.0 to 1.0)
-    MaxHearingDistance = 35000, -- Increased maximum distance at which the radio can be heard (in units)
-    MinVolumeDistance = 25000, -- Increased distance at which the radio volume starts to drop off (in units)
+    MaxHearingDistance = 350000, -- Increased maximum distance at which the radio can be heard (in units)
+    MinVolumeDistance = 250000, -- Increased distance at which the radio volume starts to drop off (in units)
     RetryAttempts = 3, -- Number of retry attempts to play a station in case of failure
     RetryDelay = 2 -- Delay in seconds between retry attempts
 }
@@ -79,8 +79,8 @@ Config.GoldenBoombox = {
 -- Vehicle Radio Settings
 Config.VehicleRadio = {
     Volume = 1, -- Default radio volume (range: 0.0 to 1.0)
-    MaxHearingDistance = 1000, -- Maximum distance at which the radio can be heard (in units)
-    MinVolumeDistance = 500, -- Distance at which the radio volume starts to drop off (in units)
+    MaxHearingDistance = 600, -- Maximum distance at which the radio can be heard (in units)
+    MinVolumeDistance = 150, -- Distance at which the radio volume starts to drop off (in units)
     RetryAttempts = 3, -- Number of retry attempts to play a station in case of failure
     RetryDelay = 2 -- Delay in seconds between retry attempts
 }
