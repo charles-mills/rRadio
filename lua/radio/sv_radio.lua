@@ -6,7 +6,7 @@ util.AddNetworkString("UpdateRadioStatus")
 util.AddNetworkString("ToggleFavoriteCountry")
 
 local ActiveRadios = {}
-local debug_mode = true  -- Set to true to enable debug statements
+local debug_mode = false  -- Set to true to enable debug statements
 SavedBoomboxStates = SavedBoomboxStates or {}
 
 -- Debug function to print messages if debug_mode is enabled
@@ -359,6 +359,56 @@ hook.Add("EntityRemoved", "CleanupActiveRadioOnEntityRemove", function(entity)
 
     if ActiveRadios[mainVehicle:EntIndex()] then
         RemoveActiveRadio(mainVehicle)
+    end
+end)
+
+
+local function IsDarkRP()
+    return DarkRP and DarkRP.getPhrase ~= nil  -- Check for DarkRP or DerivedRP
+end
+
+-- Assign ownership using CPPI (works for both DarkRP and Sandbox)
+local function AssignOwner(ply, ent)
+    if ent.CPPISetOwner then
+        ent:CPPISetOwner(ply)  -- Assign the owner using CPPI
+    end
+
+    -- Set the owner as a networked entity so the client can access it
+    ent:SetNWEntity("Owner", ply)
+end
+
+-- Hook into InitPostEntity to ensure everything is initialized
+hook.Add("InitPostEntity", "SetupBoomboxHooks", function()
+    timer.Simple(1, function()
+        if IsDarkRP() then
+            print("[CarRadio] DarkRP or DerivedRP detected. Setting up CPPI-based ownership hooks.")
+            
+            -- Add the hook for playerBoughtCustomEntity in DarkRP or DerivedRP
+            hook.Add("playerBoughtCustomEntity", "AssignBoomboxOwnerInDarkRP", function(ply, entTable, ent, price)
+                if IsValid(ent) and (ent:GetClass() == "boombox" or ent:GetClass() == "golden_boombox") then
+                    AssignOwner(ply, ent)  -- Use CPPI to assign the owner
+                end
+            end)
+        end
+    end)
+end)
+
+hook.Add("CanTool", "AllowBoomboxToolgun", function(ply, tr, tool)
+    local ent = tr.Entity
+    if IsValid(ent) and (ent:GetClass() == "boombox" or ent:GetClass() == "golden_boombox") then
+        local owner = ent:CPPIGetOwner()
+        if owner == ply then
+            return true  -- Allow owner to use tools on the boombox
+        end
+    end
+end)
+
+hook.Add("PhysgunPickup", "AllowBoomboxPhysgun", function(ply, ent)
+    if IsValid(ent) and (ent:GetClass() == "boombox" or ent:GetClass() == "golden_boombox") then
+        local owner = ent:CPPIGetOwner()
+        if owner == ply then
+            return true  -- Allow owner to physgun the boombox
+        end
     end
 end)
 
