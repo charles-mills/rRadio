@@ -6,7 +6,7 @@ util.AddNetworkString("UpdateRadioStatus")
 util.AddNetworkString("ToggleFavoriteCountry")
 
 local ActiveRadios = {}
-local debug_mode = false  -- Set to true to enable debug statements
+local debug_mode = true  -- Set to true to enable debug statements
 SavedBoomboxStates = SavedBoomboxStates or {}
 
 -- Debug function to print messages if debug_mode is enabled
@@ -17,62 +17,28 @@ local function DebugPrint(msg)
 end
 
 -- Function to add a radio to the active list
-local function AddActiveRadio(vehicle, stationName, url, volume)
-    if not IsValid(vehicle) then
-        DebugPrint("Attempted to add a radio to an invalid vehicle entity.")
+local function AddActiveRadio(entity, stationName, url, volume)
+    if not IsValid(entity) then
+        DebugPrint("Attempted to add a radio to an invalid entity.")
         return
     end
 
-    -- Ensure we are working with the main vehicle entity
-    local mainVehicle = vehicle:IsVehicle() and vehicle or vehicle:GetParent()
-
-    -- Special case: Driver's seat might not have a parent, so use the vehicle itself
-    if not IsValid(mainVehicle) then
-        mainVehicle = vehicle
-    end
-
-    if not IsValid(mainVehicle) then
-        DebugPrint("The main vehicle entity is invalid.")
-        return
-    end
-
-    if ActiveRadios[mainVehicle:EntIndex()] then
-        -- A radio is already active for this vehicle, so do not start a new one
-        DebugPrint("Radio is already playing for vehicle: Entity " .. tostring(mainVehicle:EntIndex()))
-        return
-    end
-
-    ActiveRadios[mainVehicle:EntIndex()] = {
-        entity = mainVehicle,
+    ActiveRadios[entity:EntIndex()] = {
+        entity = entity,
         stationName = stationName,
         url = url,
         volume = volume
     }
 
-    DebugPrint("Added active radio: Vehicle " .. tostring(mainVehicle:EntIndex()) .. ", Station: " .. stationName)
+    DebugPrint("Added active radio: Entity " .. tostring(entity:EntIndex()) .. ", Station: " .. stationName)
 end
 
 -- Function to remove a radio from the active list
-local function RemoveActiveRadio(vehicle)
-    if not IsValid(vehicle) then
-        DebugPrint("Attempted to remove a radio from an invalid vehicle entity.")
-        return
+local function RemoveActiveRadio(entity)
+    if ActiveRadios[entity:EntIndex()] then
+        ActiveRadios[entity:EntIndex()] = nil
+        DebugPrint("Removed active radio: Entity " .. tostring(entity:EntIndex()))
     end
-
-    local mainVehicle = vehicle:IsVehicle() and vehicle or vehicle:GetParent()
-
-    -- Special case: Driver's seat might not have a parent, so use the vehicle itself
-    if not IsValid(mainVehicle) then
-        mainVehicle = vehicle
-    end
-
-    if not IsValid(mainVehicle) then
-        DebugPrint("The main vehicle entity is invalid.")
-        return
-    end
-
-    ActiveRadios[mainVehicle:EntIndex()] = nil
-    DebugPrint("Removed active radio: Vehicle " .. tostring(mainVehicle:EntIndex()))
 end
 
 -- Restore boombox radio state using saved data
@@ -212,6 +178,7 @@ hook.Add("PlayerInitialSpawn", "SendActiveRadiosOnJoin", function(ply)
     end)
 end)
 
+-- Hook to handle when players enter a vehicle and receive a car radio message
 hook.Add("PlayerEnteredVehicle", "CarRadioMessageOnEnter", function(ply, vehicle, role)
     net.Start("CarRadioMessage")
     net.Send(ply)
@@ -224,9 +191,9 @@ net.Receive("PlayCarRadioStation", function(len, ply)
     local url = net.ReadString()
     local volume = math.Clamp(net.ReadFloat(), 0, 1)
 
-    if not IsValid(entity) then 
+    if not IsValid(entity) then
         DebugPrint("Invalid entity received in PlayCarRadioStation.")
-        return 
+        return
     end
 
     DebugPrint("PlayCarRadioStation received: Entity " .. entity:EntIndex())
@@ -269,15 +236,12 @@ net.Receive("PlayCarRadioStation", function(len, ply)
         net.Broadcast()
 
     elseif entity:IsVehicle() then
-        -- Get the main vehicle entity (parent of the seat or the vehicle itself)
         local mainVehicle = entity:GetParent() or entity
-
         if not IsValid(mainVehicle) then
             mainVehicle = entity
         end
 
         if ActiveRadios[mainVehicle:EntIndex()] then
-            -- Stop the currently playing radio before starting a new one
             net.Start("StopCarRadioStation")
             net.WriteEntity(mainVehicle)
             net.Broadcast()
@@ -330,9 +294,7 @@ net.Receive("StopCarRadioStation", function(len, ply)
         net.Broadcast()
 
     elseif entity:IsVehicle() then
-        -- Ensure we're working with the main vehicle entity (either the seat's parent or the vehicle itself)
         local mainVehicle = entity:GetParent() or entity
-
         if not IsValid(mainVehicle) then
             mainVehicle = entity
         end
@@ -362,9 +324,9 @@ hook.Add("EntityRemoved", "CleanupActiveRadioOnEntityRemove", function(entity)
     end
 end)
 
-
+-- Utility function to detect DarkRP or DerivedRP gamemodes
 local function IsDarkRP()
-    return DarkRP and DarkRP.getPhrase ~= nil  -- Check for DarkRP or DerivedRP
+    return DarkRP ~= nil and DarkRP.getPhrase ~= nil
 end
 
 -- Assign ownership using CPPI (works for both DarkRP and Sandbox)
@@ -382,21 +344,24 @@ hook.Add("InitPostEntity", "SetupBoomboxHooks", function()
     timer.Simple(1, function()
         if IsDarkRP() then
             print("[CarRadio] DarkRP or DerivedRP detected. Setting up CPPI-based ownership hooks.")
-            
+
             -- Add the hook for playerBoughtCustomEntity in DarkRP or DerivedRP
             hook.Add("playerBoughtCustomEntity", "AssignBoomboxOwnerInDarkRP", function(ply, entTable, ent, price)
                 if IsValid(ent) and (ent:GetClass() == "boombox" or ent:GetClass() == "golden_boombox") then
-                    AssignOwner(ply, ent)  -- Use CPPI to assign the owner
+                    AssignOwner(ply, ent)
                 end
             end)
+        else
+            print("[CarRadio] Non-DarkRP gamemode detected. Using sandbox-compatible ownership hooks.")
         end
     end)
 end)
 
+-- Toolgun and Physgun Pickup for Boomboxes (remove CPPI dependency for Sandbox)
 hook.Add("CanTool", "AllowBoomboxToolgun", function(ply, tr, tool)
     local ent = tr.Entity
     if IsValid(ent) and (ent:GetClass() == "boombox" or ent:GetClass() == "golden_boombox") then
-        local owner = ent:CPPIGetOwner()
+        local owner = ent:GetNWEntity("Owner")
         if owner == ply then
             return true  -- Allow owner to use tools on the boombox
         end
@@ -405,7 +370,7 @@ end)
 
 hook.Add("PhysgunPickup", "AllowBoomboxPhysgun", function(ply, ent)
     if IsValid(ent) and (ent:GetClass() == "boombox" or ent:GetClass() == "golden_boombox") then
-        local owner = ent:CPPIGetOwner()
+        local owner = ent:GetNWEntity("Owner")
         if owner == ply then
             return true  -- Allow owner to physgun the boombox
         end
