@@ -65,11 +65,14 @@ end
 
 local function getEntityConfig(entity)
     local entityClass = entity:GetClass()
+    
     if entityClass == "golden_boombox" then
         return Config.GoldenBoombox
     elseif entityClass == "boombox" then
         return Config.Boombox
     elseif entity:IsVehicle() then
+        return Config.VehicleRadio
+    else -- Temporary fix to make sure LVS works
         return Config.VehicleRadio
     end
     return nil
