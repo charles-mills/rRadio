@@ -6,7 +6,7 @@ util.AddNetworkString("UpdateRadioStatus")
 util.AddNetworkString("ToggleFavoriteCountry")
 
 local ActiveRadios = {}
-local debug_mode = true  -- Set to true to enable debug statements
+local debug_mode = false  -- Set to true to enable debug statements
 SavedBoomboxStates = SavedBoomboxStates or {}
 
 -- Debug function to print messages if debug_mode is enabled
