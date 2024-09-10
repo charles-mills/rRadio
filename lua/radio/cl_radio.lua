@@ -63,19 +63,28 @@ local function Scale(value)
     return value * (ScrW() / 2560)
 end
 
+local entityConfigs = {}
+
 local function getEntityConfig(entity)
     local entityClass = entity:GetClass()
     
+    -- Return cached config if available
+    if entityConfigs[entityClass] then
+        return entityConfigs[entityClass]
+    end
+    
+    -- Fetch and cache config
+    local config
     if entityClass == "golden_boombox" then
-        return Config.GoldenBoombox
+        config = Config.GoldenBoombox
     elseif entityClass == "boombox" then
-        return Config.Boombox
-    elseif entity:IsVehicle() then
-        return Config.VehicleRadio
-    else -- Temporary fix to make sure LVS works
+        config = Config.Boombox
+    elseif entity:IsVehicle() or string.find(entityClass, "lvs_") then
         return Config.VehicleRadio
     end
-    return nil
+
+    entityConfigs[entityClass] = config
+    return config
 end
 
 local function formatCountryName(name)
@@ -102,15 +111,16 @@ local function updateRadioVolume(station, distance, isPlayerInCar, entity)
 
     if isPlayerInCar then
         station:SetVolume(effectiveVolume)
+        return
+    end
+
+    if distance <= entityConfig.MinVolumeDistance then
+        station:SetVolume(effectiveVolume)
+    elseif distance <= entityConfig.MaxHearingDistance then
+        local adjustedVolume = effectiveVolume * (1 - (distance - entityConfig.MinVolumeDistance) / (entityConfig.MaxHearingDistance - entityConfig.MinVolumeDistance))
+        station:SetVolume(adjustedVolume)
     else
-        if distance <= entityConfig.MinVolumeDistance then
-            station:SetVolume(effectiveVolume)
-        elseif distance <= entityConfig.MaxHearingDistance then
-            local adjustedVolume = effectiveVolume * (1 - (distance - entityConfig.MinVolumeDistance) / (entityConfig.MaxHearingDistance - entityConfig.MinVolumeDistance))
-            station:SetVolume(adjustedVolume)
-        else
-            station:SetVolume(0)
-        end
+        station:SetVolume(0)
     end
 end
 
@@ -506,12 +516,28 @@ local function openRadioMenu()
     
     volumeSlider.TextArea:SetVisible(false)
 
+    local debounceTimer = 0
+    local debounceDelay = 0.2
+    
     volumeSlider.OnValueChanged = function(_, value)
-        entityVolumes[entity] = value
-        if currentRadioSources[entity] and IsValid(currentRadioSources[entity]) then
-            currentRadioSources[entity]:SetVolume(value)
+        -- Check if it's an LVS vehicle by checking the parent entity or other conditions
+        if entity:GetClass() == "prop_vehicle_prisoner_pod" and entity:GetParent():IsValid() then
+            local parent = entity:GetParent()
+            if string.find(parent:GetClass(), "lvs_") then
+                entity = parent
+            end
         end
-    end    
+    
+        entityVolumes[entity] = value
+    
+        -- Debounce updates to prevent rapid network calls
+        if CurTime() - debounceTimer >= debounceDelay then
+            debounceTimer = CurTime()
+            if currentRadioSources[entity] and IsValid(currentRadioSources[entity]) then
+                currentRadioSources[entity]:SetVolume(value)
+            end
+        end
+    end  
     
     local backButton = vgui.Create("DButton", frame)
     backButton:SetSize(Scale(30), Scale(30))
