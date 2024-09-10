@@ -9,7 +9,7 @@ local ActiveRadios = {}
 local debug_mode = false  -- Set to true to enable debug statements
 SavedBoomboxStates = SavedBoomboxStates or {}
 
--- Debug function to print messages if debug_mode is enabled
+-- Optimized Debug function to print messages only when needed
 local function DebugPrint(msg)
     if debug_mode then
         print("[CarRadio Debug] " .. msg)
@@ -35,9 +35,10 @@ end
 
 -- Function to remove a radio from the active list
 local function RemoveActiveRadio(entity)
-    if ActiveRadios[entity:EntIndex()] then
-        ActiveRadios[entity:EntIndex()] = nil
-        DebugPrint("Removed active radio: Entity " .. tostring(entity:EntIndex()))
+    local entIndex = entity:EntIndex()
+    if ActiveRadios[entIndex] then
+        ActiveRadios[entIndex] = nil
+        DebugPrint("Removed active radio: Entity " .. tostring(entIndex))
     end
 end
 
@@ -83,9 +84,19 @@ hook.Add("OnEntityCreated", "RestoreBoomboxRadioForPermaProps", function(entity)
     end)
 end)
 
+-- Optimized database queries to improve performance
+local function ExecuteSQL(query, onError)
+    local result = sql.Query(query)
+    if result == false then
+        DebugPrint("SQL Error: " .. sql.LastError())
+        if onError then onError() end
+    end
+    return result
+end
+
 -- Create boombox_states table if not exists
 local function CreateBoomboxStatesTable()
-    local createTableQuery = [[
+    ExecuteSQL([[
         CREATE TABLE IF NOT EXISTS boombox_states (
             permaID INTEGER PRIMARY KEY,
             station TEXT,
@@ -93,40 +104,25 @@ local function CreateBoomboxStatesTable()
             isPlaying INTEGER,
             volume REAL
         )
-    ]]
-    if sql.Query(createTableQuery) == false then
-        DebugPrint("Failed to create boombox_states table: " .. sql.LastError())
-    else
-        DebugPrint("Boombox_states table created or verified successfully")
-    end
+    ]])
 end
 
 hook.Add("Initialize", "CreateBoomboxStatesTable", CreateBoomboxStatesTable)
 
 -- Save boombox state to database
 local function SaveBoomboxStateToDatabase(permaID, stationName, url, isPlaying, volume)
-    local query = string.format("REPLACE INTO boombox_states (permaID, station, url, isPlaying, volume) VALUES (%d, %s, %s, %d, %f)",
-        permaID, sql.SQLStr(stationName), sql.SQLStr(url), isPlaying and 1 or 0, volume)
-    if sql.Query(query) == false then
-        DebugPrint("Failed to save boombox state: " .. sql.LastError())
-    else
-        DebugPrint("Saved boombox state to database: PermaID = " .. permaID)
-    end
+    ExecuteSQL(string.format("REPLACE INTO boombox_states (permaID, station, url, isPlaying, volume) VALUES (%d, %s, %s, %d, %f)",
+        permaID, sql.SQLStr(stationName), sql.SQLStr(url), isPlaying and 1 or 0, volume))
 end
 
 -- Remove boombox state from database
 local function RemoveBoomboxStateFromDatabase(permaID)
-    local query = string.format("DELETE FROM boombox_states WHERE permaID = %d", permaID)
-    if sql.Query(query) == false then
-        DebugPrint("Failed to remove boombox state: " .. sql.LastError())
-    else
-        DebugPrint("Removed boombox state from database: PermaID = " .. permaID)
-    end
+    ExecuteSQL(string.format("DELETE FROM boombox_states WHERE permaID = %d", permaID))
 end
 
 -- Load boombox states from the database into SavedBoomboxStates table
 local function LoadBoomboxStatesFromDatabase()
-    local rows = sql.Query("SELECT * FROM boombox_states")
+    local rows = ExecuteSQL("SELECT * FROM boombox_states")
     if rows then
         for _, row in ipairs(rows) do
             local permaID = tonumber(row.permaID)
@@ -408,8 +404,6 @@ end
 
 -- Add handling for golden_boombox entities
 PermaProps.SpecialENTSSpawn["golden_boombox"] = PermaProps.SpecialENTSSpawn["boombox"]
-
--- Similar entries can be added for other custom radio entities if needed
 
 hook.Add("Initialize", "LoadBoomboxStatesOnStartup", function()
     DebugPrint("Attempting to load Boombox States from the database")
