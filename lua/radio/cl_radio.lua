@@ -81,29 +81,24 @@ local function cleanCache()
     end
 end
 
--- Caching entity configuration for performance
 local function getEntityConfig(entity)
+    if not IsValid(entity) then return nil end
+
     local entityClass = entity:GetClass()
+    local configMapping = {
+        ["golden_boombox"] = Config.GoldenBoombox,
+        ["boombox"] = Config.Boombox,
+    }
 
-    -- Check if cache entry exists and is valid
-    if entityConfigs[entityClass] and CurTime() - entityConfigCacheTimes[entityClass] <= cacheExpiry then
-        return entityConfigs[entityClass]
-    end
-
-    local config
-    if entityClass == "golden_boombox" then
-        config = Config.GoldenBoombox
-    elseif entityClass == "boombox" then
-        config = Config.Boombox
+    if configMapping[entityClass] then
+        return configMapping[entityClass]
     elseif entity:IsVehicle() or string.find(entityClass, "lvs_") then
-        config = Config.VehicleRadio
+        return Config.VehicleRadio
+    else
+        return nil
     end
-
-    -- Update cache and timestamp
-    entityConfigs[entityClass] = config
-    entityConfigCacheTimes[entityClass] = CurTime()
-    return config
 end
+
 
 -- Formats country names
 local function formatCountryName(name)
