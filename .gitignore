@@ -1298,3 +1298,8 @@ helpers/backups/20240829_021802/the_united_arab_emirates.lua
 rml-radio/helpers/logs/radio_station_manager.log
 helpers/logs/radio_station_manager.log
 helpers/logs/radio_station_manager.log
+radio_station_manager.log
+url_cache.db.dat
+url_cache.db.dir
+url_cache.db
+url_cache.db-journal
