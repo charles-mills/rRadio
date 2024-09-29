@@ -3,10 +3,7 @@ local stations = {
     {name = "AK Radio Trarkhal", url = "https://whmsonic.radio.gov.pk:8076/relay?type=http&nocache=9"},
     {name = "Fm", url = "http://canada1.reliastream.com:8191/stream"},
     {name = "FM 100 Pakistan", url = "http://162.244.80.118:4900/;stream.mp3"},
-    {name = "FM 100 Pakistan Gujrat", url = "http://162.244.80.118:4900/stream.mp3?ver=682776"},
-    {name = "FM 100 Pakistan Hyderabad", url = "http://162.244.80.118:3024/stream.mp3?ver=517748"},
     {name = "FM 100 Pakistan Islamabad", url = "http://162.244.80.118:4900/stream.mp3?ver=604498"},
-    {name = "FM 100 Pakistan Jhelum", url = "http://162.244.80.118:4900/stream.mp3"},
     {name = "FM 100 Pakistan Karachi", url = "http://162.244.80.118:3024/stream.mp3?ver=349829"},
     {name = "FM 101 Islamabad", url = "https://whmsonic.radio.gov.pk:7008/stream"},
     {name = "FM 101 Karachi", url = "https://whmsonic.radio.gov.pk:8048/stream"},
@@ -34,13 +31,11 @@ local stations = {
     {name = "Radio Pakistan Islamabad", url = "https://whmsonic.radio.gov.pk:7003/stream"},
     {name = "Radio Pakistan Lahore", url = "https://whmsonic.radio.gov.pk:8026/relay?type=http&nocache=9"},
     {name = "Radio Pakistan Lahore News And Current Affair AM 1332 KHZ", url = "https://whmsonic.radio.gov.pk:7004/stream?type=http&nocache=12"},
-    {name = "Radio Pakistan Multan", url = "https://whmsonic.radio.gov.pk:8034/stream?type=http&nocache=12"},
     {name = "Radio Pakistan Multan MW", url = "https://whmsonic.radio.gov.pk:8034/stream"},
     {name = "Radio Pakistan Peshawar MW", url = "https://whmsonic.radio.gov.pk:8072/relay"},
     {name = "Radio Pakistan Quetta MW", url = "https://whmsonic.radio.gov.pk:8060/relay"},
     {name = "Radio Pakistan World Service", url = "https://whmsonic.radio.gov.pk:7005/stream"},
     {name = "Samaa FM 1074", url = "https://samaakhi107-itelservices.radioca.st/stream"},
-    {name = "পাকিস্তান", url = "https://whmsonic.radio.gov.pk:7005/stream?type=http&nocache=12"},
 }
 
 return stations

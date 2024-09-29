@@ -4,7 +4,6 @@ local stations = {
     {name = "Anghamy", url = "https://radio.avazfarsi.com:8010/radio.mp3"},
     {name = "Fame FM Lebanon", url = "https://l3.itworkscdn.net/itwaudio/9044/stream"},
     {name = "Hit 90", url = "http://nrj.de/hits90"},
-    {name = "Ibi Radio", url = "http://andromeda.shoutca.st:8192/;"},
     {name = "Jabal Lebnan", url = "http://185.52.127.168/lb/2/aac_64.mp3"},
     {name = "Lbi Radio", url = "http://andromeda.shoutca.st:8192/;stream.mp3"},
     {name = "Light FM 905 907 Beirut", url = "http://provisioning.streamtheworld.com/pls/LIGHTFMAAC.pls"},

@@ -11,7 +11,6 @@ local stations = {
     {name = "European Hit Radio - Love Songs", url = "http://stream.europeanhitradio.com:8000/Stream_28.aac"},
     {name = "European Hit Radio - Party Service", url = "http://stream.europeanhitradio.com:8000/Stream_12.aac"},
     {name = "European Hit Radio - Remixes", url = "http://stream.europeanhitradio.com:8000/Stream_32.aac"},
-    {name = "European Hit Radio - RNB", url = "http://stream.europeanhitradio.com:8000/Stream_11.aac"},
     {name = "European Hit Radio - Rock", url = "http://stream.europeanhitradio.com:8000/Stream_37.aac"},
     {name = "European Hit Radio - Russkie Hiti", url = "http://stream.europeanhitradio.com:8000/khr.aac"},
     {name = "European Hit Radio - Superhits", url = "http://stream.europeanhitradio.com:8000/Stream_21.aac"},

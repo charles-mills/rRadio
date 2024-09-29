@@ -11,12 +11,13 @@ import subprocess
 from asyncio import Semaphore
 import platform
 import logging
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlunparse
 import aiosqlite
 import aiofiles
 from aiolimiter import AsyncLimiter
 import random
 import time
+from rapidfuzz import fuzz
 
 # Configure logging
 logging.basicConfig(
@@ -287,39 +288,60 @@ class RadioStationManager:
         file_name = f"{cleaned_country_name}.lua"
         file_path = os.path.join(directory, file_name)
 
-        unique_names = set()
-        unique_urls = set()
+        unique_names = []
+        unique_base_urls = set()
         filtered_stations = []
 
         for station in stations:
             raw_name = station.get("name", "").strip()
             raw_url = station.get("url", "").strip()
 
+            if not raw_name or not raw_url:
+                logging.warning("Station entry missing name or URL. Skipping.")
+                continue
+
             # Clean and normalize station name
             name = Utils.clean_station_name(raw_name)
             normalized_name = name.lower()
 
-            # Normalize URL (assuming URLs are case-sensitive)
-            url = raw_url
+            # Parse URL to extract base URL (scheme + netloc + path)
+            parsed_url = urlparse(raw_url)
+            base_url = urlunparse((
+                parsed_url.scheme.lower(),
+                parsed_url.netloc.lower(),
+                parsed_url.path.rstrip('/'),
+                '',  # params
+                '',  # query
+                ''   # fragment
+            ))
 
-            # Check for duplicates based on name and URL
-            if normalized_name in unique_names:
-                logging.info(f"Duplicate station name detected. Skipping station: {name}")
+            # Fuzzy duplicate check for names
+            is_duplicate = False
+            for existing_name in unique_names:
+                similarity = fuzz.ratio(normalized_name, existing_name)
+                logging.debug(f"Fuzzy similarity between '{existing_name}' and '{normalized_name}': {similarity}%")
+                if similarity > 90:  # Threshold can be adjusted
+                    logging.info(f"Fuzzy duplicate station name detected. '{name}' is similar to '{existing_name}'. Skipping.")
+                    is_duplicate = True
+                    break
+            if is_duplicate:
                 continue
-            if url in unique_urls:
-                logging.info(f"Duplicate station URL detected. Skipping station: {name} with URL: {url}")
+
+            # Duplicate check for base URLs
+            if base_url in unique_base_urls:
+                logging.info(f"Duplicate base URL detected. Skipping station: {name} with base URL: {base_url}")
                 continue
 
             # Check if the URL is a valid audio stream using cached method
-            is_valid = await self.check_audio_stream_cached(session, url)
+            is_valid = await self.check_audio_stream_cached(session, raw_url)
             if not is_valid:
                 logging.info(f"Skipping station {name} due to invalid audio stream.")
                 continue
 
             # Add to unique sets and filtered list
-            unique_names.add(normalized_name)
-            unique_urls.add(url)
-            filtered_stations.append({"name": name, "url": url})
+            unique_names.append(normalized_name)
+            unique_base_urls.add(base_url)
+            filtered_stations.append({"name": name, "url": raw_url})
 
         # Sort the filtered stations alphabetically by their names
         filtered_stations.sort(key=lambda x: x["name"].lower())
@@ -332,9 +354,6 @@ class RadioStationManager:
                 for station in filtered_stations:
                     line = f'    {{name = "{Utils.escape_lua_string(station["name"])}", url = "{Utils.escape_lua_string(station["url"])}"}},\n'
                     await f.write(line)
-
-                    # Estimate file size (approximated since aiofiles doesn't support tell())
-                    # Alternatively, implement a mechanism to track size if exactness is needed
 
                 await f.write("}\n\nreturn stations\n")
             logging.info(f"Saved {len(filtered_stations)} unique stations for {country} to {file_path}")
@@ -536,3 +555,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     main(auto_run=args.auto_run, fetch=args.fetch, count=args.count)
+    

@@ -2,7 +2,6 @@ local stations = {
     {name = "Atlantic Radio", url = "https://atlantic-sonic.nindohost.net:9300/stream"},
     {name = "Aziz Mustaphi", url = "https://d3ctxlq1ktw2nl.cloudfront.net/production/2022-0-3/240607172-44100-2-afb2485b0c30e.mp3"},
     {name = "Cap Radio", url = "https://listen.radioking.com/radio/635263/stream/698005"},
-    {name = "HIT RADIO", url = "https://hitradio-maroc.ice.infomaniak.ch/hitradio-maroc-128.mp3"},
     {name = "Hit Radio Buzz", url = "http://buzz.ice.infomaniak.ch/buzz-128.mp3"},
     {name = "Hit Radio Mgharba", url = "http://mgharba.ice.infomaniak.ch/mgharba-128.mp3"},
     {name = "Hit Radio Rnb", url = "http://rnb.ice.infomaniak.ch/rnb-128.mp3"},

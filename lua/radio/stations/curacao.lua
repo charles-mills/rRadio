@@ -3,7 +3,6 @@ local stations = {
     {name = "Dolfijn FM 973 Seaquarium Beach", url = "http://85.214.231.253:8080/stream.mp3"},
     {name = "Easy 979 FM", url = "http://64.150.176.42:8011/live"},
     {name = "Hitradio 915 Curacao", url = "http://stream.paradisefm.cw/HITradio915"},
-    {name = "Paradise FM 00'S 10'S", url = "https://stream.paradisefm.cw/00s10s"},
     {name = "Paradise FM 1031 Curacao", url = "http://stream.paradisefm.cw/ParadiseFM"},
     {name = "Paradise FM 60S 70S", url = "https://stream.paradisefm.cw/60s70s"},
     {name = "Paradise FM 80'S 90'S", url = "https://stream.paradisefm.cw/80s90s"},

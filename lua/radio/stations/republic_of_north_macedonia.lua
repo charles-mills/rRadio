@@ -9,7 +9,6 @@ local stations = {
     {name = "Kanal 103", url = "http://radiostream.neotel.mk/kanal103"},
     {name = "Lider FM 107,4", url = "https://liderfm.ipradio.mk/"},
     {name = "Life Radio", url = "http://liferadio.ddns.net:8000/"},
-    {name = "Life Radio 891 Macedonia", url = "http://liferadio.ddns.net:8000/;"},
     {name = "Radio 22", url = "https://radio.server14.kariha.net:8008/"},
     {name = "Radio Bravo 1", url = "http://80.77.157.10:8000/stream/2;live.mp3"},
     {name = "Radio Bravo Smooth Jazz Mix Radio", url = "http://server.webnetradio.net:5490/stream?"},
