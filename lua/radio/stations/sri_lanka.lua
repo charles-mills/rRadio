@@ -14,7 +14,6 @@ local stations = {
     {name = "Rangiri Sri Lanka", url = "https://rangiri.radioca.st/stream"},
     {name = "Sirasa FM", url = "http://live.trusl.com:1170/;"},
     {name = "Sitha FM", url = "http://shaincast.caster.fm:48148/listen.mp3"},
-    {name = "Siyatha FM", url = "http://live.trusl.com:1170/;?type=http&nocache=0"},
     {name = "Star FM Srilanka", url = "https://stream.starfm.lk:12025/stream"},
     {name = "Sunfm", url = "https://radio.lotustechnologieslk.net:2020/stream/sunfmgarden"},
     {name = "V FM", url = "http://dc1.serverse.com:7178/stream/1/"},

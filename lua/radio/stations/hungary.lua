@@ -33,7 +33,7 @@ local stations = {
     {name = "COOLFM Sportoláshoz", url = "https://mediagw.e-tiger.net/stream/zc20"},
     {name = "COOLFM World Music", url = "https://mediagw.e-tiger.net/stream/zc26"},
     {name = "Dance Wave", url = "https://dancewave.online/dance.mp3"},
-    {name = "Dance Wave Retro", url = "https://retro.dancewave.online/retrodance.aac"},
+    {name = "Dance Wave Retro", url = "https://retro.dancewave.online/retrodance.opus"},
     {name = "Danceable Radio", url = "http://s9.myradiostream.com:35944/listen.pls?sid=1"},
     {name = "Dankó Rádió", url = "http://mr-stream.mediaconnect.hu/4747/mr7.aac"},
     {name = "Danubius", url = "https://stream.danubiusradio.hu/danubius_128k"},

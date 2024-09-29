@@ -7,7 +7,7 @@ local stations = {
     {name = "BEAT FM - La Radio Que Te Mueve - Valle Aconcagua 987", url = "https://audio.streaminghd.cl:2000/stream/beatfm-sanfelipe"},
     {name = "Beethoven - Santiago FM", url = "https://unlimited4-us.dps.live/beethovenfm/aac/icecast.audio"},
     {name = "Blaster Radio", url = "https://s2.mkservers.space/blaster"},
-    {name = "Blu FM 949", url = "https://sonic.nnw.cl:7009/;"},
+    {name = "BLUFM", url = "https://sonic.nnw.cl:7009/;"},
     {name = "Bonita", url = "https://sonicpanel.chileservidores.cl/8032/stream"},
     {name = "Bío-Bío Concepción 981", url = "https://unlimited3-cl.dps.live/biobioconcepcion/aac/icecast.audio"},
     {name = "Carabineros De Chile Radio", url = "https://sonic01.instainternet.com/8374/stream"},

@@ -23,7 +23,7 @@ local stations = {
     {name = "Ok Radio 1055 FM", url = "http://okradio.rtvhd.net:8130/;stream/1"},
     {name = "Planet 1075", url = "https://stream20.usastreams.com/8094/stream"},
     {name = "Puerto Limón Radio", url = "https://puertolimonradio-rowrigos.radioca.st/listen.pls?sid=1"},
-    {name = "Radio Casino", url = "https://host.rowrigo.com/listen/radiocasino/radiocasino"},
+    {name = "Radio Casino 983FM", url = "https://host.rowrigo.com/listen/radiocasino/radiocasino"},
     {name = "Radio Costa", url = "https://sonicpanel.globalstream.pro:10979/;"},
     {name = "Radio María Costa Rica - 1007 FM", url = "http://dreamsiteradiocp2.com:8044/stream"},
     {name = "Radio Mil Recuerdos Stereo", url = "https://sechin.grupocentroserver.com/radio/8060/radio.mp3"},

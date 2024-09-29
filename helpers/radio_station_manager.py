@@ -306,10 +306,16 @@ class RadioStationManager:
 
             # Parse URL to extract base URL (scheme + netloc + path)
             parsed_url = urlparse(raw_url)
+            netloc = parsed_url.netloc.lower()
+            if netloc.startswith('www.'):
+                netloc = netloc[4:]  # Strip 'www.'
+
+            path = parsed_url.path.rstrip('/').lower()
+
             base_url = urlunparse((
                 parsed_url.scheme.lower(),
-                parsed_url.netloc.lower(),
-                parsed_url.path.rstrip('/'),
+                netloc,
+                path,
                 '',  # params
                 '',  # query
                 ''   # fragment
@@ -555,4 +561,3 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     main(auto_run=args.auto_run, fetch=args.fetch, count=args.count)
-    
