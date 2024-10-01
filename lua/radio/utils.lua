@@ -13,6 +13,16 @@ function utils.isSitAnywhereSeat(vehicle)
 end
 
 --[[
+    Function: isBoombox
+    Description: Checks if an entity is a boombox.
+    @param entity (Entity): The entity to check.
+    @return (boolean): True if it's a boombox, false otherwise.
+]]
+function utils.isBoombox(entity)
+    return entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox"
+end
+
+--[[
     Function: formatCountryName
     Description: Formats a country name by replacing underscores and dashes with spaces, and capitalizing words.
     @param name (string): The country name to format.

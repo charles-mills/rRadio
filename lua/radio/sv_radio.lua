@@ -229,7 +229,7 @@ local function InitializeBoomboxOwnershipHooks()
             print("[CarRadio] DarkRP or DerivedRP detected. Setting up CPPI-based ownership hooks.")
 
             hook.Add("playerBoughtCustomEntity", "AssignBoomboxOwnerInDarkRP", function(ply, entTable, ent, price)
-                if IsValid(ent) and (ent:GetClass() == "boombox" or ent:GetClass() == "golden_boombox") then
+                if IsValid(ent) and utils.isBoombox(entity) then
                     AssignOwner(ply, ent)
                 end
             end)
@@ -274,7 +274,7 @@ local function HandlePlayCarRadioStation(len, ply)
 
     utils.DebugPrint("PlayCarRadioStation received: Entity " .. entity:EntIndex())
 
-    if entity:GetClass() == "golden_boombox" or entity:GetClass() == "boombox" then
+    if utils.isBoombox(entity) then
         local permaID = entity.PermaProps_ID
         if permaID then
             SavedBoomboxStates[permaID] = {
@@ -350,7 +350,7 @@ local function HandleStopCarRadioStation(len, ply)
 
     if not IsValid(entity) then return end
 
-    if entity:GetClass() == "golden_boombox" or entity:GetClass() == "boombox" then
+    if utils.isBoombox(entity) then
         local permaID = entity.PermaProps_ID
         if permaID and SavedBoomboxStates[permaID] then
             SavedBoomboxStates[permaID].isPlaying = false
@@ -428,7 +428,7 @@ end
 ]]
 hook.Add("OnEntityCreated", "RestoreBoomboxRadioForPermaProps", function(entity)
     timer.Simple(0.5, function()
-        if IsValid(entity) and (entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox") then
+        if IsValid(entity) and utils.isBoombox(entity) then
             RestoreBoomboxRadio(entity)
         end
     end)
@@ -489,7 +489,7 @@ hook.Add("InitPostEntity", "SetupBoomboxHooks", InitializeBoomboxOwnershipHooks)
 ]]
 hook.Add("CanTool", "AllowBoomboxToolgun", function(ply, tr, tool)
     local ent = tr.Entity
-    if IsValid(ent) and (ent:GetClass() == "boombox" or ent:GetClass() == "golden_boombox") then
+    if IsValid(ent) and utils.isBoombox(ent) then
         local owner = ent:GetNWEntity("Owner")
         if owner == ply then
             return true
@@ -502,7 +502,7 @@ end)
     Description: Allows the owner to pick up the boombox with the physgun.
 ]]
 hook.Add("PhysgunPickup", "AllowBoomboxPhysgun", function(ply, ent)
-    if IsValid(ent) and (ent:GetClass() == "boombox" or ent:GetClass() == "golden_boombox") then
+    if IsValid(ent) and utils.isBoombox(ent) then
         local owner = ent:GetNWEntity("Owner")
         if owner == ply then
             return true
