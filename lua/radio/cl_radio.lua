@@ -1,7 +1,9 @@
 include("radio/key_names.lua")
+include("radio/config.lua")
+include("utils.lua")
 
-Config = include("radio/config.lua")
-include("radio/utils.lua")
+local countryTranslations = include("country_translations.lua")
+local LanguageManager = include("language_manager.lua")
 
 local favoriteCountries = {}
 local favoriteStations = {}
@@ -58,8 +60,37 @@ local entityVolumes = {}
 local lastMessageTime = -math.huge
 local lastStationSelectTime = 0  -- Variable to store the time of the last station selection
 
+-- Utility Functions
+local function Scale(value)
+    return value * (ScrW() / 2560)
+end
+
+local function getEntityConfig(entity)
+    local entityClass = entity:GetClass()
+    
+    if entityClass == "golden_boombox" then
+        return Config.GoldenBoombox
+    elseif entityClass == "boombox" then
+        return Config.Boombox
+    elseif entity:IsVehicle() then
+        return Config.VehicleRadio
+    else -- Temporary fix to make sure LVS works
+        return Config.VehicleRadio
+    end
+    return nil
+end
+
+local function formatCountryName(name)
+    -- Reformat and then translate the country name
+    local formattedName = name:gsub("_", " "):gsub("(%a)([%w_\']*)", function(a, b) 
+        return string.upper(a) .. string.lower(b) 
+    end)
+    local lang = GetConVar("radio_language"):GetString() or "en"
+    return countryTranslations:GetCountryName(lang, formattedName)
+end
+
 local function updateRadioVolume(station, distance, isPlayerInCar, entity)
-    local entityConfig = utils.getEntityConfig(entity)
+    local entityConfig = getEntityConfig(entity)
     if not entityConfig then return end
 
     local volume = entityVolumes[entity] or entityConfig.Volume
@@ -85,7 +116,6 @@ local function updateRadioVolume(station, distance, isPlayerInCar, entity)
     end
 end
 
--- Update the PrintCarRadioMessage function
 local function PrintCarRadioMessage()
     if not GetConVar("car_radio_show_messages"):GetBool() then return end
 
@@ -156,8 +186,8 @@ end)
 
 local function createStarIcon(parent, country, stationListPanel, backButton, searchBox)
     local starIcon = vgui.Create("DImageButton", parent)
-    starIcon:SetSize(utils.Scale(24), utils.Scale(24))
-    starIcon:SetPos(utils.Scale(8), (utils.Scale(40) - utils.Scale(24)) / 2)
+    starIcon:SetSize(Scale(24), Scale(24))
+    starIcon:SetPos(Scale(8), (Scale(40) - Scale(24)) / 2)
     starIcon:SetImage(table.HasValue(favoriteCountries, country) and "hud/star_full.png" or "hud/star.png")
 
     starIcon.DoClick = function()
@@ -185,8 +215,8 @@ end
 
 local function createStationStarIcon(parent, country, station, stationListPanel, backButton, searchBox)
     local starIcon = vgui.Create("DImageButton", parent)
-    starIcon:SetSize(utils.Scale(24), utils.Scale(24))
-    starIcon:SetPos(utils.Scale(8), (utils.Scale(40) - utils.Scale(24)) / 2)
+    starIcon:SetSize(Scale(24), Scale(24))
+    starIcon:SetPos(Scale(8), (Scale(40) - Scale(24)) / 2)
     starIcon:SetImage(favoriteStations[country] and table.HasValue(favoriteStations[country], station.name) and "hud/star_full.png" or "hud/star.png")
 
     starIcon.DoClick = function()
@@ -235,7 +265,7 @@ function populateList(stationListPanel, backButton, searchBox, resetSearch)
     if selectedCountry == nil then
         local countries = {}
         for country, _ in pairs(Config.RadioStations) do
-            local translatedCountry = utils.formatCountryName(country)
+            local translatedCountry = formatCountryName(country)
             if filterText == "" or string.find(translatedCountry:lower(), filterText:lower(), 1, true) then
                 table.insert(countries, { original = country, translated = translatedCountry })
             end
@@ -257,8 +287,8 @@ function populateList(stationListPanel, backButton, searchBox, resetSearch)
         for _, country in ipairs(countries) do
             local countryButton = vgui.Create("DButton", stationListPanel)
             countryButton:Dock(TOP)
-            countryButton:DockMargin(utils.Scale(5), utils.Scale(5), utils.Scale(5), 0)
-            countryButton:SetTall(utils.Scale(40))
+            countryButton:DockMargin(Scale(5), Scale(5), Scale(5), 0)
+            countryButton:SetTall(Scale(40))
             countryButton:SetText(country.translated)
             countryButton:SetFont("Roboto18")
             countryButton:SetTextColor(Config.UI.TextColor)
@@ -304,8 +334,8 @@ function populateList(stationListPanel, backButton, searchBox, resetSearch)
             local station = stationData.station
             local stationButton = vgui.Create("DButton", stationListPanel)
             stationButton:Dock(TOP)
-            stationButton:DockMargin(utils.Scale(5), utils.Scale(5), utils.Scale(5), 0)
-            stationButton:SetTall(utils.Scale(40))
+            stationButton:DockMargin(Scale(5), Scale(5), Scale(5), 0)
+            stationButton:SetTall(Scale(40))
             stationButton:SetText(station.name)
             stationButton:SetFont("Roboto18")
             stationButton:SetTextColor(Config.UI.TextColor)
@@ -347,7 +377,7 @@ function populateList(stationListPanel, backButton, searchBox, resetSearch)
                     net.SendToServer()
                 end
 
-                local volume = entityVolumes[entity] or utils.getEntityConfig(entity).Volume
+                local volume = entityVolumes[entity] or getEntityConfig(entity).Volume
                 net.Start("PlayCarRadioStation")
                 net.WriteEntity(entity)
                 net.WriteString(station.name)
@@ -369,7 +399,7 @@ local function openRadioMenu()
 
     local frame = vgui.Create("DFrame")
     frame:SetTitle("")
-    frame:SetSize(utils.Scale(Config.UI.FrameSize.width), utils.Scale(Config.UI.FrameSize.height))
+    frame:SetSize(Scale(Config.UI.FrameSize.width), Scale(Config.UI.FrameSize.height))
     frame:Center()
     frame:SetDraggable(true)
     frame:ShowCloseButton(false)
@@ -378,27 +408,27 @@ local function openRadioMenu()
 
     frame.Paint = function(self, w, h)
         draw.RoundedBox(8, 0, 0, w, h, Config.UI.BackgroundColor)
-        draw.RoundedBoxEx(8, 0, 0, w, utils.Scale(40), Config.UI.HeaderColor, true, true, false, false)
+        draw.RoundedBoxEx(8, 0, 0, w, Scale(40), Config.UI.HeaderColor, true, true, false, false)
         
-        local iconSize = utils.Scale(25)
-        local iconOffsetX = utils.Scale(10)
+        local iconSize = Scale(25)
+        local iconOffsetX = Scale(10)
         
         surface.SetFont("HeaderFont")
         local textHeight = select(2, surface.GetTextSize("H"))
         
-        local iconOffsetY = utils.Scale(2) + textHeight - iconSize
+        local iconOffsetY = Scale(2) + textHeight - iconSize
         
         surface.SetMaterial(Material("hud/radio"))
         surface.SetDrawColor(Config.UI.TextColor)
         surface.DrawTexturedRect(iconOffsetX, iconOffsetY, iconSize, iconSize)
         
         local countryText = Config.Lang["SelectCountry"] or "Select Country"
-        draw.SimpleText(selectedCountry and utils.formatCountryName(selectedCountry) or countryText, "HeaderFont", iconOffsetX + iconSize + utils.Scale(5), iconOffsetY, Config.UI.TextColor, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
+        draw.SimpleText(selectedCountry and formatCountryName(selectedCountry) or countryText, "HeaderFont", iconOffsetX + iconSize + Scale(5), iconOffsetY, Config.UI.TextColor, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
     end
     
     local searchBox = vgui.Create("DTextEntry", frame)
-    searchBox:SetPos(utils.Scale(10), utils.Scale(50))
-    searchBox:SetSize(utils.Scale(Config.UI.FrameSize.width) - utils.Scale(20), utils.Scale(30))
+    searchBox:SetPos(Scale(10), Scale(50))
+    searchBox:SetSize(Scale(Config.UI.FrameSize.width) - Scale(20), Scale(30))
     searchBox:SetFont("Roboto18")
     searchBox:SetPlaceholderText(Config.Lang and Config.Lang["SearchPlaceholder"] or "Search")
     searchBox:SetTextColor(Config.UI.TextColor)
@@ -408,21 +438,21 @@ local function openRadioMenu()
         self:DrawTextEntryText(Config.UI.TextColor, Color(120, 120, 120), Config.UI.TextColor)
 
         if self:GetText() == "" then
-            draw.SimpleText(self:GetPlaceholderText(), self:GetFont(), utils.Scale(5), h / 2, Config.UI.TextColor, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+            draw.SimpleText(self:GetPlaceholderText(), self:GetFont(), Scale(5), h / 2, Config.UI.TextColor, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
         end
     end
 
     local stationListPanel = vgui.Create("DScrollPanel", frame)
-    stationListPanel:SetPos(utils.Scale(5), utils.Scale(90))
-    stationListPanel:SetSize(utils.Scale(Config.UI.FrameSize.width) - utils.Scale(20), utils.Scale(Config.UI.FrameSize.height) - utils.Scale(200))
+    stationListPanel:SetPos(Scale(5), Scale(90))
+    stationListPanel:SetSize(Scale(Config.UI.FrameSize.width) - Scale(20), Scale(Config.UI.FrameSize.height) - Scale(200))
 
-    local stopButtonHeight = utils.Scale(Config.UI.FrameSize.width) / 8
-    local stopButtonWidth = utils.Scale(Config.UI.FrameSize.width) / 4
+    local stopButtonHeight = Scale(Config.UI.FrameSize.width) / 8
+    local stopButtonWidth = Scale(Config.UI.FrameSize.width) / 4
     local stopButtonText = Config.Lang["StopRadio"] or "STOP"
     local stopButtonFont = calculateFontSizeForStopButton(stopButtonText, stopButtonWidth, stopButtonHeight)
 
     local stopButton = vgui.Create("DButton", frame)
-    stopButton:SetPos(utils.Scale(10), utils.Scale(Config.UI.FrameSize.height) - utils.Scale(90))
+    stopButton:SetPos(Scale(10), Scale(Config.UI.FrameSize.height) - Scale(90))
     stopButton:SetSize(stopButtonWidth, stopButtonHeight)
     stopButton:SetText(stopButtonText)
     stopButton:SetFont(stopButtonFont)
@@ -447,22 +477,22 @@ local function openRadioMenu()
     end 
 
     local volumePanel = vgui.Create("DPanel", frame)
-    volumePanel:SetPos(utils.Scale(20) + stopButtonWidth, utils.Scale(Config.UI.FrameSize.height) - utils.Scale(90))
-    volumePanel:SetSize(utils.Scale(Config.UI.FrameSize.width) - utils.Scale(30) - stopButtonWidth, stopButtonHeight)
+    volumePanel:SetPos(Scale(20) + stopButtonWidth, Scale(Config.UI.FrameSize.height) - Scale(90))
+    volumePanel:SetSize(Scale(Config.UI.FrameSize.width) - Scale(30) - stopButtonWidth, stopButtonHeight)
     volumePanel.Paint = function(self, w, h)
         draw.RoundedBox(8, 0, 0, w, h, Config.UI.CloseButtonColor)
     end
 
-    local volumeIconSize = utils.Scale(50)
+    local volumeIconSize = Scale(50)
     
     local volumeIcon = vgui.Create("DImage", volumePanel)
-    volumeIcon:SetPos(utils.Scale(10), (volumePanel:GetTall() - volumeIconSize) / 2)
+    volumeIcon:SetPos(Scale(10), (volumePanel:GetTall() - volumeIconSize) / 2)
     volumeIcon:SetSize(volumeIconSize, volumeIconSize)
     volumeIcon:SetImage("hud/volume")
 
     local volumeSlider = vgui.Create("DNumSlider", volumePanel)
-    volumeSlider:SetPos(volumeIcon:GetWide() - utils.Scale(200), utils.Scale(5))
-    volumeSlider:SetSize(volumePanel:GetWide() - volumeIcon:GetWide() + utils.Scale(180), volumePanel:GetTall() - utils.Scale(20))
+    volumeSlider:SetPos(volumeIcon:GetWide() - Scale(200), Scale(5))
+    volumeSlider:SetSize(volumePanel:GetWide() - volumeIcon:GetWide() + Scale(180), volumePanel:GetTall() - Scale(20))
     volumeSlider:SetText("")
     volumeSlider:SetMin(0)
     volumeSlider:SetMax(1)
@@ -470,7 +500,7 @@ local function openRadioMenu()
     
     local entity = LocalPlayer().currentRadioEntity
     
-    local currentVolume = entityVolumes[entity] or utils.getEntityConfig(entity).Volume
+    local currentVolume = entityVolumes[entity] or getEntityConfig(entity).Volume
     volumeSlider:SetValue(currentVolume)
     
     volumeSlider.Slider.Paint = function(self, w, h)
@@ -478,7 +508,7 @@ local function openRadioMenu()
     end
     
     volumeSlider.Slider.Knob.Paint = function(self, w, h)
-        draw.RoundedBox(8, 0, utils.Scale(-2), w * 2, h * 2, Config.UI.BackgroundColor)
+        draw.RoundedBox(8, 0, Scale(-2), w * 2, h * 2, Config.UI.BackgroundColor)
     end
     
     volumeSlider.TextArea:SetVisible(false)
@@ -499,14 +529,14 @@ local function openRadioMenu()
     end    
     
     local backButton = vgui.Create("DButton", frame)
-    backButton:SetSize(utils.Scale(30), utils.Scale(30))
-    backButton:SetPos(frame:GetWide() - utils.Scale(79), utils.Scale(5))
+    backButton:SetSize(Scale(30), Scale(30))
+    backButton:SetPos(frame:GetWide() - Scale(79), Scale(5))
     backButton:SetText("")
 
     backButton.Paint = function(self, w, h)
         draw.NoTexture()
-        local arrowSize = utils.Scale(15)
-        local arrowOffset = utils.Scale(8)
+        local arrowSize = Scale(15)
+        local arrowOffset = Scale(8)
         local arrowColor = self:IsHovered() and Config.UI.ButtonHoverColor or Config.UI.TextColor
 
         surface.SetDrawColor(arrowColor)
@@ -528,8 +558,8 @@ local function openRadioMenu()
     closeButton:SetText("X")
     closeButton:SetFont("Roboto18")
     closeButton:SetTextColor(Config.UI.TextColor)
-    closeButton:SetSize(utils.Scale(40), utils.Scale(40))
-    closeButton:SetPos(frame:GetWide() - utils.Scale(40), 0)
+    closeButton:SetSize(Scale(40), Scale(40))
+    closeButton:SetPos(frame:GetWide() - Scale(40), 0)
     closeButton.Paint = function(self, w, h)
         local cornerRadius = 8
         draw.RoundedBoxEx(cornerRadius, 0, 0, w, h, Config.UI.CloseButtonColor, false, true, false, false)
@@ -543,7 +573,7 @@ local function openRadioMenu()
     end
 
     local sbar = stationListPanel:GetVBar()
-    sbar:SetWide(utils.Scale(8))
+    sbar:SetWide(Scale(8))
     function sbar:Paint(w, h) draw.RoundedBox(8, 0, 0, w, h, Config.UI.ScrollbarColor) end
     function sbar.btnUp:Paint(w, h) draw.RoundedBox(8, 0, 0, w, h, Config.UI.ScrollbarColor) end
     function sbar.btnDown:Paint(w, h) draw.RoundedBox(8, 0, 0, w, h, Config.UI.ScrollbarColor) end
@@ -584,7 +614,7 @@ net.Receive("PlayCarRadioStation", function()
             return
         end
 
-        local entityConfig = utils.getEntityConfig(entity)
+        local entityConfig = getEntityConfig(entity)
 
         if currentRadioSources[entity] and IsValid(currentRadioSources[entity]) then
             currentRadioSources[entity]:Stop()

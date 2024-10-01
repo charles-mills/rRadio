@@ -1,5 +1,3 @@
-include("radio/utils.lua")
-
 local Config = {}
 
 Config.RadioStations = {}
@@ -17,12 +15,18 @@ end
 
 loadLanguage()
 
+-- Function to format the country name for UI display
+local function formatCountryName(filename)
+    local formattedName = filename:gsub("-", " "):gsub("(%a)([%w_']*)", function(a, b) return string.upper(a) .. string.lower(b) end)
+    return formattedName
+end
+
 -- Function to load stations for a specific country
 local function loadStationsForCountry(country)
     local path = "radio/stations/" .. country .. ".lua"
     if file.Exists(path, "LUA") then
         local stations = include(path)
-        Config.RadioStations[utils.formatCountryName(country)] = stations -- Store with formatted name for UI
+        Config.RadioStations[formatCountryName(country)] = stations -- Store with formatted name for UI
     end
 end
 
@@ -42,7 +46,7 @@ local selectedTheme = themes["neon"]
 -- General UI Settings
 Config.UI = selectedTheme
 Config.UKAndUSPrioritised = true -- Include UK and US stations at the top of the list (default alphabetical sort if false)
-Config.MessageCooldown = 1 -- Cooldown time in seconds before the chat message can be sent again ("Press {key} to open the radio menu")
+Config.MessageCooldown = 300 -- Cooldown time in seconds before the chat message can be sent again ("Press {key} to open the radio menu")
 
 local openKeyConvar = GetConVar("car_radio_open_key")
 

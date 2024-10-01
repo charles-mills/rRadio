@@ -1,6 +1,3 @@
-Config = include("radio/config.lua")
-include("radio/utils.lua")
-
 util.AddNetworkString("PlayCarRadioStation")
 util.AddNetworkString("StopCarRadioStation")
 util.AddNetworkString("CarRadioMessage")
@@ -9,12 +6,20 @@ util.AddNetworkString("UpdateRadioStatus")
 util.AddNetworkString("ToggleFavoriteCountry")
 
 local ActiveRadios = {}
+local debug_mode = false  -- Set to true to enable debug statements
 SavedBoomboxStates = SavedBoomboxStates or {}
+
+-- Debug function to print messages if debug_mode is enabled
+local function DebugPrint(msg)
+    if debug_mode then
+        print("[CarRadio Debug] " .. msg)
+    end
+end
 
 -- Function to add a radio to the active list
 local function AddActiveRadio(entity, stationName, url, volume)
     if not IsValid(entity) then
-        utils.DebugPrint("Attempted to add a radio to an invalid entity.")
+        DebugPrint("Attempted to add a radio to an invalid entity.")
         return
     end
 
@@ -25,14 +30,29 @@ local function AddActiveRadio(entity, stationName, url, volume)
         volume = volume
     }
 
-    utils.DebugPrint("Added active radio: Entity " .. tostring(entity:EntIndex()) .. ", Station: " .. stationName)
+    DebugPrint("Added active radio: Entity " .. tostring(entity:EntIndex()) .. ", Station: " .. stationName)
 end
+
+-- Add the hooks to set the networked variable
+hook.Add("PlayerEnteredVehicle", "MarkSitAnywhereSeat", function(ply, vehicle)
+    if vehicle.playerdynseat then
+        vehicle:SetNWBool("IsSitAnywhereSeat", true)
+    else
+        vehicle:SetNWBool("IsSitAnywhereSeat", false)
+    end
+end)
+
+hook.Add("PlayerLeaveVehicle", "UnmarkSitAnywhereSeat", function(ply, vehicle)
+    if IsValid(vehicle) then
+        vehicle:SetNWBool("IsSitAnywhereSeat", false)
+    end
+end)
 
 -- Function to remove a radio from the active list
 local function RemoveActiveRadio(entity)
     if ActiveRadios[entity:EntIndex()] then
         ActiveRadios[entity:EntIndex()] = nil
-        utils.DebugPrint("Removed active radio: Entity " .. tostring(entity:EntIndex()))
+        DebugPrint("Removed active radio: Entity " .. tostring(entity:EntIndex()))
     end
 end
 
@@ -40,7 +60,7 @@ end
 local function RestoreBoomboxRadio(entity)
     local permaID = entity.PermaProps_ID
     if not permaID then
-        utils.DebugPrint("Warning: Could not find PermaProps_ID for entity " .. entity:EntIndex())
+        DebugPrint("Warning: Could not find PermaProps_ID for entity " .. entity:EntIndex())
         return
     end
 
@@ -52,7 +72,7 @@ local function RestoreBoomboxRadio(entity)
         if entity.SetStationName then
             entity:SetStationName(savedState.station)
         else
-            utils.DebugPrint("Warning: SetStationName function not found for entity: " .. entity:EntIndex())
+            DebugPrint("Warning: SetStationName function not found for entity: " .. entity:EntIndex())
         end
 
         if savedState.isPlaying then
@@ -62,9 +82,9 @@ local function RestoreBoomboxRadio(entity)
             net.WriteFloat(savedState.volume)
             net.Broadcast()
             AddActiveRadio(entity, savedState.station, savedState.url, savedState.volume)
-            utils.DebugPrint("Restored and added active radio for PermaProps_ID: " .. permaID)
+            DebugPrint("Restored and added active radio for PermaProps_ID: " .. permaID)
         else
-            utils.DebugPrint("Station is not playing. Not broadcasting PlayCarRadioStation.")
+            DebugPrint("Station is not playing. Not broadcasting PlayCarRadioStation.")
         end
     end
 end
@@ -72,7 +92,7 @@ end
 -- Hook to restore boombox radio state on entity creation
 hook.Add("OnEntityCreated", "RestoreBoomboxRadioForPermaProps", function(entity)
     timer.Simple(0.5, function()
-        if IsValid(entity) and utils.isBoombox(entity) then
+        if IsValid(entity) and (entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox") then
             RestoreBoomboxRadio(entity)
         end
     end)
@@ -90,9 +110,9 @@ local function CreateBoomboxStatesTable()
         )
     ]]
     if sql.Query(createTableQuery) == false then
-        utils.DebugPrint("Failed to create boombox_states table: " .. sql.LastError())
+        DebugPrint("Failed to create boombox_states table: " .. sql.LastError())
     else
-        utils.DebugPrint("Boombox_states table created or verified successfully")
+        DebugPrint("Boombox_states table created or verified successfully")
     end
 end
 
@@ -103,9 +123,9 @@ local function SaveBoomboxStateToDatabase(permaID, stationName, url, isPlaying, 
     local query = string.format("REPLACE INTO boombox_states (permaID, station, url, isPlaying, volume) VALUES (%d, %s, %s, %d, %f)",
         permaID, sql.SQLStr(stationName), sql.SQLStr(url), isPlaying and 1 or 0, volume)
     if sql.Query(query) == false then
-        utils.DebugPrint("Failed to save boombox state: " .. sql.LastError())
+        DebugPrint("Failed to save boombox state: " .. sql.LastError())
     else
-        utils.DebugPrint("Saved boombox state to database: PermaID = " .. permaID)
+        DebugPrint("Saved boombox state to database: PermaID = " .. permaID)
     end
 end
 
@@ -113,9 +133,9 @@ end
 local function RemoveBoomboxStateFromDatabase(permaID)
     local query = string.format("DELETE FROM boombox_states WHERE permaID = %d", permaID)
     if sql.Query(query) == false then
-        utils.DebugPrint("Failed to remove boombox state: " .. sql.LastError())
+        DebugPrint("Failed to remove boombox state: " .. sql.LastError())
     else
-        utils.DebugPrint("Removed boombox state from database: PermaID = " .. permaID)
+        DebugPrint("Removed boombox state from database: PermaID = " .. permaID)
     end
 end
 
@@ -131,19 +151,19 @@ local function LoadBoomboxStatesFromDatabase()
                 isPlaying = tonumber(row.isPlaying) == 1,
                 volume = tonumber(row.volume)
             }
-            utils.DebugPrint("Loaded boombox state from database: PermaID = " .. permaID)
+            DebugPrint("Loaded boombox state from database: PermaID = " .. permaID)
         end
     else
         SavedBoomboxStates = {}
-        utils.DebugPrint("No saved boombox states found in the database.")
+        DebugPrint("No saved boombox states found in the database.")
     end
 end
 
 -- Send active radios to a specific player
 local function SendActiveRadiosToPlayer(ply)
-    utils.DebugPrint("Sending active radios to player: " .. ply:Nick())
+    DebugPrint("Sending active radios to player: " .. ply:Nick())
     if next(ActiveRadios) == nil then
-        utils.DebugPrint("No active radios found. Retrying in 5 seconds.")
+        DebugPrint("No active radios found. Retrying in 5 seconds.")
         timer.Simple(5, function()
             if IsValid(ply) then
                 SendActiveRadiosToPlayer(ply)
@@ -160,7 +180,7 @@ local function SendActiveRadiosToPlayer(ply)
             net.WriteFloat(radio.volume)
             net.Send(ply)
         else
-            utils.DebugPrint("Invalid radio entity detected in SendActiveRadiosToPlayer.")
+            DebugPrint("Invalid radio entity detected in SendActiveRadiosToPlayer.")
         end
     end
 end
@@ -173,28 +193,8 @@ hook.Add("PlayerInitialSpawn", "SendActiveRadiosOnJoin", function(ply)
     end)
 end)
 
--- Add the hooks to set the networked variable
-hook.Add("PlayerEnteredVehicle", "MarkSitAnywhereSeat", function(ply, vehicle)
-    if vehicle.playerdynseat then
-        vehicle:SetNWBool("IsSitAnywhereSeat", true)
-    else
-        vehicle:SetNWBool("IsSitAnywhereSeat", false)
-    end
-end)
-
-hook.Add("PlayerLeaveVehicle", "UnmarkSitAnywhereSeat", function(ply, vehicle)
-    if IsValid(vehicle) then
-        vehicle:SetNWBool("IsSitAnywhereSeat", false)
-    end
-end)
-
 -- Hook to handle when players enter a vehicle and receive a car radio message
 hook.Add("PlayerEnteredVehicle", "CarRadioMessageOnEnter", function(ply, vehicle, role)
-    if vehicle.playerdynseat then
-        -- Do not send the message if it's a sit anywhere seat
-        return
-    end
-
     net.Start("CarRadioMessage")
     net.Send(ply)
 end)
@@ -207,13 +207,13 @@ net.Receive("PlayCarRadioStation", function(len, ply)
     local volume = math.Clamp(net.ReadFloat(), 0, 1)
 
     if not IsValid(entity) then
-        utils.DebugPrint("Invalid entity received in PlayCarRadioStation.")
+        DebugPrint("Invalid entity received in PlayCarRadioStation.")
         return
     end
 
-    utils.DebugPrint("PlayCarRadioStation received: Entity " .. entity:EntIndex())
+    DebugPrint("PlayCarRadioStation received: Entity " .. entity:EntIndex())
 
-    if utils.isBoombox(entity) then
+    if entity:GetClass() == "golden_boombox" or entity:GetClass() == "boombox" then
         local permaID = entity.PermaProps_ID
         if permaID then
             SavedBoomboxStates[permaID] = {
@@ -228,13 +228,13 @@ net.Receive("PlayCarRadioStation", function(len, ply)
         if entity.SetVolume then
             entity:SetVolume(volume)
         else
-            utils.DebugPrint("Warning: SetVolume function not found for entity: " .. entity:EntIndex())
+            DebugPrint("Warning: SetVolume function not found for entity: " .. entity:EntIndex())
         end
 
         if entity.SetStationName then
             entity:SetStationName(stationName)
         else
-            utils.DebugPrint("Warning: SetStationName function not found for entity: " .. entity:EntIndex())
+            DebugPrint("Warning: SetStationName function not found for entity: " .. entity:EntIndex())
         end
 
         AddActiveRadio(entity, stationName, url, volume)
@@ -249,8 +249,12 @@ net.Receive("PlayCarRadioStation", function(len, ply)
         net.WriteEntity(entity)
         net.WriteString(stationName)
         net.Broadcast()
+
     elseif entity:IsVehicle() then
-        local mainVehicle = utils.getMainVehicle(entity)
+        local mainVehicle = entity:GetParent() or entity
+        if not IsValid(mainVehicle) then
+            mainVehicle = entity
+        end
 
         if ActiveRadios[mainVehicle:EntIndex()] then
             net.Start("StopCarRadioStation")
@@ -280,7 +284,7 @@ net.Receive("StopCarRadioStation", function(len, ply)
 
     if not IsValid(entity) then return end
 
-    if utils.isBoombox(entity) then
+    if entity:GetClass() == "golden_boombox" or entity:GetClass() == "boombox" then
         local permaID = entity.PermaProps_ID
         if permaID and SavedBoomboxStates[permaID] then
             SavedBoomboxStates[permaID].isPlaying = false
@@ -290,7 +294,7 @@ net.Receive("StopCarRadioStation", function(len, ply)
         if entity.SetStationName then
             entity:SetStationName("")
         else
-            utils.DebugPrint("Warning: SetStationName function not found for entity: " .. entity:EntIndex())
+            DebugPrint("Warning: SetStationName function not found for entity: " .. entity:EntIndex())
         end
 
         RemoveActiveRadio(entity)
@@ -305,7 +309,10 @@ net.Receive("StopCarRadioStation", function(len, ply)
         net.Broadcast()
 
     elseif entity:IsVehicle() then
-        local mainVehicle = utils.getMainVehicle(entity)
+        local mainVehicle = entity:GetParent() or entity
+        if not IsValid(mainVehicle) then
+            mainVehicle = entity
+        end
 
         RemoveActiveRadio(mainVehicle)
 
@@ -322,23 +329,41 @@ end)
 
 -- Cleanup active radios when an entity is removed
 hook.Add("EntityRemoved", "CleanupActiveRadioOnEntityRemove", function(entity)
-    local mainVehicle = utils.getMainVehicle(entity)
+    local mainVehicle = entity:GetParent() or entity
+    if not IsValid(mainVehicle) then
+        mainVehicle = entity
+    end
 
     if ActiveRadios[mainVehicle:EntIndex()] then
         RemoveActiveRadio(mainVehicle)
     end
 end)
 
+-- Utility function to detect DarkRP or DerivedRP gamemodes
+local function IsDarkRP()
+    return DarkRP ~= nil and DarkRP.getPhrase ~= nil
+end
+
+-- Assign ownership using CPPI (works for both DarkRP and Sandbox)
+local function AssignOwner(ply, ent)
+    if ent.CPPISetOwner then
+        ent:CPPISetOwner(ply)  -- Assign the owner using CPPI
+    end
+
+    -- Set the owner as a networked entity so the client can access it
+    ent:SetNWEntity("Owner", ply)
+end
+
 -- Hook into InitPostEntity to ensure everything is initialized
 hook.Add("InitPostEntity", "SetupBoomboxHooks", function()
     timer.Simple(1, function()
-        if utils.IsDarkRP() then
+        if IsDarkRP() then
             print("[CarRadio] DarkRP or DerivedRP detected. Setting up CPPI-based ownership hooks.")
 
             -- Add the hook for playerBoughtCustomEntity in DarkRP or DerivedRP
             hook.Add("playerBoughtCustomEntity", "AssignBoomboxOwnerInDarkRP", function(ply, entTable, ent, price)
-                if IsValid(ent) and utils.isBoombox(ent) then
-                    utils.AssignOwner(ply, ent)
+                if IsValid(ent) and (ent:GetClass() == "boombox" or ent:GetClass() == "golden_boombox") then
+                    AssignOwner(ply, ent)
                 end
             end)
         else
@@ -350,7 +375,7 @@ end)
 -- Toolgun and Physgun Pickup for Boomboxes (remove CPPI dependency for Sandbox)
 hook.Add("CanTool", "AllowBoomboxToolgun", function(ply, tr, tool)
     local ent = tr.Entity
-    if IsValid(ent) and utils.isBoombox(ent) then
+    if IsValid(ent) and (ent:GetClass() == "boombox" or ent:GetClass() == "golden_boombox") then
         local owner = ent:GetNWEntity("Owner")
         if owner == ply then
             return true  -- Allow owner to use tools on the boombox
@@ -359,7 +384,7 @@ hook.Add("CanTool", "AllowBoomboxToolgun", function(ply, tr, tool)
 end)
 
 hook.Add("PhysgunPickup", "AllowBoomboxPhysgun", function(ply, ent)
-    if IsValid(ent) and utils.isBoombox(ent) then
+    if IsValid(ent) and (ent:GetClass() == "boombox" or ent:GetClass() == "golden_boombox") then
         local owner = ent:GetNWEntity("Owner")
         if owner == ply then
             return true  -- Allow owner to physgun the boombox
@@ -402,11 +427,11 @@ PermaProps.SpecialENTSSpawn["golden_boombox"] = PermaProps.SpecialENTSSpawn["boo
 -- Similar entries can be added for other custom radio entities if needed
 
 hook.Add("Initialize", "LoadBoomboxStatesOnStartup", function()
-    utils.DebugPrint("Attempting to load Boombox States from the database")
+    DebugPrint("Attempting to load Boombox States from the database")
     LoadBoomboxStatesFromDatabase()
 
     -- Existing boombox states will be restored by PermaProps.SpecialENTSSpawn functions when they are spawned
-    utils.DebugPrint("Finished restoring active radios")
+    DebugPrint("Finished restoring active radios")
 end)
 
 -- Clear all boombox states from the database

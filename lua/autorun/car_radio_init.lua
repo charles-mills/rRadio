@@ -32,7 +32,6 @@ else
     
     -- Load configuration and other necessary files in the correct order
     Config = include("radio/config.lua")
-
     include("language_manager.lua")
     include("country_translations.lua")
     include("themes.lua")
