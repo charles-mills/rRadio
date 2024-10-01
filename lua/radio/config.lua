@@ -1,9 +1,33 @@
+-- Include the utilities
+include("radio/utils.lua")
+
 local Config = {}
 
 Config.RadioStations = {}
 
+-- Centralize ConVar creation (Suggestion 3)
+local function initializeConVars()
+    if not ConVarExists("radio_theme") then
+        CreateClientConVar("radio_theme", "neon", true, false, "Select the theme for the radio UI.")
+    end
+    if not ConVarExists("radio_language") then
+        CreateClientConVar("radio_language", "en", true, false, "Select the language for the radio UI.")
+    end
+    if not ConVarExists("car_radio_open_key") then
+        CreateClientConVar("car_radio_open_key", "21", true, false, "Select the key to open the car radio menu.")
+    end
+    if not ConVarExists("car_radio_show_messages") then
+        CreateClientConVar("car_radio_show_messages", "1", true, false, "Enable or disable car radio messages.")
+    end
+    if not ConVarExists("boombox_show_text") then
+        CreateClientConVar("boombox_show_text", "1", true, false, "Show or hide the text above the boombox.")
+    end
+end
+
+initializeConVars()
+
 local function loadLanguage()
-    local lang = Config.Language or GetConVar("gmod_language"):GetString() or "en"
+    local lang = GetConVar("radio_language"):GetString() or "en"
     local path = "radio/lang/" .. lang .. ".lua"
     
     if file.Exists(path, "LUA") then
@@ -15,18 +39,12 @@ end
 
 loadLanguage()
 
--- Function to format the country name for UI display
-local function formatCountryName(filename)
-    local formattedName = filename:gsub("-", " "):gsub("(%a)([%w_']*)", function(a, b) return string.upper(a) .. string.lower(b) end)
-    return formattedName
-end
-
 -- Function to load stations for a specific country
 local function loadStationsForCountry(country)
     local path = "radio/stations/" .. country .. ".lua"
     if file.Exists(path, "LUA") then
         local stations = include(path)
-        Config.RadioStations[formatCountryName(country)] = stations -- Store with formatted name for UI
+        Config.RadioStations[utils.formatCountryName(country)] = stations -- Use formatCountryName from utils.lua (Suggestion 1)
     end
 end
 
@@ -40,23 +58,18 @@ end
 -- Load themes
 local themes = include("themes.lua")
 
--- Default to dark theme or set based on user preference
-local selectedTheme = themes["neon"]
-
--- General UI Settings
-Config.UI = selectedTheme
-Config.UKAndUSPrioritised = true -- Include UK and US stations at the top of the list (default alphabetical sort if false)
-Config.MessageCooldown = 1 -- Cooldown time in seconds before the chat message can be sent again ("Press {key} to open the radio menu")
-
-local openKeyConvar = GetConVar("car_radio_open_key")
-
-if not openKeyConvar then
-    CreateClientConVar("car_radio_open_key", "21", true, false, "Select the key to open the car radio menu.")
-    openKeyConvar = GetConVar("car_radio_open_key")
+-- Apply saved theme or default to "neon"
+local themeName = GetConVar("radio_theme"):GetString() or "neon"
+if themes[themeName] then
+    Config.UI = themes[themeName]
+else
+    Config.UI = themes["neon"]
 end
 
-Config.OpenKey = openKeyConvar:GetInt()
-
+-- Other Config Settings
+Config.UKAndUSPrioritised = true -- Include UK and US stations at the top of the list (default alphabetical sort if false)
+Config.MessageCooldown = 1 -- Cooldown time in seconds before the chat message can be sent again ("Press {key} to open the radio menu")
+Config.OpenKey = GetConVar("car_radio_open_key"):GetInt()
 
 -- Boombox Settings (Normal)
 Config.Boombox = {

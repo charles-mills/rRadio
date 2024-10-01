@@ -1,49 +1,9 @@
+include("radio/utils.lua")
 local keyCodeMapping = include("radio/key_names.lua")
 local themes = include("themes.lua")
 local languageManager = include("language_manager.lua")
 
--- Create the client convar to enable/disable chat messages
-CreateClientConVar("car_radio_show_messages", "1", true, false, "Enable or disable car radio messages.")
-CreateClientConVar("radio_language", "en", true, false, "Select the language for the radio UI.")
-CreateClientConVar("boombox_show_text", "1", true, false, "Show or hide the text above the boombox.")
-
--- Create a client convar to select the key for opening the radio menu
-CreateClientConVar("car_radio_open_key", "21", true, false, "Select the key to open the car radio menu.") -- Default is KEY_K
-
--- Function to apply the selected theme
-local function applyTheme(themeName)
-    if themes[themeName] then
-        Config.UI = themes[themeName]
-        hook.Run("ThemeChanged", themeName)
-    else
-        print("Invalid theme name: " .. themeName)
-    end
-end
-
--- Function to apply the selected language
-local function applyLanguage(languageCode)
-    if languageManager.languages[languageCode] then
-        Config.Lang = languageManager.translations[languageCode]  -- Get the translations from the language manager
-        hook.Run("LanguageChanged", languageCode)
-        hook.Run("LanguageUpdated")  -- Custom hook to trigger list update
-    else
-        print("Invalid language code: " .. languageCode)
-    end
-end
-
--- Load the saved theme and language from convars and apply them
-local function loadSavedSettings()
-    local themeName = GetConVar("radio_theme"):GetString()
-    applyTheme(themeName)
-
-    local languageCode = GetConVar("radio_language"):GetString()
-    applyLanguage(languageCode)
-end
-
--- Call loadSavedSettings when the client finishes loading all entities
-hook.Add("InitPostEntity", "ApplySavedThemeAndLanguageOnJoin", function()
-    loadSavedSettings()
-end)
+-- Removed ConVar creation (Suggestion 3) since it's centralized in config.lua
 
 -- Hook to update the UI when the language is changed
 hook.Add("LanguageUpdated", "UpdateCountryListOnLanguageChange", function()
@@ -124,7 +84,7 @@ hook.Add("PopulateToolMenu", "AddThemeAndVolumeSelectionMenu", function()
         themeDropdown.OnSelect = function(panel, index, value)
             local lowerValue = value:lower()
             if themes[lowerValue] then
-                applyTheme(lowerValue)
+                utils.applyTheme(lowerValue)  -- Use function from utils.lua (Suggestion 4)
                 RunConsoleCommand("radio_theme", lowerValue)
             end
         end
@@ -157,7 +117,7 @@ hook.Add("PopulateToolMenu", "AddThemeAndVolumeSelectionMenu", function()
         end
 
         languageDropdown.OnSelect = function(panel, index, value, data)
-            applyLanguage(data)
+            utils.applyLanguage(data)  -- Use function from utils.lua (Suggestion 4)
             RunConsoleCommand("radio_language", data)
         end
 
