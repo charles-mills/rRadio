@@ -7,9 +7,6 @@
     "roleplay"
   ],
   "ignore": [
-    "*.py",
-    "./backup*",
-    "*.log",
     "helpers/*"
   ]
 }

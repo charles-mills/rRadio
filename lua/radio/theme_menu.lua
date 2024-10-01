@@ -1,3 +1,6 @@
+Config = include("radio/config.lua")
+include("radio/utils.lua")
+
 local keyCodeMapping = include("radio/key_names.lua")
 local themes = include("themes.lua")
 local languageManager = include("language_manager.lua")

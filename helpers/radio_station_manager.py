@@ -1,222 +1,154 @@
-import os
-import re
-import aiohttp
-import asyncio
-import requests
-import configparser
 import argparse
-from tqdm import tqdm
-from typing import List, Dict
-import subprocess
-from asyncio import Semaphore
-import platform
+import asyncio
 import logging
-from urllib.parse import urlparse, urlunparse
-import aiosqlite
+import os
+import platform
+import re
+import subprocess
+from configparser import ConfigParser
+from dataclasses import dataclass
+from typing import List, Dict, Optional
+from urllib.parse import urlparse, urlunparse, quote
+
 import aiofiles
+import aiohttp
+import aiosqlite
 from aiolimiter import AsyncLimiter
-import random
-import time
 from rapidfuzz import fuzz
+from tqdm.asyncio import tqdm
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler("radio_station_manager.log"),
-        logging.StreamHandler()
-    ]
-)
 
-# Configuration setup
+# -------------------------------
+# Configuration Management
+# -------------------------------
+
+@dataclass
 class Config:
-    def __init__(self):
-        logging.info("Initializing configuration...")
-        self.config = configparser.ConfigParser()
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        config_file = os.path.join(script_dir, 'config.ini')
-        if os.path.exists(config_file):
-            logging.info(f"Reading config file: {config_file}")
-            self.config.read(config_file)
-        else:
-            logging.warning(f"Config file not found: {config_file}. Using default configurations.")
-        self.load_defaults()
+    api_base_url: str
+    max_concurrent_requests: int
+    rate_limit: float
+    rate_limit_period: float
+    request_timeout: float
+    backoff_factor: float
+    stages_dir: str
+    readme_path: str
+    git_repo_dir: str
 
-    def load_defaults(self):
-        logging.info("Loading default configuration values...")
-        self.STATIONS_DIR = self.config['DEFAULT'].get('stations_dir', 'lua/radio/stations')
-        self.MAX_CONCURRENT_REQUESTS = int(self.config['DEFAULT'].get('max_concurrent_requests', 20))
-        self.API_BASE_URL = self.config['DEFAULT'].get('api_base_url', 'https://de1.api.radio-browser.info/json')
-        self.REQUEST_TIMEOUT = int(self.config['DEFAULT'].get('request_timeout', 5))
-        self.BATCH_DELAY = int(self.config['DEFAULT'].get('batch_delay', 2))
-        self.README_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'README.md')
-        self.GIT_REPO_DIR = self.config['DEFAULT'].get('git_repo_dir', os.getcwd())
-        self.MAX_RETRIES = int(self.config['DEFAULT'].get('max_retries', 5))
-        self.BACKOFF_FACTOR = float(self.config['DEFAULT'].get('backoff_factor', 0.5))
+    @staticmethod
+    def load_config(config_file: str = "config.ini") -> 'Config':
+        parser = ConfigParser()
+        parser.read(config_file)
+        cfg = parser['DEFAULT']
+        return Config(
+            api_base_url=cfg.get('api_base_url', 'https://api.radio-browser.info/json'),
+            max_concurrent_requests=int(cfg.get('max_concurrent_requests', 250)),
+            rate_limit=float(cfg.get('rate_limit', 100)),
+            rate_limit_period=float(cfg.get('rate_limit_period', 1)),
+            request_timeout=float(cfg.get('request_timeout', 10)),
+            backoff_factor=float(cfg.get('backoff_factor', 0.5)),
+            stages_dir=cfg.get('stages_dir', '/lua/stations'),
+            readme_path=cfg.get('readme_path', 'README.md'),
+            git_repo_dir=cfg.get('git_repo_dir', '.'),
+        )
 
-# Utility functions
+
+# -------------------------------
+# Utility Functions
+# -------------------------------
+
 class Utils:
     @staticmethod
-    def escape_lua_string(s: str) -> str:
-        return s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r")
+    def clean_file_name(name: str) -> str:
+        # Remove or replace characters that are invalid in file names
+        return re.sub(r'[\\/*?:"<>|]', "", name)
 
     @staticmethod
     def clean_station_name(name: str) -> str:
-        cleaned_name = re.sub(r'[!\/\.\$\^&\(\)£"£_]', '', name)
-        try:
-            cleaned_name = ' '.join([word if word.isupper() else word.title() for word in cleaned_name.split()])
-        except Exception as e:
-            logging.error(f"Error applying title case to name '{name}': {e}")
-        return cleaned_name
+        # Further clean station names if necessary
+        return name.strip()
 
     @staticmethod
-    def clean_file_name(name: str) -> str:
-        name = re.sub(r'[^\w\s-]', '', name)
-        name = name.replace(' ', '_')
-        return name.lower()
+    def escape_lua_string(s: str) -> str:
+        # Escape quotes and backslashes for Lua strings
+        return s.replace("\\", "\\\\").replace('"', '\\"').replace("'", "\\'")
 
     @staticmethod
-    def is_valid_url(url: str) -> bool:
-        parsed_url = urlparse(url)
-        return all([parsed_url.scheme, parsed_url.netloc]) and len(url) < 2048
+    def remove_common_words(name: str) -> str:
+        # Remove common words to improve fuzzy matching
+        common_words = ['radio', 'fm', 'am', 'live', 'online', 'uk', 'the']
+        words = name.lower().split()
+        filtered_words = [word for word in words if word not in common_words]
+        return ' '.join(filtered_words)
 
-    @staticmethod
-    async def check_audio_stream(session: aiohttp.ClientSession, url: str) -> bool:
-        """
-        Check if the provided URL is a valid audio stream using HEAD request first,
-        then fallback to GET request if HEAD is not supported.
-        Implements exponential backoff with jitter for transient errors.
-        """
-        if not Utils.is_valid_url(url):
-            logging.error(f"Invalid or malformed URL: {url}")
-            return False
 
-        try:
-            # Attempt a HEAD request first
-            async with session.head(url, timeout=3, ssl=True, allow_redirects=True) as response:
-                content_type = response.headers.get('Content-Type', '').lower()
-                if 'audio' in content_type:
-                    logging.info(f"URL {url} is a valid audio stream (HEAD).")
-                    return True
-                else:
-                    logging.warning(f"URL {url} is not an audio stream (HEAD). Content-Type: {content_type}")
-                    return False
-        except aiohttp.ClientResponseError as e:
-            if e.status == 405:  # Method Not Allowed, try GET
-                logging.warning(f"HEAD method not allowed for {url}. Falling back to GET.")
-                try:
-                    async with session.get(url, timeout=5, ssl=True, allow_redirects=True) as response:
-                        content_type = response.headers.get('Content-Type', '').lower()
-                        if 'audio' in content_type:
-                            logging.info(f"URL {url} is a valid audio stream (GET).")
-                            return True
-                        else:
-                            logging.warning(f"URL {url} is not an audio stream (GET). Content-Type: {content_type}")
-                            return False
-                except Exception as ex:
-                    logging.error(f"Error during GET request for URL {url}: {ex}")
-                    return False
-            elif e.status == 429:  # Rate limit exceeded
-                logging.warning(f"Rate limit exceeded (429) for URL {url}.")
-                raise  # Propagate to handle rate limiting
-            else:
-                logging.error(f"HTTP error {e.status} for URL {url}: {e.message}")
-                return False
-        except aiohttp.ClientError as e:
-            logging.error(f"Client error while checking URL {url}: {e}")
-            return False
-        except asyncio.TimeoutError:
-            logging.error(f"Timeout while checking URL: {url}")
-            return False
-        except aiohttp.TooManyRedirects:
-            logging.error(f"Too many redirects for URL: {url}")
-            return False
-        except Exception as e:
-            logging.error(f"Error checking URL {url}: {e}")
-            return False
+# -------------------------------
+# Radio Station Manager
+# -------------------------------
 
-# Radio station management class
 class RadioStationManager:
     def __init__(self, config: Config):
-        logging.info("Initializing RadioStationManager...")
         self.config = config
-        self.semaphore = Semaphore(self.config.MAX_CONCURRENT_REQUESTS)
-        # Initialize SQLite cache
+        self.semaphore = asyncio.Semaphore(config.max_concurrent_requests)
+        self.limiter = AsyncLimiter(config.rate_limit, config.rate_limit_period)
+        self.cache_db: Optional[aiosqlite.Connection] = None
         self.cache_initialized = False
-        asyncio.create_task(self.initialize_cache())
-        # Initialize Git repository flag
         self.git_repo_found = self.check_git_repo()
 
-    async def initialize_cache(self):
-        self.cache_db = await aiosqlite.connect('url_cache.db')
-        await self.cache_db.execute("""
-            CREATE TABLE IF NOT EXISTS url_cache (
-                url TEXT PRIMARY KEY,
-                is_valid BOOLEAN
-            )
-        """)
-        await self.cache_db.commit()
-        self.cache_initialized = True
-        logging.info("SQLite cache initialized.")
-
-    def __del__(self):
-        if hasattr(self, 'cache_db') and self.cache_db:
-            asyncio.create_task(self.cache_db.close())
-            logging.info("Closed SQLite cache.")
-
     def check_git_repo(self) -> bool:
-        """
-        Check if the specified directory is within a Git repository.
-        """
-        try:
-            result = subprocess.run(
-                ["git", "rev-parse", "--is-inside-work-tree"],
-                cwd=self.config.GIT_REPO_DIR,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                check=True
-            )
-            is_inside = result.stdout.strip().lower() == 'true'
-            if is_inside:
-                logging.info(f"Git repository found at {self.config.GIT_REPO_DIR}.")
-            else:
-                logging.warning(f"No Git repository found at {self.config.GIT_REPO_DIR}. Git operations will be skipped.")
-            return is_inside
-        except subprocess.CalledProcessError:
-            logging.error(f"Git repository not found at {self.config.GIT_REPO_DIR}. Git operations will be skipped.")
-            return False
+        return os.path.isdir(os.path.join(self.config.git_repo_dir, ".git"))
 
-    async def fetch_stations(self, session: aiohttp.ClientSession, country_name: str, retries: int = 5, backoff_factor: float = 0.5, by_popularity: bool = True) -> List[Dict[str, str]]:
+    async def initialize_cache(self):
+        if not self.cache_db:
+            self.cache_db = await aiosqlite.connect("url_cache.db")
+            await self.cache_db.execute("""
+                CREATE TABLE IF NOT EXISTS url_cache (
+                    url TEXT PRIMARY KEY,
+                    is_valid BOOLEAN
+                )
+            """)
+            await self.cache_db.commit()
+            self.cache_initialized = True
+
+    async def fetch_stations(
+        self,
+        session: aiohttp.ClientSession,
+        country_name: str,
+        retries: int = 5,
+        backoff_factor: float = 0.5,
+        by_popularity: bool = True
+    ) -> List[Dict[str, str]]:
         logging.info(f"Fetching stations for country: {country_name} {'by popularity' if by_popularity else ''}")
 
+        encoded_country_name = quote(country_name)
         if by_popularity:
-            url = f"{self.config.API_BASE_URL}/stations/bycountry/{country_name.replace(' ', '%20')}?order=clickcount&reverse=true"
+            url = f"{self.config.api_base_url}/stations/bycountry/{encoded_country_name}?order=clickcount&reverse=true"
         else:
-            url = f"{self.config.API_BASE_URL}/stations/bycountry/{country_name.replace(' ', '%20')}"
+            url = f"{self.config.api_base_url}/stations/bycountry/{encoded_country_name}"
 
         for attempt in range(1, retries + 1):
             try:
-                async with session.get(url, timeout=self.config.REQUEST_TIMEOUT, ssl=True) as response:
-                    if response.status == 200:
-                        logging.info(f"Successfully fetched stations for {country_name}")
-                        return await response.json()
-                    elif response.status == 429:
-                        logging.warning(f"Rate limit exceeded (429) for {country_name}. Attempt {attempt} of {retries}.")
-                        raise aiohttp.ClientResponseError(status=429, request_info=response.request_info, history=response.history)
-                    elif response.status in {502, 503, 504}:
-                        logging.warning(f"Server error ({response.status}) for {country_name}. Attempt {attempt} of {retries}.")
-                    else:
-                        logging.error(f"Unexpected response ({response.status}) for {country_name}")
-                        return []
+                async with self.limiter:
+                    async with self.semaphore:
+                        async with session.get(url, timeout=self.config.request_timeout, ssl=True) as response:
+                            if response.status == 200:
+                                logging.info(f"Successfully fetched stations for {country_name}")
+                                return await response.json()
+                            elif response.status == 429:
+                                logging.warning(f"Rate limit exceeded (429) for {country_name}. Attempt {attempt} of {retries}.")
+                                raise aiohttp.ClientResponseError(
+                                    status=429,
+                                    message="Rate limit exceeded",
+                                    request_info=response.request_info,
+                                    history=response.history
+                                )
+                            elif response.status in {502, 503, 504}:
+                                logging.warning(f"Server error ({response.status}) for {country_name}. Attempt {attempt} of {retries}.")
+                            else:
+                                logging.error(f"Unexpected response ({response.status}) for {country_name}")
+                                return []
             except aiohttp.ClientResponseError as e:
-                if e.status == 429 and attempt < retries:
-                    sleep_time = backoff_factor * (2 ** (attempt - 1)) + random.uniform(0, 1)
-                    logging.info(f"Sleeping for {sleep_time:.2f} seconds before retrying...")
-                    await asyncio.sleep(sleep_time)
-                elif e.status in {502, 503, 504} and attempt < retries:
-                    sleep_time = backoff_factor * (2 ** (attempt - 1)) + random.uniform(0, 1)
+                if e.status in {429, 502, 503, 504} and attempt < retries:
+                    sleep_time = self.config.backoff_factor * (2 ** (attempt - 1)) + random.uniform(0, 1)
                     logging.info(f"Sleeping for {sleep_time:.2f} seconds before retrying...")
                     await asyncio.sleep(sleep_time)
                 else:
@@ -224,7 +156,7 @@ class RadioStationManager:
                     return []
             except (aiohttp.ClientError, asyncio.TimeoutError) as e:
                 if attempt < retries:
-                    sleep_time = backoff_factor * (2 ** (attempt - 1)) + random.uniform(0, 1)
+                    sleep_time = self.config.backoff_factor * (2 ** (attempt - 1)) + random.uniform(0, 1)
                     logging.info(f"Error fetching stations for {country_name}: {e}. Sleeping for {sleep_time:.2f} seconds before retrying...")
                     await asyncio.sleep(sleep_time)
                 else:
@@ -234,7 +166,7 @@ class RadioStationManager:
         return []
 
     async def check_audio_stream_cached(self, session: aiohttp.ClientSession, url: str) -> bool:
-        await self.ensure_cache_initialized()
+        await self.initialize_cache()
 
         async with self.cache_db.execute("SELECT is_valid FROM url_cache WHERE url = ?", (url,)) as cursor:
             row = await cursor.fetchone()
@@ -249,7 +181,7 @@ class RadioStationManager:
             if e.status == 429:
                 logging.warning(f"Encountered 429 while checking URL {url}. Implementing backoff.")
                 # Implement a global delay to respect rate limits
-                sleep_time = self.config.BACKOFF_FACTOR * (2 ** 0) + random.uniform(0, 1)
+                sleep_time = self.config.backoff_factor * 2 + random.uniform(0, 1)
                 logging.info(f"Sleeping for {sleep_time:.2f} seconds due to rate limiting.")
                 await asyncio.sleep(sleep_time)
                 return await self.check_audio_stream_cached(session, url)  # Retry once after backoff
@@ -282,7 +214,7 @@ class RadioStationManager:
             return
 
         logging.info(f"Saving stations for country: {country}")
-        directory = self.config.STATIONS_DIR
+        directory = self.config.stages_dir
         os.makedirs(directory, exist_ok=True)
         cleaned_country_name = Utils.clean_file_name(country)
         file_name = f"{cleaned_country_name}.lua"
@@ -302,20 +234,15 @@ class RadioStationManager:
 
             # Clean and normalize station name
             name = Utils.clean_station_name(raw_name)
-            normalized_name = name.lower()
+            normalized_name = Utils.remove_common_words(name)
 
             # Parse URL to extract base URL (scheme + netloc + path)
             parsed_url = urlparse(raw_url)
-            netloc = parsed_url.netloc.lower()
-            if netloc.startswith('www.'):
-                netloc = netloc[4:]  # Strip 'www.'
-
-            path = parsed_url.path.rstrip('/').lower()
-
+            normalized_netloc = Utils.remove_www_prefix(parsed_url.netloc.lower())
             base_url = urlunparse((
                 parsed_url.scheme.lower(),
-                netloc,
-                path,
+                normalized_netloc,
+                parsed_url.path.rstrip('/'),
                 '',  # params
                 '',  # query
                 ''   # fragment
@@ -326,7 +253,7 @@ class RadioStationManager:
             for existing_name in unique_names:
                 similarity = fuzz.ratio(normalized_name, existing_name)
                 logging.debug(f"Fuzzy similarity between '{existing_name}' and '{normalized_name}': {similarity}%")
-                if similarity > 90:  # Threshold can be adjusted
+                if similarity > 85:  # Adjusted threshold
                     logging.info(f"Fuzzy duplicate station name detected. '{name}' is similar to '{existing_name}'. Skipping.")
                     is_duplicate = True
                     break
@@ -381,11 +308,11 @@ class RadioStationManager:
         logging.info(f"Committing and pushing changes for {len(files)} files.")
         try:
             # Add all files
-            subprocess.run(["git", "add"] + files, check=True, cwd=self.config.GIT_REPO_DIR)
+            subprocess.run(["git", "add"] + files, check=True, cwd=self.config.git_repo_dir)
             # Commit with the provided message
-            subprocess.run(["git", "commit", "-m", message], check=True, cwd=self.config.GIT_REPO_DIR)
+            subprocess.run(["git", "commit", "-m", message], check=True, cwd=self.config.git_repo_dir)
             # Push changes
-            subprocess.run(["git", "push"], check=True, cwd=self.config.GIT_REPO_DIR)
+            subprocess.run(["git", "push"], check=True, cwd=self.config.git_repo_dir)
             logging.info(f"Committed and pushed changes: {message}")
         except subprocess.CalledProcessError as e:
             logging.error(f"Failed to commit and push changes: {e}")
@@ -393,13 +320,17 @@ class RadioStationManager:
     async def fetch_save_stations(self, session: aiohttp.ClientSession, country: str, pbar: tqdm, changed_files: List[str]):
         logging.info(f"Fetching and saving stations for {country}...")
         async with self.semaphore:
-            stations = await self.fetch_stations(session, country, by_popularity=True)
+            try:
+                stations = await self.fetch_stations(session, country, by_popularity=True)
 
-            if stations:
-                await self.save_stations_to_file(session, country, stations)
-                file_path = os.path.join(self.config.STATIONS_DIR, f"{Utils.clean_file_name(country)}.lua")
-                changed_files.append(file_path)
-            pbar.update(1)
+                if stations:
+                    await self.save_stations_to_file(session, country, stations)
+                    file_path = os.path.join(self.config.stages_dir, f"{Utils.clean_file_name(country)}.lua")
+                    changed_files.append(file_path)
+            except Exception as e:
+                logging.error(f"Error processing country '{country}': {e}")
+            finally:
+                pbar.update(1)
 
     async def fetch_all_stations(self):
         logging.info("Starting to fetch all stations...")
@@ -408,7 +339,10 @@ class RadioStationManager:
         with tqdm(total=len(countries), desc="Fetching stations") as pbar:
             connector = aiohttp.TCPConnector(limit_per_host=50)  # Adjusted for higher concurrency per host
             async with aiohttp.ClientSession(connector=connector) as session:
-                tasks = [self.fetch_save_stations(session, country, pbar, changed_files) for country in countries]
+                tasks = [
+                    self.fetch_save_stations(session, country, pbar, changed_files)
+                    for country in countries
+                ]
                 await asyncio.gather(*tasks)
         logging.info("All stations fetched and saved.")
 
@@ -419,17 +353,19 @@ class RadioStationManager:
 
     def get_all_countries(self) -> List[str]:
         logging.info("Fetching list of all countries...")
-        url = f"{self.config.API_BASE_URL}/countries"
+        url = f"{self.config.api_base_url}/countries"
         try:
             response = requests.get(url, timeout=10)
             response.raise_for_status()
             countries = response.json()
             logging.info(f"Found {len(countries)} countries.")
-            return [
+            country_names = [
                 country['name']
                 for country in countries
-                if Utils.clean_file_name(country['name']) != "the_democratic_peoples_republic_of_korea"
+                if Utils.clean_file_name(country['name']).lower() != "the_democratic_peoples_republic_of_korea"
             ]
+            logging.debug(f"Country list: {country_names}")
+            return country_names
         except requests.RequestException as e:
             logging.error(f"Failed to fetch countries list: {e}")
             return []
@@ -439,87 +375,77 @@ class RadioStationManager:
             while not self.cache_initialized:
                 await asyncio.sleep(0.1)
 
-# Helper functions
-async def count_total_stations(directory: str) -> int:
-    logging.info(f"Counting total stations in directory: {directory}")
-    total_stations = 0
-    for filename in os.listdir(directory):
-        if filename.endswith('.lua'):
-            file_path = os.path.join(directory, filename)
-            total_stations += await count_stations_in_file(file_path)
-    logging.info(f"Total stations counted: {total_stations}")
-    return total_stations
+    async def update_readme_with_station_count(self, total_stations: int):
+        logging.info(f"Updating README.md at {self.config.readme_path} with station count: {total_stations}")
+        if not os.path.exists(self.config.readme_path):
+            logging.error(f"README.md not found at {self.config.readme_path}")
+            return
 
-async def count_stations_in_file(file_path: str) -> int:
-    count = 0
-    try:
-        async with aiofiles.open(file_path, 'r', encoding='utf-8') as file:
-            async for line in file:
-                if re.match(r'\s*{\s*name\s*=\s*".*?",\s*url\s*=\s*".*?"\s*},\s*', line):
-                    count += 1
-    except Exception as e:
-        logging.error(f"Failed to count stations in file {file_path}: {e}")
-    return count
+        try:
+            new_readme_content = (
+                f"## 🎵 Active Stations: `{total_stations}` 🎵\n\n"
+                f"## Description\n"
+                f"**rRadio** is a Garry's Mod addon that allows players to listen to their favorite radio stations in-game, either with friends or alone. The stations are regularly fetched via the [Radio Browser API](https://www.radio-browser.info/), and confirmed to be active.\n\n"
+                f"## Features\n"
+                f"- **Wide Range of Stations**: Access to radio stations from around the world.\n"
+                f"- **User-Friendly Interface**: Simple and intuitive UI for easy navigation and station selection.\n"
+                f"- **Multiplayer and Singleplayer Support**: Works seamlessly in both modes.\n"
+                f"- **Customizable Client-Side Settings**: Personalize the UI to fit your preferences.\n"
+                f"- **Adjustable Server-Side Settings**: Modify key values such as audio range and maximum volume.\n\n"
+                f"## Installation\n\n"
+                f"1. **Download the Addon**: Get the rRadio addon from the [Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=3318060741) or clone this repository.\n"
+                f"2. **Extract the Files**: Place the extracted addon files into the `addons` folder within your Garry's Mod installation directory.\n"
+                f"3. **Enable the Addon**: Launch Garry's Mod and activate the rRadio addon through the Addons menu (if installed via Steam Workshop).\n\n"
+                f"## Usage\n\n"
+                f"1. **Open the Radio Menu**: Press the designated key (default: `K`) to open the RML Radio menu.\n"
+                f"2. **Browse Stations**: Use the mouse to scroll through the list of available radio stations.\n"
+                f"3. **Select a Station**: Left-click on a station to start playing it.\n"
+                f"4. **Adjust Settings**: Modify the volume and other settings according to your preferences.\n"
+                f"5. **Enjoy**: Listen to your favorite radio station while enjoying your Garry's Mod experience!\n"
+            )
 
-async def update_readme_with_station_count(readme_path: str, total_stations: int):
-    logging.info(f"Updating README.md at {readme_path} with station count: {total_stations}")
-    if not os.path.exists(readme_path):
-        logging.error(f"README.md not found at {readme_path}")
-        return
+            async with aiofiles.open(self.config.readme_path, "w", encoding="utf-8") as f:
+                await f.write(new_readme_content)
 
-    try:
-        new_readme_content = (
-            f"## 🎵 Active Stations: `{total_stations}` 🎵\n\n"
-            f"## Description\n"
-            f"**rRadio** is a Garry's Mod addon that allows players to listen to their favorite radio stations in-game, either with friends or alone. The stations are regularly fetched via the [Radio Browser API](https://www.radio-browser.info/), and confirmed to be active.\n\n"
-            f"## Features\n"
-            f"- **Wide Range of Stations**: Access to radio stations from around the world.\n"
-            f"- **User-Friendly Interface**: Simple and intuitive UI for easy navigation and station selection.\n"
-            f"- **Multiplayer and Singleplayer Support**: Works seamlessly in both modes.\n"
-            f"- **Customizable Client-Side Settings**: Personalize the UI to fit your preferences.\n"
-            f"- **Adjustable Server-Side Settings**: Modify key values such as audio range and maximum volume.\n\n"
-            f"## Installation\n\n"
-            f"1. **Download the Addon**: Get the rRadio addon from the [Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=3318060741) or clone this repository.\n"
-            f"2. **Extract the Files**: Place the extracted addon files into the `addons` folder within your Garry's Mod installation directory.\n"
-            f"3. **Enable the Addon**: Launch Garry's Mod and activate the rRadio addon through the Addons menu (if installed via Steam Workshop).\n\n"
-            f"## Usage\n\n"
-            f"1. **Open the Radio Menu**: Press the designated key (default: `K`) to open the RML Radio menu.\n"
-            f"2. **Browse Stations**: Use the mouse to scroll through the list of available radio stations.\n"
-            f"3. **Select a Station**: Left-click on a station to start playing it.\n"
-            f"4. **Adjust Settings**: Modify the volume and other settings according to your preferences.\n"
-            f"5. **Enjoy**: Listen to your favorite radio station while enjoying your Garry's Mod experience!\n"
-        )
+            logging.info(f"Updated README.md with the current station count: {total_stations}")
+        except Exception as e:
+            logging.error(f"Failed to update README.md: {e}")
 
-        async with aiofiles.open(readme_path, "w", encoding="utf-8") as f:
-            await f.write(new_readme_content)
+    async def count_total_stations(self) -> int:
+        logging.info(f"Counting total stations in directory: {self.config.stages_dir}")
+        total_stations = 0
+        for filename in os.listdir(self.config.stages_dir):
+            if filename.endswith('.lua'):
+                file_path = os.path.join(self.config.stages_dir, filename)
+                total_stations += await self.count_stations_in_file(file_path)
+        logging.info(f"Total stations counted: {total_stations}")
+        return total_stations
 
-        logging.info(f"Updated README.md with the current station count: {total_stations}")
-    except Exception as e:
-        logging.error(f"Failed to update README.md: {e}")
+    async def count_stations_in_file(self, file_path: str) -> int:
+        count = 0
+        try:
+            async with aiofiles.open(file_path, 'r', encoding='utf-8') as file:
+                async for line in file:
+                    if re.match(r'\s*{\s*name\s*=\s*".*?",\s*url\s*=\s*".*?"\s*},\s*', line):
+                        count += 1
+        except Exception as e:
+            logging.error(f"Failed to count stations in file {file_path}: {e}")
+        return count
 
-# Main application logic
-async def main_async(auto_run=False, fetch=False, count=False):
-    logging.info("Starting the Radio Station Manager...")
-    config = Config()
-    manager = RadioStationManager(config)
+    async def update_readme(self):
+        total_stations = await self.count_total_stations()
+        await self.update_readme_with_station_count(total_stations)
 
-    # Wait for the cache to initialize
-    await manager.initialize_cache()
+    async def run_full_scan(self):
+        logging.info("Starting full scan: Fetching stations, updating README, and pushing changes.")
+        await self.fetch_all_stations()
+        await self.update_readme()
+        total_stations = await self.count_total_stations()
+        await self.update_readme_with_station_count(total_stations)
+        changed_files = [self.config.readme_path]
+        await self.commit_and_push_changes(changed_files, f"Update README.md with {total_stations} radio stations")
 
-    if auto_run:
-        logging.info("Auto-run mode enabled.")
-        changed_files = []
-        if fetch:
-            logging.info("Fetching stations...")
-            await manager.fetch_all_stations()
-        if count:
-            logging.info("Counting stations and updating README...")
-            total_stations = await count_total_stations(config.STATIONS_DIR)
-            await update_readme_with_station_count(config.README_PATH, total_stations)
-            changed_files.append(config.README_PATH)
-            await manager.commit_and_push_changes(changed_files, f"Update README.md with {total_stations} radio stations")
-    else:
-        logging.info("Interactive mode enabled.")
+    async def interactive_menu(self):
         while True:
             print("\n--- Radio Station Manager ---")
             print("1 - Fetch and Save Stations")
@@ -530,20 +456,67 @@ async def main_async(auto_run=False, fetch=False, count=False):
             choice = input("Select an option: ")
 
             if choice == '1':
-                await manager.fetch_all_stations()
+                await self.fetch_all_stations()
             elif choice == '2':
-                total_stations = await count_total_stations(config.STATIONS_DIR)
-                await update_readme_with_station_count(config.README_PATH, total_stations)
+                await self.update_readme()
             elif choice == '3':
-                await manager.fetch_all_stations()
-                total_stations = await count_total_stations(config.STATIONS_DIR)
-                await update_readme_with_station_count(config.README_PATH, total_stations)
-                await manager.commit_and_push_changes([config.README_PATH], f"Update README.md with {total_stations} radio stations")
+                await self.run_full_scan()
             elif choice == '4':
                 logging.info("Exiting...")
                 break
             else:
                 logging.warning("Invalid option. Please try again.")
+
+    async def start(self, auto_run: bool = False, fetch: bool = False, count: bool = False):
+        await self.initialize_cache()
+        if auto_run:
+            logging.info("Auto-run mode enabled.")
+            if fetch:
+                logging.info("Fetching stations...")
+                await self.fetch_all_stations()
+            if count:
+                logging.info("Counting stations and updating README...")
+                await self.update_readme()
+        else:
+            logging.info("Interactive mode enabled.")
+            await self.interactive_menu()
+
+
+# -------------------------------
+# Helper Functions
+# -------------------------------
+
+import random
+import requests
+
+async def check_audio_stream(session: aiohttp.ClientSession, url: str) -> bool:
+    try:
+        async with session.head(url, timeout=10, allow_redirects=True) as response:
+            if response.status == 200 and 'audio' in response.headers.get('Content-Type', ''):
+                logging.debug(f"Valid audio stream: {url}")
+                return True
+            else:
+                logging.debug(f"Invalid audio stream: {url} with status {response.status}")
+                return False
+    except Exception as e:
+        logging.debug(f"Error checking audio stream {url}: {e}")
+        return False
+
+# -------------------------------
+# Main Application Logic
+# -------------------------------
+
+async def main_async(auto_run=False, fetch=False, count=False):
+    logging.info("Starting the Radio Station Manager...")
+    config = Config.load_config()
+    manager = RadioStationManager(config)
+
+    if auto_run:
+        logging.info("Auto-run mode enabled.")
+        await manager.run_full_scan()
+    else:
+        logging.info("Interactive mode enabled.")
+        await manager.start(auto_run=auto_run, fetch=fetch, count=count)
 
 def main(auto_run=False, fetch=False, count=False):
     # Setting the appropriate event loop policy based on the platform
@@ -552,8 +525,20 @@ def main(auto_run=False, fetch=False, count=False):
 
     asyncio.run(main_async(auto_run=auto_run, fetch=fetch, count=count))
 
+# -------------------------------
 # Command-Line Interface
+# -------------------------------
+
 if __name__ == "__main__":
+    # Configure Logging
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s [%(levelname)s] %(message)s',
+        handlers=[
+            logging.StreamHandler()
+        ]
+    )
+
     parser = argparse.ArgumentParser(description='Radio Station Manager')
     parser.add_argument('--auto-run', action='store_true', help='Automatically run full rescan, save, and verify')
     parser.add_argument('--fetch', action='store_true', help='Fetch and save stations')
