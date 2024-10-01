@@ -195,6 +195,11 @@ end)
 
 -- Hook to handle when players enter a vehicle and receive a car radio message
 hook.Add("PlayerEnteredVehicle", "CarRadioMessageOnEnter", function(ply, vehicle, role)
+    if vehicle.playerdynseat then
+        -- Do not send the message if it's a sit anywhere seat
+        return
+    end
+
     net.Start("CarRadioMessage")
     net.Send(ply)
 end)
