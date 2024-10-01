@@ -448,7 +448,8 @@ function openRadioMenu()
         surface.DrawTexturedRect(iconOffsetX, iconOffsetY, iconSize, iconSize)
 
         local countryText = Config.Lang["SelectCountry"] or "Select Country"
-        draw.SimpleText(selectedCountry and utils.formatCountryName(selectedCountry) or countryText, "HeaderFont", iconOffsetX + iconSize + Scale(5), iconOffsetY, Config.UI.TextColor, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
+
+        draw.SimpleText(selectedCountry and countryTranslations:GetCountryName(GetConVar("radio_language"):GetString() or "en", utils.formatCountryName(selectedCountry)) or countryText, "HeaderFont", iconOffsetX + iconSize + Scale(5), iconOffsetY, Config.UI.TextColor, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
     end
 
     local searchBox = vgui.Create("DTextEntry", frame)
