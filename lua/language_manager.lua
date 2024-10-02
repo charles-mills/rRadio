@@ -72,7 +72,7 @@ end
 -- Function to load language files from the 'radio/lang/' directory
 function LanguageManager:LoadLanguageFiles()
     for code, displayName in pairs(self.languages) do
-        local path = "localisation/lang/" .. code .. ".lua"
+        local path = "radio/lang/" .. code .. ".lua"
         if file.Exists(path, "LUA") then
             local translations = include(path)
             self:AddLanguage(code, displayName, translations)

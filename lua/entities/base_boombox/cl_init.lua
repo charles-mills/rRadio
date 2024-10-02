@@ -1,5 +1,5 @@
 include("shared.lua")
-include("misc/config.lua")
+include("radio/config.lua")
 
 local function GetRainbowColor(frequency)
     local time = CurTime() * frequency
