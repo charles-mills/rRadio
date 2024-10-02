@@ -19,6 +19,8 @@ end
     @return (boolean): True if it's a boombox, false otherwise.
 ]]
 function utils.isBoombox(ent)
+    entity = ent or nil
+    if not IsValid(entity) then return false end
     return entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox"
 end
 
