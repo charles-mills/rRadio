@@ -21,18 +21,19 @@ local PlayerRetryAttempts = {}
 -- Function to add a radio to the active list
 local function AddActiveRadio(entity, stationName, url, volume)
     if not IsValid(entity) then
-        utils.DebugPrint("Attempted to add a radio to an invalid entity.")
+        LogError("Attempted to add a radio to an invalid entity.")
         return
     end
 
-    ActiveRadios[entity:EntIndex()] = {
+    local entIndex = entity:EntIndex()
+    ActiveRadios[entIndex] = {
         entity = entity,
         stationName = stationName,
         url = url,
-        volume = volume
+        volume = volume or 1.0  -- Default volume to 1.0 if not provided
     }
 
-    utils.DebugPrint("Added active radio: Entity " .. tostring(entity:EntIndex()) .. ", Station: " .. stationName)
+    DebugPrint("Added active radio: Entity " .. entIndex .. ", Station: " .. stationName)
 end
 
 -- Function to remove a radio from the active list

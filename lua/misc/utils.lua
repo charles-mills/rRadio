@@ -1,5 +1,6 @@
 utils = utils or {}
-utils.DEBUG_MODE = false
+utils.DEBUG_MODE = GetConVar("car_radio_debug_mode"):GetBool()
+utils.VERBOSE_MODE = GetConVar("car_radio_verbose_mode"):GetBool()
 
 --[[
     Function: isSitAnywhereSeat
@@ -28,3 +29,11 @@ function utils.DebugPrint(msg)
         print("[CarRadio Debug] " .. msg)
     end
 end
+
+function utils.LogError(msg)
+    if utils.VERBOSE_MODE then
+        print("[CarRadio Error] " .. msg)
+    end
+end
+
+-- convar on change
