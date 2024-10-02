@@ -117,6 +117,11 @@ end
 local function PrintCarRadioMessage()
     if not GetConVar("car_radio_show_messages"):GetBool() then return end
 
+    local vehicle = LocalPlayer():GetVehicle()
+    if not IsValid(vehicle) or utils.isSitAnywhereSeat(vehicle) then
+        return
+    end
+
     local currentTime = CurTime()
     if (currentTime - lastMessageTime) < Config.MessageCooldown and lastMessageTime ~= -math.huge then
         return
@@ -581,8 +586,10 @@ end
 
 hook.Add("Think", "OpenCarRadioMenu", function()
     local openKey = GetConVar("car_radio_open_key"):GetInt()
-    if input.IsKeyDown(openKey) and not radioMenuOpen and IsValid(LocalPlayer():GetVehicle()) then
-        LocalPlayer().currentRadioEntity = LocalPlayer():GetVehicle()
+    local vehicle = LocalPlayer():GetVehicle()
+    
+    if input.IsKeyDown(openKey) and not radioMenuOpen and IsValid(vehicle) and not utils.isSitAnywhereSeat(vehicle) then
+        LocalPlayer().currentRadioEntity = vehicle
         openRadioMenu()
     end
 end)

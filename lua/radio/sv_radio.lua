@@ -9,6 +9,9 @@ local ActiveRadios = {}
 local debug_mode = false  -- Set to true to enable debug statements
 SavedBoomboxStates = SavedBoomboxStates or {}
 
+-- Table to track retry attempts per player
+local PlayerRetryAttempts = {}
+
 -- Debug function to print messages if debug_mode is enabled
 local function DebugPrint(msg)
     if debug_mode then
@@ -144,14 +147,39 @@ local function LoadBoomboxStatesFromDatabase()
     end
 end
 
--- Send active radios to a specific player
+-- Send active radios to a specific player with limited retries
 local function SendActiveRadiosToPlayer(ply)
-    DebugPrint("Sending active radios to player: " .. ply:Nick())
+    if not IsValid(ply) then
+        DebugPrint("Invalid player object passed to SendActiveRadiosToPlayer.")
+        return
+    end
+
+    -- Initialize attempt count if not present
+    if not PlayerRetryAttempts[ply] then
+        PlayerRetryAttempts[ply] = 1
+    end
+
+    local attempt = PlayerRetryAttempts[ply]
+    DebugPrint("Sending active radios to player: " .. ply:Nick() .. " | Attempt: " .. attempt)
+
     if next(ActiveRadios) == nil then
-        DebugPrint("No active radios found. Retrying in 5 seconds.")
+        if attempt >= 3 then
+            DebugPrint("No active radios found after " .. attempt .. " attempts for player " .. ply:Nick() .. ". Giving up.")
+            PlayerRetryAttempts[ply] = nil  -- Reset attempt count
+            return
+        end
+
+        DebugPrint("No active radios found for player " .. ply:Nick() .. ". Retrying in 5 seconds. Attempt: " .. attempt)
+
+        -- Increment the attempt count
+        PlayerRetryAttempts[ply] = attempt + 1
+
         timer.Simple(5, function()
             if IsValid(ply) then
                 SendActiveRadiosToPlayer(ply)
+            else
+                DebugPrint("Player " .. ply:Nick() .. " is no longer valid. Stopping retries.")
+                PlayerRetryAttempts[ply] = nil  -- Reset attempt count
             end
         end)
         return
@@ -160,14 +188,17 @@ local function SendActiveRadiosToPlayer(ply)
     for _, radio in pairs(ActiveRadios) do
         if IsValid(radio.entity) then
             net.Start("PlayCarRadioStation")
-            net.WriteEntity(radio.entity)
-            net.WriteString(radio.url)
-            net.WriteFloat(radio.volume)
+                net.WriteEntity(radio.entity)
+                net.WriteString(radio.url)
+                net.WriteFloat(radio.volume)
             net.Send(ply)
         else
             DebugPrint("Invalid radio entity detected in SendActiveRadiosToPlayer.")
         end
     end
+
+    -- Reset attempt count after successful send
+    PlayerRetryAttempts[ply] = nil
 end
 
 hook.Add("PlayerInitialSpawn", "SendActiveRadiosOnJoin", function(ply)
@@ -178,8 +209,26 @@ hook.Add("PlayerInitialSpawn", "SendActiveRadiosOnJoin", function(ply)
     end)
 end)
 
--- Hook to handle when players enter a vehicle and receive a car radio message
+-- Add the hooks to set the networked variable
+hook.Add("PlayerEnteredVehicle", "MarkSitAnywhereSeat", function(ply, vehicle)
+    if vehicle.playerdynseat then
+        vehicle:SetNWBool("IsSitAnywhereSeat", true)
+    else
+        vehicle:SetNWBool("IsSitAnywhereSeat", false)
+    end
+end)
+
+hook.Add("PlayerLeaveVehicle", "UnmarkSitAnywhereSeat", function(ply, vehicle)
+    if IsValid(vehicle) then
+        vehicle:SetNWBool("IsSitAnywhereSeat", false)
+    end
+end)
+
 hook.Add("PlayerEnteredVehicle", "CarRadioMessageOnEnter", function(ply, vehicle, role)
+    if vehicle.playerdynseat then
+        return  -- Do not send the message if it's a sit anywhere seat
+    end
+
     net.Start("CarRadioMessage")
     net.Send(ply)
 end)
@@ -225,14 +274,14 @@ net.Receive("PlayCarRadioStation", function(len, ply)
         AddActiveRadio(entity, stationName, url, volume)
 
         net.Start("PlayCarRadioStation")
-        net.WriteEntity(entity)
-        net.WriteString(url)
-        net.WriteFloat(volume)
+            net.WriteEntity(entity)
+            net.WriteString(url)
+            net.WriteFloat(volume)
         net.Broadcast()
 
         net.Start("UpdateRadioStatus")
-        net.WriteEntity(entity)
-        net.WriteString(stationName)
+            net.WriteEntity(entity)
+            net.WriteString(stationName)
         net.Broadcast()
 
     elseif entity:IsVehicle() then
@@ -243,7 +292,7 @@ net.Receive("PlayCarRadioStation", function(len, ply)
 
         if ActiveRadios[mainVehicle:EntIndex()] then
             net.Start("StopCarRadioStation")
-            net.WriteEntity(mainVehicle)
+                net.WriteEntity(mainVehicle)
             net.Broadcast()
             RemoveActiveRadio(mainVehicle)
         end
@@ -251,14 +300,14 @@ net.Receive("PlayCarRadioStation", function(len, ply)
         AddActiveRadio(mainVehicle, stationName, url, volume)
 
         net.Start("PlayCarRadioStation")
-        net.WriteEntity(mainVehicle)
-        net.WriteString(url)
-        net.WriteFloat(volume)
+            net.WriteEntity(mainVehicle)
+            net.WriteString(url)
+            net.WriteFloat(volume)
         net.Broadcast()
 
         net.Start("UpdateRadioStatus")
-        net.WriteEntity(mainVehicle)
-        net.WriteString(stationName)
+            net.WriteEntity(mainVehicle)
+            net.WriteString(stationName)
         net.Broadcast()
     end
 end)
@@ -285,12 +334,12 @@ net.Receive("StopCarRadioStation", function(len, ply)
         RemoveActiveRadio(entity)
 
         net.Start("StopCarRadioStation")
-        net.WriteEntity(entity)
+            net.WriteEntity(entity)
         net.Broadcast()
 
         net.Start("UpdateRadioStatus")
-        net.WriteEntity(entity)
-        net.WriteString("")
+            net.WriteEntity(entity)
+            net.WriteString("")
         net.Broadcast()
 
     elseif entity:IsVehicle() then
@@ -302,12 +351,12 @@ net.Receive("StopCarRadioStation", function(len, ply)
         RemoveActiveRadio(mainVehicle)
 
         net.Start("StopCarRadioStation")
-        net.WriteEntity(mainVehicle)
+            net.WriteEntity(mainVehicle)
         net.Broadcast()
 
         net.Start("UpdateRadioStatus")
-        net.WriteEntity(mainVehicle)
-        net.WriteString("")
+            net.WriteEntity(mainVehicle)
+            net.WriteString("")
         net.Broadcast()
     end
 end)
@@ -396,9 +445,9 @@ PermaProps.SpecialENTSSpawn["boombox"] = function(ent, data)
 
         if savedState.isPlaying then
             net.Start("PlayCarRadioStation")
-            net.WriteEntity(ent)
-            net.WriteString(savedState.url)
-            net.WriteFloat(savedState.volume)
+                net.WriteEntity(ent)
+                net.WriteString(savedState.url)
+                net.WriteFloat(savedState.volume)
             net.Broadcast()
 
             AddActiveRadio(ent, savedState.station, savedState.url, savedState.volume)
