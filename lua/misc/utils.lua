@@ -56,8 +56,8 @@ function utils.getEntityConfig(entity)
 end
 
 -- Include themes and language manager
-local themes = include("themes.lua")
-local languageManager = include("language_manager.lua")
+local themes = include("themes/themes.lua")
+local languageManager = include("localisation/language_manager.lua")
 
 --[[
     Function: applyTheme

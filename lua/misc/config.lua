@@ -1,5 +1,5 @@
 -- Include the utilities
-include("radio/utils.lua")
+include("misc/utils.lua")
 
 -- Configuration Table
 Config = {}
@@ -21,12 +21,12 @@ initializeConVars()
 -- Load Language
 local function loadLanguage()
     local lang = GetConVar("radio_language"):GetString() or "en"
-    local path = "radio/lang/" .. lang .. ".lua"
+    local path = "localisation/lang/" .. lang .. ".lua"
 
     if file.Exists(path, "LUA") then
         Config.Lang = include(path)
     else
-        Config.Lang = include("radio/lang/en.lua")
+        Config.Lang = include("localisation/lang/en.lua")
     end
 end
 
@@ -48,7 +48,7 @@ end
 loadStations()
 
 -- Load Themes
-local themes = include("themes.lua")
+local themes = include("themes/themes.lua")
 
 -- Apply Saved Theme or Default to "neon"
 local themeName = GetConVar("radio_theme"):GetString() or "neon"

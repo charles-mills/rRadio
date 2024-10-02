@@ -1,6 +1,6 @@
 -- Include utility and configuration files
-include("radio/utils.lua")
-include("radio/config.lua")
+include("misc/utils.lua")
+include("misc/config.lua")
 
 -- Network Strings
 util.AddNetworkString("PlayCarRadioStation")
@@ -432,6 +432,20 @@ hook.Add("OnEntityCreated", "RestoreBoomboxRadioForPermaProps", function(entity)
             RestoreBoomboxRadio(entity)
         end
     end)
+end)
+
+-- Add the hooks to set the networked variable
+hook.Add("PlayerEnteredVehicle", "MarkSitAnywhereSeat", function(ply, vehicle)
+    if vehicle.playerdynseat then
+        vehicle:SetNWBool("IsSitAnywhereSeat", true)
+    else
+        vehicle:SetNWBool("IsSitAnywhereSeat", false)
+    end
+end)
+hook.Add("PlayerLeaveVehicle", "UnmarkSitAnywhereSeat", function(ply, vehicle)
+    if IsValid(vehicle) then
+        vehicle:SetNWBool("IsSitAnywhereSeat", false)
+    end
 end)
 
 --[[

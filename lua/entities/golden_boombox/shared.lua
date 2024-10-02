@@ -7,4 +7,4 @@ ENT.AdminSpawnable = true
 ENT.IconOvervide = "entities/golden_boombox.png"
 ENT.Color = Color(255, 215, 0)  -- Gold color
 
-Config = include("radio/config.lua")
+Config = include("misc/config.lua")

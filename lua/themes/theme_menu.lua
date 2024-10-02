@@ -1,7 +1,7 @@
-include("radio/utils.lua")
-local keyCodeMapping = include("radio/key_names.lua")
-local themes = include("themes.lua")
-local languageManager = include("language_manager.lua")
+include("misc/utils.lua")
+local keyCodeMapping = include("misc/key_names.lua")
+local themes = include("themes/themes.lua")
+local languageManager = include("localisation/language_manager.lua")
 
 -- Removed ConVar creation (Suggestion 3) since it's centralized in config.lua
 
