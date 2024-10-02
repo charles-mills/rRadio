@@ -8,7 +8,6 @@ utils.debug_mode = false
     @return (boolean): True if it's a sit anywhere seat, false otherwise.
 ]]
 function utils.isSitAnywhereSeat(vehicle)
-    print("IsSitAnywhereSeat: " .. tostring(vehicle:GetNWBool("IsSitAnywhereSeat", false)))
     if not IsValid(vehicle) then return false end
     return vehicle:GetNWBool("IsSitAnywhereSeat", false)
 end

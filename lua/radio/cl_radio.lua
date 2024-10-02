@@ -587,7 +587,7 @@ end
 hook.Add("Think", "OpenCarRadioMenu", function()
     local openKey = GetConVar("car_radio_open_key"):GetInt()
     local vehicle = LocalPlayer():GetVehicle()
-    
+
     if input.IsKeyDown(openKey) and not radioMenuOpen and IsValid(vehicle) and not utils.isSitAnywhereSeat(vehicle) then
         LocalPlayer().currentRadioEntity = vehicle
         openRadioMenu()
