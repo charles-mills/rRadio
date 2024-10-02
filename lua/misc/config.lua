@@ -2,6 +2,15 @@ local Config = {}
 
 Config.RadioStations = {}
 
+NETWORK_STRINGS = {
+    "PlayCarRadioStation",
+    "StopCarRadioStation",
+    "CarRadioMessage",
+    "OpenRadioMenu",
+    "UpdateRadioStatus",
+    "ToggleFavoriteCountry"
+}
+
 local function loadLanguage()
     local lang = Config.Language or GetConVar("gmod_language"):GetString() or "en"
     local path = "localisation/lang/" .. lang .. ".lua"

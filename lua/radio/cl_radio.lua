@@ -1,3 +1,10 @@
+--[[ 
+    rRadio Addon for Garry's Mod - Client Radio Script
+    Description: Manages client-side radio functionalities and UI.
+    Author: Charles Mills (https://github.com/charles-mills)
+    Date: 2024-10-02
+]]
+
 include("misc/key_names.lua")
 include("misc/config.lua")
 include("misc/utils.lua")

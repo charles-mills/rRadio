@@ -1,5 +1,5 @@
 utils = utils or {}
-utils.debug_mode = false
+utils.DEBUG_MODE = false
 
 --[[
     Function: isSitAnywhereSeat
@@ -10,4 +10,21 @@ utils.debug_mode = false
 function utils.isSitAnywhereSeat(vehicle)
     if not IsValid(vehicle) then return false end
     return vehicle:GetNWBool("IsSitAnywhereSeat", false)
+end
+
+--[[
+    Function: isBoombox
+    Description: Checks if an entity is a boombox.
+    @param ent (Entity): The entity to check.
+    @return (boolean): True if it's a boombox, false otherwise.
+]]
+function utils.isBoombox(ent)
+    return entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox"
+end
+
+-- Debug function to print messages if debug_mode is enabled
+function utils.DebugPrint(msg)
+    if utils.DEBUG_MODE then
+        print("[CarRadio Debug] " .. msg)
+    end
 end
