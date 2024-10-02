@@ -1,7 +1,9 @@
-include("radio/key_names.lua")
-include("radio/config.lua")
-local countryTranslations = include("country_translations.lua")
-local LanguageManager = include("language_manager.lua")
+include("misc/key_names.lua")
+include("misc/config.lua")
+include("misc/utils.lua")
+
+local countryTranslations = include("localisation/country_translations.lua")
+local LanguageManager = include("localisation/language_manager.lua")
 
 local favoriteCountries = {}
 local favoriteStations = {}

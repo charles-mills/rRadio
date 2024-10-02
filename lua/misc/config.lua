@@ -4,12 +4,12 @@ Config.RadioStations = {}
 
 local function loadLanguage()
     local lang = Config.Language or GetConVar("gmod_language"):GetString() or "en"
-    local path = "radio/lang/" .. lang .. ".lua"
+    local path = "localisation/lang/" .. lang .. ".lua"
     
     if file.Exists(path, "LUA") then
         Config.Lang = include(path)
     else
-        Config.Lang = include("radio/lang/en.lua")
+        Config.Lang = include("localisation/lang/en.lua")
     end
 end
 
@@ -38,7 +38,7 @@ for _, filename in ipairs(files) do
 end
 
 -- Load themes
-local themes = include("themes.lua")
+local themes = include("themes/theme_palettes.lua")
 
 -- Default to dark theme or set based on user preference
 local selectedTheme = themes["neon"]
