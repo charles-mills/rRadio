@@ -4,6 +4,9 @@ include("misc/utils.lua")
 -- Configuration Table
 Config = Config or {}
 
+-- Radio Stations
+Config.RadioStations = {}
+
 -- Centralized ConVar Creation
 local function initializeConVars()
     CreateClientConVar("radio_theme", "neon", true, false, "Select the theme for the radio UI.")
@@ -42,7 +45,7 @@ local function loadStations()
             Config.RadioStations[utils.formatCountryName(country)] = stations
         end
     end
-    utils.DebugPrint("Radio stations loaded.")
+    utils.DebugPrint("Stations loaded for " .. table.Count(Config.RadioStations) .. " countries.")
 end
 
 loadStations()
