@@ -537,12 +537,28 @@ function openRadioMenu()
 
     volumeSlider.TextArea:SetVisible(false)
 
+    local debounceTimer = 0
+    local debounceDelay = 0.2
+
     volumeSlider.OnValueChanged = function(_, value)
-        entityVolumes[entity] = value
-        if currentRadioSources[entity] and IsValid(currentRadioSources[entity]) then
-            currentRadioSources[entity]:SetVolume(value)
+        -- Check if it's an LVS vehicle by checking the parent entity or other conditions
+        if entity:GetClass() == "prop_vehicle_prisoner_pod" and entity:GetParent():IsValid() then
+            local parent = entity:GetParent()
+            if string.find(parent:GetClass(), "lvs_") then
+                entity = parent
+            end
         end
-    end
+    
+        entityVolumes[entity] = value
+    
+        -- Debounce updates to prevent rapid network calls
+        if CurTime() - debounceTimer >= debounceDelay then
+            debounceTimer = CurTime()
+            if currentRadioSources[entity] and IsValid(currentRadioSources[entity]) then
+                currentRadioSources[entity]:SetVolume(value)
+            end
+        end
+    end  
 
     local backButton = vgui.Create("DButton", frame)
     backButton:SetSize(Scale(30), Scale(30))

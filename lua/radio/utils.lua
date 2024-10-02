@@ -48,7 +48,7 @@ function utils.getEntityConfig(entity)
         return Config.GoldenBoombox
     elseif entityClass == "boombox" then
         return Config.Boombox
-    elseif entity:IsVehicle() then
+    elseif entity:IsVehicle() or string.find(entityClass, "lvs_") then
         return Config.VehicleRadio
     else
         return nil
