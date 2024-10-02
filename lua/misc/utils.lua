@@ -1,5 +1,6 @@
 utils = utils or {}
 utils.DEBUG_MODE = false
+utils.VERBOSE_ERRORS = false
 
 --[[
     Function: isSitAnywhereSeat
@@ -28,5 +29,12 @@ end
 function utils.DebugPrint(msg)
     if utils.DEBUG_MODE then
         print("[CarRadio Debug] " .. msg)
+    end
+end
+
+-- Function to print errors if verbose_errors is enabled
+function utils.PrintError(msg, severity)
+    if utils.VERBOSE_ERRORS then
+        print("[CarRadio Error] [" .. (severity or "0") .. "] " .. msg)
     end
 end

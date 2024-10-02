@@ -124,7 +124,7 @@ local function updateRadioVolume(station, distance, isPlayerInCar, entity)
 end
 
 local function PrintCarRadioMessage()
-    if not GetConVar("car_radio_show_messages"):GetBool() then return end
+    if not GetConVar("radio_show_messages"):GetBool() then return end
 
     local vehicle = LocalPlayer():GetVehicle()
     if not IsValid(vehicle) or utils.isSitAnywhereSeat(vehicle) then

@@ -2,8 +2,6 @@ local keyCodeMapping = include("misc/key_names.lua")
 local themes = include("themes/theme_palettes.lua")
 local languageManager = include("localisation/language_manager.lua")
 
--- Create the client convar to enable/disable chat messages
-CreateClientConVar("car_radio_show_messages", "1", true, false, "Enable or disable car radio messages.")
 CreateClientConVar("radio_language", "en", true, false, "Select the language for the radio UI.")
 CreateClientConVar("boombox_show_text", "1", true, false, "Show or hide the text above the boombox.")
 
@@ -208,11 +206,11 @@ hook.Add("PopulateToolMenu", "AddThemeAndVolumeSelectionMenu", function()
         -- Show Car Radio Messages Toggle
         local chatMessageCheckbox = vgui.Create("DCheckBoxLabel", panel)
         chatMessageCheckbox:SetText("Show Car Radio Messages")
-        chatMessageCheckbox:SetConVar("car_radio_show_messages")
+        chatMessageCheckbox:SetConVar("radio_show_messages")
         chatMessageCheckbox:Dock(TOP)
         chatMessageCheckbox:DockMargin(0, 0, 0, 5)
         chatMessageCheckbox:SetTextColor(Color(0, 0, 0))  -- Set text color to black
-        chatMessageCheckbox:SetValue(GetConVar("car_radio_show_messages"):GetBool())
+        chatMessageCheckbox:SetValue(GetConVar("radio_show_messages"):GetBool())
         chatMessageCheckbox:SetTooltip("Enable or disable the display of car radio messages.")
         panel:AddItem(chatMessageCheckbox)
 
