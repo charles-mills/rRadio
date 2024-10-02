@@ -2,22 +2,26 @@
     rRadio Addon for Garry's Mod - Client Radio Script
     Description: Manages client-side radio functionalities and UI.
     Author: Charles Mills (https://github.com/charles-mills)
-    Date: 2024-10-02
+    Date: 2024-10-03
 ]]
 
+-- Include necessary files
 include("misc/key_names.lua")
 include("misc/config.lua")
 include("misc/utils.lua")
 
+-- Localization and language management
 local countryTranslations = include("localisation/country_translations.lua")
 local LanguageManager = include("localisation/language_manager.lua")
 
+-- Initialize favorite lists
 local favoriteCountries = {}
 local favoriteStations = {}
 
+-- Define data directory and file paths
 local dataDir = "rradio"
-local favoriteCountriesFile = dataDir .. "/favorite_countries.txt"
-local favoriteStationsFile = dataDir .. "/favorite_stations.txt"
+local favoriteCountriesFile = string.format("%s/favorite_countries.txt", dataDir)
+local favoriteStationsFile = string.format("%s/favorite_stations.txt", dataDir)
 
 -- Ensure the data directory exists
 if not file.IsDir(dataDir, "DATA") then
@@ -27,33 +31,57 @@ end
 -- Load favorites from file
 local function loadFavorites()
     if file.Exists(favoriteCountriesFile, "DATA") then
-        favoriteCountries = util.JSONToTable(file.Read(favoriteCountriesFile, "DATA")) or {}
+        local countriesData = file.Read(favoriteCountriesFile, "DATA")
+        if countriesData then
+            favoriteCountries = util.JSONToTable(countriesData) or {}
+        else
+            utils.PrintError("Failed to read favorite countries file.", 2)
+        end
     end
 
     if file.Exists(favoriteStationsFile, "DATA") then
-        favoriteStations = util.JSONToTable(file.Read(favoriteStationsFile, "DATA")) or {}
+        local stationsData = file.Read(favoriteStationsFile, "DATA")
+        if stationsData then
+            favoriteStations = util.JSONToTable(stationsData) or {}
+        else
+            utils.PrintError("Failed to read favorite stations file.", 2)
+        end
     end
 end
 
 -- Save favorites to file
 local function saveFavorites()
-    file.Write(favoriteCountriesFile, util.TableToJSON(favoriteCountries))
-    file.Write(favoriteStationsFile, util.TableToJSON(favoriteStations))
+    local successCountries = file.Write(favoriteCountriesFile, util.TableToJSON(favoriteCountries))
+    local successStations = file.Write(favoriteStationsFile, util.TableToJSON(favoriteStations))
+
+    if not successCountries then
+        utils.PrintError("Failed to save favorite countries to file.", 2)
+    end
+
+    if not successStations then
+        utils.PrintError("Failed to save favorite stations to file.", 2)
+    end
 end
 
 -- Font creation
 local function createFonts()
-    surface.CreateFont("Roboto18", {
-        font = "Roboto",
-        size = ScreenScale(5),
-        weight = 500,
-    })
+    local success, err = pcall(function()
+        surface.CreateFont("Roboto18", {
+            font = "Roboto",
+            size = ScreenScale(5),
+            weight = 500,
+        })
 
-    surface.CreateFont("HeaderFont", {
-        font = "Roboto",
-        size = ScreenScale(8),
-        weight = 700,
-    })
+        surface.CreateFont("HeaderFont", {
+            font = "Roboto",
+            size = ScreenScale(8),
+            weight = 700,
+        })
+    end)
+
+    if not success then
+        utils.PrintError("Failed to create fonts: " .. err, 2)
+    end
 end
 
 createFonts()
@@ -74,17 +102,19 @@ end
 
 local function getEntityConfig(entity)
     local entityClass = entity:GetClass()
-    
-    if entityClass == "golden_boombox" then
-        return Config.GoldenBoombox
-    elseif entityClass == "boombox" then
-        return Config.Boombox
-    elseif entity:IsVehicle() then
+
+    local configMapping = {
+        ["golden_boombox"] = Config.GoldenBoombox,
+        ["boombox"] = Config.Boombox
+    }
+
+    if configMapping[entityClass] then
+        return configMapping[entityClass]
+    elseif entity:IsVehicle() or string.find(entityClass, "lvs_") then
         return Config.VehicleRadio
-    else -- Temporary fix to make sure LVS works
-        return Config.VehicleRadio
+    else
+        return nil
     end
-    return nil
 end
 
 local function formatCountryName(name)

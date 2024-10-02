@@ -1,3 +1,10 @@
+--[[ 
+    rRadio Addon for Garry's Mod - Boombox Entity Script
+    Description: Manages the server-side functionalities of the boombox entity, including spawning, permissions, and interactions.
+    Author: Charles Mills (https://github.com/charles-mills)
+    Date: 2024-10-03
+]]
+
 AddCSLuaFile("cl_init.lua")
 AddCSLuaFile("shared.lua")
 

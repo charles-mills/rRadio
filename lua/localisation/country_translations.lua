@@ -1,3 +1,10 @@
+--[[ 
+    rRadio Addon for Garry's Mod - Country Translations
+    Description: Contains country name translations for different languages. Contributions are welcome!
+    Author: Charles Mills (https://github.com/charles-mills)
+    Date: 2024-10-03
+]]
+
 local CountryTranslations = {}
 
 /*

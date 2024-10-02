@@ -1,3 +1,10 @@
+--[[ 
+    rRadio Addon for Garry's Mod - Client Radio Script
+    Description: Manages client-side radio functionalities and UI, including loading radio stations, themes, and configuration settings.
+    Author: Charles Mills (https://github.com/charles-mills)
+    Date: 2024-10-03
+]]
+
 local Config = {}
 
 Config.RadioStations = {}

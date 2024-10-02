@@ -1,3 +1,10 @@
+--[[ 
+    rRadio Addon for Garry's Mod - Utility Functions
+    Description: Provides utility functions for the rRadio addon.
+    Author: Charles Mills (https://github.com/charles-mills)
+    Date: 2024-10-03
+]]
+
 utils = utils or {}
 utils.DEBUG_MODE = false
 utils.VERBOSE_ERRORS = false

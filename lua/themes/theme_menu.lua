@@ -1,3 +1,10 @@
+--[[ 
+    rRadio Addon for Garry's Mod - Theme and Settings Menu
+    Description: Manages the theme, language, and key binding settings for the radio UI.
+    Author: Charles Mills (https://github.com/charles-mills)
+    Date: 2024-10-03
+]]
+
 local keyCodeMapping = include("misc/key_names.lua")
 local themes = include("themes/theme_palettes.lua")
 local languageManager = include("localisation/language_manager.lua")

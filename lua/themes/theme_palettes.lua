@@ -1,3 +1,10 @@
+--[[ 
+    rRadio Addon for Garry's Mod - Theme Palettes
+    Description: Defines various color themes for the rRadio addon UI.
+    Author: Charles Mills (https://github.com/charles-mills)
+    Date: 2024-10-03
+]]
+
 local themes = {}
 
 -- Dark Theme

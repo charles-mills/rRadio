@@ -1,3 +1,10 @@
+--[[ 
+    rRadio Addon for Garry's Mod - Client Boombox Script
+    Description: Manages client-side boombox functionalities and UI.
+    Author: Charles Mills (https://github.com/charles-mills)
+    Date: 2024-10-03
+]]
+
 include("shared.lua")
 include("misc/config.lua")
 
