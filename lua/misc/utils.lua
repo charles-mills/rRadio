@@ -2,6 +2,33 @@ utils = utils or {}
 utils.debug_mode = false
 
 --[[
+    Function: getLangString
+    Description: Safely retrieves a language string. Initializes Config.Lang if not already done.
+    @param key (string): The key for the desired language string.
+    @return (string): The localized string or a fallback message if the key doesn't exist.
+]]
+function utils.getLangString(key)
+    -- Check if Config.Lang is initialized
+    if not Config or not Config.Lang then
+        utils.DebugPrint("Config.Lang not initialized. Loading language...")
+        -- Attempt to load language
+        local lang = GetConVar("radio_language"):GetString() or "en"
+        local path = "localisation/lang/" .. lang .. ".lua"
+    
+        if file.Exists(path, "LUA") then
+            Config.Lang = include(path)
+            utils.DebugPrint("Language loaded: " .. lang)
+        else
+            utils.DebugPrint("Language file not found: " .. path .. ". Falling back to English.")
+            Config.Lang = include("localisation/lang/en.lua")
+        end
+    end
+    
+    -- Retrieve the language string
+    return Config.Lang[key] or ("[CAR RADIO] " .. key .. " not found.")
+end
+
+--[[
     Function: isSitAnywhereSeat
     Description: Checks if a vehicle is a "sit anywhere" seat.
     @param vehicle (Entity): The vehicle to check.

@@ -174,9 +174,26 @@ function printCarRadioMessage()
 
     lastMessageTime = currentTime
 
-    local openKey = GetConVar("car_radio_open_key"):GetInt()
+    local openKeyConVar = GetConVar("car_radio_open_key")
+    if not openKeyConVar then
+        utils.DebugPrint("ConVar 'car_radio_open_key' not found.")
+        return
+    end
+
+    local openKey = openKeyConVar:GetInt()
     local keyName = GetKeyName(openKey)
-    local message = Config.Lang["PressKeyToOpen"]:gsub("{key}", keyName)
+    if not keyName or keyName == "" then
+        keyName = "K" -- Default fallback key
+        utils.DebugPrint("Invalid key name for 'car_radio_open_key'. Falling back to 'K'.")
+    end
+
+    -- Ensure Config.Lang and the specific key exist
+    local pressKeyMsg = (Config.Lang and utils.getLangString("PressKeyToOpen")) or "Press {key} to open the radio menu."
+    if not Config.Lang or not Config.Lang["PressKeyToOpen"] then
+        utils.DebugPrint("'PressKeyToOpen' key missing in Config.Lang. Using default message.")
+    end
+
+    local message = pressKeyMsg:gsub("{key}", keyName)
 
     chat.AddText(
         Color(0, 255, 128), "[CAR RADIO] ",
@@ -447,7 +464,7 @@ function openRadioMenu()
         surface.SetDrawColor(Config.UI.TextColor)
         surface.DrawTexturedRect(iconOffsetX, iconOffsetY, iconSize, iconSize)
 
-        local countryText = Config.Lang["SelectCountry"] or "Select Country"
+        local countryText = utils.getLangString("SelectCountry") or "Select Country"
 
         draw.SimpleText(selectedCountry and countryTranslations:GetCountryName(GetConVar("radio_language"):GetString() or "en", utils.formatCountryName(selectedCountry)) or countryText, "HeaderFont", iconOffsetX + iconSize + Scale(5), iconOffsetY, Config.UI.TextColor, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
     end
@@ -456,7 +473,7 @@ function openRadioMenu()
     searchBox:SetPos(Scale(10), Scale(50))
     searchBox:SetSize(frameWidth - Scale(20), Scale(30))
     searchBox:SetFont("Roboto18")
-    searchBox:SetPlaceholderText(Config.Lang and Config.Lang["SearchPlaceholder"] or "Search")
+    searchBox:SetPlaceholderText(Config.Lang and utils.getLangString("SearchPlaceholder") or "Search")
     searchBox:SetTextColor(Config.UI.TextColor)
     searchBox:SetDrawBackground(false)
     searchBox.Paint = function(self, w, h)
@@ -474,7 +491,7 @@ function openRadioMenu()
 
     local stopButtonWidth = frameWidth / 4
     local stopButtonHeight = frameWidth / 8
-    local stopButtonText = Config.Lang["StopRadio"] or "STOP"
+    local stopButtonText = utils.getLangString("StopRadio") or "STOP"
     local stopButtonFont = calculateFontSizeForStopButton(stopButtonText, stopButtonWidth, stopButtonHeight)
 
     local stopButton = vgui.Create("DButton", frame)

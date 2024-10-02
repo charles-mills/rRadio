@@ -2,10 +2,7 @@
 include("misc/utils.lua")
 
 -- Configuration Table
-Config = {}
-
--- Radio Stations
-Config.RadioStations = {}
+Config = Config or {}
 
 -- Centralized ConVar Creation
 local function initializeConVars()
@@ -25,7 +22,9 @@ local function loadLanguage()
 
     if file.Exists(path, "LUA") then
         Config.Lang = include(path)
+        utils.DebugPrint("Language loaded: " .. lang)
     else
+        utils.DebugPrint("Language file not found: " .. path .. ". Falling back to English.")
         Config.Lang = include("localisation/lang/en.lua")
     end
 end
@@ -43,6 +42,7 @@ local function loadStations()
             Config.RadioStations[utils.formatCountryName(country)] = stations
         end
     end
+    utils.DebugPrint("Radio stations loaded.")
 end
 
 loadStations()
@@ -54,8 +54,10 @@ local themes = include("themes/themes.lua")
 local themeName = GetConVar("radio_theme"):GetString() or "neon"
 if themes[themeName] then
     Config.UI = themes[themeName]
+    utils.DebugPrint("Theme applied: " .. themeName)
 else
     Config.UI = themes["neon"]
+    utils.DebugPrint("Theme not found: " .. themeName .. ". Falling back to 'neon'.")
 end
 
 -- Other Config Settings
