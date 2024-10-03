@@ -63,7 +63,7 @@ local function RestoreBoomboxRadio(entity)
         end
 
         if savedState.isPlaying then
-            net.Start("PlayCarRadioStation")
+            net.Start("rRadio_PlayRadioStation")
             net.WriteEntity(entity)
             net.WriteString(savedState.url)
             net.WriteFloat(savedState.volume)
@@ -71,7 +71,7 @@ local function RestoreBoomboxRadio(entity)
             AddActiveRadio(entity, savedState.station, savedState.url, savedState.volume)
             utils.DebugPrint("Restored and added active radio for PermaProps_ID: " .. permaID)
         else
-            utils.DebugPrint("Station is not playing. Not broadcasting PlayCarRadioStation.")
+            utils.DebugPrint("Station is not playing. Not broadcasting rRadio_PlayRadioStation.")
         end
     end
 end
@@ -186,7 +186,7 @@ local function SendActiveRadiosToPlayer(ply)
 
     for _, radio in pairs(ActiveRadios) do
         if IsValid(radio.entity) then
-            net.Start("PlayCarRadioStation")
+            net.Start("rRadio_PlayRadioStation")
                 net.WriteEntity(radio.entity)
                 net.WriteString(radio.url)
                 net.WriteFloat(radio.volume)
@@ -223,28 +223,28 @@ hook.Add("PlayerLeaveVehicle", "UnmarkSitAnywhereSeat", function(ply, vehicle)
     end
 end)
 
-hook.Add("PlayerEnteredVehicle", "CarRadioMessageOnEnter", function(ply, vehicle, role)
+hook.Add("PlayerEnteredVehicle", "rRadio_ShowCarRadioMessageOnEnter", function(ply, vehicle, role)
     if vehicle.playerdynseat then
         return  -- Do not send the message if it's a sit anywhere seat
     end
 
-    net.Start("CarRadioMessage")
+    net.Start("rRadio_ShowCarRadioMessage")
     net.Send(ply)
 end)
 
--- Handle PlayCarRadioStation for both vehicles and boomboxes
-net.Receive("PlayCarRadioStation", function(len, ply)
+-- Handle rRadio_PlayRadioStation for both vehicles and boomboxes
+net.Receive("rRadio_PlayRadioStation", function(len, ply)
     local entity = net.ReadEntity()
     local stationName = net.ReadString()
     local url = net.ReadString()
     local volume = math.Clamp(net.ReadFloat(), 0, 1)
 
     if not IsValid(entity) then
-        utils.DebugPrint("Invalid entity received in PlayCarRadioStation.")
+        utils.DebugPrint("Invalid entity received in rRadio_PlayRadioStation.")
         return
     end
 
-    utils.DebugPrint("PlayCarRadioStation received: Entity " .. entity:EntIndex())
+    utils.DebugPrint("rRadio_PlayRadioStation received: Entity " .. entity:EntIndex())
 
     if utils.isBoombox(entity) then
         local permaID = entity.PermaProps_ID
@@ -272,13 +272,13 @@ net.Receive("PlayCarRadioStation", function(len, ply)
 
         AddActiveRadio(entity, stationName, url, volume)
 
-        net.Start("PlayCarRadioStation")
+        net.Start("rRadio_PlayRadioStation")
             net.WriteEntity(entity)
             net.WriteString(url)
             net.WriteFloat(volume)
         net.Broadcast()
 
-        net.Start("UpdateRadioStatus")
+        net.Start("rRadio_UpdateRadioStatus")
             net.WriteEntity(entity)
             net.WriteString(stationName)
         net.Broadcast()
@@ -290,7 +290,7 @@ net.Receive("PlayCarRadioStation", function(len, ply)
         end
 
         if ActiveRadios[mainVehicle:EntIndex()] then
-            net.Start("StopCarRadioStation")
+            net.Start("rRadio_StopRadioStation")
                 net.WriteEntity(mainVehicle)
             net.Broadcast()
             RemoveActiveRadio(mainVehicle)
@@ -298,21 +298,21 @@ net.Receive("PlayCarRadioStation", function(len, ply)
 
         AddActiveRadio(mainVehicle, stationName, url, volume)
 
-        net.Start("PlayCarRadioStation")
+        net.Start("rRadio_PlayRadioStation")
             net.WriteEntity(mainVehicle)
             net.WriteString(url)
             net.WriteFloat(volume)
         net.Broadcast()
 
-        net.Start("UpdateRadioStatus")
+        net.Start("rRadio_UpdateRadioStatus")
             net.WriteEntity(mainVehicle)
             net.WriteString(stationName)
         net.Broadcast()
     end
 end)
 
--- Handle StopCarRadioStation for both vehicles and boomboxes
-net.Receive("StopCarRadioStation", function(len, ply)
+-- Handle rRadio_StopRadioStation for both vehicles and boomboxes
+net.Receive("rRadio_StopRadioStation", function(len, ply)
     local entity = net.ReadEntity()
 
     if not IsValid(entity) then return end
@@ -332,11 +332,11 @@ net.Receive("StopCarRadioStation", function(len, ply)
 
         RemoveActiveRadio(entity)
 
-        net.Start("StopCarRadioStation")
+        net.Start("rRadio_StopRadioStation")
             net.WriteEntity(entity)
         net.Broadcast()
 
-        net.Start("UpdateRadioStatus")
+        net.Start("rRadio_UpdateRadioStatus")
             net.WriteEntity(entity)
             net.WriteString("")
         net.Broadcast()
@@ -349,11 +349,11 @@ net.Receive("StopCarRadioStation", function(len, ply)
 
         RemoveActiveRadio(mainVehicle)
 
-        net.Start("StopCarRadioStation")
+        net.Start("rRadio_StopRadioStation")
             net.WriteEntity(mainVehicle)
         net.Broadcast()
 
-        net.Start("UpdateRadioStatus")
+        net.Start("rRadio_UpdateRadioStatus")
             net.WriteEntity(mainVehicle)
             net.WriteString("")
         net.Broadcast()
@@ -443,7 +443,7 @@ PermaProps.SpecialENTSSpawn["boombox"] = function(ent, data)
         end
 
         if savedState.isPlaying then
-            net.Start("PlayCarRadioStation")
+            net.Start("rRadio_PlayRadioStation")
                 net.WriteEntity(ent)
                 net.WriteString(savedState.url)
                 net.WriteFloat(savedState.volume)

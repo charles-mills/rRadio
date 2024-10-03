@@ -76,7 +76,7 @@ function ENT:Use(activator, caller)
 
         -- Check if the player is the owner or a superadmin
         if activator == owner or activator:IsSuperAdmin() then
-            net.Start("OpenRadioMenu")
+            net.Start("rRadio_OpenRadioMenu")
             net.WriteEntity(self)
             net.Send(activator)
         else

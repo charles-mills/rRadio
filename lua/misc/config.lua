@@ -10,12 +10,12 @@ local Config = {}
 Config.RadioStations = {}
 
 NETWORK_STRINGS = {
-    "PlayCarRadioStation",
-    "StopCarRadioStation",
-    "CarRadioMessage",
-    "OpenRadioMenu",
-    "UpdateRadioStatus",
-    "ToggleFavoriteCountry"
+    "rRadio_PlayRadioStation",
+    "rRadio_StopRadioStation",
+    "rRadio_ShowCarRadioMessage",
+    "rRadio_OpenRadioMenu",
+    "rRadio_UpdateRadioStatus",
+    "rRadio_ToggleFavorite"
 }
 
 local function loadLanguage()

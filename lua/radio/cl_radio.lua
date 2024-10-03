@@ -196,7 +196,7 @@ local function addChatMessage(message)
     )
 end
 
-local function PrintCarRadioMessage()
+local function PrintrRadio_ShowCarRadioMessage()
     if not shouldShowRadioMessage() then return end
 
     local vehicle = LocalPlayer():GetVehicle()
@@ -214,7 +214,7 @@ local function PrintCarRadioMessage()
 end
 
 -- Network Handlers
-net.Receive("CarRadioMessage", PrintCarRadioMessage)
+net.Receive("rRadio_ShowCarRadioMessage", PrintrRadio_ShowCarRadioMessage)
 
 local function createFont(fontName, fontSize)
     surface.CreateFont(fontName, {
@@ -269,7 +269,7 @@ local function createStarIcon(parent, country, stationListPanel, backButton, sea
     starIcon:SetImage(table.HasValue(favoriteCountries, country) and "hud/star_full.png" or "hud/star.png")
 
     starIcon.DoClick = function()
-        net.Start("ToggleFavoriteCountry")
+        net.Start("rRadio_ToggleFavorite")
         net.WriteString(country)
         net.SendToServer()
 
@@ -369,13 +369,13 @@ local function handleStationButtonClick(stationListPanel, backButton, searchBox,
     end
 
     if currentlyPlayingStations[entity] then
-        net.Start("StopCarRadioStation")
+        net.Start("rRadio_StopRadioStation")
         net.WriteEntity(entity)
         net.SendToServer()
     end
 
     local volume = entityVolumes[entity] or getEntityConfig(entity).Volume
-    net.Start("PlayCarRadioStation")
+    net.Start("rRadio_PlayRadioStation")
     net.WriteEntity(entity)
     net.WriteString(station.name)
     net.WriteString(station.url)
@@ -511,7 +511,7 @@ function populateList(stationListPanel, backButton, searchBox, resetSearch)
     end
 end
 
-local function openRadioMenu()
+local function rRadio_OpenRadioMenu()
     if radioMenuOpen then return end
     radioMenuOpen = true
 
@@ -586,7 +586,7 @@ local function openRadioMenu()
         surface.PlaySound("buttons/button6.wav")
         local entity = LocalPlayer().currentRadioEntity
         if IsValid(entity) then
-            net.Start("StopCarRadioStation")
+            net.Start("rRadio_StopRadioStation")
             net.WriteEntity(entity)
             net.SendToServer()
             currentlyPlayingStation = nil
@@ -710,7 +710,7 @@ hook.Add("Think", "OpenCarRadioMenu", function()
 
     if input.IsKeyDown(openKey) and not radioMenuOpen and IsValid(vehicle) and not utils.isSitAnywhereSeat(vehicle) then
         LocalPlayer().currentRadioEntity = vehicle
-        openRadioMenu()
+        rRadio_OpenRadioMenu()
     end
 end)
 
@@ -784,7 +784,7 @@ local function attemptPlayStation(entity, url, volume, entityConfig, attempt)
     playStation(entity, url, volume, entityConfig, 1)
 end
 
-net.Receive("PlayCarRadioStation", function()
+net.Receive("rRadio_PlayRadioStation", function()
     local entity = net.ReadEntity()
     local url = net.ReadString()
     local volume = net.ReadFloat()
@@ -794,11 +794,11 @@ net.Receive("PlayCarRadioStation", function()
 end)
 
 
-net.Receive("StopCarRadioStation", function()
+net.Receive("rRadio_StopRadioStation", function()
     local entity = net.ReadEntity()
 
     if not IsValid(entity) then
-        utils.PrintError("Received invalid entity in StopCarRadioStation.", 2)
+        utils.PrintError("Received invalid entity in rRadio_StopRadioStation.", 2)
         return
     end
 
@@ -809,19 +809,19 @@ net.Receive("StopCarRadioStation", function()
         hook.Remove("EntityRemoved", "StopRadioOnEntityRemove_" .. entIndex)
         hook.Remove("Think", "UpdateRadioPosition_" .. entIndex)
     else
-        utils.PrintError("No valid radio source found for entity in StopCarRadioStation.", 2)
+        utils.PrintError("No valid radio source found for entity in rRadio_StopRadioStation.", 2)
     end
 end)
 
-net.Receive("OpenRadioMenu", function()
+net.Receive("rRadio_OpenRadioMenu", function()
     local entity = net.ReadEntity()
     if not IsValid(entity) then
-        utils.PrintError("Received invalid entity in OpenRadioMenu.", 2)
+        utils.PrintError("Received invalid entity in rRadio_OpenRadioMenu.", 2)
         return
     end
     LocalPlayer().currentRadioEntity = entity
     if not radioMenuOpen then
-        openRadioMenu()
+        rRadio_OpenRadioMenu()
     end
 end)
 

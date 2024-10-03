@@ -59,7 +59,7 @@ surface.CreateFont("BoomboxFont", {
     weight = 700,
 })
 
-net.Receive("UpdateRadioStatus", function()
+net.Receive("rRadio_UpdateRadioStatus", function()
     local entity = net.ReadEntity()
     local stationName = net.ReadString()
 
