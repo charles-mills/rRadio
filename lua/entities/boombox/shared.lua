@@ -6,4 +6,4 @@ ENT.Spawnable = true
 ENT.AdminSpawnable = true
 ENT.IconOvervide = "entities/boombox.png"
 
-Config = include("radio/config.lua")
+Config = include("misc/config.lua")

@@ -1,15 +1,31 @@
+--[[ 
+    rRadio Addon for Garry's Mod - Client Radio Script
+    Description: Manages client-side radio functionalities and UI, including loading radio stations, themes, and configuration settings.
+    Author: Charles Mills (https://github.com/charles-mills)
+    Date: 2024-10-03
+]]
+
 local Config = {}
 
 Config.RadioStations = {}
 
+NETWORK_STRINGS = {
+    "rRadio_PlayRadioStation",
+    "rRadio_StopRadioStation",
+    "rRadio_ShowCarRadioMessage",
+    "rRadio_OpenRadioMenu",
+    "rRadio_UpdateRadioStatus",
+    "rRadio_ToggleFavorite"
+}
+
 local function loadLanguage()
     local lang = Config.Language or GetConVar("gmod_language"):GetString() or "en"
-    local path = "radio/lang/" .. lang .. ".lua"
+    local path = "localisation/lang/" .. lang .. ".lua"
     
     if file.Exists(path, "LUA") then
         Config.Lang = include(path)
     else
-        Config.Lang = include("radio/lang/en.lua")
+        Config.Lang = include("localisation/lang/en.lua")
     end
 end
 
@@ -38,7 +54,7 @@ for _, filename in ipairs(files) do
 end
 
 -- Load themes
-local themes = include("themes.lua")
+local themes = include("themes/theme_palettes.lua")
 
 -- Default to dark theme or set based on user preference
 local selectedTheme = themes["neon"]
@@ -48,11 +64,11 @@ Config.UI = selectedTheme
 Config.UKAndUSPrioritised = true -- Include UK and US stations at the top of the list (default alphabetical sort if false)
 Config.MessageCooldown = 1 -- Cooldown time in seconds before the chat message can be sent again ("Press {key} to open the radio menu")
 
-local openKeyConvar = GetConVar("car_radio_open_key")
+local openKeyConvar = GetConVar("radio_open_key")
 
 if not openKeyConvar then
-    CreateClientConVar("car_radio_open_key", "21", true, false, "Select the key to open the car radio menu.")
-    openKeyConvar = GetConVar("car_radio_open_key")
+    CreateClientConVar("radio_open_key", "21", true, false, "Select the key to open the car radio menu.")
+    openKeyConvar = GetConVar("radio_open_key")
 end
 
 Config.OpenKey = openKeyConvar:GetInt()

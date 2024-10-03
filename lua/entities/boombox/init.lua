@@ -1,9 +1,9 @@
 include("shared.lua")
 
-util.AddNetworkString("PlayCarRadioStation")
-util.AddNetworkString("StopCarRadioStation")
-util.AddNetworkString("OpenRadioMenu")
-util.AddNetworkString("UpdateRadioStatus")
+util.AddNetworkString("rRadio_PlayRadioStation")
+util.AddNetworkString("rRadio_StopRadioStation")
+util.AddNetworkString("rRadio_OpenRadioMenu")
+util.AddNetworkString("rRadio_UpdateRadioStatus")
 
 function ENT:Initialize()
     self:SetModel("models/rammel/boombox.mdl")

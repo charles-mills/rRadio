@@ -1,14 +1,27 @@
-include("radio/key_names.lua")
-include("radio/config.lua")
-local countryTranslations = include("country_translations.lua")
-local LanguageManager = include("language_manager.lua")
+--[[ 
+    rRadio Addon for Garry's Mod - Client Radio Script
+    Description: Manages client-side radio functionalities and UI.
+    Author: Charles Mills (https://github.com/charles-mills)
+    Date: 2024-10-03
+]]
 
+-- Include necessary files
+include("misc/key_names.lua")
+include("misc/config.lua")
+include("misc/utils.lua")
+
+-- Localization and language management
+local countryTranslations = include("localisation/country_translations.lua")
+local LanguageManager = include("localisation/language_manager.lua")
+
+-- Initialize favorite lists
 local favoriteCountries = {}
 local favoriteStations = {}
 
+-- Define data directory and file paths
 local dataDir = "rradio"
-local favoriteCountriesFile = dataDir .. "/favorite_countries.txt"
-local favoriteStationsFile = dataDir .. "/favorite_stations.txt"
+local favoriteCountriesFile = string.format("%s/favorite_countries.txt", dataDir)
+local favoriteStationsFile = string.format("%s/favorite_stations.txt", dataDir)
 
 -- Ensure the data directory exists
 if not file.IsDir(dataDir, "DATA") then
@@ -18,33 +31,57 @@ end
 -- Load favorites from file
 local function loadFavorites()
     if file.Exists(favoriteCountriesFile, "DATA") then
-        favoriteCountries = util.JSONToTable(file.Read(favoriteCountriesFile, "DATA")) or {}
+        local countriesData = file.Read(favoriteCountriesFile, "DATA")
+        if countriesData then
+            favoriteCountries = util.JSONToTable(countriesData) or {}
+        else
+            utils.PrintError("Failed to read favorite countries file.", 2)
+        end
     end
 
     if file.Exists(favoriteStationsFile, "DATA") then
-        favoriteStations = util.JSONToTable(file.Read(favoriteStationsFile, "DATA")) or {}
+        local stationsData = file.Read(favoriteStationsFile, "DATA")
+        if stationsData then
+            favoriteStations = util.JSONToTable(stationsData) or {}
+        else
+            utils.PrintError("Failed to read favorite stations file.", 2)
+        end
     end
 end
 
 -- Save favorites to file
 local function saveFavorites()
-    file.Write(favoriteCountriesFile, util.TableToJSON(favoriteCountries))
-    file.Write(favoriteStationsFile, util.TableToJSON(favoriteStations))
+    local successCountries = file.Write(favoriteCountriesFile, util.TableToJSON(favoriteCountries))
+    local successStations = file.Write(favoriteStationsFile, util.TableToJSON(favoriteStations))
+
+    if not successCountries then
+        utils.PrintError("Failed to save favorite countries to file.", 2)
+    end
+
+    if not successStations then
+        utils.PrintError("Failed to save favorite stations to file.", 2)
+    end
 end
 
 -- Font creation
 local function createFonts()
-    surface.CreateFont("Roboto18", {
-        font = "Roboto",
-        size = ScreenScale(5),
-        weight = 500,
-    })
+    local success, err = pcall(function()
+        surface.CreateFont("Roboto18", {
+            font = "Roboto",
+            size = ScreenScale(5),
+            weight = 500,
+        })
 
-    surface.CreateFont("HeaderFont", {
-        font = "Roboto",
-        size = ScreenScale(8),
-        weight = 700,
-    })
+        surface.CreateFont("HeaderFont", {
+            font = "Roboto",
+            size = ScreenScale(8),
+            weight = 700,
+        })
+    end)
+
+    if not success then
+        utils.PrintError("Failed to create fonts: " .. err, 2)
+    end
 end
 
 createFonts()
@@ -52,7 +89,7 @@ createFonts()
 -- State Variables
 local selectedCountry = nil
 local radioMenuOpen = false
-local currentlyPlayingStation = nil
+local currentlyPlayingStations = {}  -- Initialize the currentlyPlayingStations table
 local currentRadioSources = {}
 local entityVolumes = {}
 local lastMessageTime = -math.huge
@@ -65,26 +102,51 @@ end
 
 local function getEntityConfig(entity)
     local entityClass = entity:GetClass()
-    
-    if entityClass == "golden_boombox" then
-        return Config.GoldenBoombox
-    elseif entityClass == "boombox" then
-        return Config.Boombox
-    elseif entity:IsVehicle() then
+
+    local configMapping = {
+        ["golden_boombox"] = Config.GoldenBoombox,
+        ["boombox"] = Config.Boombox
+    }
+
+    if configMapping[entityClass] then
+        return configMapping[entityClass]
+    elseif entity:IsVehicle() or string.find(entityClass, "lvs_") then
         return Config.VehicleRadio
-    else -- Temporary fix to make sure LVS works
-        return Config.VehicleRadio
+    else
+        return nil
     end
-    return nil
 end
 
 local function formatCountryName(name)
     -- Reformat and then translate the country name
-    local formattedName = name:gsub("_", " "):gsub("(%a)([%w_\']*)", function(a, b) 
-        return string.upper(a) .. string.lower(b) 
+    local formattedName = name:gsub("_", " "):gsub("(%a)([%w_\']*)", function(a, b)
+        return a:upper() .. b:lower()
     end)
     local lang = GetConVar("radio_language"):GetString() or "en"
-    return countryTranslations:GetCountryName(lang, formattedName)
+    return countryTranslations:GetCountryName(lang, formattedName) or formattedName
+end
+
+local function getEffectiveVolume(entity, volume)
+    local maxVolume = GetConVar("radio_max_volume"):GetFloat()
+    return math.min(volume, maxVolume)
+end
+
+local function calculateAdjustedVolume(distance, minDistance, maxDistance, effectiveVolume)
+    if distance <= minDistance then
+        return effectiveVolume
+    elseif distance <= maxDistance then
+        return effectiveVolume * (1 - (distance - minDistance) / (maxDistance - minDistance))
+    else
+        return 0
+    end
+end
+
+local function updateStationVolume(station, volume)
+    if volume <= 0.02 then
+        station:SetVolume(0)
+    else
+        station:SetVolume(volume)
+    end
 end
 
 local function updateRadioVolume(station, distance, isPlayerInCar, entity)
@@ -92,81 +154,99 @@ local function updateRadioVolume(station, distance, isPlayerInCar, entity)
     if not entityConfig then return end
 
     local volume = entityVolumes[entity] or entityConfig.Volume
-    if volume <= 0.02 then
-        station:SetVolume(0)
-        return
-    end
-
-    local maxVolume = GetConVar("radio_max_volume"):GetFloat()
-    local effectiveVolume = math.min(volume, maxVolume)
+    local effectiveVolume = getEffectiveVolume(entity, volume)
 
     if isPlayerInCar then
-        station:SetVolume(effectiveVolume)
+        updateStationVolume(station, effectiveVolume)
     else
-        if distance <= entityConfig.MinVolumeDistance then
-            station:SetVolume(effectiveVolume)
-        elseif distance <= entityConfig.MaxHearingDistance then
-            local adjustedVolume = effectiveVolume * (1 - (distance - entityConfig.MinVolumeDistance) / (entityConfig.MaxHearingDistance - entityConfig.MinVolumeDistance))
-            station:SetVolume(adjustedVolume)
-        else
-            station:SetVolume(0)
-        end
+        local adjustedVolume = calculateAdjustedVolume(distance, entityConfig.MinVolumeDistance, entityConfig.MaxHearingDistance, effectiveVolume)
+        updateStationVolume(station, adjustedVolume)
     end
 end
 
-local function PrintCarRadioMessage()
-    if not GetConVar("car_radio_show_messages"):GetBool() then return end
+local function shouldShowRadioMessage()
+    return GetConVar("radio_show_messages"):GetBool()
+end
 
-    local vehicle = LocalPlayer():GetVehicle()
-    if not IsValid(vehicle) or utils.isSitAnywhereSeat(vehicle) then
-        return
-    end
+local function isValidVehicle(vehicle)
+    return IsValid(vehicle) and not utils.isSitAnywhereSeat(vehicle)
+end
 
-    local currentTime = CurTime()
-    if (currentTime - lastMessageTime) < Config.MessageCooldown and lastMessageTime ~= -math.huge then
-        return
-    end
+local function isMessageCooldownActive(currentTime)
+    return (currentTime - lastMessageTime) < Config.MessageCooldown and lastMessageTime ~= -math.huge
+end
 
+local function updateLastMessageTime(currentTime)
     lastMessageTime = currentTime
+end
 
-    local openKey = GetConVar("car_radio_open_key"):GetInt()
-    local keyName = GetKeyName(openKey)
-    local message = Config.Lang["PressKeyToOpen"]:gsub("{key}", keyName)
+local function getOpenKeyName()
+    local openKey = GetConVar("radio_open_key"):GetInt()
+    return input.GetKeyName(openKey) or "unknown key"
+end
 
+local function getRadioMessage(keyName)
+    return (Config.Lang["PressKeyToOpen"] or "Press {key} to open the radio menu"):gsub("{key}", keyName)
+end
+
+local function addChatMessage(message)
     chat.AddText(
         Color(0, 255, 128), "[CAR RADIO] ",
         Color(255, 255, 255), message
     )
 end
 
+local function PrintrRadio_ShowCarRadioMessage()
+    if not shouldShowRadioMessage() then return end
+
+    local vehicle = LocalPlayer():GetVehicle()
+    if not isValidVehicle(vehicle) then return end
+
+    local currentTime = CurTime()
+    if isMessageCooldownActive(currentTime) then return end
+
+    updateLastMessageTime(currentTime)
+
+    local keyName = getOpenKeyName()
+    local message = getRadioMessage(keyName)
+
+    addChatMessage(message)
+end
+
 -- Network Handlers
-net.Receive("CarRadioMessage", PrintCarRadioMessage)
+net.Receive("rRadio_ShowCarRadioMessage", PrintrRadio_ShowCarRadioMessage)
 
-local function calculateFontSizeForStopButton(text, buttonWidth, buttonHeight)
-    local maxFontSize = buttonHeight * 0.7
-    local fontName = "DynamicStopButtonFont"
-
+local function createFont(fontName, fontSize)
     surface.CreateFont(fontName, {
         font = "Roboto",
-        size = maxFontSize,
+        size = fontSize,
         weight = 700,
     })
+end
 
+local function getTextWidth(fontName, text)
     surface.SetFont(fontName)
     local textWidth, _ = surface.GetTextSize(text)
+    return textWidth
+end
+
+local function adjustFontSizeToFit(text, buttonWidth, maxFontSize)
+    local fontName = "DynamicStopButtonFont"
+    createFont(fontName, maxFontSize)
+    local textWidth = getTextWidth(fontName, text)
 
     while textWidth > buttonWidth * 0.9 do
         maxFontSize = maxFontSize - 1
-        surface.CreateFont(fontName, {
-            font = "Roboto",
-            size = maxFontSize,
-            weight = 700,
-        })
-        surface.SetFont(fontName)
-        textWidth, _ = surface.GetTextSize(text)
+        createFont(fontName, maxFontSize)
+        textWidth = getTextWidth(fontName, text)
     end
 
     return fontName
+end
+
+local function calculateFontSizeForStopButton(text, buttonWidth, buttonHeight)
+    local maxFontSize = buttonHeight * 0.7
+    return adjustFontSizeToFit(text, buttonWidth, maxFontSize)
 end
 
 -- Update favorite countries and stations when received from server
@@ -189,7 +269,7 @@ local function createStarIcon(parent, country, stationListPanel, backButton, sea
     starIcon:SetImage(table.HasValue(favoriteCountries, country) and "hud/star_full.png" or "hud/star.png")
 
     starIcon.DoClick = function()
-        net.Start("ToggleFavoriteCountry")
+        net.Start("rRadio_ToggleFavorite")
         net.WriteString(country)
         net.SendToServer()
 
@@ -242,6 +322,171 @@ local function createStationStarIcon(parent, country, station, stationListPanel,
     return starIcon
 end
 
+-- Function to create a country button
+local function createCountryButton(stationListPanel, country, backButton, searchBox)
+    local countryButton = vgui.Create("DButton", stationListPanel)
+    countryButton:Dock(TOP)
+    countryButton:DockMargin(Scale(5), Scale(5), Scale(5), 0)
+    countryButton:SetTall(Scale(40))
+    countryButton:SetText(country.translated)
+    countryButton:SetFont("Roboto18")
+    countryButton:SetTextColor(Config.UI.TextColor)
+
+    countryButton.Paint = function(self, w, h)
+        draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonColor)
+        if self:IsHovered() then
+            draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonHoverColor)
+        end
+    end
+
+    -- Add the star icon
+    local starIcon = createStarIcon(countryButton, country.original, stationListPanel, backButton, searchBox)
+
+    countryButton.DoClick = function()
+        surface.PlaySound("buttons/button3.wav")
+        selectedCountry = country.original
+        if backButton then backButton:SetVisible(true) end
+        populateList(stationListPanel, backButton, searchBox, true)
+    end
+
+    return countryButton
+end
+
+-- Function to handle station button click
+local function handleStationButtonClick(stationListPanel, backButton, searchBox, station)
+    local currentTime = CurTime()
+
+    -- Check if the cooldown has passed
+    if currentTime - lastStationSelectTime < 2 then
+        return  -- Exit the function if the cooldown hasn't passed
+    end
+
+    surface.PlaySound("buttons/button17.wav")
+    local entity = LocalPlayer().currentRadioEntity
+
+    if not IsValid(entity) then
+        return
+    end
+
+    if currentlyPlayingStations[entity] then
+        net.Start("rRadio_StopRadioStation")
+        net.WriteEntity(entity)
+        net.SendToServer()
+    end
+
+    local volume = entityVolumes[entity] or getEntityConfig(entity).Volume
+    net.Start("rRadio_PlayRadioStation")
+    net.WriteEntity(entity)
+    net.WriteString(station.name)
+    net.WriteString(station.url)
+    net.WriteFloat(volume)
+    net.SendToServer()
+
+    currentlyPlayingStations[entity] = station
+    lastStationSelectTime = currentTime  -- Update the last station select time
+    populateList(stationListPanel, backButton, searchBox, false)
+end
+
+-- Function to create a station button
+local function createStationButton(stationListPanel, stationData, backButton, searchBox)
+    local station = stationData.station
+    local stationButton = vgui.Create("DButton", stationListPanel)
+    stationButton:Dock(TOP)
+    stationButton:DockMargin(Scale(5), Scale(5), Scale(5), 0)
+    stationButton:SetTall(Scale(40))
+    stationButton:SetText(station.name)
+    stationButton:SetFont("Roboto18")
+    stationButton:SetTextColor(Config.UI.TextColor)
+
+    local currentlyPlayingStations = {}
+
+    stationButton.Paint = function(self, w, h)
+        if station == currentlyPlayingStations[LocalPlayer().currentRadioEntity] then
+            draw.RoundedBox(8, 0, 0, w, h, Config.UI.PlayingButtonColor)
+        else
+            draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonColor)
+            if self:IsHovered() then
+                draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonHoverColor)
+            end
+        end
+    end
+
+    -- Add the star icon
+    local starIcon = createStationStarIcon(stationButton, selectedCountry, station, stationListPanel, backButton, searchBox)
+
+    stationButton.DoClick = function()
+        handleStationButtonClick(stationListPanel, backButton, searchBox, station)
+    end
+
+    return stationButton
+end
+
+-- Function to get sorted countries
+local function getSortedCountries(filterText)
+    local countries = {}
+    for country, _ in pairs(Config.RadioStations) do
+        local translatedCountry = formatCountryName(country)
+        if filterText == "" or string.find(translatedCountry:lower(), filterText:lower(), 1, true) then
+            table.insert(countries, { original = country, translated = translatedCountry })
+        end
+    end
+
+    table.sort(countries, function(a, b)
+        local aIsPrioritized = table.HasValue(favoriteCountries, a.original)
+        local bIsPrioritized = table.HasValue(favoriteCountries, b.original)
+
+        if aIsPrioritized and not bIsPrioritized then
+            return true
+        elseif not aIsPrioritized and bIsPrioritized then
+            return false
+        else
+            return a.translated < b.translated
+        end
+    end)
+
+    return countries
+end
+
+-- Function to populate the list with countries
+local function populateCountryList(stationListPanel, backButton, searchBox, filterText)
+    local countries = getSortedCountries(filterText)
+    for _, country in ipairs(countries) do
+        createCountryButton(stationListPanel, country, backButton, searchBox)
+    end
+end
+
+-- Function to get sorted stations
+local function getSortedStations(filterText)
+    local stations = {}
+    for _, station in ipairs(Config.RadioStations[selectedCountry]) do
+        if filterText == "" or string.find(station.name:lower(), filterText:lower(), 1, true) then
+            local isFavorite = favoriteStations[selectedCountry] and table.HasValue(favoriteStations[selectedCountry], station.name)
+            table.insert(stations, { station = station, favorite = isFavorite })
+        end
+    end
+
+    table.sort(stations, function(a, b)
+        if a.favorite and not b.favorite then
+            return true
+        elseif not a.favorite and b.favorite then
+            return false
+        else
+            return a.station.name < b.station.name
+        end
+    end)
+
+    return stations
+end
+
+-- Function to populate the list with stations
+local function populateStationList(stationListPanel, backButton, searchBox, filterText)
+    local stations = getSortedStations(filterText)
+    for _, stationData in ipairs(stations) do
+        createStationButton(stationListPanel, stationData, backButton, searchBox)
+    end
+end
+
+-- Main function to populate the list
 function populateList(stationListPanel, backButton, searchBox, resetSearch)
     if not stationListPanel then
         return
@@ -258,143 +503,15 @@ function populateList(stationListPanel, backButton, searchBox, resetSearch)
     end
 
     local filterText = searchBox:GetText()
-    local lang = GetConVar("radio_language"):GetString() or "en"
 
     if selectedCountry == nil then
-        local countries = {}
-        for country, _ in pairs(Config.RadioStations) do
-            local translatedCountry = formatCountryName(country)
-            if filterText == "" or string.find(translatedCountry:lower(), filterText:lower(), 1, true) then
-                table.insert(countries, { original = country, translated = translatedCountry })
-            end
-        end
-
-        table.sort(countries, function(a, b)
-            local aIsPrioritized = table.HasValue(favoriteCountries, a.original)
-            local bIsPrioritized = table.HasValue(favoriteCountries, b.original)
-
-            if aIsPrioritized and not bIsPrioritized then
-                return true
-            elseif not aIsPrioritized and bIsPrioritized then
-                return false
-            else
-                return a.translated < b.translated
-            end
-        end)
-
-        for _, country in ipairs(countries) do
-            local countryButton = vgui.Create("DButton", stationListPanel)
-            countryButton:Dock(TOP)
-            countryButton:DockMargin(Scale(5), Scale(5), Scale(5), 0)
-            countryButton:SetTall(Scale(40))
-            countryButton:SetText(country.translated)
-            countryButton:SetFont("Roboto18")
-            countryButton:SetTextColor(Config.UI.TextColor)
-
-            countryButton.Paint = function(self, w, h)
-                draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonColor)
-                if self:IsHovered() then
-                    draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonHoverColor)
-                end
-            end
-
-            -- Add the star icon
-            local starIcon = createStarIcon(countryButton, country.original, stationListPanel, backButton, searchBox)
-
-            countryButton.DoClick = function()
-                surface.PlaySound("buttons/button3.wav")
-                selectedCountry = country.original
-                if backButton then backButton:SetVisible(true) end
-                populateList(stationListPanel, backButton, searchBox, true)
-            end
-        end
+        populateCountryList(stationListPanel, backButton, searchBox, filterText)
     else
-        -- List favorite stations first
-        local stations = {}
-        for _, station in ipairs(Config.RadioStations[selectedCountry]) do
-            if filterText == "" or string.find(station.name:lower(), filterText:lower(), 1, true) then
-                local isFavorite = favoriteStations[selectedCountry] and table.HasValue(favoriteStations[selectedCountry], station.name)
-                table.insert(stations, { station = station, favorite = isFavorite })
-            end
-        end
-
-        table.sort(stations, function(a, b)
-            if a.favorite and not b.favorite then
-                return true
-            elseif not a.favorite and b.favorite then
-                return false
-            else
-                return a.station.name < b.station.name
-            end
-        end)
-
-        for _, stationData in ipairs(stations) do
-            local station = stationData.station
-            local stationButton = vgui.Create("DButton", stationListPanel)
-            stationButton:Dock(TOP)
-            stationButton:DockMargin(Scale(5), Scale(5), Scale(5), 0)
-            stationButton:SetTall(Scale(40))
-            stationButton:SetText(station.name)
-            stationButton:SetFont("Roboto18")
-            stationButton:SetTextColor(Config.UI.TextColor)
-
-            local currentlyPlayingStations = {}
-
-            stationButton.Paint = function(self, w, h)
-                if station == currentlyPlayingStations[LocalPlayer().currentRadioEntity] then
-                    draw.RoundedBox(8, 0, 0, w, h, Config.UI.PlayingButtonColor)
-                else
-                    draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonColor)
-                    if self:IsHovered() then
-                        draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonHoverColor)
-                    end
-                end
-            end
-
-            -- Add the star icon
-            local starIcon = createStationStarIcon(stationButton, selectedCountry, station, stationListPanel, backButton, searchBox)
-
-            stationButton.DoClick = function()
-                local currentTime = CurTime()
-
-                -- Check if the cooldown has passed
-                if currentTime - lastStationSelectTime < 2 then
-                    return  -- Exit the function if the cooldown hasn't passed
-                end
-
-                surface.PlaySound("buttons/button17.wav")
-                local entity = LocalPlayer().currentRadioEntity
-
-                if not IsValid(entity) then
-                    return
-                end
-
-                if currentlyPlayingStations[entity] then
-                    net.Start("StopCarRadioStation")
-                    net.WriteEntity(entity)
-                    net.SendToServer()
-                end
-
-                local volume = entityVolumes[entity] or getEntityConfig(entity).Volume
-                net.Start("PlayCarRadioStation")
-                net.WriteEntity(entity)
-                net.WriteString(station.name)
-                net.WriteString(station.url)
-                net.WriteFloat(volume)
-                net.SendToServer()
-
-                currentlyPlayingStations[entity] = station
-                lastStationSelectTime = currentTime  -- Update the last station select time
-                populateList(stationListPanel, backButton, searchBox, false)
-            end
-        end
+        populateStationList(stationListPanel, backButton, searchBox, filterText)
     end
 end
 
-local function openRadioMenu()
-    if radioMenuOpen then return end
-    radioMenuOpen = true
-
+local function createFrame()
     local frame = vgui.Create("DFrame")
     frame:SetTitle("")
     frame:SetSize(Scale(Config.UI.FrameSize.width), Scale(Config.UI.FrameSize.height))
@@ -423,7 +540,11 @@ local function openRadioMenu()
         local countryText = Config.Lang["SelectCountry"] or "Select Country"
         draw.SimpleText(selectedCountry and formatCountryName(selectedCountry) or countryText, "HeaderFont", iconOffsetX + iconSize + Scale(5), iconOffsetY, Config.UI.TextColor, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
     end
-    
+
+    return frame
+end
+
+local function createSearchBox(frame)
     local searchBox = vgui.Create("DTextEntry", frame)
     searchBox:SetPos(Scale(10), Scale(50))
     searchBox:SetSize(Scale(Config.UI.FrameSize.width) - Scale(20), Scale(30))
@@ -440,10 +561,25 @@ local function openRadioMenu()
         end
     end
 
+    return searchBox
+end
+
+local function createStationListPanel(frame)
     local stationListPanel = vgui.Create("DScrollPanel", frame)
     stationListPanel:SetPos(Scale(5), Scale(90))
     stationListPanel:SetSize(Scale(Config.UI.FrameSize.width) - Scale(20), Scale(Config.UI.FrameSize.height) - Scale(200))
 
+    local sbar = stationListPanel:GetVBar()
+    sbar:SetWide(Scale(8))
+    function sbar:Paint(w, h) draw.RoundedBox(8, 0, 0, w, h, Config.UI.ScrollbarColor) end
+    function sbar.btnUp:Paint(w, h) draw.RoundedBox(8, 0, 0, w, h, Config.UI.ScrollbarColor) end
+    function sbar.btnDown:Paint(w, h) draw.RoundedBox(8, 0, 0, w, h, Config.UI.ScrollbarColor) end
+    function sbar.btnGrip:Paint(w, h) draw.RoundedBox(8, 0, 0, w, h, Config.UI.ScrollbarGripColor) end
+
+    return stationListPanel
+end
+
+local function createStopButton(frame, stationListPanel, backButton, searchBox)
     local stopButtonHeight = Scale(Config.UI.FrameSize.width) / 8
     local stopButtonWidth = Scale(Config.UI.FrameSize.width) / 4
     local stopButtonText = Config.Lang["StopRadio"] or "STOP"
@@ -466,37 +602,43 @@ local function openRadioMenu()
         surface.PlaySound("buttons/button6.wav")
         local entity = LocalPlayer().currentRadioEntity
         if IsValid(entity) then
-            net.Start("StopCarRadioStation")
+            net.Start("rRadio_StopRadioStation")
             net.WriteEntity(entity)
             net.SendToServer()
             currentlyPlayingStation = nil
             populateList(stationListPanel, backButton, searchBox, false)
         end
-    end 
+    end
 
+    return stopButton
+end
+
+local function createVolumePanel(frame, stopButtonWidth)
     local volumePanel = vgui.Create("DPanel", frame)
     volumePanel:SetPos(Scale(20) + stopButtonWidth, Scale(Config.UI.FrameSize.height) - Scale(90))
-    volumePanel:SetSize(Scale(Config.UI.FrameSize.width) - Scale(30) - stopButtonWidth, stopButtonHeight)
+    volumePanel:SetSize(Scale(Config.UI.FrameSize.width) - Scale(30) - stopButtonWidth, stopButtonWidth)
     volumePanel.Paint = function(self, w, h)
         draw.RoundedBox(8, 0, 0, w, h, Config.UI.CloseButtonColor)
     end
 
+    return volumePanel
+end
+
+local function createVolumeSlider(volumePanel, entity)
     local volumeIconSize = Scale(50)
     
     local volumeIcon = vgui.Create("DImage", volumePanel)
-    volumeIcon:SetPos(Scale(10), (volumePanel:GetTall() - volumeIconSize) / 2)
+    volumeIcon:SetPos(Scale(10), (volumePanel:GetTall() - volumeIconSize) / 5)
     volumeIcon:SetSize(volumeIconSize, volumeIconSize)
     volumeIcon:SetImage("hud/volume")
 
     local volumeSlider = vgui.Create("DNumSlider", volumePanel)
-    volumeSlider:SetPos(volumeIcon:GetWide() - Scale(200), Scale(5))
+    volumeSlider:SetPos(volumeIcon:GetWide() - Scale(200), -Scale(25))
     volumeSlider:SetSize(volumePanel:GetWide() - volumeIcon:GetWide() + Scale(180), volumePanel:GetTall() - Scale(20))
     volumeSlider:SetText("")
     volumeSlider:SetMin(0)
     volumeSlider:SetMax(1)
     volumeSlider:SetDecimals(2)
-    
-    local entity = LocalPlayer().currentRadioEntity
     
     local currentVolume = entityVolumes[entity] or getEntityConfig(entity).Volume
     volumeSlider:SetValue(currentVolume)
@@ -524,8 +666,12 @@ local function openRadioMenu()
         if currentRadioSources[entity] and IsValid(currentRadioSources[entity]) then
             currentRadioSources[entity]:SetVolume(value)
         end
-    end    
-    
+    end
+
+    return volumeSlider
+end
+
+local function createBackButton(frame, stationListPanel, searchBox)
     local backButton = vgui.Create("DButton", frame)
     backButton:SetSize(Scale(30), Scale(30))
     backButton:SetPos(frame:GetWide() - Scale(79), Scale(5))
@@ -552,6 +698,10 @@ local function openRadioMenu()
         populateList(stationListPanel, backButton, searchBox, true)
     end
 
+    return backButton
+end
+
+local function createCloseButton(frame)
     local closeButton = vgui.Create("DButton", frame)
     closeButton:SetText("X")
     closeButton:SetFont("Roboto18")
@@ -570,12 +720,21 @@ local function openRadioMenu()
         frame:Close()
     end
 
-    local sbar = stationListPanel:GetVBar()
-    sbar:SetWide(Scale(8))
-    function sbar:Paint(w, h) draw.RoundedBox(8, 0, 0, w, h, Config.UI.ScrollbarColor) end
-    function sbar.btnUp:Paint(w, h) draw.RoundedBox(8, 0, 0, w, h, Config.UI.ScrollbarColor) end
-    function sbar.btnDown:Paint(w, h) draw.RoundedBox(8, 0, 0, w, h, Config.UI.ScrollbarColor) end
-    function sbar.btnGrip:Paint(w, h) draw.RoundedBox(8, 0, 0, w, h, Config.UI.ScrollbarGripColor) end
+    return closeButton
+end
+
+local function rRadio_OpenRadioMenu()
+    if radioMenuOpen then return end
+    radioMenuOpen = true
+
+    local frame = createFrame()
+    local searchBox = createSearchBox(frame)
+    local stationListPanel = createStationListPanel(frame)
+    local stopButton = createStopButton(frame, stationListPanel, backButton, searchBox)
+    local volumePanel = createVolumePanel(frame, stopButton:GetWide())
+    local volumeSlider = createVolumeSlider(volumePanel, LocalPlayer().currentRadioEntity)
+    local backButton = createBackButton(frame, stationListPanel, searchBox)
+    local closeButton = createCloseButton(frame)
 
     populateList(stationListPanel, backButton, searchBox, true)
 
@@ -585,111 +744,123 @@ local function openRadioMenu()
 end
 
 hook.Add("Think", "OpenCarRadioMenu", function()
-    local openKey = GetConVar("car_radio_open_key"):GetInt()
+    local openKey = GetConVar("radio_open_key"):GetInt()
     local vehicle = LocalPlayer():GetVehicle()
 
     if input.IsKeyDown(openKey) and not radioMenuOpen and IsValid(vehicle) and not utils.isSitAnywhereSeat(vehicle) then
         LocalPlayer().currentRadioEntity = vehicle
-        openRadioMenu()
+        rRadio_OpenRadioMenu()
     end
 end)
 
-net.Receive("PlayCarRadioStation", function()
-    local entity = net.ReadEntity()
-    local url = net.ReadString()
-    local volume = net.ReadFloat()
-
-    local entityRetryAttempts = 5
-    local entityRetryDelay = 0.5  -- Delay in seconds between entity retries
-
-    local function attemptPlayStation(attempt)
-        if not IsValid(entity) then
-            if attempt < entityRetryAttempts then
-                timer.Simple(entityRetryDelay, function()
-                    attemptPlayStation(attempt + 1)
-                end)
-            end
-            return
-        end
-
-        local entityConfig = getEntityConfig(entity)
-
-        if currentRadioSources[entity] and IsValid(currentRadioSources[entity]) then
-            currentRadioSources[entity]:Stop()
-        end
-
-        local function tryPlayStation(playAttempt)
-            sound.PlayURL(url, "3d mono", function(station, errorID, errorName)
-                if IsValid(station) and IsValid(entity) then
-                    station:SetPos(entity:GetPos())
-                    station:SetVolume(volume)
-                    station:Play()
-                    currentRadioSources[entity] = station
-
-                    -- Set 3D fade distance according to the entity's configuration
-                    station:Set3DFadeDistance(entityConfig.MinVolumeDistance, entityConfig.MaxHearingDistance)
-
-                    -- Update the station's position relative to the entity's movement
-                    hook.Add("Think", "UpdateRadioPosition_" .. entity:EntIndex(), function()
-                        if IsValid(entity) and IsValid(station) then
-                            station:SetPos(entity:GetPos())
-
-                            local playerPos = LocalPlayer():GetPos()
-                            local entityPos = entity:GetPos()
-                            local distance = playerPos:Distance(entityPos)
-                            local isPlayerInCar = LocalPlayer():GetVehicle() == entity
-
-                            updateRadioVolume(station, distance, isPlayerInCar, entity)
-                        else
-                            hook.Remove("Think", "UpdateRadioPosition_" .. entity:EntIndex())
-                        end
-                    end)
-
-                    -- Stop the station if the entity is removed
-                    hook.Add("EntityRemoved", "StopRadioOnEntityRemove_" .. entity:EntIndex(), function(ent)
-                        if ent == entity then
-                            if IsValid(currentRadioSources[entity]) then
-                                currentRadioSources[entity]:Stop()
-                            end
-                            currentRadioSources[entity] = nil
-                            hook.Remove("EntityRemoved", "StopRadioOnEntityRemove_" .. entity:EntIndex())
-                            hook.Remove("Think", "UpdateRadioPosition_" .. entity:EntIndex())
-                        end
-                    end)
-                else      
-                    if playAttempt < entityConfig.RetryAttempts then
-                        timer.Simple(entityConfig.RetryDelay, function()
-                            tryPlayStation(playAttempt + 1)
-                        end)
-                    end
-                end
-            end)
-        end
-
-        tryPlayStation(1)
-    end
-
-    attemptPlayStation(1)
-end)
-
-
-net.Receive("StopCarRadioStation", function()
-    local entity = net.ReadEntity()
-
-    if IsValid(entity) and IsValid(currentRadioSources[entity]) then
+local function stopCurrentStation(entity)
+    if currentRadioSources[entity] and IsValid(currentRadioSources[entity]) then
         currentRadioSources[entity]:Stop()
         currentRadioSources[entity] = nil
         local entIndex = entity:EntIndex()
         hook.Remove("EntityRemoved", "StopRadioOnEntityRemove_" .. entIndex)
         hook.Remove("Think", "UpdateRadioPosition_" .. entIndex)
     end
+end
+
+local function updateRadioPosition(entity, station)
+    hook.Add("Think", "UpdateRadioPosition_" .. entity:EntIndex(), function()
+        if IsValid(entity) and IsValid(station) then
+            station:SetPos(entity:GetPos())
+
+            local playerPos = LocalPlayer():GetPos()
+            local entityPos = entity:GetPos()
+            local distance = playerPos:Distance(entityPos)
+            local isPlayerInCar = LocalPlayer():GetVehicle() == entity
+
+            updateRadioVolume(station, distance, isPlayerInCar, entity)
+        else
+            hook.Remove("Think", "UpdateRadioPosition_" .. entity:EntIndex())
+        end
+    end)
+end
+
+local function stopStationOnEntityRemove(entity)
+    hook.Add("EntityRemoved", "StopRadioOnEntityRemove_" .. entity:EntIndex(), function(ent)
+        if ent == entity then
+            stopCurrentStation(entity)
+        end
+    end)
+end
+
+local function playStation(entity, url, volume, entityConfig, attempt)
+    sound.PlayURL(url, "3d mono", function(station, errorID, errorName)
+        if IsValid(station) and IsValid(entity) then
+            station:SetPos(entity:GetPos())
+            station:SetVolume(volume)
+            station:Play()
+            currentRadioSources[entity] = station
+
+            station:Set3DFadeDistance(entityConfig.MinVolumeDistance, entityConfig.MaxHearingDistance)
+            updateRadioPosition(entity, station)
+            stopStationOnEntityRemove(entity)
+        else
+            if attempt < entityConfig.RetryAttempts then
+                timer.Simple(entityConfig.RetryDelay, function()
+                    playStation(entity, url, volume, entityConfig, attempt + 1)
+                end)
+            end
+        end
+    end)
+end
+
+local function attemptPlayStation(entity, url, volume, entityConfig, attempt)
+    if not IsValid(entity) then
+        if attempt < 5 then
+            timer.Simple(0.5, function()
+                attemptPlayStation(entity, url, volume, entityConfig, attempt + 1)
+            end)
+        end
+        return
+    end
+
+    stopCurrentStation(entity)
+    playStation(entity, url, volume, entityConfig, 1)
+end
+
+net.Receive("rRadio_PlayRadioStation", function()
+    local entity = net.ReadEntity()
+    local url = net.ReadString()
+    local volume = net.ReadFloat()
+    local entityConfig = getEntityConfig(entity)
+
+    attemptPlayStation(entity, url, volume, entityConfig, 1)
 end)
 
-net.Receive("OpenRadioMenu", function()
+
+net.Receive("rRadio_StopRadioStation", function()
     local entity = net.ReadEntity()
+
+    if not IsValid(entity) then
+        utils.PrintError("Received invalid entity in rRadio_StopRadioStation.", 2)
+        return
+    end
+
+    if IsValid(currentRadioSources[entity]) then
+        currentRadioSources[entity]:Stop()
+        currentRadioSources[entity] = nil
+        local entIndex = entity:EntIndex()
+        hook.Remove("EntityRemoved", "StopRadioOnEntityRemove_" .. entIndex)
+        hook.Remove("Think", "UpdateRadioPosition_" .. entIndex)
+    else
+        utils.PrintError("No valid radio source found for entity in rRadio_StopRadioStation.", 2)
+    end
+end)
+
+net.Receive("rRadio_OpenRadioMenu", function()
+    local entity = net.ReadEntity()
+    if not IsValid(entity) then
+        utils.PrintError("Received invalid entity in rRadio_OpenRadioMenu.", 2)
+        return
+    end
     LocalPlayer().currentRadioEntity = entity
     if not radioMenuOpen then
-        openRadioMenu()
+        rRadio_OpenRadioMenu()
     end
 end)
 

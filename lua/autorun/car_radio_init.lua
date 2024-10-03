@@ -2,15 +2,15 @@ if SERVER then
     print("[RADIO] Starting server-side initialization")
     
     -- Add all the necessary Lua files for the client
-    AddCSLuaFile("radio/config.lua")
-    AddCSLuaFile("language_manager.lua")
-    AddCSLuaFile("country_translations.lua")
-    AddCSLuaFile("radio/cl_radio.lua")
-    AddCSLuaFile("radio/theme_menu.lua")
-    AddCSLuaFile("themes.lua")
+    AddCSLuaFile("misc/config.lua")
+    AddCSLuaFile("localisation/language_manager.lua")
+    AddCSLuaFile("localisation/country_translations.lua")
     AddCSLuaFile("radio/cl_init.lua")
-    AddCSLuaFile("radio/key_names.lua")
-    AddCSLuaFile("radio/utils.lua")
+    AddCSLuaFile("radio/cl_radio.lua")
+    AddCSLuaFile("themes/theme_menu.lua")
+    AddCSLuaFile("themes/theme_palettes.lua")
+    AddCSLuaFile("misc/key_names.lua")
+    AddCSLuaFile("misc/utils.lua")
 
     -- Dynamically include all radio station files
     local stationFiles = file.Find("radio/stations/*.lua", "LUA")
@@ -18,9 +18,9 @@ if SERVER then
         AddCSLuaFile("radio/stations/" .. filename)
     end
 
-    local langFiles = file.Find("radio/lang/*.lua", "LUA")
+    local langFiles = file.Find("localisation/lang/*.lua", "LUA")
     for _, filename in ipairs(langFiles) do
-        AddCSLuaFile("radio/lang/" .. filename)
+        AddCSLuaFile("localisation/lang/" .. filename)
     end
     
     -- Include the server-side radio logic
@@ -31,15 +31,15 @@ else
     print("[RADIO] Starting client-side initialization")
     
     -- Load configuration and other necessary files in the correct order
-    Config = include("radio/config.lua")
-    include("language_manager.lua")
-    include("country_translations.lua")
-    include("themes.lua")
-    include("radio/theme_menu.lua")
-    include("radio/key_names.lua")
+    Config = include("misc/config.lua")
+    include("localisation/language_manager.lua")
+    include("localisation/country_translations.lua")
     include("radio/cl_init.lua")
+    include("themes/theme_palettes.lua")
+    include("themes/theme_menu.lua")
+    include("misc/key_names.lua")
     include("radio/cl_radio.lua")
-    include("radio/utils.lua")
+    include("misc/utils.lua")
     
     print("[RADIO] Finished client-side initialization")
 end

@@ -1,5 +1,12 @@
+--[[ 
+    rRadio Addon for Garry's Mod - Client Boombox Script
+    Description: Manages client-side boombox functionalities and UI.
+    Author: Charles Mills (https://github.com/charles-mills)
+    Date: 2024-10-03
+]]
+
 include("shared.lua")
-include("radio/config.lua")
+include("misc/config.lua")
 
 local function GetRainbowColor(frequency)
     local time = CurTime() * frequency
@@ -15,7 +22,7 @@ local rotationAngle = 0
 function ENT:Draw()
     self:DrawModel()
 
-    if GetConVar("boombox_show_text"):GetBool() then
+    if GetConVar("radio_show_boombox_text"):GetBool() then
         local pos = self:GetPos() + Vector(0, 0, 30)
         local ang = Angle(0, LocalPlayer():EyeAngles().y - 90, 90)
 
@@ -52,7 +59,7 @@ surface.CreateFont("BoomboxFont", {
     weight = 700,
 })
 
-net.Receive("UpdateRadioStatus", function()
+net.Receive("rRadio_UpdateRadioStatus", function()
     local entity = net.ReadEntity()
     local stationName = net.ReadString()
 
