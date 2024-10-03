@@ -181,7 +181,7 @@ local function updateLastMessageTime(currentTime)
 end
 
 local function getOpenKeyName()
-    local openKey = GetConVar("car_radio_open_key"):GetInt()
+    local openKey = GetConVar("radio_open_key"):GetInt()
     return input.GetKeyName(openKey) or "unknown key"
 end
 
@@ -511,10 +511,7 @@ function populateList(stationListPanel, backButton, searchBox, resetSearch)
     end
 end
 
-local function rRadio_OpenRadioMenu()
-    if radioMenuOpen then return end
-    radioMenuOpen = true
-
+local function createFrame()
     local frame = vgui.Create("DFrame")
     frame:SetTitle("")
     frame:SetSize(Scale(Config.UI.FrameSize.width), Scale(Config.UI.FrameSize.height))
@@ -543,7 +540,11 @@ local function rRadio_OpenRadioMenu()
         local countryText = Config.Lang["SelectCountry"] or "Select Country"
         draw.SimpleText(selectedCountry and formatCountryName(selectedCountry) or countryText, "HeaderFont", iconOffsetX + iconSize + Scale(5), iconOffsetY, Config.UI.TextColor, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
     end
-    
+
+    return frame
+end
+
+local function createSearchBox(frame)
     local searchBox = vgui.Create("DTextEntry", frame)
     searchBox:SetPos(Scale(10), Scale(50))
     searchBox:SetSize(Scale(Config.UI.FrameSize.width) - Scale(20), Scale(30))
@@ -560,10 +561,25 @@ local function rRadio_OpenRadioMenu()
         end
     end
 
+    return searchBox
+end
+
+local function createStationListPanel(frame)
     local stationListPanel = vgui.Create("DScrollPanel", frame)
     stationListPanel:SetPos(Scale(5), Scale(90))
     stationListPanel:SetSize(Scale(Config.UI.FrameSize.width) - Scale(20), Scale(Config.UI.FrameSize.height) - Scale(200))
 
+    local sbar = stationListPanel:GetVBar()
+    sbar:SetWide(Scale(8))
+    function sbar:Paint(w, h) draw.RoundedBox(8, 0, 0, w, h, Config.UI.ScrollbarColor) end
+    function sbar.btnUp:Paint(w, h) draw.RoundedBox(8, 0, 0, w, h, Config.UI.ScrollbarColor) end
+    function sbar.btnDown:Paint(w, h) draw.RoundedBox(8, 0, 0, w, h, Config.UI.ScrollbarColor) end
+    function sbar.btnGrip:Paint(w, h) draw.RoundedBox(8, 0, 0, w, h, Config.UI.ScrollbarGripColor) end
+
+    return stationListPanel
+end
+
+local function createStopButton(frame, stationListPanel, backButton, searchBox)
     local stopButtonHeight = Scale(Config.UI.FrameSize.width) / 8
     local stopButtonWidth = Scale(Config.UI.FrameSize.width) / 4
     local stopButtonText = Config.Lang["StopRadio"] or "STOP"
@@ -592,31 +608,37 @@ local function rRadio_OpenRadioMenu()
             currentlyPlayingStation = nil
             populateList(stationListPanel, backButton, searchBox, false)
         end
-    end 
+    end
 
+    return stopButton
+end
+
+local function createVolumePanel(frame, stopButtonWidth)
     local volumePanel = vgui.Create("DPanel", frame)
     volumePanel:SetPos(Scale(20) + stopButtonWidth, Scale(Config.UI.FrameSize.height) - Scale(90))
-    volumePanel:SetSize(Scale(Config.UI.FrameSize.width) - Scale(30) - stopButtonWidth, stopButtonHeight)
+    volumePanel:SetSize(Scale(Config.UI.FrameSize.width) - Scale(30) - stopButtonWidth, stopButtonWidth)
     volumePanel.Paint = function(self, w, h)
         draw.RoundedBox(8, 0, 0, w, h, Config.UI.CloseButtonColor)
     end
 
+    return volumePanel
+end
+
+local function createVolumeSlider(volumePanel, entity)
     local volumeIconSize = Scale(50)
     
     local volumeIcon = vgui.Create("DImage", volumePanel)
-    volumeIcon:SetPos(Scale(10), (volumePanel:GetTall() - volumeIconSize) / 2)
+    volumeIcon:SetPos(Scale(10), (volumePanel:GetTall() - volumeIconSize) / 5)
     volumeIcon:SetSize(volumeIconSize, volumeIconSize)
     volumeIcon:SetImage("hud/volume")
 
     local volumeSlider = vgui.Create("DNumSlider", volumePanel)
-    volumeSlider:SetPos(volumeIcon:GetWide() - Scale(200), Scale(5))
+    volumeSlider:SetPos(volumeIcon:GetWide() - Scale(200), -Scale(25))
     volumeSlider:SetSize(volumePanel:GetWide() - volumeIcon:GetWide() + Scale(180), volumePanel:GetTall() - Scale(20))
     volumeSlider:SetText("")
     volumeSlider:SetMin(0)
     volumeSlider:SetMax(1)
     volumeSlider:SetDecimals(2)
-    
-    local entity = LocalPlayer().currentRadioEntity
     
     local currentVolume = entityVolumes[entity] or getEntityConfig(entity).Volume
     volumeSlider:SetValue(currentVolume)
@@ -644,8 +666,12 @@ local function rRadio_OpenRadioMenu()
         if currentRadioSources[entity] and IsValid(currentRadioSources[entity]) then
             currentRadioSources[entity]:SetVolume(value)
         end
-    end    
-    
+    end
+
+    return volumeSlider
+end
+
+local function createBackButton(frame, stationListPanel, searchBox)
     local backButton = vgui.Create("DButton", frame)
     backButton:SetSize(Scale(30), Scale(30))
     backButton:SetPos(frame:GetWide() - Scale(79), Scale(5))
@@ -672,6 +698,10 @@ local function rRadio_OpenRadioMenu()
         populateList(stationListPanel, backButton, searchBox, true)
     end
 
+    return backButton
+end
+
+local function createCloseButton(frame)
     local closeButton = vgui.Create("DButton", frame)
     closeButton:SetText("X")
     closeButton:SetFont("Roboto18")
@@ -690,12 +720,21 @@ local function rRadio_OpenRadioMenu()
         frame:Close()
     end
 
-    local sbar = stationListPanel:GetVBar()
-    sbar:SetWide(Scale(8))
-    function sbar:Paint(w, h) draw.RoundedBox(8, 0, 0, w, h, Config.UI.ScrollbarColor) end
-    function sbar.btnUp:Paint(w, h) draw.RoundedBox(8, 0, 0, w, h, Config.UI.ScrollbarColor) end
-    function sbar.btnDown:Paint(w, h) draw.RoundedBox(8, 0, 0, w, h, Config.UI.ScrollbarColor) end
-    function sbar.btnGrip:Paint(w, h) draw.RoundedBox(8, 0, 0, w, h, Config.UI.ScrollbarGripColor) end
+    return closeButton
+end
+
+local function rRadio_OpenRadioMenu()
+    if radioMenuOpen then return end
+    radioMenuOpen = true
+
+    local frame = createFrame()
+    local searchBox = createSearchBox(frame)
+    local stationListPanel = createStationListPanel(frame)
+    local stopButton = createStopButton(frame, stationListPanel, backButton, searchBox)
+    local volumePanel = createVolumePanel(frame, stopButton:GetWide())
+    local volumeSlider = createVolumeSlider(volumePanel, LocalPlayer().currentRadioEntity)
+    local backButton = createBackButton(frame, stationListPanel, searchBox)
+    local closeButton = createCloseButton(frame)
 
     populateList(stationListPanel, backButton, searchBox, true)
 
@@ -705,7 +744,7 @@ local function rRadio_OpenRadioMenu()
 end
 
 hook.Add("Think", "OpenCarRadioMenu", function()
-    local openKey = GetConVar("car_radio_open_key"):GetInt()
+    local openKey = GetConVar("radio_open_key"):GetInt()
     local vehicle = LocalPlayer():GetVehicle()
 
     if input.IsKeyDown(openKey) and not radioMenuOpen and IsValid(vehicle) and not utils.isSitAnywhereSeat(vehicle) then

@@ -64,11 +64,11 @@ Config.UI = selectedTheme
 Config.UKAndUSPrioritised = true -- Include UK and US stations at the top of the list (default alphabetical sort if false)
 Config.MessageCooldown = 1 -- Cooldown time in seconds before the chat message can be sent again ("Press {key} to open the radio menu")
 
-local openKeyConvar = GetConVar("car_radio_open_key")
+local openKeyConvar = GetConVar("radio_open_key")
 
 if not openKeyConvar then
-    CreateClientConVar("car_radio_open_key", "21", true, false, "Select the key to open the car radio menu.")
-    openKeyConvar = GetConVar("car_radio_open_key")
+    CreateClientConVar("radio_open_key", "21", true, false, "Select the key to open the car radio menu.")
+    openKeyConvar = GetConVar("radio_open_key")
 end
 
 Config.OpenKey = openKeyConvar:GetInt()

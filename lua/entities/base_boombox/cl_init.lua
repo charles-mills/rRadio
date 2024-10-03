@@ -22,7 +22,7 @@ local rotationAngle = 0
 function ENT:Draw()
     self:DrawModel()
 
-    if GetConVar("boombox_show_text"):GetBool() then
+    if GetConVar("radio_show_boombox_text"):GetBool() then
         local pos = self:GetPos() + Vector(0, 0, 30)
         local ang = Angle(0, LocalPlayer():EyeAngles().y - 90, 90)
 

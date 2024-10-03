@@ -10,10 +10,10 @@ local themes = include("themes/theme_palettes.lua")
 local languageManager = include("localisation/language_manager.lua")
 
 CreateClientConVar("radio_language", "en", true, false, "Select the language for the radio UI.")
-CreateClientConVar("boombox_show_text", "1", true, false, "Show or hide the text above the boombox.")
+CreateClientConVar("radio_show_boombox_text", "1", true, false, "Show or hide the text above the boombox.")
 
 -- Create a client convar to select the key for opening the radio menu
-CreateClientConVar("car_radio_open_key", "21", true, false, "Select the key to open the car radio menu.") -- Default is KEY_K
+CreateClientConVar("radio_open_key", "21", true, false, "Select the key to open the car radio menu.") -- Default is KEY_K
 
 -- Function to apply the selected theme
 local function applyTheme(themeName)
@@ -190,13 +190,13 @@ hook.Add("PopulateToolMenu", "AddThemeAndVolumeSelectionMenu", function()
         end
 
         -- Set the current value based on the convar
-        local currentKey = GetConVar("car_radio_open_key"):GetInt()
+        local currentKey = GetConVar("radio_open_key"):GetInt()
         if keyCodeMapping[currentKey] then
             keyDropdown:SetValue(keyCodeMapping[currentKey])
         end
 
         keyDropdown.OnSelect = function(panel, index, value, data)
-            RunConsoleCommand("car_radio_open_key", data)
+            RunConsoleCommand("radio_open_key", data)
         end
 
         panel:AddItem(keyDropdown)
@@ -224,11 +224,11 @@ hook.Add("PopulateToolMenu", "AddThemeAndVolumeSelectionMenu", function()
         -- Show Boombox Hover Text Toggle
         local showTextCheckbox = vgui.Create("DCheckBoxLabel", panel)
         showTextCheckbox:SetText("Show Boombox Hover Text")
-        showTextCheckbox:SetConVar("boombox_show_text")
+        showTextCheckbox:SetConVar("radio_show_boombox_text")
         showTextCheckbox:Dock(TOP)
         showTextCheckbox:DockMargin(0, 0, 0, 0)
         showTextCheckbox:SetTextColor(Color(0, 0, 0))
-        showTextCheckbox:SetValue(GetConVar("boombox_show_text"):GetBool())
+        showTextCheckbox:SetValue(GetConVar("radio_show_boombox_text"):GetBool())
         showTextCheckbox:SetTooltip("Enable or disable the display of text above the boombox.")
         panel:AddItem(showTextCheckbox)
     end)
