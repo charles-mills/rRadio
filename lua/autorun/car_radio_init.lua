@@ -5,10 +5,10 @@ if SERVER then
     AddCSLuaFile("misc/config.lua")
     AddCSLuaFile("localisation/language_manager.lua")
     AddCSLuaFile("localisation/country_translations.lua")
+    AddCSLuaFile("radio/cl_init.lua")
     AddCSLuaFile("radio/cl_radio.lua")
     AddCSLuaFile("themes/theme_menu.lua")
     AddCSLuaFile("themes/theme_palettes.lua")
-    AddCSLuaFile("radio/cl_init.lua")
     AddCSLuaFile("misc/key_names.lua")
     AddCSLuaFile("misc/utils.lua")
 
@@ -34,10 +34,10 @@ else
     Config = include("misc/config.lua")
     include("localisation/language_manager.lua")
     include("localisation/country_translations.lua")
+    include("radio/cl_init.lua")
     include("themes/theme_palettes.lua")
     include("themes/theme_menu.lua")
     include("misc/key_names.lua")
-    include("radio/cl_init.lua")
     include("radio/cl_radio.lua")
     include("misc/utils.lua")
     
