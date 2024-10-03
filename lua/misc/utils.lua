@@ -41,6 +41,7 @@ end
 
 -- Function to print errors if verbose_errors is enabled
 function utils.PrintError(msg, severity)
+    severity = severity or 3
     if utils.VERBOSE_ERRORS then
         print("[CarRadio Error] [" .. (severity or "0") .. "] " .. msg)
     end
