@@ -119,11 +119,34 @@ end
 
 local function formatCountryName(name)
     -- Reformat and then translate the country name
-    local formattedName = name:gsub("_", " "):gsub("(%a)([%w_\']*)", function(a, b) 
-        return string.upper(a) .. string.lower(b) 
+    local formattedName = name:gsub("_", " "):gsub("(%a)([%w_\']*)", function(a, b)
+        return a:upper() .. b:lower()
     end)
     local lang = GetConVar("radio_language"):GetString() or "en"
-    return countryTranslations:GetCountryName(lang, formattedName)
+    return countryTranslations:GetCountryName(lang, formattedName) or formattedName
+end
+
+local function getEffectiveVolume(entity, volume)
+    local maxVolume = GetConVar("radio_max_volume"):GetFloat()
+    return math.min(volume, maxVolume)
+end
+
+local function calculateAdjustedVolume(distance, minDistance, maxDistance, effectiveVolume)
+    if distance <= minDistance then
+        return effectiveVolume
+    elseif distance <= maxDistance then
+        return effectiveVolume * (1 - (distance - minDistance) / (maxDistance - minDistance))
+    else
+        return 0
+    end
+end
+
+local function updateStationVolume(station, volume)
+    if volume <= 0.02 then
+        station:SetVolume(0)
+    else
+        station:SetVolume(volume)
+    end
 end
 
 local function updateRadioVolume(station, distance, isPlayerInCar, entity)
@@ -131,81 +154,99 @@ local function updateRadioVolume(station, distance, isPlayerInCar, entity)
     if not entityConfig then return end
 
     local volume = entityVolumes[entity] or entityConfig.Volume
-    if volume <= 0.02 then
-        station:SetVolume(0)
-        return
-    end
-
-    local maxVolume = GetConVar("radio_max_volume"):GetFloat()
-    local effectiveVolume = math.min(volume, maxVolume)
+    local effectiveVolume = getEffectiveVolume(entity, volume)
 
     if isPlayerInCar then
-        station:SetVolume(effectiveVolume)
+        updateStationVolume(station, effectiveVolume)
     else
-        if distance <= entityConfig.MinVolumeDistance then
-            station:SetVolume(effectiveVolume)
-        elseif distance <= entityConfig.MaxHearingDistance then
-            local adjustedVolume = effectiveVolume * (1 - (distance - entityConfig.MinVolumeDistance) / (entityConfig.MaxHearingDistance - entityConfig.MinVolumeDistance))
-            station:SetVolume(adjustedVolume)
-        else
-            station:SetVolume(0)
-        end
+        local adjustedVolume = calculateAdjustedVolume(distance, entityConfig.MinVolumeDistance, entityConfig.MaxHearingDistance, effectiveVolume)
+        updateStationVolume(station, adjustedVolume)
     end
 end
 
-local function PrintCarRadioMessage()
-    if not GetConVar("radio_show_messages"):GetBool() then return end
+local function shouldShowRadioMessage()
+    return GetConVar("radio_show_messages"):GetBool()
+end
 
-    local vehicle = LocalPlayer():GetVehicle()
-    if not IsValid(vehicle) or utils.isSitAnywhereSeat(vehicle) then
-        return
-    end
+local function isValidVehicle(vehicle)
+    return IsValid(vehicle) and not utils.isSitAnywhereSeat(vehicle)
+end
 
-    local currentTime = CurTime()
-    if (currentTime - lastMessageTime) < Config.MessageCooldown and lastMessageTime ~= -math.huge then
-        return
-    end
+local function isMessageCooldownActive(currentTime)
+    return (currentTime - lastMessageTime) < Config.MessageCooldown and lastMessageTime ~= -math.huge
+end
 
+local function updateLastMessageTime(currentTime)
     lastMessageTime = currentTime
+end
 
+local function getOpenKeyName()
     local openKey = GetConVar("car_radio_open_key"):GetInt()
-    local keyName = GetKeyName(openKey)
-    local message = Config.Lang["PressKeyToOpen"]:gsub("{key}", keyName)
+    return input.GetKeyName(openKey) or "unknown key"
+end
 
+local function getRadioMessage(keyName)
+    return (Config.Lang["PressKeyToOpen"] or "Press {key} to open the radio menu"):gsub("{key}", keyName)
+end
+
+local function addChatMessage(message)
     chat.AddText(
         Color(0, 255, 128), "[CAR RADIO] ",
         Color(255, 255, 255), message
     )
 end
 
+local function PrintCarRadioMessage()
+    if not shouldShowRadioMessage() then return end
+
+    local vehicle = LocalPlayer():GetVehicle()
+    if not isValidVehicle(vehicle) then return end
+
+    local currentTime = CurTime()
+    if isMessageCooldownActive(currentTime) then return end
+
+    updateLastMessageTime(currentTime)
+
+    local keyName = getOpenKeyName()
+    local message = getRadioMessage(keyName)
+
+    addChatMessage(message)
+end
+
 -- Network Handlers
 net.Receive("CarRadioMessage", PrintCarRadioMessage)
 
-local function calculateFontSizeForStopButton(text, buttonWidth, buttonHeight)
-    local maxFontSize = buttonHeight * 0.7
-    local fontName = "DynamicStopButtonFont"
-
+local function createFont(fontName, fontSize)
     surface.CreateFont(fontName, {
         font = "Roboto",
-        size = maxFontSize,
+        size = fontSize,
         weight = 700,
     })
+end
 
+local function getTextWidth(fontName, text)
     surface.SetFont(fontName)
     local textWidth, _ = surface.GetTextSize(text)
+    return textWidth
+end
+
+local function adjustFontSizeToFit(text, buttonWidth, maxFontSize)
+    local fontName = "DynamicStopButtonFont"
+    createFont(fontName, maxFontSize)
+    local textWidth = getTextWidth(fontName, text)
 
     while textWidth > buttonWidth * 0.9 do
         maxFontSize = maxFontSize - 1
-        surface.CreateFont(fontName, {
-            font = "Roboto",
-            size = maxFontSize,
-            weight = 700,
-        })
-        surface.SetFont(fontName)
-        textWidth, _ = surface.GetTextSize(text)
+        createFont(fontName, maxFontSize)
+        textWidth = getTextWidth(fontName, text)
     end
 
     return fontName
+end
+
+local function calculateFontSizeForStopButton(text, buttonWidth, buttonHeight)
+    local maxFontSize = buttonHeight * 0.7
+    return adjustFontSizeToFit(text, buttonWidth, maxFontSize)
 end
 
 -- Update favorite countries and stations when received from server
@@ -633,99 +674,111 @@ hook.Add("Think", "OpenCarRadioMenu", function()
     end
 end)
 
-net.Receive("PlayCarRadioStation", function()
-    local entity = net.ReadEntity()
-    local url = net.ReadString()
-    local volume = net.ReadFloat()
-
-    local entityRetryAttempts = 5
-    local entityRetryDelay = 0.5  -- Delay in seconds between entity retries
-
-    local function attemptPlayStation(attempt)
-        if not IsValid(entity) then
-            if attempt < entityRetryAttempts then
-                timer.Simple(entityRetryDelay, function()
-                    attemptPlayStation(attempt + 1)
-                end)
-            end
-            return
-        end
-
-        local entityConfig = getEntityConfig(entity)
-
-        if currentRadioSources[entity] and IsValid(currentRadioSources[entity]) then
-            currentRadioSources[entity]:Stop()
-        end
-
-        local function tryPlayStation(playAttempt)
-            sound.PlayURL(url, "3d mono", function(station, errorID, errorName)
-                if IsValid(station) and IsValid(entity) then
-                    station:SetPos(entity:GetPos())
-                    station:SetVolume(volume)
-                    station:Play()
-                    currentRadioSources[entity] = station
-
-                    -- Set 3D fade distance according to the entity's configuration
-                    station:Set3DFadeDistance(entityConfig.MinVolumeDistance, entityConfig.MaxHearingDistance)
-
-                    -- Update the station's position relative to the entity's movement
-                    hook.Add("Think", "UpdateRadioPosition_" .. entity:EntIndex(), function()
-                        if IsValid(entity) and IsValid(station) then
-                            station:SetPos(entity:GetPos())
-
-                            local playerPos = LocalPlayer():GetPos()
-                            local entityPos = entity:GetPos()
-                            local distance = playerPos:Distance(entityPos)
-                            local isPlayerInCar = LocalPlayer():GetVehicle() == entity
-
-                            updateRadioVolume(station, distance, isPlayerInCar, entity)
-                        else
-                            hook.Remove("Think", "UpdateRadioPosition_" .. entity:EntIndex())
-                        end
-                    end)
-
-                    -- Stop the station if the entity is removed
-                    hook.Add("EntityRemoved", "StopRadioOnEntityRemove_" .. entity:EntIndex(), function(ent)
-                        if ent == entity then
-                            if IsValid(currentRadioSources[entity]) then
-                                currentRadioSources[entity]:Stop()
-                            end
-                            currentRadioSources[entity] = nil
-                            hook.Remove("EntityRemoved", "StopRadioOnEntityRemove_" .. entity:EntIndex())
-                            hook.Remove("Think", "UpdateRadioPosition_" .. entity:EntIndex())
-                        end
-                    end)
-                else      
-                    if playAttempt < entityConfig.RetryAttempts then
-                        timer.Simple(entityConfig.RetryDelay, function()
-                            tryPlayStation(playAttempt + 1)
-                        end)
-                    end
-                end
-            end)
-        end
-
-        tryPlayStation(1)
-    end
-
-    attemptPlayStation(1)
-end)
-
-
-net.Receive("StopCarRadioStation", function()
-    local entity = net.ReadEntity()
-
-    if IsValid(entity) and IsValid(currentRadioSources[entity]) then
+local function stopCurrentStation(entity)
+    if currentRadioSources[entity] and IsValid(currentRadioSources[entity]) then
         currentRadioSources[entity]:Stop()
         currentRadioSources[entity] = nil
         local entIndex = entity:EntIndex()
         hook.Remove("EntityRemoved", "StopRadioOnEntityRemove_" .. entIndex)
         hook.Remove("Think", "UpdateRadioPosition_" .. entIndex)
     end
+end
+
+local function updateRadioPosition(entity, station)
+    hook.Add("Think", "UpdateRadioPosition_" .. entity:EntIndex(), function()
+        if IsValid(entity) and IsValid(station) then
+            station:SetPos(entity:GetPos())
+
+            local playerPos = LocalPlayer():GetPos()
+            local entityPos = entity:GetPos()
+            local distance = playerPos:Distance(entityPos)
+            local isPlayerInCar = LocalPlayer():GetVehicle() == entity
+
+            updateRadioVolume(station, distance, isPlayerInCar, entity)
+        else
+            hook.Remove("Think", "UpdateRadioPosition_" .. entity:EntIndex())
+        end
+    end)
+end
+
+local function stopStationOnEntityRemove(entity)
+    hook.Add("EntityRemoved", "StopRadioOnEntityRemove_" .. entity:EntIndex(), function(ent)
+        if ent == entity then
+            stopCurrentStation(entity)
+        end
+    end)
+end
+
+local function playStation(entity, url, volume, entityConfig, attempt)
+    sound.PlayURL(url, "3d mono", function(station, errorID, errorName)
+        if IsValid(station) and IsValid(entity) then
+            station:SetPos(entity:GetPos())
+            station:SetVolume(volume)
+            station:Play()
+            currentRadioSources[entity] = station
+
+            station:Set3DFadeDistance(entityConfig.MinVolumeDistance, entityConfig.MaxHearingDistance)
+            updateRadioPosition(entity, station)
+            stopStationOnEntityRemove(entity)
+        else
+            if attempt < entityConfig.RetryAttempts then
+                timer.Simple(entityConfig.RetryDelay, function()
+                    playStation(entity, url, volume, entityConfig, attempt + 1)
+                end)
+            end
+        end
+    end)
+end
+
+local function attemptPlayStation(entity, url, volume, entityConfig, attempt)
+    if not IsValid(entity) then
+        if attempt < 5 then
+            timer.Simple(0.5, function()
+                attemptPlayStation(entity, url, volume, entityConfig, attempt + 1)
+            end)
+        end
+        return
+    end
+
+    stopCurrentStation(entity)
+    playStation(entity, url, volume, entityConfig, 1)
+end
+
+net.Receive("PlayCarRadioStation", function()
+    local entity = net.ReadEntity()
+    local url = net.ReadString()
+    local volume = net.ReadFloat()
+    local entityConfig = getEntityConfig(entity)
+
+    attemptPlayStation(entity, url, volume, entityConfig, 1)
+end)
+
+
+net.Receive("StopCarRadioStation", function()
+    local entity = net.ReadEntity()
+
+    if not IsValid(entity) then
+        utils.PrintError("Received invalid entity in StopCarRadioStation.", 2)
+        return
+    end
+
+    if IsValid(currentRadioSources[entity]) then
+        currentRadioSources[entity]:Stop()
+        currentRadioSources[entity] = nil
+        local entIndex = entity:EntIndex()
+        hook.Remove("EntityRemoved", "StopRadioOnEntityRemove_" .. entIndex)
+        hook.Remove("Think", "UpdateRadioPosition_" .. entIndex)
+    else
+        utils.PrintError("No valid radio source found for entity in StopCarRadioStation.", 2)
+    end
 end)
 
 net.Receive("OpenRadioMenu", function()
     local entity = net.ReadEntity()
+    if not IsValid(entity) then
+        utils.PrintError("Received invalid entity in OpenRadioMenu.", 2)
+        return
+    end
     LocalPlayer().currentRadioEntity = entity
     if not radioMenuOpen then
         openRadioMenu()
