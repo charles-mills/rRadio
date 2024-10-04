@@ -563,6 +563,7 @@ local function handleStationButtonClick(stationListPanel, backButton, searchBox,
         net.WriteString(station.name)
         net.WriteString(station.url)
         net.WriteFloat(volume)
+        net.WriteString(selectedCountry)  -- Add this line
     net.SendToServer()
 
     currentlyPlayingStations[entity] = station

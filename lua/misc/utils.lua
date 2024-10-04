@@ -66,3 +66,13 @@ function utils.formatCountryNameForComparison(name)
     name = string.upper(string.sub(name, 1, 1)) .. string.sub(name, 2)
     return name
 end
+
+function utils.formatCountryNameForDisplay(name)
+    -- Remove underscores
+    name = string.gsub(name, "_", " ")
+    -- Apply title case
+    name = string.gsub(name, "(%a)([%w']*)", function(first, rest)
+        return string.upper(first) .. string.lower(rest)
+    end)
+    return name
+end

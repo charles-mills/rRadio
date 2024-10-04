@@ -7,6 +7,7 @@
 
 include("shared.lua")
 include("misc/config.lua")
+include("misc/utils.lua")
 
 local function ResponsiveScale(value)
     local baseWidth = 2560
@@ -49,7 +50,11 @@ local function DrawBoomboxPanel(ent, x, y)
     local owner = ent:GetNWEntity("Owner")
     local ownerName = IsValid(owner) and owner:Nick() or "Unknown"
     local stationName = ent:GetStationName() ~= "" and ent:GetStationName() or "No station playing"
-    local country = "Unknown" -- You'll need to implement a way to get the country of origin for the station
+    local country = ent:GetNWString("Country", "Unknown")
+
+    if (country ~= "Unknown") then
+        country = utils.formatCountryNameForDisplay(country)
+    end
 
     DrawOutlinedRoundedBox(x, y, panelWidth, panelHeight, cornerRadius, Color(30, 30, 30, panelAlpha), Color(60, 60, 60, panelAlpha), 2)
 
@@ -110,8 +115,10 @@ end
 net.Receive("rRadio_UpdateRadioStatus", function()
     local entity = net.ReadEntity()
     local stationName = net.ReadString()
+    local country = net.ReadString()
 
     if IsValid(entity) and (entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox") then
         entity:SetStationName(stationName)
+        entity:SetNWString("Country", country)
     end
 end)

@@ -215,9 +215,9 @@ end
 hook.Add("Initialize", "CreateBoomboxStatesTable", CreateBoomboxStatesTable)
 
 -- Save boombox state to database
-local function SaveBoomboxStateToDatabase(permaID, stationName, url, isPlaying, volume)
-    local query = string.format("REPLACE INTO boombox_states (permaID, station, url, isPlaying, volume) VALUES (%d, %s, %s, %d, %f)",
-        permaID, sql.SQLStr(stationName), sql.SQLStr(url), isPlaying and 1 or 0, volume)
+local function SaveBoomboxStateToDatabase(permaID, stationName, url, isPlaying, volume, country)
+    local query = string.format("REPLACE INTO boombox_states (permaID, station, url, isPlaying, volume, country) VALUES (%d, %s, %s, %d, %f, %s)",
+        permaID, sql.SQLStr(stationName), sql.SQLStr(url), isPlaying and 1 or 0, volume, sql.SQLStr(country))
     if sql.Query(query) == false then
         utils.DebugPrint("Failed to save boombox state: " .. sql.LastError())
     else
@@ -361,16 +361,17 @@ hook.Add("PlayerEnteredVehicle", "rRadio_ShowCarRadioMessageOnEnter", function(p
 end)
 
 -- Function to handle playing radio station for boombox
-local function HandleBoomboxPlayRadio(entity, stationName, url, volume)
+local function HandleBoomboxPlayRadio(entity, stationName, url, volume, country)
     local permaID = entity.PermaProps_ID
     if permaID then
         SavedBoomboxStates[permaID] = {
             station = stationName,
             url = url,
             isPlaying = true,
-            volume = volume
+            volume = volume,
+            country = country or "Unknown"  -- Use "Unknown" if country is nil
         }
-        SaveBoomboxStateToDatabase(permaID, stationName, url, true, volume)
+        SaveBoomboxStateToDatabase(permaID, stationName, url, true, volume, country or "Unknown")
     end
 
     if entity.SetVolume then
@@ -391,16 +392,18 @@ local function HandleBoomboxPlayRadio(entity, stationName, url, volume)
         net.WriteEntity(entity)
         net.WriteString(url)
         net.WriteFloat(volume)
+        net.WriteString(country or "Unknown")  -- Use "Unknown" if country is nil
     net.Broadcast()
 
     net.Start("rRadio_UpdateRadioStatus")
         net.WriteEntity(entity)
         net.WriteString(stationName)
+        net.WriteString(country or "Unknown")  -- Use "Unknown" if country is nil
     net.Broadcast()
 end
 
 -- Function to handle playing radio station for vehicle
-local function HandleVehiclePlayRadio(entity, stationName, url, volume)
+local function HandleVehiclePlayRadio(entity, stationName, url, volume, country)
     local mainVehicle = entity:GetParent() or entity
     if not IsValid(mainVehicle) then
         mainVehicle = entity
@@ -419,11 +422,13 @@ local function HandleVehiclePlayRadio(entity, stationName, url, volume)
         net.WriteEntity(mainVehicle)
         net.WriteString(url)
         net.WriteFloat(volume)
+        net.WriteString(country or "Unknown")  -- Use "Unknown" if country is nil
     net.Broadcast()
 
     net.Start("rRadio_UpdateRadioStatus")
         net.WriteEntity(mainVehicle)
         net.WriteString(stationName)
+        net.WriteString(country or "Unknown")  -- Use "Unknown" if country is nil
     net.Broadcast()
 end
 
@@ -433,6 +438,7 @@ net.Receive("rRadio_PlayRadioStation", function(len, ply)
     local stationName = net.ReadString()
     local url = net.ReadString()
     local volume = math.Clamp(net.ReadFloat(), 0, 1)
+    local country = net.ReadString()  -- Read the country
 
     if not IsValid(entity) then
         utils.DebugPrint("Invalid entity received in rRadio_PlayRadioStation.")
@@ -442,9 +448,9 @@ net.Receive("rRadio_PlayRadioStation", function(len, ply)
     utils.DebugPrint("rRadio_PlayRadioStation received: Entity " .. entity:EntIndex())
 
     if utils.isBoombox(entity) then
-        HandleBoomboxPlayRadio(entity, stationName, url, volume)
+        HandleBoomboxPlayRadio(entity, stationName, url, volume, country)
     elseif entity:IsVehicle() then
-        HandleVehiclePlayRadio(entity, stationName, url, volume)
+        HandleVehiclePlayRadio(entity, stationName, url, volume, country)
     end
 end)
 
