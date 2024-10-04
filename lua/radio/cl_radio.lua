@@ -2,7 +2,7 @@
     rRadio Addon for Garry's Mod - Client Radio Script
     Description: Manages client-side radio functionalities and UI.
     Author: Charles Mills (https://github.com/charles-mills)
-    Date: 2024-10-04
+    Date: 2024-10-03
 ]]
 
 -- Include necessary files
@@ -277,9 +277,7 @@ local function PrintrRadio_ShowCarRadioMessage()
     createNotificationPanel(message)
 end
 
--- Network Handlers
-net.Receive("rRadio_ShowCarRadioMessage", PrintrRadio_ShowCarRadioMessage)
-
+-- Removed network handler for "rRadio_ShowCarRadioMessage" as it's no longer needed
 
 local function createFont(fontName, fontSize)
     surface.CreateFont(fontName, {
@@ -314,69 +312,56 @@ local function calculateFontSizeForStopButton(text, buttonWidth, buttonHeight)
     return adjustFontSizeToFit(text, buttonWidth, maxFontSize)
 end
 
--- Update favorite countries and stations when received from server
-net.Receive("SendFavoriteCountries", function()
-    local serverFavorites = net.ReadTable()
-    -- Ensure server data does not overwrite local data if it is empty
-    if serverFavorites and next(serverFavorites) then
-        favoriteCountries = serverFavorites
-    end
+-- Removed network receiver for "SendFavoriteCountries"
 
-    if stationListPanel and populateList then
-        populateList(stationListPanel, backButton, searchBox, false)  -- Repopulate the list with updated data
-    end
-end)
-
-local function createStarIcon(parent, country, stationListPanel, backButton, searchBox)
+-- Function to create a favorite icon for countries and stations
+local function createFavoriteIcon(parent, item, itemType, stationListPanel, backButton, searchBox)
     local starIcon = vgui.Create("DImageButton", parent)
     starIcon:SetSize(Scale(24), Scale(24))
     starIcon:SetPos(Scale(8), (Scale(40) - Scale(24)) / 2)
-    starIcon:SetImage(table.HasValue(favoriteCountries, country) and "hud/star_full.png" or "hud/star.png")
 
-    starIcon.DoClick = function()
-        net.Start("rRadio_ToggleFavorite")
-        net.WriteString(country)
-        net.SendToServer()
-
-        -- Update the favorite status immediately on the client-side
-        if table.HasValue(favoriteCountries, country) then
-            table.RemoveByValue(favoriteCountries, country)
-        else
-            table.insert(favoriteCountries, country)
-        end
-
-        saveFavorites()
-
-        -- Repopulate the list to reflect the change immediately
-        if stationListPanel then
-            populateList(stationListPanel, backButton, searchBox, false)
-        end
+    -- Determine whether to use the full star or the empty star based on itemType
+    local isFavorite
+    if itemType == "country" then
+        isFavorite = table.HasValue(favoriteCountries, item)
+        starIcon:SetImage(isFavorite and "hud/star_full.png" or "hud/star.png")
+    elseif itemType == "station" then
+        isFavorite = favoriteStations[selectedCountry] and table.HasValue(favoriteStations[selectedCountry], item.name)
+        starIcon:SetImage(isFavorite and "hud/star_full.png" or "hud/star.png")
     end
 
-    return starIcon
-end
-
-local function createStationStarIcon(parent, country, station, stationListPanel, backButton, searchBox)
-    local starIcon = vgui.Create("DImageButton", parent)
-    starIcon:SetSize(Scale(24), Scale(24))
-    starIcon:SetPos(Scale(8), (Scale(40) - Scale(24)) / 2)
-    starIcon:SetImage(favoriteStations[country] and table.HasValue(favoriteStations[country], station.name) and "hud/star_full.png" or "hud/star.png")
-
     starIcon.DoClick = function()
-        if not favoriteStations[country] then
-            favoriteStations[country] = {}
-        end
-
-        if table.HasValue(favoriteStations[country], station.name) then
-            table.RemoveByValue(favoriteStations[country], station.name)
-            if #favoriteStations[country] == 0 then
-                favoriteStations[country] = nil
+        if itemType == "country" then
+            if isFavorite then
+                table.RemoveByValue(favoriteCountries, item)
+            else
+                table.insert(favoriteCountries, item)
             end
-        else
-            table.insert(favoriteStations[country], station.name)
+        elseif itemType == "station" then
+            if not favoriteStations[selectedCountry] then
+                favoriteStations[selectedCountry] = {}
+            end
+
+            if isFavorite then
+                table.RemoveByValue(favoriteStations[selectedCountry], item.name)
+                if #favoriteStations[selectedCountry] == 0 then
+                    favoriteStations[selectedCountry] = nil
+                end
+            else
+                table.insert(favoriteStations[selectedCountry], item.name)
+            end
         end
 
         saveFavorites()
+
+        -- Update the star icon based on the new favorite status
+        if itemType == "country" then
+            local newIsFavorite = table.HasValue(favoriteCountries, item)
+            starIcon:SetImage(newIsFavorite and "hud/star_full.png" or "hud/star.png")
+        elseif itemType == "station" then
+            local newIsFavorite = favoriteStations[selectedCountry] and table.HasValue(favoriteStations[selectedCountry], item.name)
+            starIcon:SetImage(newIsFavorite and "hud/star_full.png" or "hud/star.png")
+        end
 
         -- Repopulate the list to reflect the change immediately
         if stationListPanel then
@@ -404,8 +389,8 @@ local function createCountryButton(stationListPanel, country, backButton, search
         end
     end
 
-    -- Add the star icon
-    local starIcon = createStarIcon(countryButton, country.original, stationListPanel, backButton, searchBox)
+    -- Add the star icon for countries
+    local starIcon = createFavoriteIcon(countryButton, country.original, "country", stationListPanel, backButton, searchBox)
 
     countryButton.DoClick = function()
         surface.PlaySound("buttons/button3.wav")
@@ -463,8 +448,6 @@ local function createStationButton(stationListPanel, stationData, backButton, se
     stationButton:SetFont("Roboto18")
     stationButton:SetTextColor(Config.UI.TextColor)
 
-    local currentlyPlayingStations = {}
-
     stationButton.Paint = function(self, w, h)
         if station == currentlyPlayingStations[LocalPlayer().currentRadioEntity] then
             draw.RoundedBox(8, 0, 0, w, h, Config.UI.PlayingButtonColor)
@@ -476,8 +459,8 @@ local function createStationButton(stationListPanel, stationData, backButton, se
         end
     end
 
-    -- Add the star icon
-    local starIcon = createStationStarIcon(stationButton, selectedCountry, station, stationListPanel, backButton, searchBox)
+    -- Add the star icon for stations
+    local starIcon = createFavoriteIcon(stationButton, station, "station", stationListPanel, backButton, searchBox)
 
     stationButton.DoClick = function()
         handleStationButtonClick(stationListPanel, backButton, searchBox, station)
@@ -670,7 +653,7 @@ local function createStopButton(frame, stationListPanel, backButton, searchBox)
             net.Start("rRadio_StopRadioStation")
             net.WriteEntity(entity)
             net.SendToServer()
-            currentlyPlayingStation = nil
+            currentlyPlayingStations[entity] = nil
             populateList(stationListPanel, backButton, searchBox, false)
         end
     end
@@ -720,6 +703,7 @@ local function createVolumeSlider(volumePanel, entity)
 
     volumeSlider.OnValueChanged = function(_, value)
         -- Check if it's an LVS vehicle by checking the parent entity or other conditions
+        local parent = entity
         if entity:GetClass() == "prop_vehicle_prisoner_pod" and entity:GetParent():IsValid() then
             parent = entity:GetParent()
             if string.find(parent:GetClass(), "lvs_") then
@@ -795,7 +779,7 @@ local function rRadio_OpenRadioMenu()
     local frame = createFrame()
     local searchBox = createSearchBox(frame)
     local stationListPanel = createStationListPanel(frame)
-    local stopButton = createStopButton(frame, stationListPanel, backButton, searchBox)
+    local stopButton = createStopButton(frame, stationListPanel, nil, searchBox)  -- backButton is nil initially
     local volumePanel = createVolumePanel(frame, stopButton:GetTall(), stopButton:GetWide())
     local volumeSlider = createVolumeSlider(volumePanel, LocalPlayer().currentRadioEntity)
     local backButton = createBackButton(frame, stationListPanel, searchBox)
@@ -897,7 +881,6 @@ net.Receive("rRadio_PlayRadioStation", function()
     attemptPlayStation(entity, url, volume, entityConfig, 1)
 end)
 
-
 net.Receive("rRadio_StopRadioStation", function()
     local entity = net.ReadEntity()
 
@@ -934,7 +917,3 @@ hook.Add("PlayerInitialSpawn", "ApplySavedThemeAndLanguage", function(ply)
 end)
 
 loadFavorites()  -- Load the favorite stations and countries when the script initializes
-
-hook.Add("InitPostEntity", "InitializeFavorites", function()
-    populateList(stationListPanel, backButton, searchBox, true)  -- Ensure UI is updated with the loaded favorites after entities have loaded
-end)
