@@ -2,7 +2,7 @@
     rRadio Addon for Garry's Mod - Client Radio Script
     Description: Manages client-side radio functionalities and UI.
     Author: Charles Mills (https://github.com/charles-mills)
-    Date: 2024-10-03
+    Date: 2024-10-04
 ]]
 
 -- Include necessary files
@@ -189,13 +189,57 @@ local function getRadioMessage(keyName)
     return (Config.Lang["PressKeyToOpen"] or "Press {key} to open the radio menu"):gsub("{key}", keyName)
 end
 
-local function addChatMessage(message)
-    chat.AddText(
-        Color(0, 255, 128), "[CAR RADIO] ",
-        Color(255, 255, 255), message
-    )
+-- Function to create the notification panel with dynamic width
+local function createNotificationPanel(message)
+    -- Create the notification panel
+    local notificationPanel = vgui.Create("DPanel")
+    
+    -- Calculate the width based on the text size
+    surface.SetFont("Roboto18")  -- Ensure we're using the correct font
+    local textWidth = surface.GetTextSize(message)
+    local panelWidth = Scale(textWidth + Scale(50))  -- Add padding to the width
+    
+    notificationPanel:SetSize(panelWidth, Scale(50))  -- Set size of the panel
+    notificationPanel:SetPos(ScrW(), ScrH() * 0.5 - Scale(25))  -- Start off-screen to the right
+    notificationPanel:SetVisible(true)  -- Ensure the panel is visible
+
+    notificationPanel.Paint = function(self, w, h)
+        -- Draw the background with a solid color
+        draw.RoundedBox(0, 0, 0, w, h, Config.UI.BackgroundColor)  -- Simple background
+        
+        -- Draw left border
+        draw.RoundedBox(0, 0, 0, Scale(5), h, Config.UI.ButtonHoverColor)  -- Left border with darker color
+
+        -- Draw drop shadow for the text
+        draw.SimpleText(message, "Roboto18", Scale(10) + 1, h / 2 + 1, Color(0, 0, 0, 150), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)  -- Shadow
+        draw.SimpleText(message, "Roboto18", Scale(10), h / 2, Color(255, 255, 255), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)  -- Main text
+    end
+
+    -- Animation function to slide the panel in and out
+    local function animatePanel()
+        -- Slide in from the right
+        local targetX = ScrW() - panelWidth  -- Target position for sliding in
+        notificationPanel:MoveTo(targetX, notificationPanel:GetY(), 0.5, 0, -1, function()
+            -- Pause for a moment before sliding out
+            timer.Simple(2, function()
+                -- Slide out to the right
+                notificationPanel:MoveTo(ScrW(), notificationPanel:GetY(), 0.5, 0, -1, function()
+                    notificationPanel:Remove()  -- Remove the panel after sliding out
+                end)
+            end)
+        end)
+    end
+
+    animatePanel()  -- Start the animation
 end
 
+-- Function to get the radio message with capitalized key name
+local function getRadioMessage(keyName)
+    keyName = string.upper(keyName)  -- Capitalize the key name
+    return (Config.Lang["PressKeyToOpen"] or "Press {key} to open the radio menu"):gsub("{key}", keyName)
+end
+
+-- Update the function to show the radio message
 local function PrintrRadio_ShowCarRadioMessage()
     -- Ensure the convar is set to show messages
     if not shouldShowRadioMessage() then return end
@@ -215,7 +259,6 @@ local function PrintrRadio_ShowCarRadioMessage()
 
     -- Ensure it's not a sit-anywhere seat
     if utils.isSitAnywhereSeat(vehicle) then
-        print("Returning because it's a sit-anywhere seat")
         return
     end
 
@@ -230,12 +273,13 @@ local function PrintrRadio_ShowCarRadioMessage()
     local keyName = getOpenKeyName()
     local message = getRadioMessage(keyName)
 
-    -- Add the message to chat
-    addChatMessage(message)
+    -- Create and display the notification panel
+    createNotificationPanel(message)
 end
 
 -- Network Handlers
 net.Receive("rRadio_ShowCarRadioMessage", PrintrRadio_ShowCarRadioMessage)
+
 
 local function createFont(fontName, fontSize)
     surface.CreateFont(fontName, {
@@ -634,10 +678,10 @@ local function createStopButton(frame, stationListPanel, backButton, searchBox)
     return stopButton
 end
 
-local function createVolumePanel(frame, stopButtonWidth)
+local function createVolumePanel(frame, stopButtonHeight, stopButtonWidth)
     local volumePanel = vgui.Create("DPanel", frame)
     volumePanel:SetPos(Scale(20) + stopButtonWidth, Scale(Config.UI.FrameSize.height) - Scale(90))
-    volumePanel:SetSize(Scale(Config.UI.FrameSize.width) - Scale(30) - stopButtonWidth, stopButtonWidth)
+    volumePanel:SetSize(Scale(Config.UI.FrameSize.width) - Scale(30) - stopButtonWidth, stopButtonHeight)
     volumePanel.Paint = function(self, w, h)
         draw.RoundedBox(8, 0, 0, w, h, Config.UI.CloseButtonColor)
     end
@@ -649,12 +693,12 @@ local function createVolumeSlider(volumePanel, entity)
     local volumeIconSize = Scale(50)
     
     local volumeIcon = vgui.Create("DImage", volumePanel)
-    volumeIcon:SetPos(Scale(10), (volumePanel:GetTall() - volumeIconSize) / 5)
+    volumeIcon:SetPos(Scale(10), (volumePanel:GetTall() - volumeIconSize) / 2)
     volumeIcon:SetSize(volumeIconSize, volumeIconSize)
     volumeIcon:SetImage("hud/volume")
 
     local volumeSlider = vgui.Create("DNumSlider", volumePanel)
-    volumeSlider:SetPos(volumeIcon:GetWide() - Scale(200), -Scale(25))
+    volumeSlider:SetPos(volumeIcon:GetWide() - Scale(200), volumePanel:GetTall() / 2 - Scale(30))
     volumeSlider:SetSize(volumePanel:GetWide() - volumeIcon:GetWide() + Scale(180), volumePanel:GetTall() - Scale(20))
     volumeSlider:SetText("")
     volumeSlider:SetMin(0)
@@ -752,7 +796,7 @@ local function rRadio_OpenRadioMenu()
     local searchBox = createSearchBox(frame)
     local stationListPanel = createStationListPanel(frame)
     local stopButton = createStopButton(frame, stationListPanel, backButton, searchBox)
-    local volumePanel = createVolumePanel(frame, stopButton:GetWide())
+    local volumePanel = createVolumePanel(frame, stopButton:GetTall(), stopButton:GetWide())
     local volumeSlider = createVolumeSlider(volumePanel, LocalPlayer().currentRadioEntity)
     local backButton = createBackButton(frame, stationListPanel, searchBox)
     local closeButton = createCloseButton(frame)
