@@ -197,19 +197,40 @@ local function addChatMessage(message)
 end
 
 local function PrintrRadio_ShowCarRadioMessage()
+    -- Ensure the convar is set to show messages
     if not shouldShowRadioMessage() then return end
 
     local vehicle = LocalPlayer():GetVehicle()
-    if not isValidVehicle(vehicle) then return end
 
+    -- Ensure vehicle is valid
+    if not IsValid(vehicle) then return end
+
+    -- If the networked variable isn't ready, retry the function after a short delay
+    if vehicle:GetNWBool("IsSitAnywhereSeat", false) == nil then
+        timer.Simple(0.5, function()
+            PrintrRadio_ShowCarRadioMessage()
+        end)
+        return
+    end
+
+    -- Ensure it's not a sit-anywhere seat
+    if utils.isSitAnywhereSeat(vehicle) then
+        print("Returning because it's a sit-anywhere seat")
+        return
+    end
+
+    -- Cooldown management to avoid message spam
     local currentTime = CurTime()
     if isMessageCooldownActive(currentTime) then return end
 
+    -- Update the last message time
     updateLastMessageTime(currentTime)
 
+    -- Get the radio open key and the message
     local keyName = getOpenKeyName()
     local message = getRadioMessage(keyName)
 
+    -- Add the message to chat
     addChatMessage(message)
 end
 

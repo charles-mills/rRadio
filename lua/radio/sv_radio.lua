@@ -181,7 +181,12 @@ local function RetrySendActiveRadios(ply, attempt)
     PlayerRetryAttempts[ply] = attempt + 1
 
     timer.Simple(5, function()
-        SendActiveRadiosToPlayer(ply)
+        local success, err = pcall(function()
+            SendActiveRadiosToPlayer(ply)
+        end)
+        if not success then
+            utils.DebugPrint("Error in SendActiveRadiosToPlayer: " .. tostring(err))
+        end
     end)
 end
 
@@ -235,11 +240,14 @@ hook.Add("PlayerLeaveVehicle", "UnmarkSitAnywhereSeat", function(ply, vehicle)
 end)
 
 hook.Add("PlayerEnteredVehicle", "rRadio_ShowCarRadioMessageOnEnter", function(ply, vehicle, role)
+    print("[CarRadio] Player " .. ply:Nick() .. " entered vehicle " .. vehicle:GetClass())
+
     if not IsValid(ply) or not IsValid(vehicle) then
         return
     end
 
     if vehicle:GetNWBool("IsSitAnywhereSeat", false) then
+        print("[CarRadio] Sit anywhere seat detected. Not sending radio message.")
         return  -- Do not send the message if it's a sit anywhere seat
     end
 
