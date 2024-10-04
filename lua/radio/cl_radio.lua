@@ -36,6 +36,19 @@ local LocalPlayer = LocalPlayer
 local IsValid = IsValid
 local GetConVar = GetConVar
 local gsub = string.gsub
+local pairs = pairs
+local ipairs = ipairs
+local table_insert = table.insert
+local table_remove = table.remove
+local math_Clamp = math.Clamp
+local util_JSONToTable = util.JSONToTable
+local util_TableToJSON = util.TableToJSON
+local file_Exists = file.Exists
+local file_Read = file.Read
+local file_Write = file.Write
+local surface_SetDrawColor = surface.SetDrawColor
+local surface_DrawRect = surface.DrawRect
+local draw_SimpleText = draw.SimpleText
 
 -- Define local materials
 local radioMaterial = Material("hud/radio")
