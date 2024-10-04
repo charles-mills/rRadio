@@ -240,14 +240,14 @@ hook.Add("PlayerLeaveVehicle", "UnmarkSitAnywhereSeat", function(ply, vehicle)
 end)
 
 hook.Add("PlayerEnteredVehicle", "rRadio_ShowCarRadioMessageOnEnter", function(ply, vehicle, role)
-    print("[CarRadio] Player " .. ply:Nick() .. " entered vehicle " .. vehicle:GetClass())
+    print("[rRadio] Player " .. ply:Nick() .. " entered vehicle " .. vehicle:GetClass())
 
     if not IsValid(ply) or not IsValid(vehicle) then
         return
     end
 
     if vehicle:GetNWBool("IsSitAnywhereSeat", false) then
-        print("[CarRadio] Sit anywhere seat detected. Not sending radio message.")
+        print("[rRadio] Sit anywhere seat detected. Not sending radio message.")
         return  -- Do not send the message if it's a sit anywhere seat
     end
 
@@ -436,7 +436,7 @@ end
 hook.Add("InitPostEntity", "SetupBoomboxHooks", function()
     timer.Simple(1, function()
         if IsDarkRP() then
-            print("[CarRadio] DarkRP or DerivedRP detected. Setting up CPPI-based ownership hooks.")
+            print("[rRadio] DarkRP or DerivedRP detected. Setting up CPPI-based ownership hooks.")
 
             -- Add the hook for playerBoughtCustomEntity in DarkRP or DerivedRP
             hook.Add("playerBoughtCustomEntity", "AssignBoomboxOwnerInDarkRP", function(ply, entTable, ent, price)
@@ -445,7 +445,7 @@ hook.Add("InitPostEntity", "SetupBoomboxHooks", function()
                 end
             end)
         else
-            print("[CarRadio] Non-DarkRP gamemode detected. Using sandbox-compatible ownership hooks.")
+            print("[rRadio] Non-DarkRP gamemode detected. Using sandbox-compatible ownership hooks.")
         end
     end, function(err)
         utils.DebugPrint("Error in SetupBoomboxHooks: " .. tostring(err))
@@ -535,14 +535,14 @@ concommand.Add("rradio_remove_all", function(ply, cmd, args)
         if sql then
             local result = sql.Query("DELETE FROM boombox_states")
             if result == false then
-                print("[CarRadio] Failed to clear boombox states: " .. sql.LastError())
+                print("[rRadio] Failed to clear boombox states: " .. sql.LastError())
             else
-                print("[CarRadio] All boombox states cleared successfully.")
+                print("[rRadio] All boombox states cleared successfully.")
                 SavedBoomboxStates = {}
                 ActiveRadios = {}
             end
         else
-            utils.PrintError("[CarRadio] SQL library is not available.", 2)
+            utils.PrintError("[rRadio] SQL library is not available.", 2)
         end
     else
         ply:ChatPrint("You do not have permission to run this command.")

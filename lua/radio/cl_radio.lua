@@ -291,7 +291,10 @@ local function PrintrRadio_ShowCarRadioMessage()
     createNotificationPanel(message)
 end
 
--- Removed network handler for "rRadio_ShowCarRadioMessage" as it's no longer needed
+-- Network receiver for showing the "press key to open stations" animation
+net.Receive("rRadio_ShowCarRadioMessage", function()
+    PrintrRadio_ShowCarRadioMessage()
+end)
 
 local function createFont(fontName, fontSize)
     surface.CreateFont(fontName, {
