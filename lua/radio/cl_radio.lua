@@ -22,6 +22,11 @@ local favoriteStations = {}
 local lastThinkTime = 0
 local thinkThrottleInterval = 0.05 -- Throttle interval in seconds (0.05s = 20 times per second)
 
+-- Define local materials
+local radioMaterial = Material("hud/radio")
+local volumeMaterial = Material("hud/volume")
+local flagMaterial = Material("hud/flag.png")
+
 -- Define data directory and file paths
 local dataDir = "rradio"
 local favoriteCountriesFile = dataDir .. "/favorite_countries.json"
@@ -608,7 +613,14 @@ local function createFrame()
         
         local iconOffsetY = Scale(2) + textHeight - iconSize
         
-        surface.SetMaterial(Material("hud/radio"))
+        local currentMaterial
+        if selectedCountry == nil then
+            currentMaterial = flagMaterial
+        else
+            currentMaterial = radioMaterial
+        end
+        
+        surface.SetMaterial(currentMaterial)
         surface.SetDrawColor(Config.UI.TextColor)
         surface.DrawTexturedRect(iconOffsetX, iconOffsetY, iconSize, iconSize)
         
@@ -705,7 +717,7 @@ local function createVolumeSlider(volumePanel, entity)
     local volumeIcon = vgui.Create("DImage", volumePanel)
     volumeIcon:SetPos(Scale(10), (volumePanel:GetTall() - volumeIconSize) / 2)
     volumeIcon:SetSize(volumeIconSize, volumeIconSize)
-    volumeIcon:SetImage("hud/volume.png") -- Ensure the image path includes the extension
+    volumeIcon:SetImage("hud/volume")
 
     local volumeSlider = vgui.Create("DNumSlider", volumePanel)
     -- Updated positioning for better alignment
@@ -807,10 +819,10 @@ local function rRadio_OpenRadioMenu()
     local frame = createFrame()
     local searchBox = createSearchBox(frame)
     local stationListPanel = createStationListPanel(frame)
-    local stopButton = createStopButton(frame, stationListPanel, nil, searchBox)  -- backButton is nil initially
+    local backButton = createBackButton(frame, stationListPanel, searchBox)
+    local stopButton = createStopButton(frame, stationListPanel, backButton, searchBox)
     local volumePanel = createVolumePanel(frame, stopButton:GetTall(), stopButton:GetWide())
     local volumeSlider = createVolumeSlider(volumePanel, LocalPlayer().currentRadioEntity)
-    local backButton = createBackButton(frame, stationListPanel, searchBox)
     local closeButton = createCloseButton(frame)
 
     populateList(stationListPanel, backButton, searchBox, true)
@@ -819,6 +831,7 @@ local function rRadio_OpenRadioMenu()
         populateList(stationListPanel, backButton, searchBox, false)
     end
 end
+
 
 hook.Add("Think", "OpenCarRadioMenu", function()
     local currentTime = CurTime()
