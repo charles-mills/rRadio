@@ -214,10 +214,6 @@ local function getOpenKeyName()
     return input.GetKeyName(openKey) or "unknown key"
 end
 
-local function getRadioMessage(keyName)
-    return (Config.Lang["PressKeyToOpen"] or "Press {key} to open the radio menu"):gsub("{key}", keyName)
-end
-
 -- Function to create the notification panel with dynamic width
 local function createNotificationPanel(message)
     -- Create the notification panel
