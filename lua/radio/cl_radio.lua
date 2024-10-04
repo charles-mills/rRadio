@@ -14,13 +14,28 @@ include("misc/utils.lua")
 local countryTranslations = include("localisation/country_translations.lua")
 local LanguageManager = include("localisation/language_manager.lua")
 
--- Initialize favorite lists as sets for O(1) lookup
-local favoriteCountries = {}
-local favoriteStations = {}
+-- Initialize favoriteCountries as a set
+local favoriteCountries = setmetatable({}, { __index = function(t, k) return false end })
+
+-- Initialize favoriteStations as a nested set
+local favoriteStations = setmetatable({}, {
+    __index = function(t, k)
+        t[k] = setmetatable({}, { __index = function(t, station) return false end })
+        return t[k]
+    end
+})
+
+local savePending = false
 
 -- Define throttle variables
 local lastThinkTime = 0
 local thinkThrottleInterval = 0.05 -- Throttle interval in seconds (0.05s = 20 times per second)
+
+-- Cache frequently used functions
+local LocalPlayer = LocalPlayer
+local IsValid = IsValid
+local GetConVar = GetConVar
+local gsub = string.gsub
 
 -- Define local materials
 local radioMaterial = Material("hud/radio")
@@ -92,6 +107,17 @@ local function saveFavorites()
     end
 end
 
+-- Debounce func for saving favorites
+local function saveFavoritesDebounced()
+    if not savePending then
+        savePending = true
+        timer.Simple(1, function()
+            saveFavorites()
+            savePending = false
+        end)
+    end
+end
+
 -- Font creation
 local function createFonts()
     local success, err = pcall(function()
@@ -147,11 +173,10 @@ local function getEntityConfig(entity)
 end
 
 local function formatCountryName(name)
-    -- Reformat and then translate the country name
-    local formattedName = name:gsub("_", " "):gsub("(%a)([%w_\']*)", function(a, b)
+    local formattedName = gsub(gsub(name, "_", " "), "(%a)([%w_']*)", function(a, b)
         return a:upper() .. b:lower()
     end)
-    local lang = radioLanguageConVar:GetString() or "en" -- Use cached ConVar
+    local lang = radioLanguageConVar:GetString() or "en"
     return countryTranslations:GetCountryName(lang, formattedName) or formattedName
 end
 
@@ -380,7 +405,7 @@ local function createFavoriteIcon(parent, item, itemType, stationListPanel, back
             end
         end
 
-        saveFavorites()
+        saveFavoritesDebounced()
 
         -- Update the star icon based on the new favorite status
         if itemType == "country" then
@@ -564,9 +589,7 @@ end
 
 -- Main function to populate the list
 function populateList(stationListPanel, backButton, searchBox, resetSearch)
-    if not stationListPanel then
-        return
-    end
+    if not stationListPanel then return end
 
     if backButton and selectedCountry == nil then
         backButton:SetVisible(false)
@@ -738,20 +761,22 @@ local function createVolumeSlider(volumePanel, entity)
     volumeSlider.TextArea:SetVisible(false)
 
     volumeSlider.OnValueChanged = function(_, value)
-        -- Check if it's an LVS vehicle by checking the parent entity or other conditions
         local parent = entity
         if entity:GetClass() == "prop_vehicle_prisoner_pod" and entity:GetParent():IsValid() then
             parent = entity:GetParent()
             if string.find(parent:GetClass(), "lvs_") then
-                entity = parent -- Set the entity to the parent entity if is an LVS vehicle
+                entity = parent
             end
         end
-
-        entityVolumes[entity] = value
-        if currentRadioSources[entity] and IsValid(currentRadioSources[entity]) then
-            currentRadioSources[entity]:SetVolume(value)
+    
+        local previousVolume = entityVolumes[entity] or getEntityConfig(entity).Volume
+        if value ~= previousVolume then
+            entityVolumes[entity] = value
+            if currentRadioSources[entity] and IsValid(currentRadioSources[entity]) then
+                currentRadioSources[entity]:SetVolume(value)
+            end
         end
-    end
+    end    
 
     return volumeSlider
 end
@@ -829,25 +854,19 @@ local function rRadio_OpenRadioMenu()
 end
 
 
-hook.Add("Think", "OpenCarRadioMenu", function()
-    local currentTime = CurTime()
-    
-    -- Check if enough time has passed since the last execution
-    if currentTime - lastThinkTime < thinkThrottleInterval then
-        return -- Exit early if within throttle interval
-    end
-    
-    -- Update the last think time
-    lastThinkTime = currentTime
-    
-    local openKey = radioOpenKeyConVar:GetInt() -- Use cached ConVar
-    local vehicle = LocalPlayer():GetVehicle()
+hook.Add("PlayerButtonDown", "OpenCarRadioMenu", function(ply, button)
+    if ply ~= LocalPlayer() then return end
 
-    if input.IsKeyDown(openKey) and not radioMenuOpen and IsValid(vehicle) and not utils.isSitAnywhereSeat(vehicle) then
-        LocalPlayer().currentRadioEntity = vehicle
-        rRadio_OpenRadioMenu()
+    local openKey = radioOpenKeyConVar:GetInt()
+    if button == openKey then
+        local vehicle = ply:GetVehicle()
+        if IsValid(vehicle) and not utils.isSitAnywhereSeat(vehicle) and not radioMenuOpen then
+            ply.currentRadioEntity = vehicle
+            rRadio_OpenRadioMenu()
+        end
     end
 end)
+
 
 local function stopCurrentStation(entity)
     if currentRadioSources[entity] and IsValid(currentRadioSources[entity]) then
