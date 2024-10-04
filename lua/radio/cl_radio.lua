@@ -20,7 +20,7 @@ local favoriteStations = {}
 
 -- Define throttle variables
 local lastThinkTime = 0
-local thinkThrottleInterval = 0.05 -- Throttle interval in seconds (0.1s = 10 times per second)
+local thinkThrottleInterval = 0.05 -- Throttle interval in seconds (0.05s = 20 times per second)
 
 -- Define data directory and file paths
 local dataDir = "rradio"
@@ -31,6 +31,16 @@ local favoriteStationsFile = dataDir .. "/favorite_stations.json"
 if not file.IsDir(dataDir, "DATA") then
     file.CreateDir(dataDir)
 end
+
+-- -------------------------------
+-- 1. Caching ConVars as Locals
+-- -------------------------------
+-- Cache ConVars for improved performance
+local radioShowMessagesConVar = GetConVar("radio_show_messages")
+local radioLanguageConVar = GetConVar("radio_language")
+local radioMaxVolumeConVar = GetConVar("radio_max_volume")
+local radioOpenKeyConVar = GetConVar("radio_open_key")
+-- --------------------------------
 
 -- Load favorites from file
 local function loadFavorites()
@@ -136,12 +146,12 @@ local function formatCountryName(name)
     local formattedName = name:gsub("_", " "):gsub("(%a)([%w_\']*)", function(a, b)
         return a:upper() .. b:lower()
     end)
-    local lang = GetConVar("radio_language"):GetString() or "en"
+    local lang = radioLanguageConVar:GetString() or "en" -- Use cached ConVar
     return countryTranslations:GetCountryName(lang, formattedName) or formattedName
 end
 
 local function getEffectiveVolume(entity, volume)
-    local maxVolume = GetConVar("radio_max_volume"):GetFloat()
+    local maxVolume = radioMaxVolumeConVar:GetFloat() -- Use cached ConVar
     return math.min(volume, maxVolume)
 end
 
@@ -179,7 +189,7 @@ local function updateRadioVolume(station, distance, isPlayerInCar, entity)
 end
 
 local function shouldShowRadioMessage()
-    return GetConVar("radio_show_messages"):GetBool()
+    return radioShowMessagesConVar:GetBool() -- Use cached ConVar
 end
 
 local function isValidVehicle(vehicle)
@@ -195,7 +205,7 @@ local function updateLastMessageTime(currentTime)
 end
 
 local function getOpenKeyName()
-    local openKey = GetConVar("radio_open_key"):GetInt()
+    local openKey = radioOpenKeyConVar:GetInt() -- Use cached ConVar
     return input.GetKeyName(openKey) or "unknown key"
 end
 
@@ -695,11 +705,12 @@ local function createVolumeSlider(volumePanel, entity)
     local volumeIcon = vgui.Create("DImage", volumePanel)
     volumeIcon:SetPos(Scale(10), (volumePanel:GetTall() - volumeIconSize) / 2)
     volumeIcon:SetSize(volumeIconSize, volumeIconSize)
-    volumeIcon:SetImage("hud/volume")
+    volumeIcon:SetImage("hud/volume.png") -- Ensure the image path includes the extension
 
     local volumeSlider = vgui.Create("DNumSlider", volumePanel)
-    volumeSlider:SetPos(volumeIcon:GetWide() - Scale(200), volumePanel:GetTall() / 2 - Scale(30))
-    volumeSlider:SetSize(volumePanel:GetWide() - volumeIcon:GetWide() + Scale(180), volumePanel:GetTall() - Scale(20))
+    -- Updated positioning for better alignment
+    volumeSlider:SetPos(volumeIcon:GetPos() + volumeIcon:GetWide() - Scale(220), Scale(10))
+    volumeSlider:SetSize(Scale(560), Scale(50))
     volumeSlider:SetText("")
     volumeSlider:SetMin(0)
     volumeSlider:SetMax(1)
@@ -709,11 +720,11 @@ local function createVolumeSlider(volumePanel, entity)
     volumeSlider:SetValue(currentVolume)
     
     volumeSlider.Slider.Paint = function(self, w, h)
-        draw.RoundedBox(4, 0, h/2 - 4, w, 16, Config.UI.TextColor)
+        draw.RoundedBox(8, 0, h/2 - 4, w, 16, Config.UI.TextColor)
     end
     
     volumeSlider.Slider.Knob.Paint = function(self, w, h)
-        draw.RoundedBox(8, 0, Scale(-2), w * 2, h * 2, Config.UI.BackgroundColor)
+        draw.RoundedBox(8, 0, 0, w*1.5, h*1.5, Config.UI.BackgroundColor)
     end
     
     volumeSlider.TextArea:SetVisible(false)
@@ -820,7 +831,7 @@ hook.Add("Think", "OpenCarRadioMenu", function()
     -- Update the last think time
     lastThinkTime = currentTime
     
-    local openKey = GetConVar("radio_open_key"):GetInt()
+    local openKey = radioOpenKeyConVar:GetInt() -- Use cached ConVar
     local vehicle = LocalPlayer():GetVehicle()
 
     if input.IsKeyDown(openKey) and not radioMenuOpen and IsValid(vehicle) and not utils.isSitAnywhereSeat(vehicle) then
