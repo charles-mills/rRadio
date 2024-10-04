@@ -15,6 +15,8 @@ NETWORK_STRINGS = {
     "rRadio_ShowCarRadioMessage",
     "rRadio_OpenRadioMenu",
     "rRadio_UpdateRadioStatus",
+    "rRadio_CustomStations",
+    "rRadio_RequestCustomStations",
 }
 
 local function loadLanguage()

@@ -18,6 +18,111 @@ SavedBoomboxStates = SavedBoomboxStates or {}
 -- Table to track retry attempts per player
 local PlayerRetryAttempts = {}
 
+-- Table to store custom radio stations
+local CustomRadioStations = {}
+
+-- Function to add a custom radio station
+local function AddCustomRadioStation(country, name, url)
+    local formattedCountry = utils.formatCountryNameForComparison(country)
+    if not CustomRadioStations[formattedCountry] then
+        CustomRadioStations[formattedCountry] = {}
+    end
+    table.insert(CustomRadioStations[formattedCountry], {name = name, url = url})
+    utils.DebugPrint("Added custom radio station: " .. country .. " - " .. name)
+end
+
+-- Function to remove a custom radio station
+local function RemoveCustomRadioStation(country, name)
+    local formattedCountry = utils.formatCountryNameForComparison(country)
+    if CustomRadioStations[formattedCountry] then
+        for i, station in ipairs(CustomRadioStations[formattedCountry]) do
+            if station.name == name then
+                table.remove(CustomRadioStations[formattedCountry], i)
+                utils.DebugPrint("Removed custom radio station: " .. country .. " - " .. name)
+                return true
+            end
+        end
+    end
+    return false
+end
+
+-- Function to send custom radio stations to a player
+local function SendCustomRadioStationsToPlayer(ply)
+    net.Start("rRadio_CustomStations")
+    net.WriteTable(CustomRadioStations)
+    net.Send(ply)
+end
+
+-- Hook to send custom radio stations when a player joins
+hook.Add("PlayerInitialSpawn", "SendCustomRadioStations", function(ply)
+    SendCustomRadioStationsToPlayer(ply)
+end)
+
+-- Console command to add a custom radio station
+concommand.Add("rradio", function(ply, cmd, args)
+    if not IsValid(ply) or ply:IsAdmin() then
+        local action = args[1]
+        if action == "add" then
+            if #args < 4 then
+                print("Usage: rradio add <country> <name> <url>")
+                return
+            end
+            local country = args[2]
+            local name = args[3]
+            local url = args[4]
+            AddCustomRadioStation(country, name, url)
+            -- Notify all players of the new station
+            net.Start("rRadio_CustomStations")
+            net.WriteTable(CustomRadioStations)
+            net.Broadcast()
+            print("Custom radio station added successfully: " .. country .. " - " .. name)
+            if IsValid(ply) then
+                ply:ChatPrint("Custom radio station added: " .. name)
+            end
+        elseif action == "remove" then
+            if #args < 2 then
+                print("Usage: rradio remove <url>")
+                return
+            end
+            local url = args[2]
+            local removed = false
+            for country, stations in pairs(CustomRadioStations) do
+                for i, station in ipairs(stations) do
+                    if station.url == url then
+                        table.remove(stations, i)
+                        removed = true
+                        break
+                    end
+                end
+                if removed then break end
+            end
+            if removed then
+                -- Notify all players of the removed station
+                net.Start("rRadio_CustomStations")
+                net.WriteTable(CustomRadioStations)
+                net.Broadcast()
+                print("Custom radio station removed successfully: " .. url)
+                if IsValid(ply) then
+                    ply:ChatPrint("Custom radio station removed: " .. url)
+                end
+            else
+                print("Station not found: " .. url)
+                if IsValid(ply) then
+                    ply:ChatPrint("Station not found: " .. url)
+                end
+            end
+        else
+            print("Invalid action. Use 'add' or 'remove'.")
+            if IsValid(ply) then
+                ply:ChatPrint("Invalid action. Use 'add' or 'remove'.")
+            end
+        end
+    else
+        ply:ChatPrint("You must be an admin to use this command.")
+    end
+end)
+
+
 -- Function to add a radio to the active list
 local function AddActiveRadio(entity, stationName, url, volume)
     if not IsValid(entity) then
@@ -543,6 +648,28 @@ concommand.Add("rradio_remove_all", function(ply, cmd, args)
             end
         else
             utils.PrintError("[rRadio] SQL library is not available.", 2)
+        end
+    else
+        ply:ChatPrint("You do not have permission to run this command.")
+    end
+end)
+
+-- Command to list all saved custom stations
+concommand.Add("rradio_list_custom_stations", function(ply, cmd, args)
+    if not ply or ply:IsAdmin() then
+        -- Print the results
+        if next(CustomRadioStations) then
+            print("[rRadio] Saved custom stations:")
+            local index = 1
+            for country, stations in pairs(CustomRadioStations) do
+                print("Country: " .. country)
+                for _, station in ipairs(stations) do
+                    print(string.format("  %d. Station: %s, URL: %s", index, station.name, station.url))
+                    index = index + 1
+                end
+            end
+        else
+            print("[rRadio] No saved custom stations found.")
         end
     else
         ply:ChatPrint("You do not have permission to run this command.")

@@ -98,6 +98,11 @@ local function saveFavorites()
     local successCountries = file.Write(favoriteCountriesFile, util.TableToJSON(favoriteCountries, true)) -- Pretty print JSON
     local successStations = file.Write(favoriteStationsFile, util.TableToJSON(favoriteStations, true))     -- Pretty print JSON
 
+    print("Saving Favorite Countries:")
+    for country, isFavorite in pairs(favoriteCountries) do
+        print(country .. ": " .. tostring(isFavorite))
+    end
+
     if not successCountries then
         utils.PrintError("Failed to save favorite countries to file.", 2)
     end
@@ -365,7 +370,76 @@ local function calculateFontSizeForStopButton(text, buttonWidth, buttonHeight)
     return adjustFontSizeToFit(text, buttonWidth, maxFontSize)
 end
 
--- Removed network receiver for "SendFavoriteCountries"
+-- Table to store custom radio stations
+local CustomRadioStations = {}
+
+-- Network receiver for custom radio stations
+net.Receive("rRadio_CustomStations", function()
+    local newCustomStations = net.ReadTable()
+    print("[rRadio] Received custom stations:")
+    PrintTable(newCustomStations)
+    
+    -- Merge new stations with existing ones
+    for country, stations in pairs(newCustomStations) do
+        if not CustomRadioStations[country] then
+            CustomRadioStations[country] = {}
+        end
+        for _, station in ipairs(stations) do
+            table.insert(CustomRadioStations[country], station)
+        end
+    end
+    
+    print("[rRadio] Updated custom stations table:")
+    PrintTable(CustomRadioStations)
+end)
+
+-- Request custom stations from the server when the script initializes
+hook.Add("InitPostEntity", "RequestCustomStations", function()
+    net.Start("rRadio_RequestCustomStations")
+    net.SendToServer()
+    print("[rRadio] Requested custom stations from server")
+end)
+
+-- Function to get sorted stations (including custom stations)
+local function getSortedStations(filterText)
+    local stations = {}
+    local formattedSelectedCountry = utils.formatCountryNameForComparison(selectedCountry)
+    
+    -- Function to add stations to the list
+    local function addStations(stationList)
+        for _, station in ipairs(stationList or {}) do
+            if filterText == "" or string.find(station.name:lower(), filterText:lower(), 1, true) then
+                local isFavorite = favoriteStations[selectedCountry] and favoriteStations[selectedCountry][station.name] or false
+                table.insert(stations, { station = station, favorite = isFavorite })
+            end
+        end
+    end
+
+    -- Add stations from Config.RadioStations
+    for country, stationList in pairs(Config.RadioStations) do
+        if utils.formatCountryNameForComparison(country) == formattedSelectedCountry then
+            addStations(stationList)
+            break
+        end
+    end
+
+    -- Add custom stations if they exist for the selected country
+    if CustomRadioStations[formattedSelectedCountry] then
+        addStations(CustomRadioStations[formattedSelectedCountry])
+    end
+
+    table.sort(stations, function(a, b)
+        if a.favorite and not b.favorite then
+            return true
+        elseif not a.favorite and b.favorite then
+            return false
+        else
+            return a.station.name < b.station.name
+        end
+    end)
+
+    return stations
+end
 
 -- Function to create a favorite icon for countries and stations
 local function createFavoriteIcon(parent, item, itemType, stationListPanel, backButton, searchBox)
@@ -376,49 +450,37 @@ local function createFavoriteIcon(parent, item, itemType, stationListPanel, back
     -- Determine favorite status based on itemType
     local isFavorite
     if itemType == "country" then
-        isFavorite = favoriteCountries[item] or false
+        isFavorite = favoriteCountries[item.original] or false
         starIcon:SetImage(isFavorite and "hud/star_full.png" or "hud/star.png")
+
+        starIcon.DoClick = function()
+            favoriteCountries[item.original] = not isFavorite
+            saveFavoritesDebounced()
+            -- Update the star icon and repopulate the list
+            isFavorite = not isFavorite
+            starIcon:SetImage(isFavorite and "hud/star_full.png" or "hud/star.png")
+            if stationListPanel then
+                populateList(stationListPanel, backButton, searchBox, false)
+            end
+        end
     elseif itemType == "station" then
         isFavorite = favoriteStations[selectedCountry] and favoriteStations[selectedCountry][item.name] or false
         starIcon:SetImage(isFavorite and "hud/star_full.png" or "hud/star.png")
-    end
 
-    starIcon.DoClick = function()
-        if itemType == "country" then
-            if isFavorite then
-                favoriteCountries[item] = nil
-            else
-                favoriteCountries[item] = true
-            end
-        elseif itemType == "station" then
+        starIcon.DoClick = function()
             if not favoriteStations[selectedCountry] then
                 favoriteStations[selectedCountry] = {}
             end
 
-            if isFavorite then
-                favoriteStations[selectedCountry][item.name] = nil
-                if next(favoriteStations[selectedCountry]) == nil then
-                    favoriteStations[selectedCountry] = nil
-                end
-            else
-                favoriteStations[selectedCountry][item.name] = true
+            favoriteStations[selectedCountry][item.name] = not isFavorite
+            saveFavoritesDebounced()
+
+            -- Update the star icon and repopulate the list
+            isFavorite = not isFavorite
+            starIcon:SetImage(isFavorite and "hud/star_full.png" or "hud/star.png")
+            if stationListPanel then
+                populateList(stationListPanel, backButton, searchBox, false)
             end
-        end
-
-        saveFavoritesDebounced()
-
-        -- Update the star icon based on the new favorite status
-        if itemType == "country" then
-            local newIsFavorite = favoriteCountries[item] or false
-            starIcon:SetImage(newIsFavorite and "hud/star_full.png" or "hud/star.png")
-        elseif itemType == "station" then
-            local newIsFavorite = favoriteStations[selectedCountry] and favoriteStations[selectedCountry][item.name] or false
-            starIcon:SetImage(newIsFavorite and "hud/star_full.png" or "hud/star.png")
-        end
-
-        -- Repopulate the list to reflect the change immediately
-        if stationListPanel then
-            populateList(stationListPanel, backButton, searchBox, false)
         end
     end
 
@@ -431,19 +493,37 @@ local function createCountryButton(stationListPanel, country, backButton, search
     countryButton:Dock(TOP)
     countryButton:DockMargin(Scale(5), Scale(5), Scale(5), 0)
     countryButton:SetTall(Scale(40))
-    countryButton:SetText(country.translated)
+    countryButton:SetText("")  -- We'll draw the text manually
     countryButton:SetFont("Roboto18")
     countryButton:SetTextColor(Config.UI.TextColor)
+
+    local favoriteIcon = createFavoriteIcon(countryButton, country, "country", stationListPanel, backButton, searchBox)
+    local iconWidth = favoriteIcon:GetWide()
+    local padding = Scale(5)
 
     countryButton.Paint = function(self, w, h)
         draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonColor)
         if self:IsHovered() then
             draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonHoverColor)
         end
-    end
 
-    -- Add the star icon for countries
-    createFavoriteIcon(countryButton, country.original, "country", stationListPanel, backButton, searchBox)
+        -- Draw text with proper positioning and clipping
+        local textX = iconWidth + padding * 2
+        local maxTextWidth = w - textX - padding
+        local text = country.translated
+        surface.SetFont("Roboto18")
+        local textW, textH = surface.GetTextSize(text)
+        
+        if textW > maxTextWidth then
+            text = string.sub(text, 1, surface.GetTextSize(text) / textW * maxTextWidth)
+            text = text .. "..."
+        end
+
+        -- Center the text within the available space, accounting for the icon and padding
+        local availableWidth = w - textX - padding
+        local centerX = (textX + availableWidth / 2) - Scale(10)
+        draw.SimpleText(text, "Roboto18", centerX, h/2, Config.UI.TextColor, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+    end
 
     countryButton.DoClick = function()
         surface.PlaySound("buttons/button3.wav")
@@ -497,9 +577,13 @@ local function createStationButton(stationListPanel, stationData, backButton, se
     stationButton:Dock(TOP)
     stationButton:DockMargin(Scale(5), Scale(5), Scale(5), 0)
     stationButton:SetTall(Scale(40))
-    stationButton:SetText(station.name)
+    stationButton:SetText("")  -- We'll draw the text manually
     stationButton:SetFont("Roboto18")
     stationButton:SetTextColor(Config.UI.TextColor)
+
+    local favoriteIcon = createFavoriteIcon(stationButton, station, "station", stationListPanel, backButton, searchBox)
+    local iconWidth = favoriteIcon:GetWide()
+    local padding = Scale(5)
 
     stationButton.Paint = function(self, w, h)
         if station == currentlyPlayingStations[LocalPlayer().currentRadioEntity] then
@@ -510,10 +594,24 @@ local function createStationButton(stationListPanel, stationData, backButton, se
                 draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonHoverColor)
             end
         end
-    end
 
-    -- Add the star icon for stations
-    createFavoriteIcon(stationButton, station, "station", stationListPanel, backButton, searchBox)
+        -- Draw text with proper positioning and clipping
+        local textX = iconWidth + padding * 2
+        local maxTextWidth = w - textX - padding
+        local text = station.name
+        surface.SetFont("Roboto18")
+        local textW, textH = surface.GetTextSize(text)
+        
+        if textW > maxTextWidth then
+            text = string.sub(text, 1, surface.GetTextSize(text) / textW * maxTextWidth)
+            text = text .. "..."
+        end
+
+        -- Center the text within the available space, accounting for the icon and padding
+        local availableWidth = w - textX - padding
+        local centerX = (textX + availableWidth / 2) - Scale(10)
+        draw.SimpleText(text, "Roboto18", centerX, h/2, Config.UI.TextColor, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+    end
 
     stationButton.DoClick = function()
         handleStationButtonClick(stationListPanel, backButton, searchBox, station)
@@ -525,25 +623,39 @@ end
 -- Function to get sorted countries
 local function getSortedCountries(filterText)
     local countries = {}
+    local favoriteCountriesList = {}
+    local nonFavoriteCountriesList = {}
+
     for country, _ in pairs(Config.RadioStations) do
         local translatedCountry = formatCountryName(country)
+        local formattedCountry = utils.formatCountryNameForComparison(country)
         if filterText == "" or string.find(translatedCountry:lower(), filterText:lower(), 1, true) then
-            table.insert(countries, { original = country, translated = translatedCountry })
+            local countryData = { original = country, formatted = formattedCountry, translated = translatedCountry }
+            if favoriteCountries[country] then
+                table.insert(favoriteCountriesList, countryData)
+            else
+                table.insert(nonFavoriteCountriesList, countryData)
+            end
         end
     end
 
-    table.sort(countries, function(a, b)
-        local aIsPrioritized = favoriteCountries[a.original] or false
-        local bIsPrioritized = favoriteCountries[b.original] or false
-
-        if aIsPrioritized and not bIsPrioritized then
-            return true
-        elseif not aIsPrioritized and bIsPrioritized then
-            return false
-        else
-            return a.translated < b.translated
-        end
+    -- Sort favorite countries alphabetically
+    table.sort(favoriteCountriesList, function(a, b)
+        return a.translated < b.translated
     end)
+
+    -- Sort non-favorite countries alphabetically
+    table.sort(nonFavoriteCountriesList, function(a, b)
+        return a.translated < b.translated
+    end)
+
+    -- Combine favorite and non-favorite countries
+    for _, country in ipairs(favoriteCountriesList) do
+        table.insert(countries, country)
+    end
+    for _, country in ipairs(nonFavoriteCountriesList) do
+        table.insert(countries, country)
+    end
 
     return countries
 end
@@ -554,29 +666,6 @@ local function populateCountryList(stationListPanel, backButton, searchBox, filt
     for _, country in ipairs(countries) do
         createCountryButton(stationListPanel, country, backButton, searchBox)
     end
-end
-
--- Function to get sorted stations
-local function getSortedStations(filterText)
-    local stations = {}
-    for _, station in ipairs(Config.RadioStations[selectedCountry] or {}) do
-        if filterText == "" or string.find(station.name:lower(), filterText:lower(), 1, true) then
-            local isFavorite = favoriteStations[selectedCountry] and favoriteStations[selectedCountry][station.name] or false
-            table.insert(stations, { station = station, favorite = isFavorite })
-        end
-    end
-
-    table.sort(stations, function(a, b)
-        if a.favorite and not b.favorite then
-            return true
-        elseif not a.favorite and b.favorite then
-            return false
-        else
-            return a.station.name < b.station.name
-        end
-    end)
-
-    return stations
 end
 
 -- Function to populate the list with stations
