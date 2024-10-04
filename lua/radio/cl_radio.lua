@@ -14,14 +14,18 @@ include("misc/utils.lua")
 local countryTranslations = include("localisation/country_translations.lua")
 local LanguageManager = include("localisation/language_manager.lua")
 
--- Initialize favorite lists
+-- Initialize favorite lists as sets for O(1) lookup
 local favoriteCountries = {}
 local favoriteStations = {}
 
+-- Define throttle variables
+local lastThinkTime = 0
+local thinkThrottleInterval = 0.05 -- Throttle interval in seconds (0.1s = 10 times per second)
+
 -- Define data directory and file paths
 local dataDir = "rradio"
-local favoriteCountriesFile = string.format("%s/favorite_countries.txt", dataDir)
-local favoriteStationsFile = string.format("%s/favorite_stations.txt", dataDir)
+local favoriteCountriesFile = dataDir .. "/favorite_countries.json"
+local favoriteStationsFile = dataDir .. "/favorite_stations.json"
 
 -- Ensure the data directory exists
 if not file.IsDir(dataDir, "DATA") then
@@ -33,7 +37,12 @@ local function loadFavorites()
     if file.Exists(favoriteCountriesFile, "DATA") then
         local countriesData = file.Read(favoriteCountriesFile, "DATA")
         if countriesData then
-            favoriteCountries = util.JSONToTable(countriesData) or {}
+            local decoded = util.JSONToTable(countriesData)
+            if decoded then
+                favoriteCountries = decoded
+            else
+                utils.PrintError("Failed to decode favorite countries file.", 2)
+            end
         else
             utils.PrintError("Failed to read favorite countries file.", 2)
         end
@@ -42,7 +51,12 @@ local function loadFavorites()
     if file.Exists(favoriteStationsFile, "DATA") then
         local stationsData = file.Read(favoriteStationsFile, "DATA")
         if stationsData then
-            favoriteStations = util.JSONToTable(stationsData) or {}
+            local decoded = util.JSONToTable(stationsData)
+            if decoded then
+                favoriteStations = decoded
+            else
+                utils.PrintError("Failed to decode favorite stations file.", 2)
+            end
         else
             utils.PrintError("Failed to read favorite stations file.", 2)
         end
@@ -51,8 +65,8 @@ end
 
 -- Save favorites to file
 local function saveFavorites()
-    local successCountries = file.Write(favoriteCountriesFile, util.TableToJSON(favoriteCountries))
-    local successStations = file.Write(favoriteStationsFile, util.TableToJSON(favoriteStations))
+    local successCountries = file.Write(favoriteCountriesFile, util.TableToJSON(favoriteCountries, true)) -- Pretty print JSON
+    local successStations = file.Write(favoriteStationsFile, util.TableToJSON(favoriteStations, true))     -- Pretty print JSON
 
     if not successCountries then
         utils.PrintError("Failed to save favorite countries to file.", 2)
@@ -197,8 +211,8 @@ local function createNotificationPanel(message)
     -- Calculate the width based on the text size
     surface.SetFont("Roboto18")  -- Ensure we're using the correct font
     local textWidth = surface.GetTextSize(message)
-    local panelWidth = Scale(textWidth + Scale(50))  -- Add padding to the width
-    
+    local panelWidth = Scale(textWidth + 50)  -- Adjusted padding calculation
+
     notificationPanel:SetSize(panelWidth, Scale(50))  -- Set size of the panel
     notificationPanel:SetPos(ScrW(), ScrH() * 0.5 - Scale(25))  -- Start off-screen to the right
     notificationPanel:SetVisible(true)  -- Ensure the panel is visible
@@ -298,7 +312,7 @@ local function adjustFontSizeToFit(text, buttonWidth, maxFontSize)
     createFont(fontName, maxFontSize)
     local textWidth = getTextWidth(fontName, text)
 
-    while textWidth > buttonWidth * 0.9 do
+    while textWidth > buttonWidth * 0.9 and maxFontSize > 6 do -- Prevent font size from going too small
         maxFontSize = maxFontSize - 1
         createFont(fontName, maxFontSize)
         textWidth = getTextWidth(fontName, text)
@@ -320,22 +334,22 @@ local function createFavoriteIcon(parent, item, itemType, stationListPanel, back
     starIcon:SetSize(Scale(24), Scale(24))
     starIcon:SetPos(Scale(8), (Scale(40) - Scale(24)) / 2)
 
-    -- Determine whether to use the full star or the empty star based on itemType
+    -- Determine favorite status based on itemType
     local isFavorite
     if itemType == "country" then
-        isFavorite = table.HasValue(favoriteCountries, item)
+        isFavorite = favoriteCountries[item] or false
         starIcon:SetImage(isFavorite and "hud/star_full.png" or "hud/star.png")
     elseif itemType == "station" then
-        isFavorite = favoriteStations[selectedCountry] and table.HasValue(favoriteStations[selectedCountry], item.name)
+        isFavorite = favoriteStations[selectedCountry] and favoriteStations[selectedCountry][item.name] or false
         starIcon:SetImage(isFavorite and "hud/star_full.png" or "hud/star.png")
     end
 
     starIcon.DoClick = function()
         if itemType == "country" then
             if isFavorite then
-                table.RemoveByValue(favoriteCountries, item)
+                favoriteCountries[item] = nil
             else
-                table.insert(favoriteCountries, item)
+                favoriteCountries[item] = true
             end
         elseif itemType == "station" then
             if not favoriteStations[selectedCountry] then
@@ -343,12 +357,12 @@ local function createFavoriteIcon(parent, item, itemType, stationListPanel, back
             end
 
             if isFavorite then
-                table.RemoveByValue(favoriteStations[selectedCountry], item.name)
-                if #favoriteStations[selectedCountry] == 0 then
+                favoriteStations[selectedCountry][item.name] = nil
+                if next(favoriteStations[selectedCountry]) == nil then
                     favoriteStations[selectedCountry] = nil
                 end
             else
-                table.insert(favoriteStations[selectedCountry], item.name)
+                favoriteStations[selectedCountry][item.name] = true
             end
         end
 
@@ -356,10 +370,10 @@ local function createFavoriteIcon(parent, item, itemType, stationListPanel, back
 
         -- Update the star icon based on the new favorite status
         if itemType == "country" then
-            local newIsFavorite = table.HasValue(favoriteCountries, item)
+            local newIsFavorite = favoriteCountries[item] or false
             starIcon:SetImage(newIsFavorite and "hud/star_full.png" or "hud/star.png")
         elseif itemType == "station" then
-            local newIsFavorite = favoriteStations[selectedCountry] and table.HasValue(favoriteStations[selectedCountry], item.name)
+            local newIsFavorite = favoriteStations[selectedCountry] and favoriteStations[selectedCountry][item.name] or false
             starIcon:SetImage(newIsFavorite and "hud/star_full.png" or "hud/star.png")
         end
 
@@ -390,7 +404,7 @@ local function createCountryButton(stationListPanel, country, backButton, search
     end
 
     -- Add the star icon for countries
-    local starIcon = createFavoriteIcon(countryButton, country.original, "country", stationListPanel, backButton, searchBox)
+    createFavoriteIcon(countryButton, country.original, "country", stationListPanel, backButton, searchBox)
 
     countryButton.DoClick = function()
         surface.PlaySound("buttons/button3.wav")
@@ -420,16 +434,16 @@ local function handleStationButtonClick(stationListPanel, backButton, searchBox,
 
     if currentlyPlayingStations[entity] then
         net.Start("rRadio_StopRadioStation")
-        net.WriteEntity(entity)
+            net.WriteEntity(entity)
         net.SendToServer()
     end
 
     local volume = entityVolumes[entity] or getEntityConfig(entity).Volume
     net.Start("rRadio_PlayRadioStation")
-    net.WriteEntity(entity)
-    net.WriteString(station.name)
-    net.WriteString(station.url)
-    net.WriteFloat(volume)
+        net.WriteEntity(entity)
+        net.WriteString(station.name)
+        net.WriteString(station.url)
+        net.WriteFloat(volume)
     net.SendToServer()
 
     currentlyPlayingStations[entity] = station
@@ -460,7 +474,7 @@ local function createStationButton(stationListPanel, stationData, backButton, se
     end
 
     -- Add the star icon for stations
-    local starIcon = createFavoriteIcon(stationButton, station, "station", stationListPanel, backButton, searchBox)
+    createFavoriteIcon(stationButton, station, "station", stationListPanel, backButton, searchBox)
 
     stationButton.DoClick = function()
         handleStationButtonClick(stationListPanel, backButton, searchBox, station)
@@ -480,8 +494,8 @@ local function getSortedCountries(filterText)
     end
 
     table.sort(countries, function(a, b)
-        local aIsPrioritized = table.HasValue(favoriteCountries, a.original)
-        local bIsPrioritized = table.HasValue(favoriteCountries, b.original)
+        local aIsPrioritized = favoriteCountries[a.original] or false
+        local bIsPrioritized = favoriteCountries[b.original] or false
 
         if aIsPrioritized and not bIsPrioritized then
             return true
@@ -506,9 +520,9 @@ end
 -- Function to get sorted stations
 local function getSortedStations(filterText)
     local stations = {}
-    for _, station in ipairs(Config.RadioStations[selectedCountry]) do
+    for _, station in ipairs(Config.RadioStations[selectedCountry] or {}) do
         if filterText == "" or string.find(station.name:lower(), filterText:lower(), 1, true) then
-            local isFavorite = favoriteStations[selectedCountry] and table.HasValue(favoriteStations[selectedCountry], station.name)
+            local isFavorite = favoriteStations[selectedCountry] and favoriteStations[selectedCountry][station.name] or false
             table.insert(stations, { station = station, favorite = isFavorite })
         end
     end
@@ -651,7 +665,7 @@ local function createStopButton(frame, stationListPanel, backButton, searchBox)
         local entity = LocalPlayer().currentRadioEntity
         if IsValid(entity) then
             net.Start("rRadio_StopRadioStation")
-            net.WriteEntity(entity)
+                net.WriteEntity(entity)
             net.SendToServer()
             currentlyPlayingStations[entity] = nil
             populateList(stationListPanel, backButton, searchBox, false)
@@ -787,12 +801,22 @@ local function rRadio_OpenRadioMenu()
 
     populateList(stationListPanel, backButton, searchBox, true)
 
-    searchBox.OnChange = function(self)
+    searchBox.OnChange = function()
         populateList(stationListPanel, backButton, searchBox, false)
     end
 end
 
 hook.Add("Think", "OpenCarRadioMenu", function()
+    local currentTime = CurTime()
+    
+    -- Check if enough time has passed since the last execution
+    if currentTime - lastThinkTime < thinkThrottleInterval then
+        return -- Exit early if within throttle interval
+    end
+    
+    -- Update the last think time
+    lastThinkTime = currentTime
+    
     local openKey = GetConVar("radio_open_key"):GetInt()
     local vehicle = LocalPlayer():GetVehicle()
 
@@ -872,6 +896,7 @@ local function attemptPlayStation(entity, url, volume, entityConfig, attempt)
     playStation(entity, url, volume, entityConfig, 1)
 end
 
+-- Network receiver for playing a station
 net.Receive("rRadio_PlayRadioStation", function()
     local entity = net.ReadEntity()
     local url = net.ReadString()
@@ -881,6 +906,7 @@ net.Receive("rRadio_PlayRadioStation", function()
     attemptPlayStation(entity, url, volume, entityConfig, 1)
 end)
 
+-- Network receiver for stopping a station
 net.Receive("rRadio_StopRadioStation", function()
     local entity = net.ReadEntity()
 
@@ -900,6 +926,7 @@ net.Receive("rRadio_StopRadioStation", function()
     end
 end)
 
+-- Network receiver for opening the radio menu
 net.Receive("rRadio_OpenRadioMenu", function()
     local entity = net.ReadEntity()
     if not IsValid(entity) then
@@ -912,8 +939,36 @@ net.Receive("rRadio_OpenRadioMenu", function()
     end
 end)
 
+-- Hook to apply saved theme and language on player spawn
 hook.Add("PlayerInitialSpawn", "ApplySavedThemeAndLanguage", function(ply)
     loadSavedSettings()  -- Load and apply the saved theme and language
 end)
 
-loadFavorites()  -- Load the favorite stations and countries when the script initializes
+-- Load favorites when the script initializes
+loadFavorites()
+
+-- Initialize Favorites after all entities have been initialized
+hook.Add("InitPostEntity", "InitializeFavorites", function()
+    -- Check if the radio menu is currently open
+    if radioMenuOpen then
+        -- Attempt to find the radio menu frame
+        local frame = vgui.GetWorldPanel():FindChild("RadioMenuFrame") -- Ensure the frame has this name
+        
+        if IsValid(frame) then
+            -- Find child elements within the frame by their unique names
+            local stationListPanel = frame:FindChild("StationListPanel")
+            local backButton = frame:FindChild("BackButton")
+            local searchBox = frame:FindChild("SearchBox")
+            
+            -- Ensure all necessary UI components are found
+            if IsValid(stationListPanel) and IsValid(backButton) and IsValid(searchBox) then
+                -- Repopulate the list to reflect the loaded favorites
+                populateList(stationListPanel, backButton, searchBox, true)
+            else
+                utils.PrintError("InitializeFavorites: One or more UI components not found in the radio menu frame.", 2)
+            end
+        else
+            utils.PrintError("InitializeFavorites: Radio menu frame 'RadioMenuFrame' not found.", 2)
+        end
+    end
+end)

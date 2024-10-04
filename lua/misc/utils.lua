@@ -16,9 +16,6 @@ utils.VERBOSE_ERRORS = false
     @return (boolean): True if it's a sit anywhere seat, false otherwise.
 ]]
 function utils.isSitAnywhereSeat(vehicle)
-    print("Checking if vehicle is a sit anywhere seat")
-    print("Vehicle: " .. tostring(vehicle))
-    print("Is Sit Anywhere: " .. tostring(vehicle:GetNWBool("IsSitAnywhereSeat", false)))
     if not IsValid(vehicle) then return false end
     return vehicle:GetNWBool("IsSitAnywhereSeat", false)
 end
