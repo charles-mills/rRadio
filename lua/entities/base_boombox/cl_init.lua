@@ -8,6 +8,7 @@
 include("shared.lua")
 include("misc/config.lua")
 include("misc/utils.lua")
+local LanguageManager = include("localisation/language_manager.lua")
 
 local function ResponsiveScale(value)
     local baseWidth = 2560
@@ -48,26 +49,29 @@ end
 
 local function DrawBoomboxPanel(ent, x, y)
     local owner = ent:GetNWEntity("Owner")
-    local ownerName = IsValid(owner) and owner:Nick() or "Unknown"
-    local stationName = ent:GetStationName() ~= "" and ent:GetStationName() or "No station playing"
-    local country = ent:GetNWString("Country", "Unknown")
+    local ownerName = IsValid(owner) and owner:Nick() or Config.Lang["Unknown"]
+    local stationName = ent:GetStationName() ~= "" and ent:GetStationName() or Config.Lang["NoStationPlaying"]
+    local country = ent:GetNWString("Country", Config.Lang["Unknown"])
 
-    if (country ~= "Unknown") then
+    if (country ~= Config.Lang["Unknown"]) then
         country = utils.formatCountryNameForDisplay(country)
     end
 
     DrawOutlinedRoundedBox(x, y, panelWidth, panelHeight, cornerRadius, Color(30, 30, 30, panelAlpha), Color(60, 60, 60, panelAlpha), 2)
 
     -- Title (Player's name)
-    draw.SimpleText(ownerName .. "'s Boombox", "BoomboxTitleFont", x + panelWidth/2, y + ResponsiveScale(15), Color(255, 255, 255, panelAlpha), TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP)
+    local titleText = string.format(Config.Lang["PlayersBoombox"], ownerName)
+    draw.SimpleText(titleText, "BoomboxTitleFont", x + panelWidth/2, y + ResponsiveScale(15), Color(255, 255, 255, panelAlpha), TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP)
 
     -- Separator
     surface.SetDrawColor(Color(60, 60, 60, panelAlpha))
     surface.DrawLine(x + ResponsiveScale(10), y + ResponsiveScale(45), x + panelWidth - ResponsiveScale(10), y + ResponsiveScale(45))
 
     -- Station info
-    draw.SimpleText("Station: " .. stationName, "BoomboxTextFont", x + ResponsiveScale(10), y + ResponsiveScale(55), Color(200, 200, 200, panelAlpha), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
-    draw.SimpleText("Country: " .. country, "BoomboxTextFont", x + ResponsiveScale(10), y + ResponsiveScale(75), Color(200, 200, 200, panelAlpha), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
+    local stationText = Config.Lang["Station"] .. ": " .. stationName
+    local countryText = Config.Lang["Country"] .. ": " .. country
+    draw.SimpleText(stationText, "BoomboxTextFont", x + ResponsiveScale(10), y + ResponsiveScale(55), Color(200, 200, 200, panelAlpha), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
+    draw.SimpleText(countryText, "BoomboxTextFont", x + ResponsiveScale(10), y + ResponsiveScale(75), Color(200, 200, 200, panelAlpha), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
 
     -- Playing indicator (increased size)
     if ent:GetStationName() ~= "" then
