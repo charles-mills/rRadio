@@ -13,5 +13,12 @@ LANG["PlayersBoombox"] = "%s's Boombox"
 LANG["Station"] = "Station"
 LANG["Country"] = "Pays"
 LANG["None"] = "Aucun"
+LANG["SettingsMenuTitle"] = "Paramètres"
+LANG["ThemeSelection"] = "Sélection du thème"
+LANG["LanguageSelection"] = "Sélection de la langue"
+LANG["KeySelection"] = "Sélectionnez la touche pour ouvrir le menu du radio"
+LANG["GeneralOptions"] = "Options générales"
+LANG["ShowCarRadioMessages"] = "Afficher les messages de radio du véhicule"
+LANG["ShowBoomboxHoverPanel"] = "Afficher le panneau de survol de Boombox"
 
 return LANG

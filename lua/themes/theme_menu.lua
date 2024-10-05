@@ -12,6 +12,13 @@ local keyCodeMapping = include("misc/key_names.lua")
 local themes = include("themes/theme_palettes.lua")
 local languageManager = include("localisation/language_manager.lua")
 
+-- Add this near the top of the file, after including language_manager.lua
+Config = Config or {}
+Config.Lang = Config.Lang or languageManager.translations["en"] or {}
+
+-- Declare createSettingsMenu at the top of the file
+local createSettingsMenu
+
 -- -------------------------------
 -- 2. Theme and Language Functions
 -- -------------------------------
@@ -29,6 +36,12 @@ local function applyLanguage(languageCode)
         Config.Lang = languageManager.translations[languageCode]
         hook.Run("LanguageChanged", languageCode)
         hook.Run("LanguageUpdated")
+        
+        -- Refresh the settings menu
+        local settingsPanel = controlpanel.Get("ThemeVolumeSelection")
+        if IsValid(settingsPanel) and createSettingsMenu then
+            createSettingsMenu(settingsPanel)
+        end
     else
         print("Invalid language code: " .. languageCode)
     end
@@ -161,36 +174,37 @@ end
 
 local function createGeneralOptions(panel)
     local chatMessageCheckbox = vgui.Create("DCheckBoxLabel", panel)
-    chatMessageCheckbox:SetText("Show Car Radio Messages")
+    chatMessageCheckbox:SetText(Config.Lang["ShowCarRadioMessages"])
     chatMessageCheckbox:SetConVar("radio_show_messages")
     chatMessageCheckbox:Dock(TOP)
     chatMessageCheckbox:DockMargin(0, 0, 0, 5)
     chatMessageCheckbox:SetTextColor(Color(0, 0, 0))
     chatMessageCheckbox:SetValue(GetConVar("radio_show_messages"):GetBool())
-    chatMessageCheckbox:SetTooltip("Enable or disable the display of car radio messages.")
+    chatMessageCheckbox:SetTooltip(Config.Lang["ShowCarRadioMessages"])
     panel:AddItem(chatMessageCheckbox)
 
     local showTextCheckbox = vgui.Create("DCheckBoxLabel", panel)
-    showTextCheckbox:SetText("Show Boombox Hover Text")
+    showTextCheckbox:SetText(Config.Lang["ShowBoomboxHoverPanel"])
     showTextCheckbox:SetConVar("radio_show_boombox_text")
     showTextCheckbox:Dock(TOP)
     showTextCheckbox:DockMargin(0, 0, 0, 0)
     showTextCheckbox:SetTextColor(Color(0, 0, 0))
     showTextCheckbox:SetValue(GetConVar("radio_show_boombox_text"):GetBool())
-    showTextCheckbox:SetTooltip("Enable or disable the display of text above the boombox.")
+    showTextCheckbox:SetTooltip(Config.Lang["ShowBoomboxHoverPanel"])
     panel:AddItem(showTextCheckbox)
 end
 
 -- -------------------------------
 -- 6. Main Settings Menu Function
 -- -------------------------------
-local function createSettingsMenu(panel)
+createSettingsMenu = function(panel)
+    if not IsValid(panel) then return end
     panel:ClearControls()
     panel:DockPadding(10, 0, 30, 10)
 
     -- Theme Selection
     local themeHeader = vgui.Create("DLabel", panel)
-    themeHeader:SetText("Theme Selection")
+    themeHeader:SetText(Config.Lang["ThemeSelection"] or "Theme Selection")
     themeHeader:SetFont("Trebuchet18")
     themeHeader:SetTextColor(Color(50, 50, 50))
     themeHeader:Dock(TOP)
@@ -200,7 +214,7 @@ local function createSettingsMenu(panel)
 
     -- Language Selection
     local languageHeader = vgui.Create("DLabel", panel)
-    languageHeader:SetText("Language Selection")
+    languageHeader:SetText(Config.Lang["LanguageSelection"] or "Language Selection")
     languageHeader:SetFont("Trebuchet18")
     languageHeader:SetTextColor(Color(50, 50, 50))
     languageHeader:Dock(TOP)
@@ -210,7 +224,7 @@ local function createSettingsMenu(panel)
 
     -- Key Selection
     local keySelectionHeader = vgui.Create("DLabel", panel)
-    keySelectionHeader:SetText("Select Key to Open Radio Menu")
+    keySelectionHeader:SetText(Config.Lang["KeySelection"] or "Select Key to Open Radio Menu")
     keySelectionHeader:SetFont("Trebuchet18")
     keySelectionHeader:SetTextColor(Color(50, 50, 50))
     keySelectionHeader:Dock(TOP)
@@ -220,7 +234,7 @@ local function createSettingsMenu(panel)
 
     -- General Options
     local generalOptionsHeader = vgui.Create("DLabel", panel)
-    generalOptionsHeader:SetText("General Options")
+    generalOptionsHeader:SetText(Config.Lang["GeneralOptions"] or "General Options")
     generalOptionsHeader:SetFont("Trebuchet18")
     generalOptionsHeader:SetTextColor(Color(50, 50, 50))
     generalOptionsHeader:Dock(TOP)
@@ -233,5 +247,16 @@ end
 -- 7. Tool Menu Population
 -- -------------------------------
 hook.Add("PopulateToolMenu", "AddThemeAndVolumeSelectionMenu", function()
-    spawnmenu.AddToolMenuOption("Utilities", "Rammel's Radio", "ThemeVolumeSelection", "Settings", "", "", createSettingsMenu)
+    spawnmenu.AddToolMenuOption("Utilities", "rRadio", "ThemeVolumeSelection", "Radio Settings", "", "", function(panel)
+        panel:ClearControls()
+        createSettingsMenu(panel)
+    end)
+end)
+
+-- Refresh the menu when the language changes
+hook.Add("LanguageChanged", "RefreshSettingsMenu", function()
+    local settingsPanel = controlpanel.Get("ThemeVolumeSelection")
+    if IsValid(settingsPanel) then
+        createSettingsMenu(settingsPanel)
+    end
 end)

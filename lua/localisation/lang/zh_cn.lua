@@ -13,4 +13,12 @@ LANG["PlayersBoombox"] = "%s的Boombox"
 LANG["Station"] = "电台"
 LANG["Country"] = "国家"
 LANG["None"] = "无"
+LANG["SettingsMenuTitle"] = "设置"
+LANG["ThemeSelection"] = "主题选择"
+LANG["LanguageSelection"] = "语言选择"
+LANG["KeySelection"] = "选择按键打开电台菜单"
+LANG["GeneralOptions"] = "常规选项"
+LANG["ShowCarRadioMessages"] = "显示车辆电台消息"
+LANG["ShowBoomboxHoverPanel"] = "显示 Boombox 悬停面板"
+
 return LANG

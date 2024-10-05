@@ -13,15 +13,12 @@ LANG["PlayersBoombox"] = "%s's Boombox"
 LANG["Station"] = "Station"
 LANG["Country"] = "Land"
 LANG["None"] = "Keine"
-
--- New strings for custom URLs
-LANG["custom_url_guide"] = "Geben Sie eine URL zu einer Sounddatei ein und benennen Sie sie. Klicken Sie auf 'Speichern', um sie Ihrer Liste hinzuzufügen."
-LANG["enter_url"] = "URL eingeben"
-LANG["enter_name"] = "Namen eingeben"
-LANG["save"] = "Speichern"
-LANG["play"] = "Abspielen"
-LANG["delete"] = "Löschen"
-LANG["custom_urls"] = "Benutzerdefinierte URLs"
-LANG["radio_stations"] = "Radiosender"
+LANG["SettingsMenuTitle"] = "Einstellungen"
+LANG["ThemeSelection"] = "Themenauswahl"
+LANG["LanguageSelection"] = "Sprachauswahl"
+LANG["KeySelection"] = "Wählen Sie die Taste aus, um das Radio-Menü zu öffnen"
+LANG["GeneralOptions"] = "Allgemeine Optionen"
+LANG["ShowCarRadioMessages"] = "Auto-Radio-Nachrichten anzeigen"
+LANG["ShowBoomboxHoverPanel"] = "Boombox-Hover-Panel anzeigen"
 
 return LANG

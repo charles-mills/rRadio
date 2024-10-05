@@ -13,4 +13,12 @@ LANG["PlayersBoombox"] = "%s'in Boombox"
 LANG["Station"] = "Kanal"
 LANG["Country"] = "Ülke"
 LANG["None"] = "Yok"
+LANG["SettingsMenuTitle"] = "Ayarlar"
+LANG["ThemeSelection"] = "Tema Seçimi"
+LANG["LanguageSelection"] = "Dil Seçimi"
+LANG["KeySelection"] = "Radyo menüsünü açmak için bir tuş seçin"
+LANG["GeneralOptions"] = "Genel Seçenekler"
+LANG["ShowCarRadioMessages"] = "Araba Radyo Mesajlarını Göster"
+LANG["ShowBoomboxHoverPanel"] = "Boombox Hover Paneli Göster"
+
 return LANG
