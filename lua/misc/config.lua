@@ -81,7 +81,7 @@ local selectedTheme = themes["neon"] -- Default to neon theme or set based on us
 -- -------------------------------
 Config.UI = selectedTheme
 Config.UKAndUSPrioritised = true -- Include UK and US stations at the top of the list (default alphabetical sort if false)
-Config.MessageCooldown = 10 -- Cooldown time in seconds before the chat message can be sent again ("Press {key} to open the radio menu")
+Config.MessageCooldown = 2 -- Cooldown time in seconds before the chat message can be sent again ("Press {key} to open the radio menu")
 
 -- -------------------------------
 -- 9. Key Binding

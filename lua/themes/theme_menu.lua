@@ -2,7 +2,7 @@
     rRadio Addon for Garry's Mod - Theme and Settings Menu
     Description: Manages the theme, language, and key binding settings for the radio UI.
     Author: Charles Mills (https://github.com/charles-mills)
-    Date: 2024-10-03
+    Date: 2024-10-05
 ]]
 
 -- -------------------------------
@@ -126,7 +126,6 @@ end
 
 local function createLanguageDropdown(panel)
     local languageDropdown = vgui.Create("DComboBox", panel)
-    languageDropdown:SetValue("Select Language")
     languageDropdown:Dock(TOP)
     languageDropdown:SetTall(30)
     languageDropdown:SetTooltip("Select the language for the radio UI.")
@@ -135,17 +134,39 @@ local function createLanguageDropdown(panel)
         languageDropdown:AddChoice(name, code)
     end
 
-    local currentLanguage = GetConVar("radio_language"):GetString()
-    if currentLanguage and languageManager.languages[currentLanguage] then
-        languageDropdown:SetValue(languageManager.languages[currentLanguage])
+    local function updateDropdownValue()
+        local currentLanguage = GetConVar("radio_language"):GetString()
+        if currentLanguage and languageManager.languages[currentLanguage] then
+            languageDropdown:SetValue(languageManager.languages[currentLanguage])
+        else
+            languageDropdown:SetValue("Select Language")
+        end
     end
 
+    updateDropdownValue()
+
     languageDropdown.OnSelect = function(panel, index, value, data)
+        -- Apply the language change immediately
         applyLanguage(data)
+        -- Set the ConVar after applying the language
         RunConsoleCommand("radio_language", data)
+        -- Update the dropdown value
+        updateDropdownValue()
+        -- Refresh the settings menu to reflect the new language
+        timer.Simple(0, function()
+            local settingsPanel = controlpanel.Get("ThemeVolumeSelection")
+            if IsValid(settingsPanel) then
+                createSettingsMenu(settingsPanel)
+            end
+        end)
     end
 
     panel:AddItem(languageDropdown)
+
+    -- Update the dropdown value when the language changes
+    cvars.AddChangeCallback("radio_language", function(convar_name, value_old, value_new)
+        updateDropdownValue()
+    end, "LanguageDropdownUpdate")
 end
 
 local function createKeyDropdown(panel)
