@@ -608,7 +608,7 @@ local function createStationButton(stationListPanel, stationData, backButton, se
 
     local favoriteIcon = createFavoriteIcon(stationButton, station, "station", stationListPanel, backButton, searchBox)
     local iconWidth = favoriteIcon:GetWide()
-    local padding = Scale(5)
+    local padding = Scale(20)
 
     stationButton.Paint = function(self, w, h)
         if station == currentlyPlayingStations[LocalPlayer().currentRadioEntity] then
@@ -622,19 +622,22 @@ local function createStationButton(stationListPanel, stationData, backButton, se
 
         -- Draw text with proper positioning and clipping
         local textX = iconWidth + padding * 2
-        local maxTextWidth = w - textX - padding
+        local maxTextWidth = w - textX - padding * 2  -- Reduce available width for text
         local text = station.name
         surface.SetFont("Roboto18")
         local textW, textH = surface.GetTextSize(text)
         
         if textW > maxTextWidth then
-            text = string.sub(text, 1, surface.GetTextSize(text) / textW * maxTextWidth)
-            text = text .. "..."
+            local ellipsis = "..."
+            local ellipsisWidth = surface.GetTextSize(ellipsis)
+            local availableWidth = maxTextWidth - ellipsisWidth
+            local ratio = availableWidth / textW
+            local truncatedLength = math.floor(#text * ratio)
+            text = string.sub(text, 1, truncatedLength) .. ellipsis
         end
 
         -- Center the text within the available space, accounting for the icon and padding
-        local availableWidth = w - textX - padding
-        local centerX = (textX + availableWidth / 2) - Scale(10)
+        local centerX = textX + (w - textX - padding * 2) / 2
         draw.SimpleText(text, "Roboto18", centerX, h/2, Config.UI.TextColor, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
     end
 
