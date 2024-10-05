@@ -1,14 +1,23 @@
 --[[ 
-    rRadio Addon for Garry's Mod - Client Radio Script
-    Description: Manages client-side radio functionalities and UI, including loading radio stations, themes, and configuration settings.
+    rRadio Addon for Garry's Mod - Configuration File
+    Description: Contains all configurable settings for the rRadio addon.
     Author: Charles Mills (https://github.com/charles-mills)
     Date: 2024-10-03
 ]]
 
+-- -------------------------------
+-- 1. Global Configuration Table
+-- -------------------------------
 local Config = {}
 
+-- -------------------------------
+-- 2. Radio Stations
+-- -------------------------------
 Config.RadioStations = {}
 
+-- -------------------------------
+-- 3. Network Strings
+-- -------------------------------
 NETWORK_STRINGS = {
     "rRadio_PlayRadioStation",
     "rRadio_StopRadioStation",
@@ -19,6 +28,9 @@ NETWORK_STRINGS = {
     "rRadio_RequestCustomStations",
 }
 
+-- -------------------------------
+-- 4. Language Configuration
+-- -------------------------------
 local function loadLanguage()
     local lang = Config.Language or GetConVar("gmod_language"):GetString() or "en"
     local path = "localisation/lang/" .. lang .. ".lua"
@@ -32,13 +44,17 @@ end
 
 loadLanguage()
 
--- Function to format the country name for UI display
+-- -------------------------------
+-- 5. Country Name Formatting
+-- -------------------------------
 local function formatCountryName(filename)
     local formattedName = filename:gsub("-", " "):gsub("(%a)([%w_']*)", function(a, b) return string.upper(a) .. string.lower(b) end)
     return formattedName
 end
 
--- Function to load stations for a specific country
+-- -------------------------------
+-- 6. Station Loading
+-- -------------------------------
 local function loadStationsForCountry(country)
     local path = "radio/stations/" .. country .. ".lua"
     if file.Exists(path, "LUA") then
@@ -54,17 +70,22 @@ for _, filename in ipairs(files) do
     loadStationsForCountry(country)
 end
 
--- Load themes
+-- -------------------------------
+-- 7. Theme Configuration
+-- -------------------------------
 local themes = include("themes/theme_palettes.lua")
+local selectedTheme = themes["neon"] -- Default to neon theme or set based on user preference
 
--- Default to dark theme or set based on user preference
-local selectedTheme = themes["neon"]
-
--- General UI Settings
+-- -------------------------------
+-- 8. UI Settings
+-- -------------------------------
 Config.UI = selectedTheme
 Config.UKAndUSPrioritised = true -- Include UK and US stations at the top of the list (default alphabetical sort if false)
 Config.MessageCooldown = 10 -- Cooldown time in seconds before the chat message can be sent again ("Press {key} to open the radio menu")
 
+-- -------------------------------
+-- 9. Key Binding
+-- -------------------------------
 local openKeyConvar = GetConVar("radio_open_key")
 
 if not openKeyConvar then
@@ -74,8 +95,9 @@ end
 
 Config.OpenKey = openKeyConvar:GetInt()
 
-
--- Boombox Settings (Normal)
+-- -------------------------------
+-- 10. Entity Configurations
+-- -------------------------------
 Config.Boombox = {
     Volume = 1, -- Default radio volume (range: 0.0 to 1.0)
     MaxHearingDistance = 1000, -- Maximum distance at which the radio can be heard (in units)
@@ -84,7 +106,6 @@ Config.Boombox = {
     RetryDelay = 2 -- Delay in seconds between retry attempts
 }
 
--- Golden Boombox Settings
 Config.GoldenBoombox = {
     Volume = 1, -- Default radio volume (range: 0.0 to 1.0)
     MaxHearingDistance = 350000, -- Increased maximum distance at which the radio can be heard (in units)
@@ -93,7 +114,6 @@ Config.GoldenBoombox = {
     RetryDelay = 2 -- Delay in seconds between retry attempts
 }
 
--- Vehicle Radio Settings
 Config.VehicleRadio = {
     Volume = 1, -- Default radio volume (range: 0.0 to 1.0)
     MaxHearingDistance = 1000, -- Maximum distance at which the radio can be heard (in units)

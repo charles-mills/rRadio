@@ -71,22 +71,6 @@ themes["forest"] = {
     SearchBoxColor = Color(40, 85, 40),
 }
 
--- Solarized Theme
-themes["solarized"] = {
-    FrameSize = { width = 600, height = 800 },
-    BackgroundColor = Color(0, 43, 54),
-    HeaderColor = Color(7, 54, 66),
-    TextColor = Color(131, 148, 150),
-    ButtonColor = Color(88, 110, 117),
-    ButtonHoverColor = Color(101, 123, 131),
-    PlayingButtonColor = Color(42, 161, 152),
-    CloseButtonColor = Color(7, 54, 66),
-    CloseButtonHoverColor = Color(108, 113, 196),
-    ScrollbarColor = Color(88, 110, 117),
-    ScrollbarGripColor = Color(133, 153, 0),
-    SearchBoxColor = Color(7, 54, 66),
-}
-
 -- Midnight Theme
 themes["midnight"] = {
     FrameSize = { width = 600, height = 800 },
@@ -119,39 +103,6 @@ themes["coral"] = {
     SearchBoxColor = Color(255, 99, 71),
 }
 
--- Minimalist Theme
-themes["minimalist"] = {
-    FrameSize = { width = 400, height = 500 },
-    BackgroundColor = Color(240, 240, 240),
-    HeaderColor = Color(200, 200, 200),
-    TextColor = Color(50, 50, 50),
-    ButtonColor = Color(220, 220, 220),
-    ButtonHoverColor = Color(180, 180, 180),
-    PlayingButtonColor = Color(150, 150, 150),
-    CloseButtonColor = Color(200, 200, 200),
-    CloseButtonHoverColor = Color(150, 150, 150),
-    ScrollbarColor = Color(220, 220, 220),
-    ScrollbarGripColor = Color(180, 180, 180),
-    SearchBoxColor = Color(200, 200, 200),
-}
-
--- Neon Dark Theme
-themes["neon"] = {
-    FrameSize = { width = 600, height = 800 },
-    BackgroundColor = Color(28, 28, 28),  -- Charcoal
-    HeaderColor = Color(40, 40, 40),
-    TextColor = Color(224, 224, 224),  -- Light Gray
-    ButtonColor = Color(60, 60, 60),  -- Dark Gray
-    ButtonHoverColor = Color(255, 110, 110),  -- Neon Red (Accent)
-    PlayingButtonColor = Color(255, 76, 76),
-    CloseButtonColor = Color(50, 50, 50),
-    CloseButtonHoverColor = Color(255, 110, 110),  -- Neon Red (Accent)
-    ScrollbarColor = Color(60, 60, 60),
-    ScrollbarGripColor = Color(100, 100, 100),
-    SearchBoxColor = Color(50, 50, 50),
-    AccentColor = Color(255, 110, 110),  -- Neon Red (used for highlights)
-}
-
 -- Pastel Theme
 themes["pastel"] = {
     FrameSize = { width = 600, height = 800 },
@@ -167,23 +118,6 @@ themes["pastel"] = {
     ScrollbarGripColor = Color(157, 214, 223),  -- Soft Blue (Accent)
     SearchBoxColor = Color(255, 182, 193),  -- Light Pink
     AccentColor = Color(157, 214, 223),  -- Soft Blue (used for highlights)
-}
-
--- Synthwave Theme
-themes["synthwave"] = {
-    FrameSize = { width = 600, height = 800 },
-    BackgroundColor = Color(42, 0, 51),  -- Deep Purple
-    HeaderColor = Color(88, 0, 160),  -- Darker Purple
-    TextColor = Color(255, 255, 255),  -- White
-    ButtonColor = Color(255, 0, 160),  -- Magenta (Accent)
-    ButtonHoverColor = Color(8, 247, 254),  -- Neon Cyan (Accent)
-    PlayingButtonColor = Color(25, 0, 30),
-    CloseButtonColor = Color(88, 0, 160),
-    CloseButtonHoverColor = Color(8, 247, 254),  -- Neon Cyan (Accent)
-    ScrollbarColor = Color(88, 0, 160),
-    ScrollbarGripColor = Color(8, 247, 254),  -- Neon Cyan (Accent)
-    SearchBoxColor = Color(88, 0, 160),
-    AccentColor = Color(255, 0, 160),  -- Magenta (used for text highlights, borders)
 }
 
 -- Gold Theme

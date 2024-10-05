@@ -2,7 +2,7 @@
     rRadio Addon for Garry's Mod - Client Radio Script
     Description: Manages client-side radio functionalities and UI.
     Author: Charles Mills (https://github.com/charles-mills)
-    Date: 2024-10-03
+    Date: 2024-10-05
 ]]
 
 -- Include necessary files
@@ -51,8 +51,8 @@ local surface_DrawRect = surface.DrawRect
 local draw_SimpleText = draw.SimpleText
 
 -- Define local materials
-local radioMaterial = Material("hud/radio")
-local volumeMaterial = Material("hud/volume")
+local radioMaterial = Material("hud/radio.png")
+local volumeMaterial = Material("hud/volume.png")
 local flagMaterial = Material("hud/flag.png")
 
 -- Define data directory and file paths
@@ -110,11 +110,6 @@ end
 local function saveFavorites()
     local successCountries = file.Write(favoriteCountriesFile, util.TableToJSON(favoriteCountries, true)) -- Pretty print JSON
     local successStations = file.Write(favoriteStationsFile, util.TableToJSON(favoriteStations, true))     -- Pretty print JSON
-
-    print("Saving Favorite Countries:")
-    for country, isFavorite in pairs(favoriteCountries) do
-        print(country .. ": " .. tostring(isFavorite))
-    end
 
     if not successCountries then
         utils.PrintError("Failed to save favorite countries to file.", 2)
@@ -465,6 +460,9 @@ local function createFavoriteIcon(parent, item, itemType, stationListPanel, back
     if itemType == "country" then
         isFavorite = favoriteCountries[item.original] or false
         starIcon:SetImage(isFavorite and "hud/star_full.png" or "hud/star.png")
+        if not isFavorite then
+            starIcon:SetColor(Config.UI.TextColor)
+        end
 
         starIcon.DoClick = function()
             favoriteCountries[item.original] = not isFavorite
@@ -472,6 +470,11 @@ local function createFavoriteIcon(parent, item, itemType, stationListPanel, back
             -- Update the star icon and repopulate the list
             isFavorite = not isFavorite
             starIcon:SetImage(isFavorite and "hud/star_full.png" or "hud/star.png")
+            if not isFavorite then
+                starIcon:SetColor(Config.UI.TextColor)
+            else
+                starIcon:SetColor(Color(255, 255, 255))
+            end
             if stationListPanel then
                 populateList(stationListPanel, backButton, searchBox, false)
             end
@@ -479,6 +482,9 @@ local function createFavoriteIcon(parent, item, itemType, stationListPanel, back
     elseif itemType == "station" then
         isFavorite = favoriteStations[selectedCountry] and favoriteStations[selectedCountry][item.name] or false
         starIcon:SetImage(isFavorite and "hud/star_full.png" or "hud/star.png")
+        if not isFavorite then
+            starIcon:SetColor(Config.UI.TextColor)
+        end
 
         starIcon.DoClick = function()
             if not favoriteStations[selectedCountry] then
@@ -491,6 +497,11 @@ local function createFavoriteIcon(parent, item, itemType, stationListPanel, back
             -- Update the star icon and repopulate the list
             isFavorite = not isFavorite
             starIcon:SetImage(isFavorite and "hud/star_full.png" or "hud/star.png")
+            if not isFavorite then
+                starIcon:SetColor(Config.UI.TextColor)
+            else
+                starIcon:SetColor(Color(255, 255, 255))
+            end
             if stationListPanel then
                 populateList(stationListPanel, backButton, searchBox, false)
             end
@@ -836,10 +847,14 @@ end
 local function createVolumeSlider(volumePanel, entity)
     local volumeIconSize = Scale(50)
     
-    local volumeIcon = vgui.Create("DImage", volumePanel)
+    local volumeIcon = vgui.Create("DPanel", volumePanel)
     volumeIcon:SetPos(Scale(10), (volumePanel:GetTall() - volumeIconSize) / 2)
     volumeIcon:SetSize(volumeIconSize, volumeIconSize)
-    volumeIcon:SetImage("hud/volume")
+    volumeIcon.Paint = function(self, w, h)
+        surface.SetDrawColor(Config.UI.TextColor)
+        surface.SetMaterial(volumeMaterial)
+        surface.DrawTexturedRect(0, 0, w, h)
+    end
 
     local volumeSlider = vgui.Create("DNumSlider", volumePanel)
     -- Updated positioning for better alignment
