@@ -182,12 +182,18 @@ local function RestoreBoomboxRadio(entity)
         net.WriteEntity(entity)
         net.WriteString(savedState.url)
         net.WriteFloat(savedState.volume)
+        net.WriteString("Unknown")  -- Use "Unknown" for restored permaprops as we don't store country
         net.Broadcast()
 
         AddActiveRadio(entity, savedState.station, savedState.url, savedState.volume)
         utils.DebugPrint("Restored and added active radio for PermaProps_ID: " .. permaID)
     else
-        utils.DebugPrint("Station is not playing. Not broadcasting rRadio_PlayRadioStation.")
+        net.Start("rRadio_UpdateRadioStatus")
+        net.WriteEntity(entity)
+        net.WriteString(savedState.station)
+        net.WriteString("Unknown")  -- Use "Unknown" for restored permaprops as we don't store country
+        net.Broadcast()
+        utils.DebugPrint("Updated radio status for non-playing boombox: " .. permaID)
     end
 end
 
@@ -208,8 +214,7 @@ local function CreateBoomboxStatesTable()
             station TEXT,
             url TEXT,
             isPlaying INTEGER,
-            volume REAL,
-            country TEXT
+            volume REAL
         )
     ]]
     if sql.Query(createTableQuery) == false then
@@ -222,10 +227,10 @@ end
 hook.Add("Initialize", "CreateBoomboxStatesTable", CreateBoomboxStatesTable)
 
 -- Save boombox state to database
-local function SaveBoomboxStateToDatabase(permaID, stationName, url, isPlaying, volume, country)
+local function SaveBoomboxStateToDatabase(permaID, stationName, url, isPlaying, volume)
     local query = string_format(
-        "REPLACE INTO boombox_states (permaID, station, url, isPlaying, volume, country) VALUES (%d, %s, %s, %d, %f, %s)",
-        permaID, sql.SQLStr(stationName), sql.SQLStr(url), isPlaying and 1 or 0, volume, sql.SQLStr(country or "Unknown")
+        "REPLACE INTO boombox_states (permaID, station, url, isPlaying, volume) VALUES (%d, %s, %s, %d, %f)",
+        permaID, sql.SQLStr(stationName), sql.SQLStr(url), isPlaying and 1 or 0, volume
     )
     if sql.Query(query) == false then
         utils.DebugPrint("Failed to save boombox state: " .. sql.LastError())
@@ -254,8 +259,7 @@ local function LoadBoomboxStatesFromDatabase()
                 station = row.station,
                 url = row.url,
                 isPlaying = tonumber(row.isPlaying) == 1,
-                volume = tonumber(row.volume),
-                country = row.country
+                volume = tonumber(row.volume)
             }
             utils.DebugPrint("Loaded boombox state from database: PermaID = " .. permaID)
         end
@@ -369,10 +373,9 @@ local function HandleBoomboxPlayRadio(entity, stationName, url, volume, country)
             station = stationName,
             url = url,
             isPlaying = true,
-            volume = volume,
-            country = country or "Unknown"
+            volume = volume
         }
-        SaveBoomboxStateToDatabase(permaID, stationName, url, true, volume, country or "Unknown")
+        SaveBoomboxStateToDatabase(permaID, stationName, url, true, volume)
     end
 
     if entity.SetVolume then entity:SetVolume(volume) end
@@ -384,18 +387,18 @@ local function HandleBoomboxPlayRadio(entity, stationName, url, volume, country)
         net.WriteEntity(entity)
         net.WriteString(url)
         net.WriteFloat(volume)
-        net.WriteString(country or "Unknown")
+        net.WriteString(country or "Unknown")  -- Always send country for display
     net.Broadcast()
 
     net.Start("rRadio_UpdateRadioStatus")
         net.WriteEntity(entity)
         net.WriteString(stationName)
-        net.WriteString(country or "Unknown")
+        net.WriteString(country or "Unknown")  -- Always send country for display
     net.Broadcast()
 end
 
 -- Function to handle playing radio station for vehicle
-local function HandleVehiclePlayRadio(entity, stationName, url, volume, country)
+local function HandleVehiclePlayRadio(entity, stationName, url, volume)
     local mainVehicle = entity:GetParent() or entity
     if not IsValid(mainVehicle) then mainVehicle = entity end
 
@@ -412,13 +415,11 @@ local function HandleVehiclePlayRadio(entity, stationName, url, volume, country)
         net.WriteEntity(mainVehicle)
         net.WriteString(url)
         net.WriteFloat(volume)
-        net.WriteString(country or "Unknown")
     net.Broadcast()
 
     net.Start("rRadio_UpdateRadioStatus")
         net.WriteEntity(mainVehicle)
         net.WriteString(stationName)
-        net.WriteString(country or "Unknown")
     net.Broadcast()
 end
 
@@ -428,7 +429,7 @@ net.Receive("rRadio_PlayRadioStation", function(len, ply)
     local stationName = net.ReadString()
     local url = net.ReadString()
     local volume = math_Clamp(net.ReadFloat(), 0, 1)
-    local country = net.ReadString()
+    local country = net.ReadString()  -- Read country from the network message
 
     if not IsValid(entity) then
         utils.DebugPrint("Invalid entity received in rRadio_PlayRadioStation.")
