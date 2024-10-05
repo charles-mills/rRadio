@@ -30,6 +30,13 @@ local function ResponsiveScale(value)
     return math.Round(value * scaleFactor)
 end
 
+-- Function to calculate the angle between two vectors
+local function AngleBetweenVectors(vec1, vec2)
+    vec1:Normalize()
+    vec2:Normalize()
+    return math.deg(math.acos(vec1:Dot(vec2)))
+end
+
 -- -------------------------------
 -- 2. UI Constants and Variables
 -- -------------------------------
@@ -158,20 +165,29 @@ function ENT:Draw()
     if dist > 600 then return end
 
     local ang = self:GetAngles()
-    local upOffset = self:OBBMaxs().z + ResponsiveScale(6)
-    local backwardOffset = ResponsiveScale(3)
-    local panelPos = pos + ang:Up() * upOffset + ang:Forward() * backwardOffset
+    local forward = ang:Forward()
+    local toPlayer = (myPos - pos):GetNormalized()
+    
+    -- Calculate the angle between the boombox's forward direction and the direction to the player
+    local viewAngle = AngleBetweenVectors(forward, toPlayer)
+    
+    -- Only draw the panel if it's visible from the front (angle less than 90 degrees)
+    if viewAngle < 90 then
+        local upOffset = self:OBBMaxs().z + ResponsiveScale(6)
+        local backwardOffset = ResponsiveScale(3)
+        local panelPos = pos + ang:Up() * upOffset + ang:Forward() * backwardOffset
 
-    ang:RotateAroundAxis(ang:Up(), -90)
-    ang:RotateAroundAxis(ang:Forward(), 90)
+        ang:RotateAroundAxis(ang:Up(), -90)
+        ang:RotateAroundAxis(ang:Forward(), 90)
 
-    local fadeDistance = 400
-    local fadeAlpha = math_Clamp((fadeDistance - dist) / fadeDistance, 0, 1)
-    targetPanelAlpha = fadeAlpha * 255
+        local fadeDistance = 400
+        local fadeAlpha = math_Clamp((fadeDistance - dist) / fadeDistance, 0, 1)
+        targetPanelAlpha = fadeAlpha * 255
 
-    cam.Start3D2D(panelPos, ang, 0.1)
-        DrawBoomboxPanel(self, -panelWidth / 2, -panelHeight / 2)
-    cam.End3D2D()
+        cam.Start3D2D(panelPos, ang, 0.1)
+            DrawBoomboxPanel(self, -panelWidth / 2, -panelHeight / 2)
+        cam.End3D2D()
+    end
 end
 
 -- -------------------------------
