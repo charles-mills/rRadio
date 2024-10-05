@@ -974,20 +974,34 @@ local function rRadio_OpenRadioMenu()
     end
 end
 
+-- Replace the existing hook with this updated Think function
+local lastKeyCheckTime = 0
+local keyCheckInterval = 0.1 -- Check every 0.1 seconds
 
-hook.Add("PlayerButtonDown", "OpenCarRadioMenu", function(ply, button)
-    if ply ~= LocalPlayer() then return end
+hook.Add("Think", "CheckCarRadioMenuKey", function()
+    local currentTime = CurTime()
+    if currentTime - lastKeyCheckTime < keyCheckInterval then return end
+    lastKeyCheckTime = currentTime
+
+    local ply = LocalPlayer()
+    if not IsValid(ply) then return end
+
+    local vehicle = ply:GetVehicle()
+    if not IsValid(vehicle) then return end
 
     local openKey = radioOpenKeyConVar:GetInt()
-    if button == openKey then
-        local vehicle = ply:GetVehicle()
-        if IsValid(vehicle) and not utils.isSitAnywhereSeat(vehicle) and not radioMenuOpen then
-            ply.currentRadioEntity = vehicle
-            rRadio_OpenRadioMenu()
+    if input.IsKeyDown(openKey) then
+        if not utils.isSitAnywhereSeat(vehicle) then
+            if not radioMenuOpen then
+                print("Opening radio menu")
+                ply.currentRadioEntity = vehicle
+                rRadio_OpenRadioMenu()
+            end
+        else
+            print("Vehicle is a SitAnywhere seat, not opening menu")
         end
     end
 end)
-
 
 local function stopCurrentStation(entity)
     if currentRadioSources[entity] and IsValid(currentRadioSources[entity]) then
@@ -1089,16 +1103,14 @@ net.Receive("rRadio_StopRadioStation", function()
     end
 end)
 
--- Network receiver for opening the radio menu
+-- Add this function to handle the net message for opening the radio menu
 net.Receive("rRadio_OpenRadioMenu", function()
     local entity = net.ReadEntity()
-    if not IsValid(entity) then
-        utils.PrintError("Received invalid entity in rRadio_OpenRadioMenu.", 2)
-        return
-    end
-    LocalPlayer().currentRadioEntity = entity
-    if not radioMenuOpen then
+    if IsValid(entity) then
+        LocalPlayer().currentRadioEntity = entity
         rRadio_OpenRadioMenu()
+    else
+        print("Received invalid entity in rRadio_OpenRadioMenu.", 2)
     end
 end)
 
