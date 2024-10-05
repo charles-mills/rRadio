@@ -12,5 +12,5 @@ LANG["NoStationPlaying"] = "没有正在播放的电台"
 LANG["PlayersBoombox"] = "%s的Boombox"
 LANG["Station"] = "电台"
 LANG["Country"] = "国家"
-
+LANG["None"] = "无"
 return LANG

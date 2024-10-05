@@ -9,6 +9,7 @@ include("shared.lua")
 include("misc/config.lua")
 include("misc/utils.lua")
 local LanguageManager = include("localisation/language_manager.lua")
+local CountryTranslations = include("localisation/country_translations.lua")
 
 -- Cache frequently used functions for performance
 local IsValid = IsValid
@@ -99,10 +100,12 @@ local function DrawBoomboxPanel(ent, x, y)
 
     local ownerName = getDisplayName(ent)
     local stationName = ent:GetStationName() ~= "" and ent:GetStationName() or Config.Lang["NoStationPlaying"]
-    local country = ent:GetNWString("Country", Config.Lang["Unknown"])
+    local country = ent:GetStationName() ~= "" and ent:GetNWString("Country", Config.Lang["Unknown"]) or Config.Lang["None"]
 
-    if (country ~= Config.Lang["Unknown"]) then
-        country = utils.formatCountryNameForDisplay(country)
+    -- Localize the country name
+    if country ~= Config.Lang["Unknown"] and country ~= Config.Lang["None"] then
+        local lang = GetConVar("radio_language"):GetString() or "en"
+        country = CountryTranslations:GetCountryName(lang, country) or country
     end
 
     DrawOutlinedRoundedBox(x, y, panelWidth, panelHeight, cornerRadius, panelColor, outlineColor, 2)

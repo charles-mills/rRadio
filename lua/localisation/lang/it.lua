@@ -12,5 +12,5 @@ LANG["NoStationPlaying"] = "Nessuna stazione in riproduzione"
 LANG["PlayersBoombox"] = "%s's Boombox"
 LANG["Station"] = "Stazione"
 LANG["Country"] = "Paese"
-
+LANG["None"] = "Nessuno"
 return LANG

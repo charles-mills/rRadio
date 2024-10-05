@@ -12,5 +12,5 @@ LANG["NoStationPlaying"] = "재생 중인 방송국이 없습니다"
 LANG["PlayersBoombox"] = "%s's Boombox"
 LANG["Station"] = "방송국"
 LANG["Country"] = "국가"
-
+LANG["None"] = "없음"
 return LANG
