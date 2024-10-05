@@ -5,11 +5,16 @@
     Date: 2024-10-03
 ]]
 
-
+-- -------------------------------
+-- 1. Includes and Initialization
+-- -------------------------------
 local keyCodeMapping = include("misc/key_names.lua")
 local themes = include("themes/theme_palettes.lua")
 local languageManager = include("localisation/language_manager.lua")
 
+-- -------------------------------
+-- 2. Theme and Language Functions
+-- -------------------------------
 local function applyTheme(themeName)
     if themes[themeName] then
         Config.UI = themes[themeName]
@@ -37,9 +42,10 @@ local function loadSavedSettings()
     applyLanguage(languageCode)
 end
 
-hook.Add("InitPostEntity", "ApplySavedThemeAndLanguageOnJoin", function()
-    loadSavedSettings()
-end)
+-- -------------------------------
+-- 3. Hooks
+-- -------------------------------
+hook.Add("InitPostEntity", "ApplySavedThemeAndLanguageOnJoin", loadSavedSettings)
 
 hook.Add("LanguageUpdated", "UpdateCountryListOnLanguageChange", function()
     if radioMenuOpen then
@@ -47,6 +53,9 @@ hook.Add("LanguageUpdated", "UpdateCountryListOnLanguageChange", function()
     end
 end)
 
+-- -------------------------------
+-- 4. Key Sorting Function
+-- -------------------------------
 local function sortKeys()
     local sortedKeys = {}
     local singleLetterKeys, numericKeys, otherKeys = {}, {}, {}
@@ -72,6 +81,9 @@ local function sortKeys()
     return sortedKeys
 end
 
+-- -------------------------------
+-- 5. UI Element Creation Functions
+-- -------------------------------
 local function createThemeDropdown(panel)
     local themeDropdown = vgui.Create("DComboBox", panel)
     themeDropdown:SetValue("Select Theme")
@@ -169,10 +181,14 @@ local function createGeneralOptions(panel)
     panel:AddItem(showTextCheckbox)
 end
 
+-- -------------------------------
+-- 6. Main Settings Menu Function
+-- -------------------------------
 local function createSettingsMenu(panel)
     panel:ClearControls()
     panel:DockPadding(10, 0, 30, 10)
 
+    -- Theme Selection
     local themeHeader = vgui.Create("DLabel", panel)
     themeHeader:SetText("Theme Selection")
     themeHeader:SetFont("Trebuchet18")
@@ -180,9 +196,9 @@ local function createSettingsMenu(panel)
     themeHeader:Dock(TOP)
     themeHeader:DockMargin(0, 0, 0, 5)
     panel:AddItem(themeHeader)
-
     createThemeDropdown(panel)
 
+    -- Language Selection
     local languageHeader = vgui.Create("DLabel", panel)
     languageHeader:SetText("Language Selection")
     languageHeader:SetFont("Trebuchet18")
@@ -190,9 +206,9 @@ local function createSettingsMenu(panel)
     languageHeader:Dock(TOP)
     languageHeader:DockMargin(0, 20, 0, 5)
     panel:AddItem(languageHeader)
-
     createLanguageDropdown(panel)
 
+    -- Key Selection
     local keySelectionHeader = vgui.Create("DLabel", panel)
     keySelectionHeader:SetText("Select Key to Open Radio Menu")
     keySelectionHeader:SetFont("Trebuchet18")
@@ -200,9 +216,9 @@ local function createSettingsMenu(panel)
     keySelectionHeader:Dock(TOP)
     keySelectionHeader:DockMargin(0, 20, 0, 5)
     panel:AddItem(keySelectionHeader)
-
     createKeyDropdown(panel)
 
+    -- General Options
     local generalOptionsHeader = vgui.Create("DLabel", panel)
     generalOptionsHeader:SetText("General Options")
     generalOptionsHeader:SetFont("Trebuchet18")
@@ -210,10 +226,12 @@ local function createSettingsMenu(panel)
     generalOptionsHeader:Dock(TOP)
     generalOptionsHeader:DockMargin(0, 20, 0, 5)
     panel:AddItem(generalOptionsHeader)
-
     createGeneralOptions(panel)
 end
 
+-- -------------------------------
+-- 7. Tool Menu Population
+-- -------------------------------
 hook.Add("PopulateToolMenu", "AddThemeAndVolumeSelectionMenu", function()
     spawnmenu.AddToolMenuOption("Utilities", "Rammel's Radio", "ThemeVolumeSelection", "Settings", "", "", createSettingsMenu)
 end)

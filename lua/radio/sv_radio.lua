@@ -8,15 +8,126 @@
 include("misc/utils.lua")
 include("misc/config.lua")
 
+-- Cache frequently used functions
+local IsValid, pairs, ipairs = IsValid, pairs, ipairs
+local table_insert, table_remove = table.insert, table.remove
+local string_format, string_find = string.format, string.find
+local util_TableToJSON, util_JSONToTable = util.TableToJSON, util.JSONToTable
+local math_Clamp = math.Clamp
+
 for _, str in ipairs(NETWORK_STRINGS) do
     util.AddNetworkString(str)
 end
 
 local ActiveRadios = {}
 SavedBoomboxStates = SavedBoomboxStates or {}
-
--- Table to track retry attempts per player
 local PlayerRetryAttempts = {}
+local CustomRadioStations = {}
+local customStationsFile = "rradio_custom_stations.txt"
+
+-- Function to save custom stations to file
+local function SaveCustomStations()
+    file.Write(customStationsFile, util_TableToJSON(CustomRadioStations, true))
+end
+
+-- Function to load custom stations from file
+local function LoadCustomStations()
+    if file.Exists(customStationsFile, "DATA") then
+        CustomRadioStations = util_JSONToTable(file.Read(customStationsFile, "DATA")) or {}
+    else
+        CustomRadioStations = {}
+    end
+end
+
+-- Load custom stations when the script initializes
+LoadCustomStations()
+
+-- Function to add a custom radio station
+local function AddCustomRadioStation(country, name, url)
+    local formattedCountry = utils.formatCountryNameForComparison(country)
+    CustomRadioStations[formattedCountry] = CustomRadioStations[formattedCountry] or {}
+    table_insert(CustomRadioStations[formattedCountry], {name = name, url = url})
+    SaveCustomStations()
+    utils.DebugPrint("Added custom radio station: " .. country .. " - " .. name)
+    
+    net.Start("rRadio_CustomStations")
+    net.WriteTable(CustomRadioStations)
+    net.Broadcast()
+end
+
+-- Function to remove a custom radio station
+local function RemoveCustomRadioStation(country, name)
+    local formattedCountry = utils.formatCountryNameForComparison(country)
+    if CustomRadioStations[formattedCountry] then
+        for i, station in ipairs(CustomRadioStations[formattedCountry]) do
+            if station.name == name then
+                table_remove(CustomRadioStations[formattedCountry], i)
+                SaveCustomStations()
+                utils.DebugPrint("Removed custom radio station: " .. country .. " - " .. name)
+                
+                net.Start("rRadio_CustomStations")
+                net.WriteTable(CustomRadioStations)
+                net.Broadcast()
+                
+                return true
+            end
+        end
+    end
+    return false
+end
+
+-- Function to send custom radio stations to a player
+local function SendCustomRadioStationsToPlayer(ply)
+    net.Start("rRadio_CustomStations")
+    net.WriteTable(CustomRadioStations)
+    net.Send(ply)
+end
+
+-- Hook to send custom radio stations when a player joins
+hook.Add("PlayerInitialSpawn", "SendCustomRadioStations", SendCustomRadioStationsToPlayer)
+
+-- Console command to add a custom radio station
+concommand.Add("rradio", function(ply, cmd, args)
+    if not IsValid(ply) or ply:IsAdmin() then
+        local action = args[1]
+        if action == "add" then
+            if #args < 4 then
+                print("Usage: rradio add <country> <name> <url>")
+                return
+            end
+            local country, name, url = args[2], args[3], args[4]
+            AddCustomRadioStation(country, name, url)
+            print("Custom radio station added successfully: " .. country .. " - " .. name)
+            if IsValid(ply) then
+                ply:ChatPrint("Custom radio station added: " .. name)
+            end
+        elseif action == "remove" then
+            if #args < 3 then
+                print("Usage: rradio remove <country> <name>")
+                return
+            end
+            local country, name = args[2], args[3]
+            if RemoveCustomRadioStation(country, name) then
+                print("Custom radio station removed successfully: " .. country .. " - " .. name)
+                if IsValid(ply) then
+                    ply:ChatPrint("Custom radio station removed: " .. name)
+                end
+            else
+                print("Station not found: " .. country .. " - " .. name)
+                if IsValid(ply) then
+                    ply:ChatPrint("Station not found: " .. name)
+                end
+            end
+        else
+            print("Invalid action. Use 'add' or 'remove'.")
+            if IsValid(ply) then
+                ply:ChatPrint("Invalid action. Use 'add' or 'remove'.")
+            end
+        end
+    else
+        ply:ChatPrint("You must be an admin to use this command.")
+    end
+end)
 
 -- Function to add a radio to the active list
 local function AddActiveRadio(entity, stationName, url, volume)
@@ -71,12 +182,18 @@ local function RestoreBoomboxRadio(entity)
         net.WriteEntity(entity)
         net.WriteString(savedState.url)
         net.WriteFloat(savedState.volume)
+        net.WriteString("Unknown")  -- Use "Unknown" for restored permaprops as we don't store country
         net.Broadcast()
 
         AddActiveRadio(entity, savedState.station, savedState.url, savedState.volume)
         utils.DebugPrint("Restored and added active radio for PermaProps_ID: " .. permaID)
     else
-        utils.DebugPrint("Station is not playing. Not broadcasting rRadio_PlayRadioStation.")
+        net.Start("rRadio_UpdateRadioStatus")
+        net.WriteEntity(entity)
+        net.WriteString(savedState.station)
+        net.WriteString("Unknown")  -- Use "Unknown" for restored permaprops as we don't store country
+        net.Broadcast()
+        utils.DebugPrint("Updated radio status for non-playing boombox: " .. permaID)
     end
 end
 
@@ -111,8 +228,10 @@ hook.Add("Initialize", "CreateBoomboxStatesTable", CreateBoomboxStatesTable)
 
 -- Save boombox state to database
 local function SaveBoomboxStateToDatabase(permaID, stationName, url, isPlaying, volume)
-    local query = string.format("REPLACE INTO boombox_states (permaID, station, url, isPlaying, volume) VALUES (%d, %s, %s, %d, %f)",
-        permaID, sql.SQLStr(stationName), sql.SQLStr(url), isPlaying and 1 or 0, volume)
+    local query = string_format(
+        "REPLACE INTO boombox_states (permaID, station, url, isPlaying, volume) VALUES (%d, %s, %s, %d, %f)",
+        permaID, sql.SQLStr(stationName), sql.SQLStr(url), isPlaying and 1 or 0, volume
+    )
     if sql.Query(query) == false then
         utils.DebugPrint("Failed to save boombox state: " .. sql.LastError())
     else
@@ -122,7 +241,7 @@ end
 
 -- Remove boombox state from database
 local function RemoveBoomboxStateFromDatabase(permaID)
-    local query = string.format("DELETE FROM boombox_states WHERE permaID = %d", permaID)
+    local query = string_format("DELETE FROM boombox_states WHERE permaID = %d", permaID)
     if sql.Query(query) == false then
         utils.DebugPrint("Failed to remove boombox state: " .. sql.LastError())
     else
@@ -181,7 +300,12 @@ local function RetrySendActiveRadios(ply, attempt)
     PlayerRetryAttempts[ply] = attempt + 1
 
     timer.Simple(5, function()
-        SendActiveRadiosToPlayer(ply)
+        local success, err = pcall(function()
+            SendActiveRadiosToPlayer(ply)
+        end)
+        if not success then
+            utils.DebugPrint("Error in SendActiveRadiosToPlayer: " .. tostring(err))
+        end
     end)
 end
 
@@ -235,20 +359,14 @@ hook.Add("PlayerLeaveVehicle", "UnmarkSitAnywhereSeat", function(ply, vehicle)
 end)
 
 hook.Add("PlayerEnteredVehicle", "rRadio_ShowCarRadioMessageOnEnter", function(ply, vehicle, role)
-    if not IsValid(ply) or not IsValid(vehicle) then
-        return
-    end
-
-    if vehicle:GetNWBool("IsSitAnywhereSeat", false) then
-        return  -- Do not send the message if it's a sit anywhere seat
-    end
-
+    if not IsValid(ply) or not IsValid(vehicle) then return end
+    if vehicle:GetNWBool("IsSitAnywhereSeat", false) then return end
     net.Start("rRadio_ShowCarRadioMessage")
     net.Send(ply)
 end)
 
 -- Function to handle playing radio station for boombox
-local function HandleBoomboxPlayRadio(entity, stationName, url, volume)
+local function HandleBoomboxPlayRadio(entity, stationName, url, volume, country)
     local permaID = entity.PermaProps_ID
     if permaID then
         SavedBoomboxStates[permaID] = {
@@ -260,17 +378,8 @@ local function HandleBoomboxPlayRadio(entity, stationName, url, volume)
         SaveBoomboxStateToDatabase(permaID, stationName, url, true, volume)
     end
 
-    if entity.SetVolume then
-        entity:SetVolume(volume)
-    else
-        utils.DebugPrint("Warning: SetVolume function not found for entity: " .. entity:EntIndex())
-    end
-
-    if entity.SetStationName then
-        entity:SetStationName(stationName)
-    else
-        utils.DebugPrint("Warning: SetStationName function not found for entity: " .. entity:EntIndex())
-    end
+    if entity.SetVolume then entity:SetVolume(volume) end
+    if entity.SetStationName then entity:SetStationName(stationName) end
 
     AddActiveRadio(entity, stationName, url, volume)
 
@@ -278,20 +387,20 @@ local function HandleBoomboxPlayRadio(entity, stationName, url, volume)
         net.WriteEntity(entity)
         net.WriteString(url)
         net.WriteFloat(volume)
+        net.WriteString(country or "Unknown")  -- Always send country for display
     net.Broadcast()
 
     net.Start("rRadio_UpdateRadioStatus")
         net.WriteEntity(entity)
         net.WriteString(stationName)
+        net.WriteString(country or "Unknown")  -- Always send country for display
     net.Broadcast()
 end
 
 -- Function to handle playing radio station for vehicle
 local function HandleVehiclePlayRadio(entity, stationName, url, volume)
     local mainVehicle = entity:GetParent() or entity
-    if not IsValid(mainVehicle) then
-        mainVehicle = entity
-    end
+    if not IsValid(mainVehicle) then mainVehicle = entity end
 
     if ActiveRadios[mainVehicle:EntIndex()] then
         net.Start("rRadio_StopRadioStation")
@@ -319,7 +428,8 @@ net.Receive("rRadio_PlayRadioStation", function(len, ply)
     local entity = net.ReadEntity()
     local stationName = net.ReadString()
     local url = net.ReadString()
-    local volume = math.Clamp(net.ReadFloat(), 0, 1)
+    local volume = math_Clamp(net.ReadFloat(), 0, 1)
+    local country = net.ReadString()  -- Read country from the network message
 
     if not IsValid(entity) then
         utils.DebugPrint("Invalid entity received in rRadio_PlayRadioStation.")
@@ -329,9 +439,9 @@ net.Receive("rRadio_PlayRadioStation", function(len, ply)
     utils.DebugPrint("rRadio_PlayRadioStation received: Entity " .. entity:EntIndex())
 
     if utils.isBoombox(entity) then
-        HandleBoomboxPlayRadio(entity, stationName, url, volume)
+        HandleBoomboxPlayRadio(entity, stationName, url, volume, country)
     elseif entity:IsVehicle() then
-        HandleVehiclePlayRadio(entity, stationName, url, volume)
+        HandleVehiclePlayRadio(entity, stationName, url, volume, country)
     end
 end)
 
@@ -428,7 +538,7 @@ end
 hook.Add("InitPostEntity", "SetupBoomboxHooks", function()
     timer.Simple(1, function()
         if IsDarkRP() then
-            print("[CarRadio] DarkRP or DerivedRP detected. Setting up CPPI-based ownership hooks.")
+            print("[rRadio] DarkRP or DerivedRP detected. Setting up CPPI-based ownership hooks.")
 
             -- Add the hook for playerBoughtCustomEntity in DarkRP or DerivedRP
             hook.Add("playerBoughtCustomEntity", "AssignBoomboxOwnerInDarkRP", function(ply, entTable, ent, price)
@@ -437,10 +547,8 @@ hook.Add("InitPostEntity", "SetupBoomboxHooks", function()
                 end
             end)
         else
-            print("[CarRadio] Non-DarkRP gamemode detected. Using sandbox-compatible ownership hooks.")
+            print("[rRadio] Non-DarkRP gamemode detected. Using sandbox-compatible ownership hooks.")
         end
-    end, function(err)
-        utils.DebugPrint("Error in SetupBoomboxHooks: " .. tostring(err))
     end)
 end)
 
@@ -453,20 +561,12 @@ hook.Add("CanTool", "AllowBoomboxToolgun", function(ply, tr, tool)
             return true  -- Allow owner to use tools on the boombox
         end
     end
-    return false
 end)
 
 hook.Add("PhysgunPickup", "AllowBoomboxPhysgun", function(ply, ent)
-    if not IsValid(ent) or not utils.isBoombox(ent) then
-        return false
-    end
-
+    if not IsValid(ent) or not utils.isBoombox(ent) then return false end
     local owner = ent:GetNWEntity("Owner")
-    if owner == ply or ply:IsAdmin() then
-        return true  -- Allow owner or admin to physgun the boombox
-    end
-
-    return false
+    return owner == ply or ply:IsAdmin()
 end)
 
 -- Ensure PermaProps and SpecialENTSSpawn table are initialized
@@ -511,30 +611,40 @@ end
 -- Add handling for golden_boombox entities
 PermaProps.SpecialENTSSpawn["golden_boombox"] = PermaProps.SpecialENTSSpawn["boombox"]
 
--- Similar entries can be added for other custom radio entities if needed
-
 hook.Add("Initialize", "LoadBoomboxStatesOnStartup", function()
     utils.DebugPrint("Attempting to load Boombox States from the database")
     LoadBoomboxStatesFromDatabase()
-
-    -- Existing boombox states will be restored by PermaProps.SpecialENTSSpawn functions when they are spawned
     utils.DebugPrint("Finished restoring active radios")
 end)
 
 -- Clear all boombox states from the database
 concommand.Add("rradio_remove_all", function(ply, cmd, args)
-    if not ply or ply:IsAdmin() then
-        if sql then
-            local result = sql.Query("DELETE FROM boombox_states")
-            if result == false then
-                print("[CarRadio] Failed to clear boombox states: " .. sql.LastError())
-            else
-                print("[CarRadio] All boombox states cleared successfully.")
-                SavedBoomboxStates = {}
-                ActiveRadios = {}
+    if not IsValid(ply) or ply:IsAdmin() then
+        if sql.Query("DELETE FROM boombox_states") ~= false then
+            print("[rRadio] All boombox states cleared successfully.")
+            SavedBoomboxStates = {}
+            ActiveRadios = {}
+        else
+            print("[rRadio] Failed to clear boombox states: " .. sql.LastError())
+        end
+    else
+        ply:ChatPrint("You do not have permission to run this command.")
+    end
+end)
+
+-- Command to list all saved custom stations
+concommand.Add("rradio_list_custom_stations", function(ply, cmd, args)
+    if not IsValid(ply) or ply:IsAdmin() then
+        if next(CustomRadioStations) then
+            print("[rRadio] Saved custom stations:")
+            for country, stations in pairs(CustomRadioStations) do
+                print("Country: " .. country)
+                for i, station in ipairs(stations) do
+                    print(string.format("  %d. Station: %s, URL: %s", i, station.name, station.url))
+                end
             end
         else
-            utils.PrintError("[CarRadio] SQL library is not available.", 2)
+            print("[rRadio] No saved custom stations found.")
         end
     else
         ply:ChatPrint("You do not have permission to run this command.")
