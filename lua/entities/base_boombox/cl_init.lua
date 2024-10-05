@@ -172,7 +172,7 @@ function ENT:Draw()
     local viewAngle = AngleBetweenVectors(forward, toPlayer)
     
     -- Only draw the panel if it's visible from the front (angle less than 90 degrees)
-    if viewAngle < 90 then
+    if viewAngle > 90 then
         local upOffset = self:OBBMaxs().z + ResponsiveScale(6)
         local backwardOffset = ResponsiveScale(3)
         local panelPos = pos + ang:Up() * upOffset + ang:Forward() * backwardOffset
