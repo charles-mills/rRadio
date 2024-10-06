@@ -1,5 +1,31 @@
+local CURRENT_VERSION = "v1.2.1"
+local GITHUB_API_URL = "https://api.github.com/repos/charles-mills/rradio/releases/latest"
+
+local function checkVersion() -- In case locally installed
+    http.Fetch(GITHUB_API_URL,
+        function(body)
+            local data = util.JSONToTable(body)
+            if data and data.tag_name then
+                local latestVersion = string.Trim(data.tag_name)
+                if latestVersion ~= CURRENT_VERSION then
+                    print("[rRadio] A new version is available: " .. latestVersion)
+                    print("[rRadio] Please update your rRadio addon.")
+                else
+                    print("[rRadio] rRadio is up to date (version " .. CURRENT_VERSION .. ")")
+                end
+            else
+                print("[rRadio] Failed to parse version information")
+            end
+        end,
+        function(error)
+            print("[rRadio] Failed to check for updates: " .. error)
+        end
+    )
+end
+
 if SERVER then
     print("[RADIO] Starting server-side initialization")
+    checkVersion()
     
     -- Load the config file first to get the network strings
     Config = include("misc/config.lua")
