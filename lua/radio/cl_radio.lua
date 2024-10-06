@@ -302,26 +302,23 @@ local function getRadioMessage(keyName)
     return (Config.Lang["PressKeyToOpen"] or "Press {key} to open the radio menu"):gsub("{key}", keyName)
 end
 
--- Update the function to show the radio message
+-- Modify the PrintrRadio_ShowCarRadioMessage function
 local function PrintrRadio_ShowCarRadioMessage()
     -- Ensure the convar is set to show messages
     if not shouldShowRadioMessage() then return end
 
-    local vehicle = LocalPlayer():GetVehicle()
+    local ply = LocalPlayer()
+    local vehicle = ply:GetVehicle()
 
     -- Ensure vehicle is valid
-    if not IsValid(vehicle) then return end
-
-    -- If the networked variable isn't ready, retry the function after a short delay
-    if vehicle:GetNWBool("IsSitAnywhereSeat", false) == nil then
-        timer.Simple(0.5, function()
-            PrintrRadio_ShowCarRadioMessage()
-        end)
+    if not IsValid(vehicle) then
+        utils.DebugPrint("Invalid vehicle, not showing message")
         return
     end
 
-    -- Ensure it's not a sit-anywhere seat
+    -- Check if it's a sit-anywhere seat
     if utils.isSitAnywhereSeat(vehicle) then
+        utils.DebugPrint("Vehicle is a SitAnywhere seat, not showing message")
         return
     end
 
@@ -340,9 +337,20 @@ local function PrintrRadio_ShowCarRadioMessage()
     createNotificationPanel(message)
 end
 
--- Network receiver for showing the "press key to open stations" animation
+-- Modify the network receiver for showing the "press key to open stations" animation
 net.Receive("rRadio_ShowCarRadioMessage", function()
-    PrintrRadio_ShowCarRadioMessage()
+    local ply = LocalPlayer()
+    local vehicle = ply:GetVehicle()
+    
+    if IsValid(vehicle) then
+        if not utils.isSitAnywhereSeat(vehicle) then
+            PrintrRadio_ShowCarRadioMessage()
+        else
+            utils.DebugPrint("Not showing radio message: SitAnywhere seat")
+        end
+    else
+        utils.DebugPrint("Not showing radio message: Invalid vehicle")
+    end
 end)
 
 local function createFont(fontName, fontSize)
@@ -975,10 +983,26 @@ local function rRadio_OpenRadioMenu()
     end
 end
 
--- Replace the existing hook with this updated Think function
+-- Add this near the top of the file, after other net.Receive functions
+net.Receive("rRadio_UpdateSitAnywhereSeat", function()
+    local vehicle = net.ReadEntity()
+    local isSitAnywhere = net.ReadBool()
+    if IsValid(vehicle) then
+        vehicle:SetNWBool("IsSitAnywhereSeat", isSitAnywhere)
+    end
+end)
+
+-- Modify the existing utils.isSitAnywhereSeat function
+function utils.isSitAnywhereSeat(vehicle)
+    if not IsValid(vehicle) then return false end
+    return vehicle:GetNWBool("IsSitAnywhereSeat", false)
+end
+
+-- Add these lines near the top of the file, with other local variable declarations
 local lastKeyCheckTime = 0
 local keyCheckInterval = 0.1 -- Check every 0.1 seconds
 
+-- Modify the existing hook
 hook.Add("Think", "CheckCarRadioMenuKey", function()
     local currentTime = CurTime()
     if currentTime - lastKeyCheckTime < keyCheckInterval then return end
@@ -989,6 +1013,9 @@ hook.Add("Think", "CheckCarRadioMenuKey", function()
 
     local vehicle = ply:GetVehicle()
     if not IsValid(vehicle) then return end
+
+    -- Wait for the networked variable to be set
+    if vehicle:GetNWBool("IsSitAnywhereSeat", nil) == nil then return end
 
     local openKey = radioOpenKeyConVar:GetInt()
     if input.IsKeyDown(openKey) then

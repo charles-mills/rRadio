@@ -16,7 +16,9 @@ utils.VERBOSE_ERRORS = true
     @return (boolean): True if it's a sit anywhere seat, false otherwise.
 ]]
 function utils.isSitAnywhereSeat(vehicle)
+    utils.DebugPrint("Checking if vehicle " .. vehicle:EntIndex() .. " is a sit anywhere seat")
     if not IsValid(vehicle) then return false end
+    utils.DebugPrint("Vehicle " .. vehicle:EntIndex() .. " is a sit anywhere seat: " .. tostring(vehicle:GetNWBool("IsSitAnywhereSeat", false)))
     return vehicle:GetNWBool("IsSitAnywhereSeat", false)
 end
 
@@ -88,3 +90,73 @@ function utils.L(key, ...)
     end
     return str
 end
+
+-- Add these functions to the existing utils.lua file
+
+function utils.IsPlayerAuthorized(ply, entity)
+    if not IsValid(ply) or not IsValid(entity) then return false end
+    
+    if ply:IsAdmin() or ply:IsSuperAdmin() then return true end
+    
+    local owner = entity.CPPIGetOwner and entity:CPPIGetOwner() or entity:GetNWEntity("Owner")
+    
+    return ply == owner or utils.isAuthorizedFriend(owner, ply)
+end
+
+function utils.HandleRadioPlay(entity, stationName, url, volume, country)
+    entity:SetNWString("CurrentRadioStation", stationName)
+    entity:SetNWString("StationURL", url)
+    entity:SetNWFloat("Volume", volume)
+    entity:SetNWString("Country", country)
+    entity:SetNWBool("IsRadioSource", true)
+
+    net.Start("rRadio_PlayRadioStation")
+    net.WriteEntity(entity)
+    net.WriteString(url)
+    net.WriteFloat(volume)
+    net.WriteString(country)
+    net.Broadcast()
+
+    return {
+        entity = entity,
+        stationName = stationName,
+        url = url,
+        volume = volume
+    }
+end
+
+function utils.UpdateSitAnywhereSeatStatus(vehicle)
+    if IsValid(vehicle) then
+        local isSitAnywhere = vehicle.playerdynseat or false
+        vehicle:SetNWBool("IsSitAnywhereSeat", isSitAnywhere)
+        net.Start("rRadio_UpdateSitAnywhereSeat")
+        net.WriteEntity(vehicle)
+        net.WriteBool(isSitAnywhere)
+        net.Broadcast()
+    end
+end
+
+-- Add these hooks in utils.lua
+hook.Add("PlayerEnteredVehicle", "MarkSitAnywhereSeat", function(ply, vehicle)
+    timer.Simple(0.1, function()
+        if IsValid(vehicle) then
+            utils.UpdateSitAnywhereSeatStatus(vehicle)
+        end
+    end)
+end)
+
+hook.Add("PlayerLeaveVehicle", "UnmarkSitAnywhereSeat", function(ply, vehicle)
+    if IsValid(vehicle) then
+        utils.UpdateSitAnywhereSeatStatus(vehicle)
+    end
+end)
+
+hook.Add("OnEntityCreated", "UpdateSitAnywhereSeatOnSpawn", function(ent)
+    if IsValid(ent) and ent:IsVehicle() then
+        timer.Simple(0.1, function()
+            if IsValid(ent) then
+                utils.UpdateSitAnywhereSeatStatus(ent)
+            end
+        end)
+    end
+end)
