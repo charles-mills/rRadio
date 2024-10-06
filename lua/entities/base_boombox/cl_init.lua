@@ -5,6 +5,8 @@
     Date: 2024-10-03
 ]]
 
+ENT = ENT or {}
+
 include("shared.lua")
 include("misc/config.lua")
 include("misc/utils.lua")
@@ -19,6 +21,17 @@ local math_sin = math.sin
 local draw_SimpleText = draw.SimpleText
 local surface_SetDrawColor = surface.SetDrawColor
 local surface_DrawLine = surface.DrawLine
+
+-- Cache more frequently used functions
+local draw_RoundedBox = draw.RoundedBox
+local surface_DrawLine = surface.DrawLine
+local string_format = string.format
+local timer_Create = timer.Create
+local net_Receive = net.Receive
+local net_ReadEntity = net.ReadEntity
+local net_ReadString = net.ReadString
+local cam_Start3D2D = cam.Start3D2D
+local cam_End3D2D = cam.End3D2D
 
 -- -------------------------------
 -- 1. Utility Functions
@@ -71,13 +84,13 @@ surface.CreateFont("BoomboxTextFont", {
 
 -- Function to draw a rounded box
 local function DrawRoundedBox(x, y, w, h, radius, color)
-    draw.RoundedBox(radius, x, y, w, h, color)
+    draw_RoundedBox(radius, x, y, w, h, color)
 end
 
 -- Function to draw an outlined rounded box
 local function DrawOutlinedRoundedBox(x, y, w, h, radius, color, outlineColor, outlineWidth)
-    draw.RoundedBox(radius, x, y, w, h, outlineColor)
-    draw.RoundedBox(radius, x + outlineWidth, y + outlineWidth, w - outlineWidth * 2, h - outlineWidth * 2, color)
+    draw_RoundedBox(radius, x, y, w, h, outlineColor)
+    draw_RoundedBox(radius, x + outlineWidth, y + outlineWidth, w - outlineWidth * 2, h - outlineWidth * 2, color)
 end
 
 -- Function to get the display name for the boombox owner
@@ -99,11 +112,13 @@ local function DrawBoomboxPanel(ent, x, y)
     local subTextColor = Color(200, 200, 200, panelAlpha)
 
     local ownerName = getDisplayName(ent)
-    local stationName = ent:GetStationName() ~= "" and ent:GetStationName() or Config.Lang["NoStationPlaying"]
-    local country = ent:GetStationName() ~= "" and ent:GetNWString("Country", Config.Lang["Unknown"]) or Config.Lang["None"]
+    local stationName = ent:GetStationName()
+    local isPlaying = stationName ~= ""
+    local displayStationName = isPlaying and stationName or Config.Lang["NoStationPlaying"]
+    local country = isPlaying and ent:GetNWString("Country", Config.Lang["Unknown"]) or Config.Lang["None"]
 
     -- Localize the country name
-    if country ~= Config.Lang["Unknown"] and country ~= Config.Lang["None"] then
+    if isPlaying and country ~= Config.Lang["Unknown"] then
         local lang = GetConVar("radio_language"):GetString() or "en"
         country = CountryTranslations:GetCountryName(lang, country) or country
     end
@@ -111,7 +126,7 @@ local function DrawBoomboxPanel(ent, x, y)
     DrawOutlinedRoundedBox(x, y, panelWidth, panelHeight, cornerRadius, panelColor, outlineColor, 2)
 
     -- Title (Player's name or "Boombox")
-    local titleText = ownerName == "Boombox" and ownerName or string.format(Config.Lang["PlayersBoombox"], ownerName)
+    local titleText = ownerName == "Boombox" and ownerName or string_format(Config.Lang["PlayersBoombox"], ownerName)
     draw_SimpleText(titleText, "BoomboxTitleFont", x + panelWidth/2, y + ResponsiveScale(15), textColor, TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP)
 
     -- Separator
@@ -119,19 +134,19 @@ local function DrawBoomboxPanel(ent, x, y)
     surface_DrawLine(x + ResponsiveScale(10), y + ResponsiveScale(45), x + panelWidth - ResponsiveScale(10), y + ResponsiveScale(45))
 
     -- Station info
-    local stationText = Config.Lang["Station"] .. ": " .. stationName
+    local stationText = Config.Lang["Station"] .. ": " .. displayStationName
     local countryText = Config.Lang["Country"] .. ": " .. country
     draw_SimpleText(stationText, "BoomboxTextFont", x + ResponsiveScale(10), y + ResponsiveScale(55), subTextColor, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
     draw_SimpleText(countryText, "BoomboxTextFont", x + ResponsiveScale(10), y + ResponsiveScale(75), subTextColor, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
 
     -- Playing indicator
-    if ent:GetStationName() ~= "" then
+    if isPlaying then
         local indicatorSize = ResponsiveScale(16)
         local indicatorX = x + panelWidth - ResponsiveScale(30)
         local indicatorY = y + ResponsiveScale(20)
         local pulseSize = math_sin(CurTime() * 5) * ResponsiveScale(4)
-        draw.RoundedBox(indicatorSize / 2, indicatorX - pulseSize / 2, indicatorY - pulseSize / 2, indicatorSize + pulseSize, indicatorSize + pulseSize, Color(0, 255, 0, panelAlpha * 0.5))
-        draw.RoundedBox(indicatorSize / 2, indicatorX, indicatorY, indicatorSize, indicatorSize, Color(0, 255, 0, panelAlpha))
+        draw_RoundedBox(indicatorSize / 2, indicatorX - pulseSize / 2, indicatorY - pulseSize / 2, indicatorSize + pulseSize, indicatorSize + pulseSize, Color(0, 255, 0, panelAlpha * 0.5))
+        draw_RoundedBox(indicatorSize / 2, indicatorX, indicatorY, indicatorSize, indicatorSize, Color(0, 255, 0, panelAlpha))
     end
 end
 
@@ -142,7 +157,7 @@ end
 -- Function to update the panel's alpha for smooth fade in/out
 local function UpdatePanelAlpha()
     if panelAlpha ~= targetPanelAlpha then
-        panelAlpha = Lerp(0.1, panelAlpha, targetPanelAlpha)
+        panelAlpha = panelAlpha + (targetPanelAlpha - panelAlpha) * 0.1
         if math.abs(panelAlpha - targetPanelAlpha) < 0.1 then
             panelAlpha = targetPanelAlpha
         end
@@ -150,7 +165,7 @@ local function UpdatePanelAlpha()
 end
 
 -- Create a timer to update the panel alpha
-timer.Create("BoomboxPanelAlphaUpdate", 0.03, 0, UpdatePanelAlpha)
+timer_Create("BoomboxPanelAlphaUpdate", 0.03, 0, UpdatePanelAlpha)
 
 -- -------------------------------
 -- 6. Entity Drawing
@@ -174,7 +189,7 @@ function ENT:Draw()
     -- Calculate the angle between the boombox's forward direction and the direction to the player
     local viewAngle = AngleBetweenVectors(forward, toPlayer)
     
-    -- Only draw the panel if it's visible from the front (angle less than 90 degrees)
+    -- Only draw the panel if it's visible from the front (angle more than 90 degrees)
     if viewAngle > 90 then
         local upOffset = self:OBBMaxs().z + ResponsiveScale(6)
         local backwardOffset = ResponsiveScale(3)
@@ -187,9 +202,9 @@ function ENT:Draw()
         local fadeAlpha = math_Clamp((fadeDistance - dist) / fadeDistance, 0, 1)
         targetPanelAlpha = fadeAlpha * 255
 
-        cam.Start3D2D(panelPos, ang, 0.1)
+        cam_Start3D2D(panelPos, ang, 0.1)
             DrawBoomboxPanel(self, -panelWidth / 2, -panelHeight / 2)
-        cam.End3D2D()
+        cam_End3D2D()
     end
 end
 
@@ -198,13 +213,10 @@ end
 -- -------------------------------
 
 -- Network receiver for updating radio status
-net.Receive("rRadio_UpdateRadioStatus", function()
-    local entity = net.ReadEntity()
-    local stationName = net.ReadString()
-    local country = net.ReadString()
-
+net_Receive("rRadio_UpdateRadioStatus", function()
+    local entity = net_ReadEntity()
     if IsValid(entity) and (entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox") then
-        entity:SetStationName(stationName)
-        entity:SetNWString("Country", country)
+        entity:SetStationName(net_ReadString())
+        entity:SetNWString("Country", net_ReadString())
     end
 end)
