@@ -58,24 +58,39 @@ function ENT:SpawnFunction(ply, tr, className)
     return ent
 end
 
--- Ensure only the owner or a superadmin can pick up the boombox with the Physgun
-function ENT:PhysgunPickup(ply)
-    local owner = self:GetNWEntity("Owner")
+-- Function to check if a player is authorized to use the boombox
+local function IsPlayerAuthorized(ply, owner)
+    if not IsValid(ply) or not IsValid(owner) then return false end
     
-    if not IsValid(owner) or ply == owner or ply:IsSuperAdmin() then
-        return true
+    if ply == owner or ply:IsSuperAdmin() then return true end
+
+    -- Load the authorized friends list
+    local filename = "rradio_authorized_friends_" .. owner:SteamID() .. ".txt"
+    local friendsData = file.Read(filename, "DATA")
+    if friendsData then
+        local authorizedFriends = util.JSONToTable(friendsData) or {}
+        for _, friend in ipairs(authorizedFriends) do
+            if friend.steamid == ply:SteamID() then
+                return true
+            end
+        end
     end
 
     return false
 end
 
--- Only allow the owner or a superadmin to use the boombox
+-- Ensure only authorized players can pick up the boombox with the Physgun
+function ENT:PhysgunPickup(ply)
+    local owner = self:GetNWEntity("Owner")
+    return IsPlayerAuthorized(ply, owner)
+end
+
+-- Only allow authorized players to use the boombox
 function ENT:Use(activator, caller)
     if activator:IsPlayer() then
         local owner = self:GetNWEntity("Owner")
 
-        -- Check if the player is the owner or a superadmin
-        if activator == owner or activator:IsSuperAdmin() then
+        if IsPlayerAuthorized(activator, owner) then
             net.Start("rRadio_OpenRadioMenu")
             net.WriteEntity(self)
             net.Send(activator)

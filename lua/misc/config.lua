@@ -73,7 +73,7 @@ end
 -- -------------------------------
 -- 7. Theme Configuration
 -- -------------------------------
-local themes = include("themes/theme_palettes.lua")
+local themes = include("misc/theme_palettes.lua")
 local selectedTheme = themes["neon"] -- Default to neon theme or set based on user preference
 
 -- -------------------------------

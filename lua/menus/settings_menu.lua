@@ -9,7 +9,7 @@
 -- 1. Includes and Initialization
 -- -------------------------------
 local keyCodeMapping = include("misc/key_names.lua")
-local themes = include("themes/theme_palettes.lua")
+local themes = include("misc/theme_palettes.lua")
 local languageManager = include("localisation/language_manager.lua")
 
 -- Add this near the top of the file, after including language_manager.lua

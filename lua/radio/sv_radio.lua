@@ -25,19 +25,57 @@ local PlayerRetryAttempts = {}
 local CustomRadioStations = {}
 local customStationsFile = "rradio_custom_stations.txt"
 
+-- Add this function near the top of the file
+local function loadAuthorizedFriends(ply)
+    if not IsValid(ply) then return {} end
+    
+    local steamID = ply:SteamID()
+    local filename = "rradio_authorized_friends_" .. steamID .. ".txt"
+    local friendsData = file.Read(filename, "DATA")
+    
+    if friendsData then
+        return util.JSONToTable(friendsData) or {}
+    else
+        return {}
+    end
+end
+
+local function isAuthorizedFriend(owner, player)
+    if not IsValid(owner) or not IsValid(player) then return false end
+    
+    if not owner.AuthorizedFriends then
+        owner.AuthorizedFriends = loadAuthorizedFriends(owner)
+    end
+    
+    local playerSteamID = player:SteamID()
+    
+    for _, friend in ipairs(owner.AuthorizedFriends) do
+        if friend.steamid == playerSteamID then
+            return true
+        end
+    end
+    
+    return false
+end
+
 -- Function to check if a player is near an entity
 local function IsPlayerNearEntity(ply, entity, maxDistance)
     if not IsValid(ply) or not IsValid(entity) then return false end
     return ply:GetPos():DistToSqr(entity:GetPos()) <= (maxDistance * maxDistance)
 end
 
--- Function to check if a player owns an entity
+-- Modify the DoesPlayerOwnEntity function
 local function DoesPlayerOwnEntity(ply, entity)
     if not IsValid(ply) or not IsValid(entity) then return false end
+    
+    local owner
     if entity.CPPIGetOwner then
-        return entity:CPPIGetOwner() == ply
+        owner = entity:CPPIGetOwner()
+    else
+        owner = entity:GetNWEntity("Owner")
     end
-    return entity:GetNWEntity("Owner") == ply
+    
+    return owner == ply or isAuthorizedFriend(owner, ply)
 end
 
 -- Rate limiting setup
@@ -396,7 +434,12 @@ hook.Add("PlayerEnteredVehicle", "rRadio_ShowCarRadioMessageOnEnter", function(p
 end)
 
 -- Function to handle playing radio station for boombox
-local function HandleBoomboxPlayRadio(entity, stationName, url, volume, country)
+local function HandleBoomboxPlayRadio(ply, entity, stationName, url, volume, country)
+    if not DoesPlayerOwnEntity(ply, entity) then
+        ply:ChatPrint("You don't have permission to use this boombox.")
+        return
+    end
+
     local permaID = entity.PermaProps_ID
     if permaID then
         SavedBoomboxStates[permaID] = {
@@ -504,56 +547,9 @@ net.Receive("rRadio_PlayRadioStation", function(len, ply)
 
     -- If all checks pass, proceed with playing the radio station
     if utils.isBoombox(entity) then
-        HandleBoomboxPlayRadio(entity, stationName, url, volume, country)
+        HandleBoomboxPlayRadio(ply, entity, stationName, url, volume, country)
     elseif entity:IsVehicle() then
         HandleVehiclePlayRadio(entity, stationName, url, volume, country)
-    end
-end)
-
--- Main function to handle rRadio_StopRadioStation network message
-net.Receive("rRadio_StopRadioStation", function(len, ply)
-    local entity = net.ReadEntity()
-
-    -- Server-side validation
-    if not IsValid(entity) or not IsValid(ply) then
-        utils.DebugPrint("Invalid entity or player in rRadio_StopRadioStation.")
-        return
-    end
-
-    -- Rate limiting
-    if IsRateLimited(ply) then
-        utils.DebugPrint("Rate limit exceeded for player: " .. ply:Nick())
-        return
-    end
-
-    -- Entity-specific checks
-    if utils.isBoombox(entity) then
-        -- Proximity check for boomboxes
-        if not IsPlayerNearEntity(ply, entity, 300) then -- 300 units max distance
-            utils.DebugPrint("Player too far from boombox: " .. ply:Nick())
-            return
-        end
-        -- Entity ownership check for boomboxes
-        if not DoesPlayerOwnEntity(ply, entity) then
-            utils.DebugPrint("Player doesn't own the boombox: " .. ply:Nick())
-            return
-        end
-    elseif entity:IsVehicle() then
-        -- Check if player is in the vehicle
-        if not IsPlayerInVehicle(ply, entity) then
-            utils.DebugPrint("Player is not in the vehicle: " .. ply:Nick())
-            return
-        end
-    else
-        utils.DebugPrint("Invalid entity type for radio: " .. tostring(entity))
-        return
-    end
-
-    -- If all checks pass, proceed with stopping the radio station
-    if utils.isBoombox(entity) then
-        StopBoomboxRadio(entity)
-    elseif entity:IsVehicle() then
-        StopVehicleRadio(entity)
     end
 end)
 
@@ -601,6 +597,48 @@ local function StopVehicleRadio(entity)
         net.WriteString("")
     net.Broadcast()
 end
+
+-- Main function to handle rRadio_StopRadioStation network message
+net.Receive("rRadio_StopRadioStation", function(len, ply)
+    local entity = net.ReadEntity()
+
+    -- Server-side validation
+    if not IsValid(entity) or not IsValid(ply) then
+        utils.DebugPrint("Invalid entity or player in rRadio_StopRadioStation.")
+        return
+    end
+
+    -- Rate limiting
+    if IsRateLimited(ply) then
+        utils.DebugPrint("Rate limit exceeded for player: " .. ply:Nick())
+        return
+    end
+
+    -- Entity-specific checks
+    if utils.isBoombox(entity) then
+        -- Proximity check for boomboxes
+        if not IsPlayerNearEntity(ply, entity, 300) then -- 300 units max distance
+            utils.DebugPrint("Player too far from boombox: " .. ply:Nick())
+            return
+        end
+        -- Entity ownership check for boomboxes
+        if not DoesPlayerOwnEntity(ply, entity) then
+            utils.DebugPrint("Player doesn't own the boombox: " .. ply:Nick())
+            return
+        end
+        StopBoomboxRadio(entity)
+    elseif entity:IsVehicle() then
+        -- Check if player is in the vehicle
+        if not IsPlayerInVehicle(ply, entity) then
+            utils.DebugPrint("Player is not in the vehicle: " .. ply:Nick())
+            return
+        end
+        StopVehicleRadio(entity)
+    else
+        utils.DebugPrint("Invalid entity type for radio: " .. tostring(entity))
+        return
+    end
+end)
 
 -- Cleanup active radios when an entity is removed
 hook.Add("EntityRemoved", "CleanupActiveRadioOnEntityRemove", function(entity)
@@ -748,4 +786,19 @@ concommand.Add("rradio_list_custom_stations", function(ply, cmd, args)
     else
         ply:ChatPrint("You do not have permission to run this command.")
     end
+end)
+
+-- Add this network receiver to handle friend list updates
+util.AddNetworkString("rRadio_UpdateAuthorizedFriends")
+
+net.Receive("rRadio_UpdateAuthorizedFriends", function(len, ply)
+    local friendsData = net.ReadString()
+    local filename = "rradio_authorized_friends_" .. ply:SteamID() .. ".txt"
+    file.Write(filename, friendsData)
+    ply.AuthorizedFriends = util.JSONToTable(friendsData)
+end)
+
+-- Add this hook to load authorized friends when a player joins
+hook.Add("PlayerInitialSpawn", "LoadAuthorizedFriends", function(ply)
+    ply.AuthorizedFriends = loadAuthorizedFriends(ply)
 end)
