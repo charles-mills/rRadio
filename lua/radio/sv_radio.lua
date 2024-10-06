@@ -2,11 +2,12 @@
     rRadio Addon for Garry's Mod - Server-Side Script
     Description: Manages car and boombox radio functionalities, including network communications, database interactions, and entity management.
     Author: Charles Mills (https://github.com/charles-mills)
-    Date: 2024-10-02
+    Date: 2024-10-06
 ]]
 
 include("misc/utils.lua")
 include("misc/config.lua")
+include("entities/base_boombox/init.lua")
 
 -- Cache frequently used functions
 local IsValid, pairs, ipairs = IsValid, pairs, ipairs
@@ -38,20 +39,26 @@ local function loadAuthorizedFriends(ply)
     else
         return {}
     end
+
+    utils.DebugPrint("Loaded authorized friends for " .. ply:Nick() .. ": " .. util.TableToJSON(authorizedFriends))
+    utils.DebugPrint("Read friends list from file: " .. filename)
 end
 
 local function isAuthorizedFriend(owner, player)
     if not IsValid(owner) or not IsValid(player) then return false end
     
-    if not owner.AuthorizedFriends then
-        owner.AuthorizedFriends = loadAuthorizedFriends(owner)
-    end
+    local ownerSteamID = owner:SteamID64()
+    local playerSteamID = player:SteamID64()
     
-    local playerSteamID = player:SteamID()
+    local filename = "rradio_authorized_friends_" .. ownerSteamID .. ".txt"
+    local friendsData = file.Read(filename, "DATA")
     
-    for _, friend in ipairs(owner.AuthorizedFriends) do
-        if friend.steamid == playerSteamID then
-            return true
+    if friendsData then
+        local authorizedFriends = util.JSONToTable(friendsData) or {}
+        for _, friend in ipairs(authorizedFriends) do
+            if friend.steamid == playerSteamID then
+                return true
+            end
         end
     end
     
@@ -656,54 +663,49 @@ local function IsDarkRP()
     return istable(DarkRP) and isfunction(DarkRP.getPhrase)
 end
 
--- Assign ownership using CPPI (works for both DarkRP and Sandbox)
+-- Add this near the top of the file
+local function DebugPrint(message)
+    if SERVER then
+        print("[rRadio Debug] " .. message)
+    end
+end
+
+-- Modify the AssignOwner function
 local function AssignOwner(ply, ent)
     if not IsValid(ply) or not IsValid(ent) then
-        utils.DebugPrint("Invalid player or entity passed to AssignOwner.")
+        DebugPrint("Invalid player or entity passed to AssignOwner.")
         return
     end
 
     if ent.CPPISetOwner then
         ent:CPPISetOwner(ply)  -- Assign the owner using CPPI
+        DebugPrint("Assigned owner using CPPI: " .. ply:Nick() .. " to entity " .. ent:EntIndex())
     end
 
     -- Set the owner as a networked entity so the client can access it
     ent:SetNWEntity("Owner", ply)
+    DebugPrint("Set NWEntity owner: " .. ply:Nick() .. " to entity " .. ent:EntIndex())
 end
 
--- Hook into InitPostEntity to ensure everything is initialized
-hook.Add("InitPostEntity", "SetupBoomboxHooks", function()
-    timer.Simple(1, function()
-        if IsDarkRP() then
-            print("[rRadio] DarkRP or DerivedRP detected. Setting up CPPI-based ownership hooks.")
-
-            -- Add the hook for playerBoughtCustomEntity in DarkRP or DerivedRP
-            hook.Add("playerBoughtCustomEntity", "AssignBoomboxOwnerInDarkRP", function(ply, entTable, ent, price)
-                if IsValid(ent) and utils.isBoombox(ent) then
-                    AssignOwner(ply, ent)
-                end
-            end)
-        else
-            print("[rRadio] Non-DarkRP gamemode detected. Using sandbox-compatible ownership hooks.")
-        end
-    end)
-end)
-
--- Toolgun and Physgun Pickup for Boomboxes (remove CPPI dependency for Sandbox)
-hook.Add("CanTool", "AllowBoomboxToolgun", function(ply, tr, tool)
-    local ent = tr.Entity
-    if IsValid(ent) and utils.isBoombox and utils.isBoombox(ent) then
-        local owner = ent:GetNWEntity("Owner")
-        if IsValid(owner) and owner == ply then
-            return true  -- Allow owner to use tools on the boombox
-        end
+-- Add debug print to the DarkRP hook
+hook.Add("playerBoughtCustomEntity", "AssignBoomboxOwnerInDarkRP", function(ply, entTable, ent, price)
+    if IsValid(ent) and utils.isBoombox(ent) then
+        DebugPrint("DarkRP: Player " .. ply:Nick() .. " bought a boombox.")
+        AssignOwner(ply, ent)
     end
 end)
 
+-- Add debug print to the PhysgunPickup hook
 hook.Add("PhysgunPickup", "AllowBoomboxPhysgun", function(ply, ent)
-    if not IsValid(ent) or not utils.isBoombox(ent) then return false end
-    local owner = ent:GetNWEntity("Owner")
-    return owner == ply or ply:IsAdmin()
+    if not IsValid(ent) then return end
+    
+    if utils.isBoombox(ent) then
+        local owner = ent:GetNWEntity("Owner")
+        DebugPrint("PhysgunPickup: Player " .. ply:Nick() .. " attempting to pick up boombox owned by " .. (IsValid(owner) and owner:Nick() or "Unknown"))
+        return IsPlayerAuthorized(ply, owner)
+    end
+    
+    return nil
 end)
 
 -- Ensure PermaProps and SpecialENTSSpawn table are initialized
@@ -793,9 +795,10 @@ util.AddNetworkString("rRadio_UpdateAuthorizedFriends")
 
 net.Receive("rRadio_UpdateAuthorizedFriends", function(len, ply)
     local friendsData = net.ReadString()
-    local filename = "rradio_authorized_friends_" .. ply:SteamID() .. ".txt"
+    local filename = "rradio_authorized_friends_" .. ply:SteamID64() .. ".txt"
     file.Write(filename, friendsData)
-    ply.AuthorizedFriends = util.JSONToTable(friendsData)
+    utils.DebugPrint("[rRadio] Updated friends list for " .. ply:Nick() .. ": " .. friendsData)
+    utils.DebugPrint("[rRadio] Wrote friends list to file: " .. filename)
 end)
 
 -- Add this hook to load authorized friends when a player joins

@@ -34,5 +34,6 @@ LANG["RadioSettings"] = "Impostazioni Radio"
 LANG["BoomboxFriends"] = "Amici Boombox"
 LANG["BoomboxFriendsTitle"] = "Amici Boombox rRadio"
 LANG["BoomboxFriendsDescription"] = "Apri il menu per consentire ai tuoi amici di utilizzare il tuo boombox"
+LANG["NoPermissionBoombox"] = "Non hai il permesso di utilizzare questo boombox."
 
 return LANG

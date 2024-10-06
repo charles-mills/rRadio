@@ -1,6 +1,14 @@
 if SERVER then
     print("[RADIO] Starting server-side initialization")
     
+    -- Load the config file first to get the network strings
+    Config = include("misc/config.lua")
+    
+    -- Register all network strings
+    for _, str in ipairs(NETWORK_STRINGS) do
+        util.AddNetworkString(str)
+    end
+    
     -- Add all the necessary Lua files for the client
     AddCSLuaFile("misc/config.lua")
     AddCSLuaFile("localisation/language_manager.lua")

@@ -34,5 +34,6 @@ LANG["RadioSettings"] = "라디오 설정"
 LANG["BoomboxFriends"] = "붐박스 친구"
 LANG["BoomboxFriendsTitle"] = "rRadio 붐박스 친구"
 LANG["BoomboxFriendsDescription"] = "메뉴를 열어 친구들이 당신의 붐박스를 사용할 수 있도록 허용하세요"
+LANG["NoPermissionBoombox"] = "이 붐박스를 사용할 권한이 없습니다."
 
 return LANG

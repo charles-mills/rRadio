@@ -34,5 +34,6 @@ LANG["RadioSettings"] = "电台设置"
 LANG["BoomboxFriends"] = "音箱好友"
 LANG["BoomboxFriendsTitle"] = "rRadio 音箱好友"
 LANG["BoomboxFriendsDescription"] = "打开菜单允许您的朋友使用您的音箱"
+LANG["NoPermissionBoombox"] = "您没有权限使用这个音箱。"
 
 return LANG

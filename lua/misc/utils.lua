@@ -6,8 +6,8 @@
 ]]
 
 utils = utils or {}
-utils.DEBUG_MODE = false
-utils.VERBOSE_ERRORS = false
+utils.DEBUG_MODE = true
+utils.VERBOSE_ERRORS = true
 
 --[[
     Function: isSitAnywhereSeat
@@ -75,4 +75,16 @@ function utils.formatCountryNameForDisplay(name)
         return string.upper(first) .. string.lower(rest)
     end)
     return name
+end
+
+-- Utility function for localization with fallback
+function utils.L(key, ...)
+    if not Config or not Config.Lang then
+        return key
+    end
+    local str = Config.Lang[key] or key
+    if select("#", ...) > 0 then
+        return string.format(str, ...)
+    end
+    return str
 end
