@@ -205,27 +205,42 @@ end
     @param vehicle (Entity): The vehicle to update.
 ]]
 function utils.UpdateSitAnywhereSeatStatus(vehicle)
-    if not IsValid(vehicle) then
-        utils.DebugPrint("Invalid vehicle in UpdateSitAnywhereSeatStatus")
-        return
-    end
+    if not IsValid(vehicle) then return end
 
     local isSitAnywhere = vehicle.playerdynseat or false
     vehicle:SetNWBool("IsSitAnywhereSeat", isSitAnywhere)
-    net.Start("rRadio_UpdateSitAnywhereSeat")
-    net.WriteEntity(vehicle)
-    net.WriteBool(isSitAnywhere)
-    net.Broadcast()
+
+    -- Check if we're on the server before using net library
+    if SERVER then
+        if not net then
+            ErrorNoHalt("net library not available in UpdateSitAnywhereSeatStatus")
+            return
+        end
+
+        -- Use a unique timer name for each vehicle
+        local timerName = "rRadio_UpdateSitAnywhereSeat_" .. vehicle:EntIndex()
+
+        -- Cancel any existing timer for this vehicle
+        timer.Remove(timerName)
+
+        -- Create a new timer to send the network message
+        timer.Create(timerName, 0.1, 1, function()
+            if IsValid(vehicle) then
+                net.Start("rRadio_UpdateSitAnywhereSeat")
+                net.WriteEntity(vehicle)
+                net.WriteBool(isSitAnywhere)
+                net.Broadcast()
+            end
+        end)
+    end
 end
 
 --[[ HOOKS ]]--
 
 hook.Add("PlayerEnteredVehicle", "MarkSitAnywhereSeat", function(ply, vehicle)
-    timer.Simple(0.1, function()
-        if IsValid(vehicle) then
-            utils.UpdateSitAnywhereSeatStatus(vehicle)
-        end
-    end)
+    if IsValid(vehicle) then
+        utils.UpdateSitAnywhereSeatStatus(vehicle)
+    end
 end)
 
 hook.Add("PlayerLeaveVehicle", "UnmarkSitAnywhereSeat", function(ply, vehicle)
