@@ -27,6 +27,9 @@ SavedBoomboxStates = SavedBoomboxStates or {}
 local PlayerRetryAttempts = {}
 local CustomRadioStations = {}
 local customStationsFile = "rradio_custom_stations.txt"
+local EntityVolumes = {}
+local lastVolumeUpdateTime = {}
+local VOLUME_UPDATE_DEBOUNCE_TIME = 0.1 -- 100ms debounce time
 
 -- -------------------------------
 -- 3. Utility Functions
@@ -289,6 +292,27 @@ hook.Add("PlayerInitialSpawn", "SendActiveRadiosOnJoin", function(ply)
     end)
 end)
 
+-- Add this new network receiver for global volume updates
+net.Receive("rRadio_UpdateGlobalVolume", function(len, ply)
+    local entity = net.ReadEntity()
+    local newVolume = net.ReadFloat()
+    
+    if IsValid(entity) and (ply:IsAdmin() or DoesPlayerOwnEntity(ply, entity)) then
+        local currentTime = CurTime()
+        if not lastVolumeUpdateTime[entity] or (currentTime - lastVolumeUpdateTime[entity] > VOLUME_UPDATE_DEBOUNCE_TIME) then
+            lastVolumeUpdateTime[entity] = currentTime
+            
+            EntityVolumes[entity] = newVolume
+            
+            -- Broadcast the new volume to all clients
+            net.Start("rRadio_UpdateClientVolume")
+            net.WriteEntity(entity)
+            net.WriteFloat(newVolume)
+            net.Broadcast()
+        end
+    end
+end)
+
 -- -------------------------------
 -- 10. Vehicle-Specific Functionality
 -- -------------------------------
@@ -315,9 +339,11 @@ end)
 local function HandleBoomboxPlayRadio(ply, entity, stationName, url, volume, country)
     if not IsValid(entity) then return end
 
+    local currentVolume = EntityVolumes[entity] or Config.Boombox.DefaultVolume
+    
     entity:SetNWString("CurrentRadioStation", stationName)
     entity:SetNWString("StationURL", url)
-    entity:SetNWFloat("Volume", volume)
+    entity:SetNWFloat("Volume", currentVolume)
     entity:SetNWString("Country", country)
     entity:SetNWBool("IsRadioSource", true)
 
@@ -325,23 +351,25 @@ local function HandleBoomboxPlayRadio(ply, entity, stationName, url, volume, cou
         entity:SetStationName(stationName)
     end
 
-    AddActiveRadio(entity, stationName, url, volume)
+    AddActiveRadio(entity, stationName, url, currentVolume)
 
     net.Start("rRadio_PlayRadioStation")
     net.WriteEntity(entity)
     net.WriteString(url)
-    net.WriteFloat(volume)
+    net.WriteFloat(currentVolume)
     net.WriteString(country)
     net.Broadcast()
 
     if entity.PermaProps_ID then
-        database.SaveBoomboxStateToDatabase(entity.PermaProps_ID, stationName, url, true, volume)
+        database.SaveBoomboxStateToDatabase(entity.PermaProps_ID, stationName, url, true, currentVolume)
     end
 end
 
 local function HandleVehiclePlayRadio(entity, stationName, url, volume)
     local mainVehicle = entity:GetParent() or entity
     if not IsValid(mainVehicle) then mainVehicle = entity end
+
+    local currentVolume = EntityVolumes[mainVehicle] or Config.VehicleRadio.DefaultVolume
 
     if ActiveRadios[mainVehicle:EntIndex()] then
         net.Start("rRadio_StopRadioStation")
@@ -350,12 +378,12 @@ local function HandleVehiclePlayRadio(entity, stationName, url, volume)
         RemoveActiveRadio(mainVehicle)
     end
 
-    AddActiveRadio(mainVehicle, stationName, url, volume)
+    AddActiveRadio(mainVehicle, stationName, url, currentVolume)
 
     net.Start("rRadio_PlayRadioStation")
         net.WriteEntity(mainVehicle)
         net.WriteString(url)
-        net.WriteFloat(volume)
+        net.WriteFloat(currentVolume)
     net.Broadcast()
 
     net.Start("rRadio_UpdateRadioStatus")

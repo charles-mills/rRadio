@@ -27,6 +27,8 @@ Config.NETWORK_STRINGS = {
     "rRadio_CustomStations",
     "rRadio_RequestCustomStations",
     "rRadio_UpdateSitAnywhereSeat",
+    "rRadio_UpdateGlobalVolume",
+    "rRadio_UpdateClientVolume"
 }
 
 -- -------------------------------
@@ -100,6 +102,7 @@ Config.OpenKey = openKeyConvar:GetInt()
 -- 10. Entity Configurations
 -- -------------------------------
 Config.Boombox = {
+    DefaultVolume = 1, -- Default radio volume (range: 0.0 to 1.0)
     Volume = 1, -- Default radio volume (range: 0.0 to 1.0)
     MaxHearingDistance = 1000, -- Maximum distance at which the radio can be heard (in units)
     MinVolumeDistance = 500, -- Distance at which the radio volume starts to drop off (in units)
@@ -108,6 +111,7 @@ Config.Boombox = {
 }
 
 Config.GoldenBoombox = {
+    DefaultVolume = 1, -- Default radio volume (range: 0.0 to 1.0)
     Volume = 1, -- Default radio volume (range: 0.0 to 1.0)
     MaxHearingDistance = 350000, -- Increased maximum distance at which the radio can be heard (in units)
     MinVolumeDistance = 250000, -- Increased distance at which the radio volume starts to drop off (in units)
@@ -116,6 +120,7 @@ Config.GoldenBoombox = {
 }
 
 Config.VehicleRadio = {
+    DefaultVolume = 1, -- Default radio volume (range: 0.0 to 1.0)
     Volume = 1, -- Default radio volume (range: 0.0 to 1.0)
     MaxHearingDistance = 1000, -- Maximum distance at which the radio can be heard (in units)
     MinVolumeDistance = 500, -- Distance at which the radio volume starts to drop off (in units)

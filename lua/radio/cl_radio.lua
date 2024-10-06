@@ -160,6 +160,8 @@ local radioMenuOpen = false
 local currentlyPlayingStations = {}  -- Initialize the currentlyPlayingStations table
 local currentRadioSources = {}
 local entityVolumes = {}
+local lastVolumeUpdateTime = {}
+local VOLUME_UPDATE_DEBOUNCE_TIME = 0.1 -- 100ms debounce time
 local lastMessageTime = -math.huge
 local lastStationSelectTime = 0  -- Variable to store the time of the last station selection
 
@@ -898,11 +900,25 @@ local function createVolumeSlider(volumePanel, entity)
             end
         end
     
-        local previousVolume = entityVolumes[entity] or getEntityConfig(entity).Volume
+        local previousVolume = entityVolumes[entity] or getEntityConfig(entity).DefaultVolume
         if value ~= previousVolume then
             entityVolumes[entity] = value
+            
+            -- Update local volume immediately
             if currentRadioSources[entity] and IsValid(currentRadioSources[entity]) then
                 currentRadioSources[entity]:SetVolume(value)
+            end
+            
+            -- Debounce the network update
+            local currentTime = CurTime()
+            if not lastVolumeUpdateTime[entity] or (currentTime - lastVolumeUpdateTime[entity] > VOLUME_UPDATE_DEBOUNCE_TIME) then
+                lastVolumeUpdateTime[entity] = currentTime
+                
+                -- Send the new volume to the server
+                net.Start("rRadio_UpdateGlobalVolume")
+                net.WriteEntity(entity)
+                net.WriteFloat(value)
+                net.SendToServer()
             end
         end
     end    
@@ -1070,7 +1086,9 @@ local function playStation(entity, url, volume, entityConfig, attempt)
     sound.PlayURL(url, "3d mono", function(station, errorID, errorName)
         if IsValid(station) and IsValid(entity) then
             station:SetPos(entity:GetPos())
-            station:SetVolume(volume)
+            -- Use the entityVolumes table to get the current volume
+            local currentVolume = entityVolumes[entity] or entityConfig.DefaultVolume
+            station:SetVolume(currentVolume)
             station:Play()
             currentRadioSources[entity] = station
 
@@ -1171,6 +1189,19 @@ hook.Add("InitPostEntity", "InitializeFavorites", function()
             end
         else
             utils.PrintError("InitializeFavorites: Radio menu frame 'RadioMenuFrame' not found.", 2)
+        end
+    end
+end)
+
+-- Add this new network receiver
+net.Receive("rRadio_UpdateClientVolume", function()
+    local entity = net.ReadEntity()
+    local newVolume = net.ReadFloat()
+    
+    if IsValid(entity) then
+        entityVolumes[entity] = newVolume
+        if currentRadioSources[entity] and IsValid(currentRadioSources[entity]) then
+            currentRadioSources[entity]:SetVolume(newVolume)
         end
     end
 end)
