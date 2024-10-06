@@ -263,15 +263,28 @@ local function RestoreBoomboxRadio(entity)
         net.Broadcast()
 
         AddActiveRadio(entity, savedState.station, savedState.url, savedState.volume)
-        utils.DebugPrint("Restored and added active radio for PermaProps_ID: " .. permaID)
     else
         net.Start("rRadio_UpdateRadioStatus")
         net.WriteEntity(entity)
         net.WriteString(savedState.station)
         net.WriteString("Unknown")  -- Use "Unknown" for restored permaprops as we don't store country
         net.Broadcast()
-        utils.DebugPrint("Updated radio status for non-playing boombox: " .. permaID)
     end
+
+    -- Set up the Use function for the permanent boombox
+    if entity.SetupUse then
+        entity:SetupUse()
+        utils.DebugPrint("[CarRadio Debug] Set up Use function for permanent boombox: " .. entity:EntIndex())
+    else
+        utils.DebugPrint("[CarRadio Debug] SetupUse function not found for permanent boombox: " .. entity:EntIndex())
+    end
+end
+
+local function IsPlayerAuthorized(ply, entity)
+    if not IsValid(ply) or not IsValid(entity) then return false end
+    
+    local owner = entity:GetNWEntity("Owner")
+    return ply:IsAdmin() or ply:IsSuperAdmin() or ply == owner or isAuthorizedFriend(owner, ply)
 end
 
 -- Hook to restore boombox radio state on entity creation
@@ -817,3 +830,83 @@ hook.Add("CanTool", "RestrictBoomboxRemoval", function(ply, tr, tool)
         end
     end
 end)
+
+-- Add this hook to ensure the Use function is set up for all boomboxes, including permanent ones
+hook.Add("OnEntityCreated", "SetupBoomboxUse", function(ent)
+    if IsValid(ent) and (ent:GetClass() == "boombox" or ent:GetClass() == "golden_boombox") then
+        timer.Simple(0, function()
+            if IsValid(ent) then
+                if ent.SetupUse then
+                    ent:SetupUse()
+                    utils.DebugPrint("[CarRadio Debug] Set up Use function for boombox: " .. ent:EntIndex())
+                else
+                    utils.DebugPrint("[CarRadio Debug] SetupUse function not found for boombox: " .. ent:EntIndex())
+                end
+            end
+        end)
+    end
+end)
+
+-- Add this function near the top of the file, after other function definitions
+local function SendActiveRadiosToPlayer(ply)
+    if not IsValid(ply) then return end
+
+    for _, radio in pairs(ActiveRadios) do
+        if IsValid(radio.entity) then
+            net.Start("rRadio_PlayRadioStation")
+            net.WriteEntity(radio.entity)
+            net.WriteString(radio.url)
+            net.WriteFloat(radio.volume)
+            net.WriteString(radio.country or "Unknown")
+            net.Send(ply)
+        end
+    end
+end
+
+-- Modify the existing RetrySendActiveRadios function
+local function RetrySendActiveRadios(ply, attempt)
+    if not IsValid(ply) then return end
+
+    local maxAttempts = 5
+    attempt = attempt or 1
+
+    utils.DebugPrint("Sending active radios to player: " .. ply:Nick() .. " | Attempt: " .. attempt)
+
+    if next(ActiveRadios) then
+        SendActiveRadiosToPlayer(ply)
+    else
+        utils.DebugPrint("No active radios found for player " .. ply:Nick() .. ". Retrying in 5 seconds. Attempt: " .. attempt)
+        if attempt < maxAttempts then
+            timer.Simple(5, function()
+                RetrySendActiveRadios(ply, attempt + 1)
+            end)
+        else
+            utils.DebugPrint("Max attempts reached. Failed to send active radios to player " .. ply:Nick())
+        end
+    end
+end
+
+-- Make sure this hook is present and correctly defined
+hook.Add("PlayerInitialSpawn", "SendActiveRadiosOnJoin", function(ply)
+    timer.Simple(5, function()
+        if IsValid(ply) then
+            RetrySendActiveRadios(ply)
+        end
+    end)
+end)
+
+-- Add this near the end of the file
+if PermaProps then
+    PermaProps.SpecialENTSSpawn = PermaProps.SpecialENTSSpawn or {}
+    PermaProps.SpecialENTSSpawn["boombox"] = function(ent)
+        if IsValid(ent) then
+            if ent.SetupUse then
+                ent:SetupUse()
+                utils.DebugPrint("[CarRadio Debug] Set up Use function for PermaProps boombox: " .. ent:EntIndex())
+            else
+                utils.DebugPrint("[CarRadio Debug] SetupUse function not found for PermaProps boombox: " .. ent:EntIndex())
+            end
+        end
+    end
+    PermaProps.SpecialENTSSpawn["golden_boombox"] = PermaProps.SpecialENTSSpawn["boombox"]
+end

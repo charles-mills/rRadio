@@ -5,15 +5,18 @@
     Date: 2024-10-03
 ]]
 
-utils.DebugPrint("Loading base_boombox/init.lua")
-
-ENT = ENT or {}
 
 AddCSLuaFile("cl_init.lua")
 AddCSLuaFile("shared.lua")
 
 include("shared.lua")
 include("misc/utils.lua")
+
+utils.DebugPrint("Loading base_boombox/init.lua")
+
+ENT = ENT or {}
+ENT.Type = "anim"
+ENT.Base = "base_entity"
 
 -- Ensure SavedBoomboxStates is initialized
 SavedBoomboxStates = SavedBoomboxStates or {}
@@ -84,8 +87,8 @@ function ENT:SetupUse()
             local owner = self:GetNWEntity("Owner")
 
             -- Check if the player is the owner, an admin, a superadmin, or an authorized friend
-            if activator == owner or activator:IsAdmin() or activator:IsSuperAdmin() or isAuthorizedFriend(owner, activator) then
-                net.Start("OpenRadioMenu")
+            if activator:IsAdmin() or activator:IsSuperAdmin() or activator == owner or isAuthorizedFriend(owner, activator) then
+                net.Start("rRadio_OpenRadioMenu")
                 net.WriteEntity(self)
                 net.Send(activator)
                 utils.DebugPrint("[CarRadio Debug] Opening radio menu for authorized player: " .. activator:Nick())
@@ -168,3 +171,15 @@ end)
 hook.Add("PlayerInitialSpawn", "LoadAuthorizedFriends", function(ply)
     ply.AuthorizedFriends = loadAuthorizedFriends(ply)
 end)
+
+-- Add this function to handle PermaProps integration
+if PermaProps then
+    PermaProps.SpecialENTSSpawn = PermaProps.SpecialENTSSpawn or {}
+    PermaProps.SpecialENTSSpawn["boombox"] = function(ent)
+        if IsValid(ent) then
+            ent:SetupUse()
+            utils.DebugPrint("[CarRadio Debug] Set up Use function for PermaProps boombox: " .. ent:EntIndex())
+        end
+    end
+    PermaProps.SpecialENTSSpawn["golden_boombox"] = PermaProps.SpecialENTSSpawn["boombox"]
+end

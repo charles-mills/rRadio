@@ -18,11 +18,11 @@ if SERVER then
     -- Function to set up Use for boomboxes
     local function SetupBoomboxUse(ent)
         if IsValid(ent) and (ent:GetClass() == "boombox" or ent:GetClass() == "golden_boombox") then
-            if ENT and ENT.Use then
-                ent.Use = ENT.Use
+            if ENT and ENT.SetupUse then
+                ent:SetupUse()
                 print("Set up Use function for boombox: " .. ent:EntIndex())
             else
-                print("Warning: ENT.Use not found for boombox: " .. ent:EntIndex())
+                print("Warning: ENT.SetupUse not found for boombox: " .. ent:EntIndex())
             end
         end
     end
