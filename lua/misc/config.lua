@@ -18,7 +18,7 @@ Config.RadioStations = {}
 -- -------------------------------
 -- 3. Network Strings
 -- -------------------------------
-NETWORK_STRINGS = {
+Config.NETWORK_STRINGS = {
     "rRadio_PlayRadioStation",
     "rRadio_StopRadioStation",
     "rRadio_ShowCarRadioMessage",

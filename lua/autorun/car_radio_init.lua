@@ -1,3 +1,10 @@
+--[[ 
+    rRadio Addon for Garry's Mod - Initialization Script
+    Description: Initializes the rRadio addon and manages version checking.
+    Author: Charles Mills (https://github.com/charles-mills)
+    Date: 2024-10-06
+]]
+
 local CURRENT_VERSION = "v1.2.1"
 local GITHUB_API_URL = "https://api.github.com/repos/charles-mills/rradio/releases/latest"
 
@@ -87,9 +94,14 @@ if SERVER then
     -- Load the config file first to get the network strings
     local Config = include("misc/config.lua")
     
-    -- Register all network strings
-    for _, str in ipairs(Config.NETWORK_STRINGS) do
-        util.AddNetworkString(str)
+    -- Check if NETWORK_STRINGS exists and is a table
+    if Config.NETWORK_STRINGS and type(Config.NETWORK_STRINGS) == "table" then
+        -- Register all network strings
+        for _, str in ipairs(Config.NETWORK_STRINGS) do
+            util.AddNetworkString(str)
+        end
+    else
+        print("[RADIO] Error: Config.NETWORK_STRINGS is not properly defined")
     end
     
     LoadFiles(true)

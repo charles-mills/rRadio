@@ -19,10 +19,6 @@ local string_format, string_find = string.format, string.find
 local util_TableToJSON, util_JSONToTable = util.TableToJSON, util.JSONToTable
 local math_Clamp = math.Clamp
 
-for _, str in ipairs(NETWORK_STRINGS) do
-    util.AddNetworkString(str)
-end
-
 -- -------------------------------
 -- 2. Global Variables
 -- -------------------------------
