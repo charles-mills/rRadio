@@ -6,8 +6,18 @@
 ]]
 
 utils = utils or {}
+
+-- Configuration
 utils.DEBUG_MODE = true
 utils.VERBOSE_ERRORS = true
+
+-- Local references for performance
+local stringLower = string.lower
+local stringGsub = string.gsub
+local stringSub = string.sub
+local stringUpper = string.upper
+
+--[[ ENTITY CHECKS ]]--
 
 --[[
     Function: isSitAnywhereSeat
@@ -16,10 +26,13 @@ utils.VERBOSE_ERRORS = true
     @return (boolean): True if it's a sit anywhere seat, false otherwise.
 ]]
 function utils.isSitAnywhereSeat(vehicle)
-    utils.DebugPrint("Checking if vehicle " .. vehicle:EntIndex() .. " is a sit anywhere seat")
-    if not IsValid(vehicle) then return false end
-    utils.DebugPrint("Vehicle " .. vehicle:EntIndex() .. " is a sit anywhere seat: " .. tostring(vehicle:GetNWBool("IsSitAnywhereSeat", false)))
-    return vehicle:GetNWBool("IsSitAnywhereSeat", false)
+    if not IsValid(vehicle) then 
+        utils.DebugPrint("Invalid vehicle in isSitAnywhereSeat check")
+        return false 
+    end
+    local isSitAnywhere = vehicle:GetNWBool("IsSitAnywhereSeat", false)
+    utils.DebugPrint("Vehicle " .. vehicle:EntIndex() .. " is a sit anywhere seat: " .. tostring(isSitAnywhere))
+    return isSitAnywhere
 end
 
 --[[
@@ -29,72 +42,116 @@ end
     @return (boolean): True if it's a boombox, false otherwise.
 ]]
 function utils.isBoombox(ent)
-    entity = ent or nil
-    if not IsValid(entity) then return false end
-    return entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox"
+    if not IsValid(ent) then 
+        utils.DebugPrint("Invalid entity in isBoombox check")
+        return false 
+    end
+    return ent:GetClass() == "boombox" or ent:GetClass() == "golden_boombox"
 end
 
--- Debug function to print messages if debug_mode is enabled
+--[[ DEBUGGING AND ERROR HANDLING ]]--
+
+--[[
+    Function: DebugPrint
+    Description: Prints debug messages if DEBUG_MODE is enabled.
+    @param msg (string): The message to print.
+]]
 function utils.DebugPrint(msg)
     if utils.DEBUG_MODE then
-        print("[rRadio Debug] " .. msg)
+        print("[rRadio Debug] " .. tostring(msg))
     end
 end
 
--- Function to print errors if verbose_errors is enabled
+--[[
+    Function: PrintError
+    Description: Prints error messages if VERBOSE_ERRORS is enabled.
+    @param msg (string): The error message.
+    @param severity (number): Error severity level (1-5, default 3).
+]]
 function utils.PrintError(msg, severity)
     severity = severity or 3
     if utils.VERBOSE_ERRORS then
-        print("[rRadio Error] [" .. (severity or "0") .. "] " .. msg)
+        print("[rRadio Error] [" .. tostring(severity) .. "] " .. tostring(msg))
     end
 end
 
--- Add this new function to the existing utils.lua file
+--[[ STRING FORMATTING ]]--
 
---[[ 
+--[[
     Function: formatCountryNameForComparison
     Description: Formats a country name for consistent comparison.
     @param name (string): The country name to format.
     @return (string): The formatted country name.
 ]]
 function utils.formatCountryNameForComparison(name)
-    -- Convert to lowercase
-    name = string.lower(name)
-    -- Replace spaces and hyphens with underscores
-    name = string.gsub(name, "[ -]", "_")
-    -- Remove any non-alphanumeric characters (except underscores)
-    name = string.gsub(name, "[^a-z0-9_]", "")
-    -- Capitalize the first letter
-    name = string.upper(string.sub(name, 1, 1)) .. string.sub(name, 2)
-    return name
+    return utils.FastFormatCountryName(name)
 end
 
+--[[
+    Function: formatCountryNameForDisplay
+    Description: Formats a country name for display purposes.
+    @param name (string): The country name to format.
+    @return (string): The formatted country name for display.
+]]
 function utils.formatCountryNameForDisplay(name)
-    -- Remove underscores
-    name = string.gsub(name, "_", " ")
-    -- Apply title case
-    name = string.gsub(name, "(%a)([%w']*)", function(first, rest)
-        return string.upper(first) .. string.lower(rest)
+    name = stringGsub(name, "_", " ")
+    return stringGsub(name, "(%a)([%w']*)", function(first, rest)
+        return stringUpper(first) .. stringLower(rest)
     end)
-    return name
 end
 
--- Utility function for localization with fallback
+--[[
+    Function: FastFormatCountryName
+    Description: Quickly formats a country name for comparison (optimized version).
+    @param name (string): The country name to format.
+    @return (string): The formatted country name.
+]]
+function utils.FastFormatCountryName(name)
+    name = stringLower(name)
+    name = stringGsub(name, "[ -]", "_")
+    name = stringGsub(name, "[^a-z0-9_]", "")
+    return stringUpper(stringSub(name, 1, 1)) .. stringSub(name, 2)
+end
+
+--[[ LOCALIZATION ]]--
+
+--[[
+    Function: L
+    Description: Retrieves a localized string.
+    @param key (string): The localization key.
+    @param ... (vararg): Optional arguments for string formatting.
+    @return (string): The localized string or the key if not found.
+]]
 function utils.L(key, ...)
     if not Config or not Config.Lang then
+        utils.DebugPrint("Config or Config.Lang not available for localization")
         return key
     end
-    local str = Config.Lang[key] or key
+    local str = Config.Lang[key]
+    if not str then
+        utils.DebugPrint("Missing localization key: " .. key)
+        return key
+    end
     if select("#", ...) > 0 then
         return string.format(str, ...)
     end
     return str
 end
 
--- Add these functions to the existing utils.lua file
+--[[ AUTHORIZATION ]]--
 
+--[[
+    Function: IsPlayerAuthorized
+    Description: Checks if a player is authorized to interact with an entity.
+    @param ply (Player): The player to check.
+    @param entity (Entity): The entity to check against.
+    @return (boolean): True if the player is authorized, false otherwise.
+]]
 function utils.IsPlayerAuthorized(ply, entity)
-    if not IsValid(ply) or not IsValid(entity) then return false end
+    if not IsValid(ply) or not IsValid(entity) then 
+        utils.DebugPrint("Invalid player or entity in IsPlayerAuthorized")
+        return false 
+    end
     
     if ply:IsAdmin() or ply:IsSuperAdmin() then return true end
     
@@ -103,7 +160,24 @@ function utils.IsPlayerAuthorized(ply, entity)
     return ply == owner or utils.isAuthorizedFriend(owner, ply)
 end
 
+--[[ RADIO FUNCTIONALITY ]]--
+
+--[[
+    Function: HandleRadioPlay
+    Description: Handles the playing of a radio station on an entity.
+    @param entity (Entity): The entity to play the radio on.
+    @param stationName (string): The name of the radio station.
+    @param url (string): The URL of the radio stream.
+    @param volume (number): The volume level (0-1).
+    @param country (string): The country of the radio station.
+    @return (table): A table with the play information, or nil if failed.
+]]
 function utils.HandleRadioPlay(entity, stationName, url, volume, country)
+    if not IsValid(entity) then
+        utils.PrintError("Invalid entity in HandleRadioPlay", 2)
+        return nil
+    end
+
     entity:SetNWString("CurrentRadioStation", stationName)
     entity:SetNWString("StationURL", url)
     entity:SetNWFloat("Volume", volume)
@@ -125,18 +199,27 @@ function utils.HandleRadioPlay(entity, stationName, url, volume, country)
     }
 end
 
+--[[
+    Function: UpdateSitAnywhereSeatStatus
+    Description: Updates the status of a vehicle as a "sit anywhere" seat.
+    @param vehicle (Entity): The vehicle to update.
+]]
 function utils.UpdateSitAnywhereSeatStatus(vehicle)
-    if IsValid(vehicle) then
-        local isSitAnywhere = vehicle.playerdynseat or false
-        vehicle:SetNWBool("IsSitAnywhereSeat", isSitAnywhere)
-        net.Start("rRadio_UpdateSitAnywhereSeat")
-        net.WriteEntity(vehicle)
-        net.WriteBool(isSitAnywhere)
-        net.Broadcast()
+    if not IsValid(vehicle) then
+        utils.DebugPrint("Invalid vehicle in UpdateSitAnywhereSeatStatus")
+        return
     end
+
+    local isSitAnywhere = vehicle.playerdynseat or false
+    vehicle:SetNWBool("IsSitAnywhereSeat", isSitAnywhere)
+    net.Start("rRadio_UpdateSitAnywhereSeat")
+    net.WriteEntity(vehicle)
+    net.WriteBool(isSitAnywhere)
+    net.Broadcast()
 end
 
--- Add these hooks in utils.lua
+--[[ HOOKS ]]--
+
 hook.Add("PlayerEnteredVehicle", "MarkSitAnywhereSeat", function(ply, vehicle)
     timer.Simple(0.1, function()
         if IsValid(vehicle) then
@@ -160,3 +243,5 @@ hook.Add("OnEntityCreated", "UpdateSitAnywhereSeatOnSpawn", function(ent)
         end)
     end
 end)
+
+return utils
