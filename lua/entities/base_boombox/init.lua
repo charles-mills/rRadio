@@ -65,6 +65,8 @@ function ENT:Initialize()
     self:SetMoveType(MOVETYPE_VPHYSICS)
     self:SetSolid(SOLID_VPHYSICS)
 
+    utils.DebugPrint("[CarRadio Debug] Boombox initialized: " .. self:EntIndex())
+
     if self.Color then
         self:SetColor(self.Color)
     end
@@ -123,6 +125,8 @@ function ENT:SpawnFunction(ply, tr, className)
         ent:SetNWEntity("Owner", ply)
     end
 
+    utils.DebugPrint("[CarRadio Debug] Boombox spawned by: " .. (IsValid(ply) and ply:Nick() or "Unknown"))
+
     return ent
 end
 
@@ -130,11 +134,13 @@ end
 function ENT:PhysgunPickup(ply)
     local owner = self:GetNWEntity("Owner")
     
-    if not IsValid(owner) or ply == owner or ply:IsAdmin() or ply:IsSuperAdmin() or isAuthorizedFriend(owner, ply) then
-        return true
+    utils.DebugPrint("[CarRadio Debug] PhysgunPickup: Player " .. ply:Nick() .. " attempting to pick up boombox owned by " .. (IsValid(owner) and owner:Nick() or "Unknown"))
+    
+    if IsValid(owner) then
+        return ply == owner or ply:IsAdmin() or ply:IsSuperAdmin() or utils.isAuthorizedFriend(owner, ply)
+    else
+        return ply:IsAdmin() or ply:IsSuperAdmin()
     end
-
-    return false
 end
 
 -- Add this hook to ensure the Use function is set up for all boomboxes, including permanent ones
@@ -172,14 +178,14 @@ hook.Add("PlayerInitialSpawn", "LoadAuthorizedFriends", function(ply)
     ply.AuthorizedFriends = loadAuthorizedFriends(ply)
 end)
 
--- Add this function to handle PermaProps integration
-if PermaProps then
-    PermaProps.SpecialENTSSpawn = PermaProps.SpecialENTSSpawn or {}
-    PermaProps.SpecialENTSSpawn["boombox"] = function(ent)
-        if IsValid(ent) then
-            ent:SetupUse()
-            utils.DebugPrint("[CarRadio Debug] Set up Use function for PermaProps boombox: " .. ent:EntIndex())
-        end
+function ENT:CanTool(ply, trace, toolname)
+    local owner = self:GetNWEntity("Owner")
+    
+    utils.DebugPrint("[CarRadio Debug] CanTool: Player " .. ply:Nick() .. " attempting to use " .. toolname .. " on boombox owned by " .. (IsValid(owner) and owner:Nick() or "Unknown"))
+    
+    if IsValid(owner) then
+        return ply == owner or ply:IsAdmin() or ply:IsSuperAdmin() or utils.isAuthorizedFriend(owner, ply)
+    else
+        return ply:IsAdmin() or ply:IsSuperAdmin()
     end
-    PermaProps.SpecialENTSSpawn["golden_boombox"] = PermaProps.SpecialENTSSpawn["boombox"]
 end

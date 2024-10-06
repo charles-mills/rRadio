@@ -87,19 +87,19 @@ local function DoesPlayerOwnEntity(ply, entity)
     return owner == ply or isAuthorizedFriend(owner, ply)
 end
 
--- Rate limiting setup
+-- Modify the rate limiting setup
 local playerLastActionTime = {}
-local RATE_LIMIT_DELAY = 1 -- 1 second delay between actions
+local RATE_LIMIT_DELAY = 0.5 -- Reduced from 1 second to 0.5 seconds
 
 -- Function to check and update rate limit
 local function IsRateLimited(ply)
-    local steamID = ply:SteamID()
     local currentTime = CurTime()
-    if playerLastActionTime[steamID] and currentTime - playerLastActionTime[steamID] < RATE_LIMIT_DELAY then
-        return true
+    if not playerLastActionTime[ply] or (currentTime - playerLastActionTime[ply] > RATE_LIMIT_DELAY) then
+        playerLastActionTime[ply] = currentTime
+        return false
     end
-    playerLastActionTime[steamID] = currentTime
-    return false
+    utils.DebugPrint("Rate limit exceeded for player: " .. ply:Nick())
+    return true
 end
 
 -- Function to save custom stations to file
@@ -247,6 +247,7 @@ local function RestoreBoomboxRadio(entity)
 
     entity:SetNWString("CurrentRadioStation", savedState.station)
     entity:SetNWString("StationURL", savedState.url)
+    entity:SetNWFloat("Volume", savedState.volume)
 
     if entity.SetStationName then
         entity:SetStationName(savedState.station)
@@ -259,7 +260,7 @@ local function RestoreBoomboxRadio(entity)
         net.WriteEntity(entity)
         net.WriteString(savedState.url)
         net.WriteFloat(savedState.volume)
-        net.WriteString("Unknown")  -- Use "Unknown" for restored permaprops as we don't store country
+        net.WriteString(savedState.country or "Unknown")
         net.Broadcast()
 
         AddActiveRadio(entity, savedState.station, savedState.url, savedState.volume)
@@ -267,7 +268,7 @@ local function RestoreBoomboxRadio(entity)
         net.Start("rRadio_UpdateRadioStatus")
         net.WriteEntity(entity)
         net.WriteString(savedState.station)
-        net.WriteString("Unknown")  -- Use "Unknown" for restored permaprops as we don't store country
+        net.WriteString(savedState.country or "Unknown")
         net.Broadcast()
     end
 
@@ -280,11 +281,8 @@ local function RestoreBoomboxRadio(entity)
     end
 end
 
-local function IsPlayerAuthorized(ply, entity)
-    if not IsValid(ply) or not IsValid(entity) then return false end
-    
-    local owner = entity:GetNWEntity("Owner")
-    return ply:IsAdmin() or ply:IsSuperAdmin() or ply == owner or isAuthorizedFriend(owner, ply)
+local function IsPlayerAuthorized(ply, owner)
+    return ply:IsAdmin() or ply:IsSuperAdmin() or ply == owner or utils.isAuthorizedFriend(owner, ply)
 end
 
 -- Hook to restore boombox radio state on entity creation
@@ -316,7 +314,7 @@ end
 
 hook.Add("Initialize", "CreateBoomboxStatesTable", CreateBoomboxStatesTable)
 
--- Save boombox state to database
+-- Function to save boombox state to database
 local function SaveBoomboxStateToDatabase(permaID, stationName, url, isPlaying, volume)
     local query = string_format(
         "REPLACE INTO boombox_states (permaID, station, url, isPlaying, volume) VALUES (%d, %s, %s, %d, %f)",
@@ -339,7 +337,7 @@ local function RemoveBoomboxStateFromDatabase(permaID)
     end
 end
 
--- Load boombox states from the database into SavedBoomboxStates table
+-- Function to load boombox states from the database
 local function LoadBoomboxStatesFromDatabase()
     local rows = sql.Query("SELECT * FROM boombox_states")
     if rows then
@@ -457,40 +455,34 @@ end)
 
 -- Function to handle playing radio station for boombox
 local function HandleBoomboxPlayRadio(ply, entity, stationName, url, volume, country)
-    local owner = entity:GetNWEntity("Owner")
-    if not IsPlayerAuthorized(ply, owner) then
-        utils.DebugPrint("Player " .. ply:Nick() .. " is not authorized to play radio on this boombox")
-        return
-    end
+    if not IsValid(entity) then return end
 
-    local permaID = entity.PermaProps_ID
-    if permaID then
-        SavedBoomboxStates[permaID] = {
-            station = stationName,
-            url = url,
-            isPlaying = true,
-            volume = volume
-        }
-        SaveBoomboxStateToDatabase(permaID, stationName, url, true, volume)
-    end
+    entity:SetNWString("CurrentRadioStation", stationName)
+    entity:SetNWString("StationURL", url)
+    entity:SetNWFloat("Volume", volume)
+    entity:SetNWString("Country", country)
+    entity:SetNWBool("IsRadioSource", true)
 
-    if entity.SetVolume then entity:SetVolume(volume) end
-    if entity.SetStationName then entity:SetStationName(stationName) end
+    if entity.SetStationName then
+        entity:SetStationName(stationName)
+    end
 
     AddActiveRadio(entity, stationName, url, volume)
 
+    -- Broadcast to all players
     net.Start("rRadio_PlayRadioStation")
-        net.WriteEntity(entity)
-        net.WriteString(url)
-        net.WriteFloat(volume)
-        net.WriteString(country or "Unknown")  -- Always send country for display
+    net.WriteEntity(entity)
+    net.WriteString(url)
+    net.WriteFloat(volume)
+    net.WriteString(country)
     net.Broadcast()
 
-    net.Start("rRadio_UpdateRadioStatus")
-        net.WriteEntity(entity)
-        net.WriteString(stationName)
-        net.WriteString(country or "Unknown")  -- Always send country for display
-    net.Broadcast()
+    -- Save state if it's a permanent boombox
+    if entity.PermaProps_ID then
+        SaveBoomboxStateToDatabase(entity.PermaProps_ID, stationName, url, true, volume)
+    end
+
+    utils.DebugPrint("Started radio for boombox: " .. entity:EntIndex())
 end
 
 -- Function to handle playing radio station for vehicle
@@ -625,42 +617,29 @@ end
 -- Main function to handle rRadio_StopRadioStation network message
 net.Receive("rRadio_StopRadioStation", function(len, ply)
     local entity = net.ReadEntity()
-
-    -- Server-side validation
-    if not IsValid(entity) or not IsValid(ply) then
-        utils.DebugPrint("Invalid entity or player in rRadio_StopRadioStation.")
+    if not IsValid(entity) then
+        utils.DebugPrint("Received invalid entity in rRadio_StopRadioStation.")
         return
     end
 
-    -- Rate limiting
-    if IsRateLimited(ply) then
-        utils.DebugPrint("Rate limit exceeded for player: " .. ply:Nick())
-        return
-    end
+    local entIndex = entity:EntIndex()
+    if ActiveRadios[entIndex] then
+        -- Remove from active radios
+        ActiveRadios[entIndex] = nil
 
-    -- Entity-specific checks
-    if utils.isBoombox(entity) then
-        -- Proximity check for boomboxes
-        if not IsPlayerNearEntity(ply, entity, 300) then -- 300 units max distance
-            utils.DebugPrint("Player too far from boombox: " .. ply:Nick())
-            return
+        -- Broadcast to all players
+        net.Start("rRadio_StopRadioStation")
+        net.WriteEntity(entity)
+        net.Broadcast()
+
+        -- Save state if it's a permanent boombox
+        if utils.isBoombox(entity) and entity.PermaProps_ID then
+            SaveBoomboxStateToDatabase(entity.PermaProps_ID, "", "", false, 0)
         end
-        -- Entity ownership check for boomboxes
-        if not DoesPlayerOwnEntity(ply, entity) then
-            utils.DebugPrint("Player doesn't own the boombox: " .. ply:Nick())
-            return
-        end
-        StopBoomboxRadio(entity)
-    elseif entity:IsVehicle() then
-        -- Check if player is in the vehicle
-        if not IsPlayerInVehicle(ply, entity) then
-            utils.DebugPrint("Player is not in the vehicle: " .. ply:Nick())
-            return
-        end
-        StopVehicleRadio(entity)
+
+        utils.DebugPrint("Stopped radio for entity: " .. entIndex)
     else
-        utils.DebugPrint("Invalid entity type for radio: " .. tostring(entity))
-        return
+        utils.DebugPrint("No active radio found for entity: " .. entIndex)
     end
 end)
 
@@ -731,32 +710,53 @@ if not PermaProps.SpecialENTSSpawn then PermaProps.SpecialENTSSpawn = {} end
 
 -- Add handling for boombox entities via a PermaProps hook
 PermaProps.SpecialENTSSpawn["boombox"] = function(ent, data)
-    local permaID = ent.PermaProps_ID
-    if not permaID then return end
-
-    local savedState = SavedBoomboxStates[permaID]
-    if savedState then
-        ent:SetNWString("CurrentRadioStation", savedState.station)
-        ent:SetNWString("StationURL", savedState.url)
-
-        if ent.SetStationName then
-            ent:SetStationName(savedState.station)
+    if IsValid(ent) then
+        local permaID = ent.PermaProps_ID
+        if not permaID then
+            utils.DebugPrint("[CarRadio Debug] Warning: Could not find PermaProps_ID for entity " .. ent:EntIndex())
+            return
         end
 
-        if savedState.isPlaying then
-            net.Start("PlayCarRadioStation")
-            net.WriteEntity(ent)
-            net.WriteString(savedState.url)
-            net.WriteFloat(savedState.volume)
-            net.Broadcast()
-
-            AddActiveRadio(ent, savedState.station, savedState.url, savedState.volume)
+        -- Set up the Use function
+        if ent.SetupUse then
+            ent:SetupUse()
+            utils.DebugPrint("[CarRadio Debug] Set up Use function for PermaProps boombox: " .. ent:EntIndex())
+        else
+            utils.DebugPrint("[CarRadio Debug] SetupUse function not found for PermaProps boombox: " .. ent:EntIndex())
         end
+
+        -- Restore saved state
+        local savedState = SavedBoomboxStates[permaID]
+        if savedState then
+            ent:SetNWString("CurrentRadioStation", savedState.station)
+            ent:SetNWString("StationURL", savedState.url)
+            ent:SetNWFloat("Volume", savedState.volume)
+
+            if ent.SetStationName then
+                ent:SetStationName(savedState.station)
+            end
+
+            if savedState.isPlaying then
+                net.Start("rRadio_PlayRadioStation")
+                net.WriteEntity(ent)
+                net.WriteString(savedState.url)
+                net.WriteFloat(savedState.volume)
+                net.WriteString(savedState.country or "Unknown")
+                net.Broadcast()
+
+                AddActiveRadio(ent, savedState.station, savedState.url, savedState.volume)
+            end
+        else
+            utils.DebugPrint("[CarRadio Debug] No saved state found for PermaProps_ID: " .. permaID)
+        end
+
+        -- Ensure the entity is recognized as a radio source
+        ent:SetNWBool("IsRadioSource", true)
+
+        -- Explicitly set the owner to nil to ensure it remains a world entity
+        ent:SetNWEntity("Owner", nil)
+        utils.DebugPrint("[CarRadio Debug] Set owner for permanent boombox to nil (world entity)")
     end
-
-    -- Set up the Use function for the permanent boombox
-    ent:SetupUse()
-    print("[CarRadio Debug] Set up Use function for permanent boombox: " .. ent:EntIndex())
 end
 
 -- Add handling for golden_boombox entities
@@ -906,6 +906,7 @@ if PermaProps then
             else
                 utils.DebugPrint("[CarRadio Debug] SetupUse function not found for PermaProps boombox: " .. ent:EntIndex())
             end
+            RestoreBoomboxRadio(ent)
         end
     end
     PermaProps.SpecialENTSSpawn["golden_boombox"] = PermaProps.SpecialENTSSpawn["boombox"]

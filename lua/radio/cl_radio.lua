@@ -955,6 +955,7 @@ local function createCloseButton(frame)
 end
 
 local function rRadio_OpenRadioMenu()
+    utils.DebugPrint("Opening radio menu")
     if radioMenuOpen then return end
     radioMenuOpen = true
 
@@ -993,12 +994,12 @@ hook.Add("Think", "CheckCarRadioMenuKey", function()
     if input.IsKeyDown(openKey) then
         if not utils.isSitAnywhereSeat(vehicle) then
             if not radioMenuOpen then
-                print("Opening radio menu")
+                utils.DebugPrint("Opening radio menu in a vehicle")
                 ply.currentRadioEntity = vehicle
                 rRadio_OpenRadioMenu()
             end
         else
-            print("Vehicle is a SitAnywhere seat, not opening menu")
+            utils.DebugPrint("Vehicle is a SitAnywhere seat, not opening menu")
         end
     end
 end)
@@ -1110,7 +1111,7 @@ net.Receive("rRadio_OpenRadioMenu", function()
         LocalPlayer().currentRadioEntity = entity
         rRadio_OpenRadioMenu()
     else
-        print("Received invalid entity in rRadio_OpenRadioMenu.", 2)
+        utils.PrintError("Received invalid entity in rRadio_OpenRadioMenu.", 2)
     end
 end)
 
@@ -1119,7 +1120,6 @@ hook.Add("PlayerInitialSpawn", "ApplySavedThemeAndLanguage", function(ply)
     loadSavedSettings()  -- Load and apply the saved theme and language
 end)
 
--- Load favorites when the script initializes
 loadFavorites()
 
 -- Initialize Favorites after all entities have been initialized
