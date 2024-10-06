@@ -25,6 +25,36 @@ local PlayerRetryAttempts = {}
 local CustomRadioStations = {}
 local customStationsFile = "rradio_custom_stations.txt"
 
+-- Function to check if a player is near an entity
+local function IsPlayerNearEntity(ply, entity, maxDistance)
+    if not IsValid(ply) or not IsValid(entity) then return false end
+    return ply:GetPos():DistToSqr(entity:GetPos()) <= (maxDistance * maxDistance)
+end
+
+-- Function to check if a player owns an entity
+local function DoesPlayerOwnEntity(ply, entity)
+    if not IsValid(ply) or not IsValid(entity) then return false end
+    if entity.CPPIGetOwner then
+        return entity:CPPIGetOwner() == ply
+    end
+    return entity:GetNWEntity("Owner") == ply
+end
+
+-- Rate limiting setup
+local playerLastActionTime = {}
+local RATE_LIMIT_DELAY = 1 -- 1 second delay between actions
+
+-- Function to check and update rate limit
+local function IsRateLimited(ply)
+    local steamID = ply:SteamID()
+    local currentTime = CurTime()
+    if playerLastActionTime[steamID] and currentTime - playerLastActionTime[steamID] < RATE_LIMIT_DELAY then
+        return true
+    end
+    playerLastActionTime[steamID] = currentTime
+    return false
+end
+
 -- Function to save custom stations to file
 local function SaveCustomStations()
     file.Write(customStationsFile, util_TableToJSON(CustomRadioStations, true))
@@ -423,25 +453,107 @@ local function HandleVehiclePlayRadio(entity, stationName, url, volume)
     net.Broadcast()
 end
 
+-- Function to check if a player is in a vehicle
+local function IsPlayerInVehicle(ply, vehicle)
+    if not IsValid(ply) or not IsValid(vehicle) then return false end
+    return ply:GetVehicle() == vehicle
+end
+
 -- Main function to handle rRadio_PlayRadioStation network message
 net.Receive("rRadio_PlayRadioStation", function(len, ply)
     local entity = net.ReadEntity()
     local stationName = net.ReadString()
     local url = net.ReadString()
     local volume = math_Clamp(net.ReadFloat(), 0, 1)
-    local country = net.ReadString()  -- Read country from the network message
+    local country = net.ReadString()
 
-    if not IsValid(entity) then
-        utils.DebugPrint("Invalid entity received in rRadio_PlayRadioStation.")
+    -- Server-side validation
+    if not IsValid(entity) or not IsValid(ply) then
+        utils.DebugPrint("Invalid entity or player in rRadio_PlayRadioStation.")
         return
     end
 
-    utils.DebugPrint("rRadio_PlayRadioStation received: Entity " .. entity:EntIndex())
+    -- Rate limiting
+    if IsRateLimited(ply) then
+        utils.DebugPrint("Rate limit exceeded for player: " .. ply:Nick())
+        return
+    end
 
+    -- Entity-specific checks
+    if utils.isBoombox(entity) then
+        -- Proximity check for boomboxes
+        if not IsPlayerNearEntity(ply, entity, 300) then -- 300 units max distance
+            utils.DebugPrint("Player too far from boombox: " .. ply:Nick())
+            return
+        end
+        -- Entity ownership check for boomboxes
+        if not DoesPlayerOwnEntity(ply, entity) then
+            utils.DebugPrint("Player doesn't own the boombox: " .. ply:Nick())
+            return
+        end
+    elseif entity:IsVehicle() then
+        -- Check if player is in the vehicle
+        if not IsPlayerInVehicle(ply, entity) then
+            utils.DebugPrint("Player is not in the vehicle: " .. ply:Nick())
+            return
+        end
+    else
+        utils.DebugPrint("Invalid entity type for radio: " .. tostring(entity))
+        return
+    end
+
+    -- If all checks pass, proceed with playing the radio station
     if utils.isBoombox(entity) then
         HandleBoomboxPlayRadio(entity, stationName, url, volume, country)
     elseif entity:IsVehicle() then
         HandleVehiclePlayRadio(entity, stationName, url, volume, country)
+    end
+end)
+
+-- Main function to handle rRadio_StopRadioStation network message
+net.Receive("rRadio_StopRadioStation", function(len, ply)
+    local entity = net.ReadEntity()
+
+    -- Server-side validation
+    if not IsValid(entity) or not IsValid(ply) then
+        utils.DebugPrint("Invalid entity or player in rRadio_StopRadioStation.")
+        return
+    end
+
+    -- Rate limiting
+    if IsRateLimited(ply) then
+        utils.DebugPrint("Rate limit exceeded for player: " .. ply:Nick())
+        return
+    end
+
+    -- Entity-specific checks
+    if utils.isBoombox(entity) then
+        -- Proximity check for boomboxes
+        if not IsPlayerNearEntity(ply, entity, 300) then -- 300 units max distance
+            utils.DebugPrint("Player too far from boombox: " .. ply:Nick())
+            return
+        end
+        -- Entity ownership check for boomboxes
+        if not DoesPlayerOwnEntity(ply, entity) then
+            utils.DebugPrint("Player doesn't own the boombox: " .. ply:Nick())
+            return
+        end
+    elseif entity:IsVehicle() then
+        -- Check if player is in the vehicle
+        if not IsPlayerInVehicle(ply, entity) then
+            utils.DebugPrint("Player is not in the vehicle: " .. ply:Nick())
+            return
+        end
+    else
+        utils.DebugPrint("Invalid entity type for radio: " .. tostring(entity))
+        return
+    end
+
+    -- If all checks pass, proceed with stopping the radio station
+    if utils.isBoombox(entity) then
+        StopBoomboxRadio(entity)
+    elseif entity:IsVehicle() then
+        StopVehicleRadio(entity)
     end
 end)
 
@@ -489,19 +601,6 @@ local function StopVehicleRadio(entity)
         net.WriteString("")
     net.Broadcast()
 end
-
--- Main function to handle rRadio_StopRadioStation network message
-net.Receive("rRadio_StopRadioStation", function(len, ply)
-    local entity = net.ReadEntity()
-
-    if not IsValid(entity) then return end
-
-    if utils.isBoombox(entity) then
-        StopBoomboxRadio(entity)
-    elseif entity:IsVehicle() then
-        StopVehicleRadio(entity)
-    end
-end)
 
 -- Cleanup active radios when an entity is removed
 hook.Add("EntityRemoved", "CleanupActiveRadioOnEntityRemove", function(entity)

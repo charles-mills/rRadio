@@ -974,6 +974,7 @@ local function rRadio_OpenRadioMenu()
     end
 end
 
+-- Replace the existing hook with this updated Think function
 local lastKeyCheckTime = 0
 local keyCheckInterval = 0.1 -- Check every 0.1 seconds
 
