@@ -12,11 +12,9 @@ local keyCodeMapping = include("misc/key_names.lua")
 local themes = include("misc/theme_palettes.lua")
 local languageManager = include("localisation/language_manager.lua")
 
--- Add this near the top of the file, after including language_manager.lua
 Config = Config or {}
 Config.Lang = Config.Lang or languageManager.translations["en"] or {}
 
--- Declare createSettingsMenu at the top of the file
 local createSettingsMenu
 
 -- -------------------------------
