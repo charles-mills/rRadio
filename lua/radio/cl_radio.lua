@@ -569,7 +569,6 @@ local function createCountryButton(stationListPanel, country, backButton, search
     return countryButton
 end
 
--- Function to handle station button click
 local function handleStationButtonClick(stationListPanel, backButton, searchBox, station)
     local currentTime = CurTime()
 
@@ -585,11 +584,11 @@ local function handleStationButtonClick(stationListPanel, backButton, searchBox,
         return
     end
 
-    if currentlyPlayingStations[entity] then
-        net.Start("rRadio_StopRadioStation")
-            net.WriteEntity(entity)
-        net.SendToServer()
-    end
+    -- Clear the current station information before setting the new one
+    currentlyPlayingStations[entity] = nil
+    entity:SetNWString("CurrentRadioStation", "")
+    entity:SetNWString("StationURL", "")
+    entity:SetNWString("Country", "")
 
     local volume = entityVolumes[entity] or getEntityConfig(entity).Volume
     net.Start("rRadio_PlayRadioStation")
@@ -597,10 +596,17 @@ local function handleStationButtonClick(stationListPanel, backButton, searchBox,
         net.WriteString(station.name)
         net.WriteString(station.url)
         net.WriteFloat(volume)
-        net.WriteString(selectedCountry)  -- Add this line
+        net.WriteString(selectedCountry)
     net.SendToServer()
 
+    -- Update the currently playing station immediately
     currentlyPlayingStations[entity] = station
+    
+    -- Update NW strings immediately on the client
+    entity:SetNWString("CurrentRadioStation", station.name)
+    entity:SetNWString("StationURL", station.url)
+    entity:SetNWString("Country", selectedCountry)
+
     lastStationSelectTime = currentTime  -- Update the last station select time
     populateList(stationListPanel, backButton, searchBox, false)
 end
@@ -812,6 +818,7 @@ local function createStationListPanel(frame)
     return stationListPanel
 end
 
+-- Modify the createStopButton function
 local function createStopButton(frame, stationListPanel, backButton, searchBox)
     local stopButtonHeight = Scale(Config.UI.FrameSize.width) / 8
     local stopButtonWidth = Scale(Config.UI.FrameSize.width) / 4
@@ -838,7 +845,16 @@ local function createStopButton(frame, stationListPanel, backButton, searchBox)
             net.Start("rRadio_StopRadioStation")
                 net.WriteEntity(entity)
             net.SendToServer()
+            
+            -- Clear the currently playing station for this entity
             currentlyPlayingStations[entity] = nil
+            
+            -- Set the NW variables on the client
+            entity:SetNWString("CurrentRadioStation", "")
+            entity:SetNWString("StationURL", "")
+            entity:SetNWString("Country", Config.Lang["Unknown"] or "Unknown")
+            
+            -- Update the HUD
             populateList(stationListPanel, backButton, searchBox, false)
         end
     end
@@ -1119,17 +1135,32 @@ local function attemptPlayStation(entity, url, volume, entityConfig, attempt)
     playStation(entity, url, volume, entityConfig, 1)
 end
 
--- Network receiver for playing a station
 net.Receive("rRadio_PlayRadioStation", function()
     local entity = net.ReadEntity()
+    local stationName = net.ReadString()
     local url = net.ReadString()
     local volume = net.ReadFloat()
+    local country = net.ReadString()
     local entityConfig = getEntityConfig(entity)
+
+    -- Clear the current station information before setting the new one
+    currentlyPlayingStations[entity] = nil
+    entity:SetNWString("CurrentRadioStation", "")
+    entity:SetNWString("StationURL", "")
+    entity:SetNWString("Country", "")
+
+    -- Update the currently playing station
+    currentlyPlayingStations[entity] = {name = stationName, url = url}
+    
+    -- Update NW strings
+    entity:SetNWString("CurrentRadioStation", stationName)
+    entity:SetNWString("StationURL", url)
+    entity:SetNWString("Country", country)
 
     attemptPlayStation(entity, url, volume, entityConfig, 1)
 end)
 
--- Network receiver for stopping a station
+-- Modify the net receiver for stopping a station
 net.Receive("rRadio_StopRadioStation", function()
     local entity = net.ReadEntity()
 
@@ -1144,6 +1175,14 @@ net.Receive("rRadio_StopRadioStation", function()
         local entIndex = entity:EntIndex()
         hook.Remove("EntityRemoved", "StopRadioOnEntityRemove_" .. entIndex)
         hook.Remove("Think", "UpdateRadioPosition_" .. entIndex)
+        
+        -- Clear the currently playing station for this entity
+        currentlyPlayingStations[entity] = nil
+        
+        -- Set the NW variables on the client
+        entity:SetNWString("CurrentRadioStation", "")
+        entity:SetNWString("StationURL", "")
+        entity:SetNWString("Country", Config.Lang["Unknown"] or "Unknown")
     else
         utils.PrintError("No valid radio source found for entity in rRadio_StopRadioStation.", 2)
     end

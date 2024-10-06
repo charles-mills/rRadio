@@ -341,6 +341,12 @@ local function HandleBoomboxPlayRadio(ply, entity, stationName, url, volume, cou
 
     local currentVolume = EntityVolumes[entity] or Config.Boombox.DefaultVolume
     
+    -- Clear the current station information before setting the new one
+    entity:SetNWString("CurrentRadioStation", "")
+    entity:SetNWString("StationURL", "")
+    entity:SetNWString("Country", "")
+    
+    -- Set the new station information
     entity:SetNWString("CurrentRadioStation", stationName)
     entity:SetNWString("StationURL", url)
     entity:SetNWFloat("Volume", currentVolume)
@@ -353,43 +359,29 @@ local function HandleBoomboxPlayRadio(ply, entity, stationName, url, volume, cou
 
     AddActiveRadio(entity, stationName, url, currentVolume)
 
-    net.Start("rRadio_PlayRadioStation")
-    net.WriteEntity(entity)
-    net.WriteString(url)
-    net.WriteFloat(currentVolume)
-    net.WriteString(country)
-    net.Broadcast()
-
     if entity.PermaProps_ID then
         database.SaveBoomboxStateToDatabase(entity.PermaProps_ID, stationName, url, true, currentVolume)
     end
 end
 
-local function HandleVehiclePlayRadio(entity, stationName, url, volume)
+local function HandleVehiclePlayRadio(entity, stationName, url, volume, country)
     local mainVehicle = entity:GetParent() or entity
     if not IsValid(mainVehicle) then mainVehicle = entity end
 
     local currentVolume = EntityVolumes[mainVehicle] or Config.VehicleRadio.DefaultVolume
 
-    if ActiveRadios[mainVehicle:EntIndex()] then
-        net.Start("rRadio_StopRadioStation")
-            net.WriteEntity(mainVehicle)
-        net.Broadcast()
-        RemoveActiveRadio(mainVehicle)
-    end
+    -- Clear the current station information before setting the new one
+    mainVehicle:SetNWString("CurrentRadioStation", "")
+    mainVehicle:SetNWString("StationURL", "")
+    mainVehicle:SetNWString("Country", "")
 
     AddActiveRadio(mainVehicle, stationName, url, currentVolume)
 
-    net.Start("rRadio_PlayRadioStation")
-        net.WriteEntity(mainVehicle)
-        net.WriteString(url)
-        net.WriteFloat(currentVolume)
-    net.Broadcast()
-
-    net.Start("rRadio_UpdateRadioStatus")
-        net.WriteEntity(mainVehicle)
-        net.WriteString(stationName)
-    net.Broadcast()
+    mainVehicle:SetNWString("CurrentRadioStation", stationName)
+    mainVehicle:SetNWString("StationURL", url)
+    mainVehicle:SetNWFloat("Volume", currentVolume)
+    mainVehicle:SetNWString("Country", country)
+    mainVehicle:SetNWBool("IsRadioSource", true)
 end
 
 local function IsPlayerInVehicle(ply, vehicle)
@@ -407,6 +399,16 @@ net.Receive("rRadio_PlayRadioStation", function(len, ply)
     if not IsValid(entity) or not IsValid(ply) then return end
     if IsRateLimited(ply) then return end
 
+    -- Stop the current station if one is playing
+    if ActiveRadios[entity:EntIndex()] then
+        RemoveActiveRadio(entity)
+    end
+
+    -- Clear the current station information before setting the new one
+    entity:SetNWString("CurrentRadioStation", "")
+    entity:SetNWString("StationURL", "")
+    entity:SetNWString("Country", "")
+
     if utils.isBoombox(entity) then
         if not IsPlayerNearEntity(ply, entity, 300) then return end
         local owner = entity:GetNWEntity("Owner")
@@ -416,6 +418,15 @@ net.Receive("rRadio_PlayRadioStation", function(len, ply)
         if not IsPlayerInVehicle(ply, entity) then return end
         HandleVehiclePlayRadio(entity, stationName, url, volume, country)
     end
+
+    -- Broadcast the new station information to all clients
+    net.Start("rRadio_PlayRadioStation")
+        net.WriteEntity(entity)
+        net.WriteString(stationName)
+        net.WriteString(url)
+        net.WriteFloat(volume)
+        net.WriteString(country)
+    net.Broadcast()
 end)
 
 local function StopBoomboxRadio(entity)
@@ -467,8 +478,19 @@ net.Receive("rRadio_StopRadioStation", function(len, ply)
     if ActiveRadios[entIndex] then
         ActiveRadios[entIndex] = nil
 
+        -- Set the NW variables on the server
+        entity:SetNWString("CurrentRadioStation", "")
+        entity:SetNWString("StationURL", "")
+        entity:SetNWString("Country", Config.Lang["Unknown"] or "Unknown")
+
         net.Start("rRadio_StopRadioStation")
         net.WriteEntity(entity)
+        net.Broadcast()
+
+        net.Start("rRadio_UpdateRadioStatus")
+        net.WriteEntity(entity)
+        net.WriteString("")
+        net.WriteString(Config.Lang["Unknown"] or "Unknown")
         net.Broadcast()
 
         if utils.isBoombox(entity) and entity.PermaProps_ID then
