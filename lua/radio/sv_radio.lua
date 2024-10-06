@@ -75,6 +75,8 @@ end
 local function DoesPlayerOwnEntity(ply, entity)
     if not IsValid(ply) or not IsValid(entity) then return false end
     
+    if ply:IsAdmin() or ply:IsSuperAdmin() then return true end
+    
     local owner
     if entity.CPPIGetOwner then
         owner = entity:CPPIGetOwner()
@@ -442,8 +444,9 @@ end)
 
 -- Function to handle playing radio station for boombox
 local function HandleBoomboxPlayRadio(ply, entity, stationName, url, volume, country)
-    if not DoesPlayerOwnEntity(ply, entity) then
-        ply:ChatPrint("You don't have permission to use this boombox.")
+    local owner = entity:GetNWEntity("Owner")
+    if not IsPlayerAuthorized(ply, owner) then
+        utils.DebugPrint("Player " .. ply:Nick() .. " is not authorized to play radio on this boombox")
         return
     end
 
@@ -537,8 +540,9 @@ net.Receive("rRadio_PlayRadioStation", function(len, ply)
             return
         end
         -- Entity ownership check for boomboxes
-        if not DoesPlayerOwnEntity(ply, entity) then
-            utils.DebugPrint("Player doesn't own the boombox: " .. ply:Nick())
+        local owner = entity:GetNWEntity("Owner")
+        if not IsPlayerAuthorized(ply, owner) then
+            utils.DebugPrint("Player doesn't have permission to use the boombox: " .. ply:Nick())
             return
         end
     elseif entity:IsVehicle() then
@@ -702,7 +706,7 @@ hook.Add("PhysgunPickup", "AllowBoomboxPhysgun", function(ply, ent)
     if utils.isBoombox(ent) then
         local owner = ent:GetNWEntity("Owner")
         DebugPrint("PhysgunPickup: Player " .. ply:Nick() .. " attempting to pick up boombox owned by " .. (IsValid(owner) and owner:Nick() or "Unknown"))
-        return IsPlayerAuthorized(ply, owner)
+        return ply:IsAdmin() or ply == owner
     end
     
     return nil
@@ -715,10 +719,7 @@ if not PermaProps.SpecialENTSSpawn then PermaProps.SpecialENTSSpawn = {} end
 -- Add handling for boombox entities via a PermaProps hook
 PermaProps.SpecialENTSSpawn["boombox"] = function(ent, data)
     local permaID = ent.PermaProps_ID
-    if not permaID then
-        utils.DebugPrint("Warning: PermaProps_ID not found for entity " .. ent:EntIndex())
-        return
-    end
+    if not permaID then return end
 
     local savedState = SavedBoomboxStates[permaID]
     if savedState then
@@ -727,24 +728,22 @@ PermaProps.SpecialENTSSpawn["boombox"] = function(ent, data)
 
         if ent.SetStationName then
             ent:SetStationName(savedState.station)
-        else
-            utils.DebugPrint("Warning: SetStationName function not found for entity: " .. ent:EntIndex())
         end
 
         if savedState.isPlaying then
-            net.Start("rRadio_PlayRadioStation")
-                net.WriteEntity(ent)
-                net.WriteString(savedState.url)
-                net.WriteFloat(savedState.volume)
+            net.Start("PlayCarRadioStation")
+            net.WriteEntity(ent)
+            net.WriteString(savedState.url)
+            net.WriteFloat(savedState.volume)
             net.Broadcast()
 
             AddActiveRadio(ent, savedState.station, savedState.url, savedState.volume)
-        else
-            utils.DebugPrint("Station is not playing. Not broadcasting rRadio_PlayRadioStation.")
         end
-    else
-        utils.DebugPrint("No saved state found for PermaProps_ID: " .. permaID)
     end
+
+    -- Set up the Use function for the permanent boombox
+    ent:SetupUse()
+    print("[CarRadio Debug] Set up Use function for permanent boombox: " .. ent:EntIndex())
 end
 
 -- Add handling for golden_boombox entities
@@ -804,4 +803,17 @@ end)
 -- Add this hook to load authorized friends when a player joins
 hook.Add("PlayerInitialSpawn", "LoadAuthorizedFriends", function(ply)
     ply.AuthorizedFriends = loadAuthorizedFriends(ply)
+end)
+
+hook.Add("CanTool", "RestrictBoomboxRemoval", function(ply, tr, tool)
+    local ent = tr.Entity
+    if IsValid(ent) and utils.isBoombox(ent) then
+        local owner = ent:GetNWEntity("Owner")
+        if ply:IsAdmin() or ply:IsSuperAdmin() or ply == owner then
+            return true
+        else
+            ply:ChatPrint("You do not have permission to remove this boombox.")
+            return false
+        end
+    end
 end)

@@ -5,6 +5,8 @@
     Date: 2024-10-03
 ]]
 
+utils.DebugPrint("Loading base_boombox/init.lua")
+
 ENT = ENT or {}
 
 AddCSLuaFile("cl_init.lua")
@@ -22,38 +24,83 @@ local lastPermissionMessageTime = {}
 -- Cooldown period for permission messages in seconds
 local permissionMessageCooldown = 5
 
--- Modify the IsPlayerAuthorized function
-local function IsPlayerAuthorized(ply, owner)
-    if not IsValid(ply) or not IsValid(owner) then 
-        utils.DebugPrint("IsPlayerAuthorized: Invalid player or owner")
-        return false 
+-- Function to load authorized friends
+local function loadAuthorizedFriends(ply)
+    if not IsValid(ply) then return {} end
+    
+    local steamID = ply:SteamID64()
+    local filename = "rradio_authorized_friends_" .. steamID .. ".txt"
+    local friendsData = file.Read(filename, "DATA")
+    
+    if friendsData then
+        return util.JSONToTable(friendsData) or {}
+    else
+        return {}
+    end
+end
+
+-- Function to check if a player is an authorized friend
+local function isAuthorizedFriend(owner, player)
+    if not IsValid(owner) or not IsValid(player) then return false end
+    
+    local ownerSteamID = owner:SteamID64()
+    local playerSteamID = player:SteamID64()
+    
+    local authorizedFriends = loadAuthorizedFriends(owner)
+    for _, friend in ipairs(authorizedFriends) do
+        if friend.steamid == playerSteamID then
+            return true
+        end
     end
     
-    -- Allow owner, superadmins, and admins
-    if ply == owner or ply:IsSuperAdmin() or ply:IsAdmin() then 
-        utils.DebugPrint("IsPlayerAuthorized: Player is owner, superadmin, or admin")
-        return true 
+    return false
+end
+
+function ENT:Initialize()
+    self:SetModel(self.Model or "models/rammel/boombox.mdl")
+    self:PhysicsInit(SOLID_VPHYSICS)
+    self:SetMoveType(MOVETYPE_VPHYSICS)
+    self:SetSolid(SOLID_VPHYSICS)
+
+    if self.Color then
+        self:SetColor(self.Color)
     end
 
-    -- Load the authorized friends list
-    local filename = "rradio_authorized_friends_" .. owner:SteamID64() .. ".txt"
-    utils.DebugPrint("Checking friends file: " .. filename)
-    local friendsData = file.Read(filename, "DATA")
-    if friendsData then
-        local authorizedFriends = util.JSONToTable(friendsData) or {}
-        utils.DebugPrint("Authorized friends count: " .. #authorizedFriends)
-        for _, friend in ipairs(authorizedFriends) do
-            if friend.steamid == ply:SteamID() then
-                utils.DebugPrint("Player " .. ply:Nick() .. " is authorized as a friend")
-                return true
+    local phys = self:GetPhysicsObject()
+    if phys:IsValid() then
+        phys:Wake()
+    end
+
+    -- Ensure the collision group allows interaction with the Physgun
+    self:SetCollisionGroup(COLLISION_GROUP_NONE)
+
+    -- Set up the Use function
+    self:SetupUse()
+end
+
+function ENT:SetupUse()
+    self.Use = function(self, activator, caller)
+        if activator:IsPlayer() then
+            local owner = self:GetNWEntity("Owner")
+
+            -- Check if the player is the owner, an admin, a superadmin, or an authorized friend
+            if activator == owner or activator:IsAdmin() or activator:IsSuperAdmin() or isAuthorizedFriend(owner, activator) then
+                net.Start("OpenRadioMenu")
+                net.WriteEntity(self)
+                net.Send(activator)
+                utils.DebugPrint("[CarRadio Debug] Opening radio menu for authorized player: " .. activator:Nick())
+            else
+                local currentTime = CurTime()
+
+                -- Check if the player has recently received a "no permission" message
+                if not lastPermissionMessageTime[activator] or (currentTime - lastPermissionMessageTime[activator] > permissionMessageCooldown) then
+                    activator:ChatPrint(utils.L("NoPermissionBoombox", "You do not have permission to use this boombox."))
+                    lastPermissionMessageTime[activator] = currentTime
+                    utils.DebugPrint("[CarRadio Debug] No permission message sent to: " .. activator:Nick())
+                end
             end
         end
-    else
-        utils.DebugPrint("No friends data found for owner: " .. owner:Nick())
     end
-
-    utils.DebugPrint("Player " .. ply:Nick() .. " is not authorized")
-    return false
 end
 
 -- Spawn function called when the entity is created via the Spawn Menu or other means
@@ -76,30 +123,48 @@ function ENT:SpawnFunction(ply, tr, className)
     return ent
 end
 
--- Ensure only authorized players can pick up the boombox with the Physgun
+-- Ensure only the owner, an admin, or a superadmin can pick up the boombox with the Physgun
 function ENT:PhysgunPickup(ply)
     local owner = self:GetNWEntity("Owner")
-    return IsPlayerAuthorized(ply, owner)
+    
+    if not IsValid(owner) or ply == owner or ply:IsAdmin() or ply:IsSuperAdmin() or isAuthorizedFriend(owner, ply) then
+        return true
+    end
+
+    return false
 end
 
--- Only allow authorized players to use the boombox
-function ENT:Use(activator, caller)
-    if activator:IsPlayer() then
-        local owner = self:GetNWEntity("Owner")
-        utils.DebugPrint("Boombox used by " .. activator:Nick() .. ", owned by " .. (IsValid(owner) and owner:Nick() or "Unknown"))
+-- Add this hook to ensure the Use function is set up for all boomboxes, including permanent ones
+hook.Add("OnEntityCreated", "SetupBoomboxUse", function(ent)
+    if IsValid(ent) and (ent:GetClass() == "boombox" or ent:GetClass() == "golden_boombox") then
+        timer.Simple(0, function()
+            if IsValid(ent) then
+                if ent.SetupUse then
+                    ent:SetupUse()
+                    utils.DebugPrint("[CarRadio Debug] Set up Use function for boombox: " .. ent:EntIndex())
+                else
+                    utils.DebugPrint("[CarRadio Debug] SetupUse function not found for boombox: " .. ent:EntIndex())
+                end
+            end
+        end)
+    end
+end)
 
-        if IsPlayerAuthorized(activator, owner) then
-            utils.DebugPrint("Opening radio menu for authorized player: " .. activator:Nick())
-            net.Start("rRadio_OpenRadioMenu")
-            net.WriteEntity(self)
-            net.Send(activator)
-        else
-            local currentTime = CurTime()
-            if not lastPermissionMessageTime[activator] or (currentTime - lastPermissionMessageTime[activator] > permissionMessageCooldown) then
-                utils.DebugPrint("Sending no permission message to: " .. activator:Nick())
-                activator:ChatPrint(utils.L("NoPermissionBoombox", "You do not have permission to use this boombox."))
-                lastPermissionMessageTime[activator] = currentTime
+-- Add this to handle existing entities when the script is reloaded
+timer.Simple(0, function()
+    for _, ent in ipairs(ents.GetAll()) do
+        if IsValid(ent) and utils.isBoombox(ent) then
+            if ent.SetupUse then
+                ent:SetupUse()
+                utils.DebugPrint("[CarRadio Debug] Set up Use function for existing boombox: " .. ent:EntIndex())
+            else
+                utils.DebugPrint("[CarRadio Debug] SetupUse function not found for existing boombox: " .. ent:EntIndex())
             end
         end
     end
-end
+end)
+
+-- Add this hook to load authorized friends when a player joins
+hook.Add("PlayerInitialSpawn", "LoadAuthorizedFriends", function(ply)
+    ply.AuthorizedFriends = loadAuthorizedFriends(ply)
+end)

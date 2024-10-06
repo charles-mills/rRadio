@@ -35,7 +35,7 @@ end
 -- Debug function to print messages if debug_mode is enabled
 function utils.DebugPrint(msg)
     if utils.DEBUG_MODE then
-        print("[CarRadio Debug] " .. msg)
+        print("[rRadio Debug] " .. msg)
     end
 end
 
@@ -43,7 +43,7 @@ end
 function utils.PrintError(msg, severity)
     severity = severity or 3
     if utils.VERBOSE_ERRORS then
-        print("[CarRadio Error] [" .. (severity or "0") .. "] " .. msg)
+        print("[rRadio Error] [" .. (severity or "0") .. "] " .. msg)
     end
 end
 
