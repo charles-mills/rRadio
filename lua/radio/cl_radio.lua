@@ -420,41 +420,64 @@ hook.Add("InitPostEntity", "RequestCustomStations", function()
     print("[rRadio] Requested custom stations from server")
 end)
 
--- Update the getSortedStations function to use ConsolidatedStations
 local function getSortedStations(filterText)
+    utils.DebugPrint("Getting sorted stations for country: " .. tostring(selectedCountry))
     local stations = {}
+    local favoriteStationsList = {}
+    local nonFavoriteStationsList = {}
     local formattedSelectedCountry = utils.formatCountryNameForComparison(selectedCountry)
+    utils.DebugPrint("Formatted country name: " .. formattedSelectedCountry)
     
-    -- Function to add stations to the list
+    -- Function to add stations to the appropriate list
     local function addStations(stationList)
+        utils.DebugPrint("Adding stations, list size: " .. tostring(#stationList))
         for _, station in ipairs(stationList or {}) do
             if filterText == "" or string.find(station.name:lower(), filterText:lower(), 1, true) then
                 local isFavorite = favoriteStations[selectedCountry] and favoriteStations[selectedCountry][station.name] or false
-                table.insert(stations, { station = station, favorite = isFavorite })
+                if isFavorite then
+                    table.insert(favoriteStationsList, { station = station, favorite = true })
+                else
+                    table.insert(nonFavoriteStationsList, { station = station, favorite = false })
+                end
             end
         end
     end
 
     -- Add stations from ConsolidatedStations
     if ConsolidatedStations[formattedSelectedCountry] then
+        utils.DebugPrint("Found consolidated stations for country")
         addStations(ConsolidatedStations[formattedSelectedCountry])
+    else
+        utils.DebugPrint("No consolidated stations found for country")
     end
 
     -- Add custom stations if they exist for the selected country
     if CustomRadioStations[formattedSelectedCountry] then
+        utils.DebugPrint("Found custom stations for country")
         addStations(CustomRadioStations[formattedSelectedCountry])
+    else
+        utils.DebugPrint("No custom stations found for country")
     end
 
-    table.sort(stations, function(a, b)
-        if a.favorite and not b.favorite then
-            return true
-        elseif not a.favorite and b.favorite then
-            return false
-        else
-            return a.station.name < b.station.name
-        end
+    -- Sort favorite stations alphabetically
+    table.sort(favoriteStationsList, function(a, b)
+        return a.station.name < b.station.name
     end)
 
+    -- Sort non-favorite stations alphabetically
+    table.sort(nonFavoriteStationsList, function(a, b)
+        return a.station.name < b.station.name
+    end)
+
+    -- Combine favorite and non-favorite stations
+    for _, station in ipairs(favoriteStationsList) do
+        table.insert(stations, station)
+    end
+    for _, station in ipairs(nonFavoriteStationsList) do
+        table.insert(stations, station)
+    end
+
+    utils.DebugPrint("Total stations found: " .. #stations)
     return stations
 end
 
@@ -780,6 +803,7 @@ local function createFrame()
     end
 
     return frame
+end
 
 local function createSearchBox(frame)
     local searchBox = vgui.Create("DTextEntry", frame)
@@ -1231,19 +1255,27 @@ hook.Add("InitPostEntity", "InitializeFavorites", function()
 end)
 
 local function LoadConsolidatedStations()
+    utils.DebugPrint("Loading consolidated stations...")
     local files = file.Find("lua/radio/stations/data_*.lua", "GAME")
+    utils.DebugPrint("Found " .. #files .. " data files")
     for _, filename in ipairs(files) do
+        utils.DebugPrint("Processing file: " .. filename)
         local stations = include("radio/stations/" .. filename)
+        utils.DebugPrint("Loaded stations from file: " .. tostring(stations ~= nil))
         for country, countryStations in pairs(stations) do
             local baseName = string.match(country, "(.+)_%d+$") or country
+            baseName = utils.formatCountryNameForComparison(baseName)
+            utils.DebugPrint("Processing country: " .. baseName .. " (original: " .. country .. ")")
             if not ConsolidatedStations[baseName] then
                 ConsolidatedStations[baseName] = {}
             end
             for _, station in ipairs(countryStations) do
                 table.insert(ConsolidatedStations[baseName], {name = station.n, url = station.u})
             end
+            utils.DebugPrint("Added " .. #countryStations .. " stations for " .. baseName)
         end
     end
+    utils.DebugPrint("Finished loading consolidated stations")
 end
 
 LoadConsolidatedStations()

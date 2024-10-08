@@ -1,7 +1,6 @@
 import os
 import json
 import re
-import shutil
 
 def load_stations(file_path):
     with open(file_path, 'r', encoding='utf-8') as f:
@@ -40,8 +39,6 @@ def consolidate_stations():
     stations_dir = os.path.join(current_dir, 'stations')
     
     all_stations = {}
-    current_file_size = 0
-    file_number = 1
     max_file_size = 63 * 1024  # 63KB
 
     # Remove old consolidated files
@@ -50,72 +47,61 @@ def consolidate_stations():
         if filename.startswith('data_') and filename.endswith('.lua'):
             os.remove(os.path.join(output_dir, filename))
 
-    # First pass: load all stations and calculate sizes
+    # Load all stations and calculate their sizes
+    country_sizes = []
     for filename in os.listdir(stations_dir):
         if filename.endswith('.lua'):
             country = filename[:-4]  # Remove .lua extension
             file_path = os.path.join(stations_dir, filename)
             country_stations = load_stations(file_path)
-            
             if country_stations:
                 all_stations[country] = country_stations
+                country_size = len(json.dumps({country: country_stations}))
+                country_sizes.append((country, country_size))
 
-    # Second pass: optimize file distribution
-    current_file = {}
-    for country, stations in all_stations.items():
-        country_size = len(json.dumps({country: stations}))
-        
-        if current_file_size + country_size > max_file_size:
-            if current_file:
-                actual_size = save_consolidated_file(current_file, file_number)
-                print(f"File {file_number} size: {actual_size} bytes")
-                file_number += 1
-                current_file = {}
-                current_file_size = 0
+    # Sort countries by size (largest first)
+    country_sizes.sort(key=lambda x: x[1], reverse=True)
 
-        if country_size > max_file_size:
+    # Bin packing algorithm
+    bins = []
+    for country, size in country_sizes:
+        if size > max_file_size:
             # Split large countries
-            split_stations = []
-            current_split = []
-            split_size = 0
+            stations = all_stations[country]
+            current_bin = {}
+            current_size = 0
             for station in stations:
                 station_size = len(json.dumps(station))
-                if split_size + station_size > max_file_size:
-                    if current_split:
-                        split_stations.append(current_split)
-                    current_split = [station]
-                    split_size = station_size
+                if current_size + station_size > max_file_size:
+                    if current_bin:
+                        bins.append(current_bin)
+                    current_bin = {f"{country}_{len(bins)}": [station]}
+                    current_size = station_size
                 else:
-                    current_split.append(station)
-                    split_size += station_size
-            if current_split:
-                split_stations.append(current_split)
-            
-            for i, split in enumerate(split_stations):
-                actual_size = save_consolidated_file({f"{country}_{i+1}": split}, file_number)
-                print(f"File {file_number} size: {actual_size} bytes")
-                file_number += 1
+                    if not current_bin:
+                        current_bin = {f"{country}_{len(bins)}": []}
+                    current_bin[f"{country}_{len(bins)}"].append(station)
+                    current_size += station_size
+            if current_bin:
+                bins.append(current_bin)
         else:
-            current_file[country] = stations
-            current_file_size += country_size
+            # Try to fit country into existing bin or create new bin
+            fitted = False
+            for bin in bins:
+                bin_size = sum(len(json.dumps(stations)) for stations in bin.values())
+                if bin_size + size <= max_file_size:
+                    bin[country] = all_stations[country]
+                    fitted = True
+                    break
+            if not fitted:
+                bins.append({country: all_stations[country]})
 
-        # Check if we can add more countries to the current file
-        while current_file_size < max_file_size and all_stations:
-            next_country, next_stations = next(iter(all_stations.items()))
-            next_size = len(json.dumps({next_country: next_stations}))
-            if current_file_size + next_size <= max_file_size:
-                current_file[next_country] = next_stations
-                current_file_size += next_size
-                del all_stations[next_country]
-            else:
-                break
+    # Save consolidated files
+    for i, bin in enumerate(bins, 1):
+        actual_size = save_consolidated_file(bin, i)
+        print(f"File {i} size: {actual_size} bytes")
 
-    # Save any remaining stations
-    if current_file:
-        actual_size = save_consolidated_file(current_file, file_number)
-        print(f"File {file_number} size: {actual_size} bytes")
-
-    print(f"Consolidated stations into {file_number} files.")
+    print(f"Consolidated stations into {len(bins)} files.")
 
 if __name__ == "__main__":
     consolidate_stations()

@@ -84,7 +84,10 @@ end
     @return (string): The formatted country name.
 ]]
 function utils.formatCountryNameForComparison(name)
-    return utils.FastFormatCountryName(name)
+    name = string.lower(name)
+    name = string.gsub(name, "[ -]", "_")
+    name = string.gsub(name, "[^a-z0-9_]", "")
+    return string.upper(string.sub(name, 1, 1)) .. string.sub(name, 2)
 end
 
 --[[
