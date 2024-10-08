@@ -388,8 +388,6 @@ local CustomRadioStations = {}
 -- Network receiver for custom radio stations
 net.Receive("rRadio_CustomStations", function()
     local newCustomStations = net.ReadTable()
-    print("[rRadio] Received custom stations:")
-    PrintTable(newCustomStations)
     
     -- Merge new stations with existing ones
     for country, stations in pairs(newCustomStations) do
@@ -400,9 +398,6 @@ net.Receive("rRadio_CustomStations", function()
             table.insert(CustomRadioStations[country], station)
         end
     end
-    
-    print("[rRadio] Updated custom stations table:")
-    PrintTable(CustomRadioStations)
 end)
 
 -- Request custom stations from the server when the script initializes
@@ -415,34 +410,22 @@ end)
 -- Add this function to load the consolidated stations
 local function loadConsolidatedStations()
     local files = file.Find("radio/stations/data_*.lua", "LUA")
-    print("[RADIO] Found " .. #files .. " station files")
 
     for _, filename in ipairs(files) do
         local stations = include("radio/stations/" .. filename)
-        print("[RADIO] Loading stations from file: " .. filename)
         
         for country, countryStations in pairs(stations) do
             local baseName = string.match(country, "(.+)_%d+$") or country
             baseName = utils.formatCountryNameForComparison(baseName)
-            print("[RADIO] Processing country: " .. country .. " (Base name: " .. baseName .. ")")
             
             if not ConsolidatedStations[baseName] then
                 ConsolidatedStations[baseName] = {}
-                print("[RADIO] Created new entry for " .. baseName)
             end
             
             for _, station in ipairs(countryStations) do
                 table.insert(ConsolidatedStations[baseName], {name = station.n, url = station.u})
             end
-            
-            print("[RADIO] Added " .. #countryStations .. " stations for " .. baseName)
         end
-    end
-
-    -- Debug print to check loaded stations
-    print("[RADIO] Loaded stations:")
-    for country, stations in pairs(ConsolidatedStations) do
-        print(string.format("  %s: %d stations", country, #stations))
     end
 end
 
@@ -1056,7 +1039,26 @@ local function rRadio_OpenRadioMenu()
     end
 end
 
--- Replace the existing hook with this updated Think function
+local function SendAuthorizedFriendsToServer(friends)
+    net.Start("rRadio_UpdateAuthorizedFriends")
+    net.WriteString(util.TableToJSON(friends))
+    net.SendToServer()
+    
+    utils.DebugPrint("[rRadio] Sent updated friends list to server")
+end
+
+local function SaveAuthorizedFriends(friends)
+    local friendsJson = util.TableToJSON(friends)
+    safeFileWrite("rradio_authorized_friends.txt", friendsJson)
+    
+    -- Update cache
+    cachedFriends = friends
+    lastCacheTime = SysTime()
+    
+    -- Send the updated list to the server
+    SendAuthorizedFriendsToServer(friends)
+end
+
 local lastKeyCheckTime = 0
 local keyCheckInterval = 0.1 -- Check every 0.1 seconds
 

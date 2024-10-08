@@ -32,7 +32,7 @@ local function loadAuthorizedFriends(ply)
     if not IsValid(ply) then return {} end
     
     local steamID = ply:SteamID64()
-    local filename = "rradio_authorized_friends_" .. steamID .. ".txt"
+    local filename = "rradio/client_friends/rradio_authorized_friends_" .. steamID .. ".txt"
     local friendsData = file.Read(filename, "DATA")
     
     if friendsData then
@@ -43,20 +43,14 @@ local function loadAuthorizedFriends(ply)
 end
 
 -- Function to check if a player is an authorized friend
-local function isAuthorizedFriend(owner, player)
+function ENT:isAuthorizedFriend(owner, player)
     if not IsValid(owner) or not IsValid(player) then return false end
     
-    local ownerSteamID = owner:SteamID64()
-    local playerSteamID = player:SteamID64()
+    local ownerSteamID64 = owner:SteamID64()
+    local playerSteamID = player:SteamID()
     
-    local authorizedFriends = loadAuthorizedFriends(owner)
-    for _, friend in ipairs(authorizedFriends) do
-        if friend.steamid == playerSteamID then
-            return true
-        end
-    end
-    
-    return false
+    -- Use the isAuthorizedFriend function from sv_radio.lua
+    return isAuthorizedFriend(owner, player)
 end
 
 function ENT:Initialize()
@@ -91,16 +85,13 @@ function ENT:SetupUse()
         if activator:IsPlayer() then
             local owner = self:GetNWEntity("Owner")
 
-            -- Check if the player is the owner, an admin, a superadmin, or an authorized friend
-            if activator:IsAdmin() or activator:IsSuperAdmin() or activator == owner or isAuthorizedFriend(owner, activator) then
+            if activator:IsAdmin() or activator:IsSuperAdmin() or activator == owner or self:isAuthorizedFriend(owner, activator) then
                 net.Start("rRadio_OpenRadioMenu")
                 net.WriteEntity(self)
                 net.Send(activator)
                 utils.DebugPrint("[CarRadio Debug] Opening radio menu for authorized player: " .. activator:Nick())
             else
                 local currentTime = CurTime()
-
-                -- Check if the player has recently received a "no permission" message
                 if not lastPermissionMessageTime[activator] or (currentTime - lastPermissionMessageTime[activator] > permissionMessageCooldown) then
                     activator:ChatPrint(utils.L("NoPermissionBoombox", "You do not have permission to use this boombox."))
                     lastPermissionMessageTime[activator] = currentTime
@@ -140,7 +131,7 @@ function ENT:PhysgunPickup(ply)
     utils.DebugPrint("[CarRadio Debug] PhysgunPickup: Player " .. ply:Nick() .. " attempting to pick up boombox owned by " .. (IsValid(owner) and owner:Nick() or "Unknown"))
     
     if IsValid(owner) then
-        return ply == owner or ply:IsAdmin() or ply:IsSuperAdmin() or utils.isAuthorizedFriend(owner, ply)
+        return ply == owner or ply:IsAdmin() or ply:IsSuperAdmin() or self:isAuthorizedFriend(owner, ply)
     else
         return ply:IsAdmin() or ply:IsSuperAdmin()
     end
@@ -176,7 +167,6 @@ timer.Simple(0, function()
     end
 end)
 
--- Add this hook to load authorized friends when a player joins
 hook.Add("PlayerInitialSpawn", "LoadAuthorizedFriends", function(ply)
     ply.AuthorizedFriends = loadAuthorizedFriends(ply)
 end)
@@ -187,7 +177,7 @@ function ENT:CanTool(ply, trace, toolname)
     utils.DebugPrint("[CarRadio Debug] CanTool: Player " .. ply:Nick() .. " attempting to use " .. toolname .. " on boombox owned by " .. (IsValid(owner) and owner:Nick() or "Unknown"))
     
     if IsValid(owner) then
-        return ply == owner or ply:IsAdmin() or ply:IsSuperAdmin() or utils.isAuthorizedFriend(owner, ply)
+        return ply == owner or ply:IsAdmin() or ply:IsSuperAdmin() or self:isAuthorizedFriend(owner, ply)
     else
         return ply:IsAdmin() or ply:IsSuperAdmin()
     end

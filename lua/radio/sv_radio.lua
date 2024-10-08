@@ -27,61 +27,31 @@ local customStationsFile = "rradio_custom_stations.txt"
 -- Add these near the top of the file with other network strings
 util.AddNetworkString("rRadio_VolumeChange")
 util.AddNetworkString("rRadio_VolumeUpdate")
+util.AddNetworkString("rRadio_UpdateAuthorizedFriends")
 
 -- Add these variables for rate limiting
 local playerLastVolumeChange = {}
 local volumeChangeInterval = 0.1 -- 100ms cooldown
 
--- Add this function near the top of the file
-local function loadAuthorizedFriends(ply)
-    if not IsValid(ply) then return {} end
-    
-    local steamID = ply:SteamID()
-    local filename = "rradio_authorized_friends_" .. steamID .. ".txt"
-    local friendsData = file.Read(filename, "DATA")
-    
-    if friendsData then
-        return util.JSONToTable(friendsData) or {}
-    else
-        return {}
-    end
+-- Add these variables at the top of the file
+local pendingUpdates = {}
+local UPDATE_DELAY = 2 -- 2 seconds delay
 
-    utils.DebugPrint("Loaded authorized friends for " .. ply:Nick() .. ": " .. util.TableToJSON(authorizedFriends))
-    utils.DebugPrint("Read friends list from file: " .. filename)
+local function DebugPrint(msg)
+    utils.DebugPrint("[rRADIO SERVER] " .. msg)
 end
 
-local function isAuthorizedFriend(owner, player)
-    if not IsValid(owner) or not IsValid(player) then return false end
-    
-    local ownerSteamID = owner:SteamID64()
-    local playerSteamID = player:SteamID64()
-    
-    local filename = "rradio_authorized_friends_" .. ownerSteamID .. ".txt"
-    local friendsData = file.Read(filename, "DATA")
-    
-    if friendsData then
-        local authorizedFriends = util.JSONToTable(friendsData) or {}
-        for _, friend in ipairs(authorizedFriends) do
-            if friend.steamid == playerSteamID then
-                return true
-            end
-        end
-    end
-    
-    return false
-end
-
--- Function to check if a player is near an entity
-local function IsPlayerNearEntity(ply, entity, maxDistance)
-    if not IsValid(ply) or not IsValid(entity) then return false end
-    return ply:GetPos():DistToSqr(entity:GetPos()) <= (maxDistance * maxDistance)
-end
-
--- Modify the DoesPlayerOwnEntity function
+-- Modify the DoesPlayerOwnEntity function to use the isAuthorizedFriend from init.lua
 local function DoesPlayerOwnEntity(ply, entity)
-    if not IsValid(ply) or not IsValid(entity) then return false end
+    if not IsValid(ply) or not IsValid(entity) then 
+        utils.DebugPrint("Invalid player or entity in DoesPlayerOwnEntity")
+        return false 
+    end
     
-    if ply:IsAdmin() or ply:IsSuperAdmin() then return true end
+    if ply:IsAdmin() or ply:IsSuperAdmin() then 
+        utils.DebugPrint("Player " .. ply:Nick() .. " is admin, granting access")
+        return true 
+    end
     
     local owner
     if entity.CPPIGetOwner then
@@ -90,10 +60,28 @@ local function DoesPlayerOwnEntity(ply, entity)
         owner = entity:GetNWEntity("Owner")
     end
     
-    return owner == ply or isAuthorizedFriend(owner, ply)
+    if owner == ply then
+        utils.DebugPrint("Player " .. ply:Nick() .. " is the owner of the entity")
+        return true
+    end
+    
+    if IsValid(owner) then
+        -- Use the isAuthorizedFriend function from init.lua
+        local isAuthorized = isAuthorizedFriend(owner, ply)
+        utils.DebugPrint("Player " .. ply:Nick() .. " authorization result: " .. tostring(isAuthorized))
+        return isAuthorized
+    else
+        utils.DebugPrint("Invalid owner for entity, denying access")
+        return false
+    end
 end
 
--- Modify the rate limiting setup
+-- Function to check if a player is near an entity
+local function IsPlayerNearEntity(ply, entity, maxDistance)
+    if not IsValid(ply) or not IsValid(entity) then return false end
+    return ply:GetPos():DistToSqr(entity:GetPos()) <= (maxDistance * maxDistance)
+end
+
 local playerLastActionTime = {}
 local RATE_LIMIT_DELAY = 0.5 -- Reduced from 1 second to 0.5 seconds
 
@@ -528,13 +516,13 @@ net.Receive("rRadio_PlayRadioStation", function(len, ply)
 
     -- Server-side validation
     if not IsValid(entity) or not IsValid(ply) then
-        utils.DebugPrint("Invalid entity or player in rRadio_PlayRadioStation.")
+        DebugPrint("Invalid entity or player in rRadio_PlayRadioStation.")
         return
     end
 
     -- Rate limiting
     if IsRateLimited(ply) then
-        utils.DebugPrint("Rate limit exceeded for player: " .. ply:Nick())
+        DebugPrint("Rate limit exceeded for player: " .. ply:Nick())
         return
     end
 
@@ -542,25 +530,28 @@ net.Receive("rRadio_PlayRadioStation", function(len, ply)
     if utils.isBoombox(entity) then
         -- Proximity check for boomboxes
         if not IsPlayerNearEntity(ply, entity, 300) then -- 300 units max distance
-            utils.DebugPrint("Player too far from boombox: " .. ply:Nick())
+            DebugPrint("Player too far from boombox: " .. ply:Nick())
             return
         end
         -- Entity ownership check for boomboxes
-        local owner = entity:GetNWEntity("Owner")
-        if not IsPlayerAuthorized(ply, owner) then
-            utils.DebugPrint("Player doesn't have permission to use the boombox: " .. ply:Nick())
+        if not DoesPlayerOwnEntity(ply, entity) then
+            DebugPrint("Player doesn't have permission to use the boombox: " .. ply:Nick())
+            net.Start("rRadio_NoPermission")
+            net.Send(ply)
             return
         end
     elseif entity:IsVehicle() then
         -- Check if player is in the vehicle
         if not IsPlayerInVehicle(ply, entity) then
-            utils.DebugPrint("Player is not in the vehicle: " .. ply:Nick())
+            DebugPrint("Player is not in the vehicle: " .. ply:Nick())
             return
         end
     else
-        utils.DebugPrint("Invalid entity type for radio: " .. tostring(entity))
+        DebugPrint("Invalid entity type for radio: " .. tostring(entity))
         return
     end
+
+    DebugPrint("Player " .. ply:Nick() .. " is playing station " .. stationName .. " on entity " .. entity:GetClass())
 
     -- If all checks pass, proceed with playing the radio station
     if utils.isBoombox(entity) then
@@ -624,30 +615,6 @@ end)
 -- Utility function to detect DarkRP or DerivedRP gamemodes
 local function IsDarkRP()
     return istable(DarkRP) and isfunction(DarkRP.getPhrase)
-end
-
--- Add this near the top of the file
-local function DebugPrint(message)
-    if SERVER then
-        print("[rRadio Debug] " .. message)
-    end
-end
-
--- Modify the AssignOwner function
-local function AssignOwner(ply, ent)
-    if not IsValid(ply) or not IsValid(ent) then
-        DebugPrint("Invalid player or entity passed to AssignOwner.")
-        return
-    end
-
-    if ent.CPPISetOwner then
-        ent:CPPISetOwner(ply)  -- Assign the owner using CPPI
-        DebugPrint("Assigned owner using CPPI: " .. ply:Nick() .. " to entity " .. ent:EntIndex())
-    end
-
-    -- Set the owner as a networked entity so the client can access it
-    ent:SetNWEntity("Owner", ply)
-    DebugPrint("Set NWEntity owner: " .. ply:Nick() .. " to entity " .. ent:EntIndex())
 end
 
 -- Add debug print to the DarkRP hook
@@ -769,21 +736,92 @@ concommand.Add("rradio_list_custom_stations", function(ply, cmd, args)
     end
 end)
 
--- Add this network receiver to handle friend list updates
-util.AddNetworkString("rRadio_UpdateAuthorizedFriends")
-
+-- Modify the network receiver for updating authorized friends
 net.Receive("rRadio_UpdateAuthorizedFriends", function(len, ply)
     local friendsData = net.ReadString()
-    local filename = "rradio_authorized_friends_" .. ply:SteamID64() .. ".txt"
-    file.Write(filename, friendsData)
-    utils.DebugPrint("[rRadio] Updated friends list for " .. ply:Nick() .. ": " .. friendsData)
-    utils.DebugPrint("[rRadio] Wrote friends list to file: " .. filename)
+    local steamID64 = ply:SteamID64()
+    
+    -- Update the in-memory representation immediately
+    pendingUpdates[steamID64] = friendsData
+    
+    -- Debounce the file write
+    if not timer.Exists("rRadio_SaveFriends_" .. steamID64) then
+        timer.Create("rRadio_SaveFriends_" .. steamID64, UPDATE_DELAY, 1, function()
+            local filename = "rradio/client_friends/rradio_authorized_friends_" .. steamID64 .. ".txt"
+            file.Write(filename, pendingUpdates[steamID64])
+            pendingUpdates[steamID64] = nil
+            DebugPrint("Saved friends list for " .. ply:Nick() .. " (SteamID: " .. ply:SteamID() .. ")")
+        end)
+    end
+    
+    DebugPrint("Received updated friends list for " .. ply:Nick() .. " (SteamID: " .. ply:SteamID() .. ")")
 end)
 
--- Add this hook to load authorized friends when a player joins
-hook.Add("PlayerInitialSpawn", "LoadAuthorizedFriends", function(ply)
-    ply.AuthorizedFriends = loadAuthorizedFriends(ply)
-end)
+-- Add this function to check friend authorization
+local function isAuthorizedFriend(owner, friend)
+    if not IsValid(owner) or not IsValid(friend) then return false end
+    
+    local ownerSteamID64 = owner:SteamID64()
+    local friendSteamID = friend:SteamID()
+    
+    -- Check pending updates first
+    if pendingUpdates[ownerSteamID64] then
+        local friendsList = util.JSONToTable(pendingUpdates[ownerSteamID64]) or {}
+        for _, f in ipairs(friendsList) do
+            if f.steamid == friendSteamID then
+                return true
+            end
+        end
+    end
+    
+    -- If not in pending updates, check the file
+    local filename = "rradio/client_friends/rradio_authorized_friends_" .. ownerSteamID64 .. ".txt"
+    if file.Exists(filename, "DATA") then
+        local friendsList = util.JSONToTable(file.Read(filename, "DATA")) or {}
+        for _, f in ipairs(friendsList) do
+            if f.steamid == friendSteamID then
+                return true
+            end
+        end
+    end
+    
+    return false
+end
+
+-- Update the DoesPlayerOwnEntity function to use isAuthorizedFriend
+local function DoesPlayerOwnEntity(ply, entity)
+    if not IsValid(ply) or not IsValid(entity) then 
+        utils.DebugPrint("Invalid player or entity in DoesPlayerOwnEntity")
+        return false 
+    end
+    
+    if ply:IsAdmin() or ply:IsSuperAdmin() then 
+        utils.DebugPrint("Player " .. ply:Nick() .. " is admin, granting access")
+        return true 
+    end
+    
+    local owner
+    if entity.CPPIGetOwner then
+        owner = entity:CPPIGetOwner()
+    else
+        owner = entity:GetNWEntity("Owner")
+    end
+    
+    if owner == ply then
+        utils.DebugPrint("Player " .. ply:Nick() .. " is the owner of the entity")
+        return true
+    end
+    
+    if IsValid(owner) then
+        -- Use the isAuthorizedFriend function from init.lua
+        local isAuthorized = isAuthorizedFriend(owner, ply)
+        utils.DebugPrint("Player " .. ply:Nick() .. " authorization result: " .. tostring(isAuthorized))
+        return isAuthorized
+    else
+        utils.DebugPrint("Invalid owner for entity, denying access")
+        return false
+    end
+end
 
 hook.Add("CanTool", "RestrictBoomboxRemoval", function(ply, tr, tool)
     local ent = tr.Entity

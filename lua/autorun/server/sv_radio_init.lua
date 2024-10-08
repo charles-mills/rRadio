@@ -48,9 +48,15 @@ else
     print("[RADIO] Error: Config.NETWORK_STRINGS is not properly defined")
 end
 
+resource.AddFile("materials/models/rammel/boombox_base.vtf")
+resource.AddFile("materials/models/rammel/boombox_base_n.vtf")
+resource.AddFile("materials/models/rammel/boombox_base.vmt")
+
 -- Add entire materials and models directories
 resource.AddFile("materials")
 resource.AddFile("models")
+
+
 
 -- Include the base_boombox init file
 include("entities/base_boombox/init.lua")

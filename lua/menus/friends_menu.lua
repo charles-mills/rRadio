@@ -61,10 +61,12 @@ local function createStyledButton(parent, text, x, y, w, h, tooltip)
     return button
 end
 
--- Cache for authorized friends
+-- Add these variables at the top of the file
 local cachedFriends = nil
 local lastCacheTime = 0
 local CACHE_LIFETIME = 300 -- Cache lifetime in seconds (5 minutes)
+local pendingSave = false
+local SAVE_DELAY = 2 -- 2 seconds delay
 
 -- Fixed color scheme
 local Colors = {
@@ -100,7 +102,7 @@ end
 
 include("misc/utils.lua")
 
--- Function to load authorized friends with caching
+-- Modify the LoadAuthorizedFriends function
 local function LoadAuthorizedFriends()
     local currentTime = SysTime()
     if cachedFriends and (currentTime - lastCacheTime) < CACHE_LIFETIME then
@@ -113,21 +115,39 @@ local function LoadAuthorizedFriends()
     return savedFriends
 end
 
--- Function to save authorized friends
+-- Modify the SaveAuthorizedFriends function
 local function SaveAuthorizedFriends(friends)
     local friendsJson = util.TableToJSON(friends)
-    safeFileWrite("rradio_authorized_friends.txt", friendsJson)
     
-    -- Update cache
+    -- Update cache immediately
     cachedFriends = friends
     lastCacheTime = SysTime()
     
-    -- Send the updated list to the server
+    -- Send the updated list to the server immediately
     net.Start("rRadio_UpdateAuthorizedFriends")
     net.WriteString(friendsJson)
     net.SendToServer()
     
-    utils.DebugPrint("[rRadio] Sent updated friends list to server")
+    -- Debounce the file write
+    if not pendingSave then
+        pendingSave = true
+        timer.Simple(SAVE_DELAY, function()
+            file.Write("rradio_authorized_friends.txt", friendsJson)
+            pendingSave = false
+            utils.DebugPrint("[rRadio] Friends list saved to file")
+        end)
+    end
+    
+    utils.DebugPrint("[rRadio] Friends list updated and sent to server")
+end
+
+-- Modify the PANEL:SaveAuthorizedFriends method
+function PANEL:SaveAuthorizedFriends()
+    local friends = {}
+    for _, line in pairs(self.AuthorizedList:GetLines()) do
+        table.insert(friends, {name = line:GetColumnText(1), steamid = line:GetColumnText(2)})
+    end
+    SaveAuthorizedFriends(friends)
 end
 
 -- Save authorized friends to persistent storage
@@ -141,6 +161,7 @@ end
 
 -- Add a friend to the authorized list
 function PANEL:AddFriendToList(name, steamid)
+    utils.DebugPrint("Adding friend to list: " .. name .. " (" .. steamid .. ")")
     local line = self.AuthorizedList:AddLine(name, steamid)
     line.Paint = function(self, w, h)
         if self:IsSelected() then
@@ -525,7 +546,7 @@ end
 -- Add debug print to the network receiver in sv_radio.lua
 net.Receive("rRadio_UpdateAuthorizedFriends", function(len, ply)
     local friendsData = net.ReadString()
-    local filename = "rradio_authorized_friends_" .. ply:SteamID64() .. ".txt"
+    local filename = "rradio/client_friends/rradio_authorized_friends_" .. ply:SteamID64() .. ".txt"
     file.Write(filename, friendsData)
     DebugPrint("Updated friends list for " .. ply:Nick() .. ": " .. friendsData)
 end)
