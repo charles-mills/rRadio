@@ -81,10 +81,7 @@ local function LoadFiles(isServer)
     end
 
     -- Dynamically include all language files
-    local langFiles = file.Find("localisation/lang/*.lua", "LUA")
-    for _, filename in ipairs(langFiles) do
-        IncludeFile("localisation/lang/" .. filename)
-    end
+    IncludeFile("localisation/languages.lua")
 end
 
 if SERVER then

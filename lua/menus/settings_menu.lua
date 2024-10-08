@@ -10,10 +10,11 @@
 -- -------------------------------
 local keyCodeMapping = include("misc/key_names.lua")
 local themes = include("misc/theme_palettes.lua")
-local languageManager = include("localisation/language_manager.lua")
+local Languages = include("localisation/languages.lua")
+local LanguageManager = include("localisation/language_manager.lua")
 
 Config = Config or {}
-Config.Lang = Config.Lang or languageManager.translations["en"] or {}
+Config.Lang = Config.Lang or LanguageManager.translations["en"] or {}
 
 local createSettingsMenu
 
@@ -30,8 +31,8 @@ local function applyTheme(themeName)
 end
 
 local function applyLanguage(languageCode)
-    if languageManager.languages[languageCode] then
-        Config.Lang = languageManager.translations[languageCode]
+    if LanguageManager.languages[languageCode] then
+        Config.Lang = LanguageManager.translations[languageCode]
         hook.Run("LanguageChanged", languageCode)
         hook.Run("LanguageUpdated")
         
@@ -128,14 +129,14 @@ local function createLanguageDropdown(panel)
     languageDropdown:SetTall(30)
     languageDropdown:SetTooltip("Select the language for the radio UI.")
 
-    for code, name in pairs(languageManager.languages) do
+    for code, name in pairs(Languages.Available) do
         languageDropdown:AddChoice(name, code)
     end
 
     local function updateDropdownValue()
         local currentLanguage = GetConVar("radio_language"):GetString()
-        if currentLanguage and languageManager.languages[currentLanguage] then
-            languageDropdown:SetValue(languageManager.languages[currentLanguage])
+        if currentLanguage and LanguageManager.languages[currentLanguage] then
+            languageDropdown:SetValue(LanguageManager.languages[currentLanguage])
         else
             languageDropdown:SetValue("Select Language")
         end

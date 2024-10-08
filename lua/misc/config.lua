@@ -34,18 +34,8 @@ Config.NETWORK_STRINGS = {
 -- -------------------------------
 -- 4. Language Configuration
 -- -------------------------------
-local function loadLanguage()
-    local lang = Config.Language or GetConVar("gmod_language"):GetString() or "en"
-    local path = "localisation/lang/" .. lang .. ".lua"
-    
-    if file.Exists(path, "LUA") then
-        Config.Lang = include(path)
-    else
-        Config.Lang = include("localisation/lang/en.lua")
-    end
-end
-
-loadLanguage()
+local LanguageManager = include("localisation/language_manager.lua")
+Config.Lang = LanguageManager.translations[Config.Language or GetConVar("gmod_language"):GetString() or "en"]
 
 -- -------------------------------
 -- 5. Country Name Formatting

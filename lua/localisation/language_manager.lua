@@ -9,40 +9,12 @@ Adding a new Language?
 */
 
 
+local Languages = include("localisation/languages.lua")
+
 local LanguageManager = {}
-LanguageManager.languages = {
-    de = "Deutsch",
-    en = "English",
-    es = "Español",
-    fr = "Français",
-    it = "Italiano",
-    ja = "日本語",
-    ko = "한국어",
-    pt_br = "Português (Brasil)",
-    ru = "Русский",
-    zh_cn = "简体中文",
-    tr = "Türkçe",
-}
+LanguageManager.languages = Languages.Available
+LanguageManager.translations = Languages.Strings
 
-LanguageManager.translations = {}
-
--- Function to load and add a language
-function LanguageManager:AddLanguage(code, displayName, translations)
-    self.translations[code] = translations
-    self.languages[code] = displayName
-end
-
--- Function to get a translation
-function LanguageManager:GetTranslation(code, key)
-    local lang = self.translations[code]
-    if lang and lang[key] then
-        return lang[key]
-    else
-        return self.translations["en"] and self.translations["en"][key] or key -- Fallback to English or the key itself
-    end
-end
-
--- Function to set the current language (default to English)
 LanguageManager.currentLanguage = "en"
 
 function LanguageManager:SetLanguage(code)
@@ -54,35 +26,21 @@ function LanguageManager:SetLanguage(code)
     end
 end
 
--- Function to get the current language's translation
 function LanguageManager:Translate(key)
-    return self:GetTranslation(self.currentLanguage, key)
+    local translation = self.translations[self.currentLanguage][key]
+    if translation then
+        return translation
+    else
+        return self.translations["en"][key] or key
+    end
 end
 
--- Function to get the display name of a language
 function LanguageManager:GetLanguageName(code)
     return self.languages[code] or code
 end
 
--- Function to get all available languages
 function LanguageManager:GetAvailableLanguages()
     return self.languages
 end
-
--- Function to load language files from the 'radio/lang/' directory
-function LanguageManager:LoadLanguageFiles()
-    for code, displayName in pairs(self.languages) do
-        local path = "localisation/lang/" .. code .. ".lua"
-        if file.Exists(path, "LUA") then
-            local translations = include(path)
-            self:AddLanguage(code, displayName, translations)
-        else
-            print("[LanguageManager] Language file not found for code: " .. code .. " at path: " .. path)
-        end
-    end
-end
-
--- Load all language files
-LanguageManager:LoadLanguageFiles()
 
 return LanguageManager
