@@ -215,7 +215,7 @@ end
 -- Network receiver for updating radio status
 net_Receive("rRadio_UpdateRadioStatus", function()
     local entity = net_ReadEntity()
-    if IsValid(entity) and utils.isBoombox(entity) then
+    if IsValid(entity) and utils.IsBoombox(entity) then
         entity:SetStationName(net_ReadString())
         entity:SetNWString("Country", net_ReadString())
     end

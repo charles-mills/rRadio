@@ -2503,4 +2503,3 @@ function CountryTranslations:GetCountryName(lang, country_key)
 end
 
 return CountryTranslations
-

@@ -162,8 +162,6 @@ local radioMenuOpen = false
 local currentlyPlayingStations = {}  -- Initialize the currentlyPlayingStations table
 local currentRadioSources = {}
 local entityVolumes = {}
-local lastVolumeUpdateTime = {}
-local VOLUME_UPDATE_DEBOUNCE_TIME = 0.1 -- 100ms debounce time
 local lastMessageTime = -math.huge
 local lastStationSelectTime = 0  -- Variable to store the time of the last station selection
 
@@ -306,23 +304,26 @@ local function getRadioMessage(keyName)
     return (Config.Lang["PressKeyToOpen"] or "Press {key} to open the radio menu"):gsub("{key}", keyName)
 end
 
--- Modify the PrintrRadio_ShowCarRadioMessage function
+-- Update the function to show the radio message
 local function PrintrRadio_ShowCarRadioMessage()
     -- Ensure the convar is set to show messages
     if not shouldShowRadioMessage() then return end
 
-    local ply = LocalPlayer()
-    local vehicle = ply:GetVehicle()
+    local vehicle = LocalPlayer():GetVehicle()
 
     -- Ensure vehicle is valid
-    if not IsValid(vehicle) then
-        utils.DebugPrint("Invalid vehicle, not showing message")
+    if not IsValid(vehicle) then return end
+
+    -- If the networked variable isn't ready, retry the function after a short delay
+    if vehicle:GetNWBool("IsSitAnywhereSeat", false) == nil then
+        timer.Simple(0.5, function()
+            PrintrRadio_ShowCarRadioMessage()
+        end)
         return
     end
 
-    -- Check if it's a sit-anywhere seat
+    -- Ensure it's not a sit-anywhere seat
     if utils.isSitAnywhereSeat(vehicle) then
-        utils.DebugPrint("Vehicle is a SitAnywhere seat, not showing message")
         return
     end
 
@@ -341,20 +342,9 @@ local function PrintrRadio_ShowCarRadioMessage()
     createNotificationPanel(message)
 end
 
--- Modify the network receiver for showing the "press key to open stations" animation
+-- Network receiver for showing the "press key to open stations" animation
 net.Receive("rRadio_ShowCarRadioMessage", function()
-    local ply = LocalPlayer()
-    local vehicle = ply:GetVehicle()
-    
-    if IsValid(vehicle) then
-        if not utils.isSitAnywhereSeat(vehicle) then
-            PrintrRadio_ShowCarRadioMessage()
-        else
-            utils.DebugPrint("Not showing radio message: SitAnywhere seat")
-        end
-    else
-        utils.DebugPrint("Not showing radio message: Invalid vehicle")
-    end
+    PrintrRadio_ShowCarRadioMessage()
 end)
 
 local function createFont(fontName, fontSize)
@@ -591,6 +581,7 @@ local function createCountryButton(stationListPanel, country, backButton, search
     return countryButton
 end
 
+-- Function to handle station button click
 local function handleStationButtonClick(stationListPanel, backButton, searchBox, station)
     local currentTime = CurTime()
 
@@ -606,11 +597,11 @@ local function handleStationButtonClick(stationListPanel, backButton, searchBox,
         return
     end
 
-    -- Clear the current station information before setting the new one
-    currentlyPlayingStations[entity] = nil
-    entity:SetNWString("CurrentRadioStation", "")
-    entity:SetNWString("StationURL", "")
-    entity:SetNWString("Country", "")
+    if currentlyPlayingStations[entity] then
+        net.Start("rRadio_StopRadioStation")
+            net.WriteEntity(entity)
+        net.SendToServer()
+    end
 
     local volume = entityVolumes[entity] or getEntityConfig(entity).Volume
     net.Start("rRadio_PlayRadioStation")
@@ -618,17 +609,10 @@ local function handleStationButtonClick(stationListPanel, backButton, searchBox,
         net.WriteString(station.name)
         net.WriteString(station.url)
         net.WriteFloat(volume)
-        net.WriteString(selectedCountry)
+        net.WriteString(selectedCountry)  -- Add this line
     net.SendToServer()
 
-    -- Update the currently playing station immediately
     currentlyPlayingStations[entity] = station
-    
-    -- Update NW strings immediately on the client
-    entity:SetNWString("CurrentRadioStation", station.name)
-    entity:SetNWString("StationURL", station.url)
-    entity:SetNWString("Country", selectedCountry)
-
     lastStationSelectTime = currentTime  -- Update the last station select time
     populateList(stationListPanel, backButton, searchBox, false)
 end
@@ -840,7 +824,6 @@ local function createStationListPanel(frame)
     return stationListPanel
 end
 
--- Modify the createStopButton function
 local function createStopButton(frame, stationListPanel, backButton, searchBox)
     local stopButtonHeight = Scale(Config.UI.FrameSize.width) / 8
     local stopButtonWidth = Scale(Config.UI.FrameSize.width) / 4
@@ -867,16 +850,7 @@ local function createStopButton(frame, stationListPanel, backButton, searchBox)
             net.Start("rRadio_StopRadioStation")
                 net.WriteEntity(entity)
             net.SendToServer()
-            
-            -- Clear the currently playing station for this entity
             currentlyPlayingStations[entity] = nil
-            
-            -- Set the NW variables on the client
-            entity:SetNWString("CurrentRadioStation", "")
-            entity:SetNWString("StationURL", "")
-            entity:SetNWString("Country", Config.Lang["Unknown"] or "Unknown")
-            
-            -- Update the HUD
             populateList(stationListPanel, backButton, searchBox, false)
         end
     end
@@ -938,25 +912,11 @@ local function createVolumeSlider(volumePanel, entity)
             end
         end
     
-        local previousVolume = entityVolumes[entity] or getEntityConfig(entity).DefaultVolume
+        local previousVolume = entityVolumes[entity] or getEntityConfig(entity).Volume
         if value ~= previousVolume then
             entityVolumes[entity] = value
-            
-            -- Update local volume immediately
             if currentRadioSources[entity] and IsValid(currentRadioSources[entity]) then
                 currentRadioSources[entity]:SetVolume(value)
-            end
-            
-            -- Debounce the network update
-            local currentTime = CurTime()
-            if not lastVolumeUpdateTime[entity] or (currentTime - lastVolumeUpdateTime[entity] > VOLUME_UPDATE_DEBOUNCE_TIME) then
-                lastVolumeUpdateTime[entity] = currentTime
-                
-                -- Send the new volume to the server
-                net.Start("rRadio_UpdateGlobalVolume")
-                net.WriteEntity(entity)
-                net.WriteFloat(value)
-                net.SendToServer()
             end
         end
     end    
@@ -1037,26 +997,10 @@ local function rRadio_OpenRadioMenu()
     end
 end
 
--- Add this near the top of the file, after other net.Receive functions
-net.Receive("rRadio_UpdateSitAnywhereSeat", function()
-    local vehicle = net.ReadEntity()
-    local isSitAnywhere = net.ReadBool()
-    if IsValid(vehicle) then
-        vehicle:SetNWBool("IsSitAnywhereSeat", isSitAnywhere)
-    end
-end)
-
--- Modify the existing utils.isSitAnywhereSeat function
-function utils.isSitAnywhereSeat(vehicle)
-    if not IsValid(vehicle) then return false end
-    return vehicle:GetNWBool("IsSitAnywhereSeat", false)
-end
-
--- Add these lines near the top of the file, with other local variable declarations
+-- Replace the existing hook with this updated Think function
 local lastKeyCheckTime = 0
 local keyCheckInterval = 0.1 -- Check every 0.1 seconds
 
--- Modify the existing hook
 hook.Add("Think", "CheckCarRadioMenuKey", function()
     local currentTime = CurTime()
     if currentTime - lastKeyCheckTime < keyCheckInterval then return end
@@ -1067,9 +1011,6 @@ hook.Add("Think", "CheckCarRadioMenuKey", function()
 
     local vehicle = ply:GetVehicle()
     if not IsValid(vehicle) then return end
-
-    -- Wait for the networked variable to be set
-    if vehicle:GetNWBool("IsSitAnywhereSeat", nil) == nil then return end
 
     local openKey = radioOpenKeyConVar:GetInt()
     if input.IsKeyDown(openKey) then
@@ -1124,9 +1065,7 @@ local function playStation(entity, url, volume, entityConfig, attempt)
     sound.PlayURL(url, "3d mono", function(station, errorID, errorName)
         if IsValid(station) and IsValid(entity) then
             station:SetPos(entity:GetPos())
-            -- Use the entityVolumes table to get the current volume
-            local currentVolume = entityVolumes[entity] or entityConfig.DefaultVolume
-            station:SetVolume(currentVolume)
+            station:SetVolume(volume)
             station:Play()
             currentRadioSources[entity] = station
 
@@ -1157,32 +1096,17 @@ local function attemptPlayStation(entity, url, volume, entityConfig, attempt)
     playStation(entity, url, volume, entityConfig, 1)
 end
 
+-- Network receiver for playing a station
 net.Receive("rRadio_PlayRadioStation", function()
     local entity = net.ReadEntity()
-    local stationName = net.ReadString()
     local url = net.ReadString()
     local volume = net.ReadFloat()
-    local country = net.ReadString()
     local entityConfig = getEntityConfig(entity)
-
-    -- Clear the current station information before setting the new one
-    currentlyPlayingStations[entity] = nil
-    entity:SetNWString("CurrentRadioStation", "")
-    entity:SetNWString("StationURL", "")
-    entity:SetNWString("Country", "")
-
-    -- Update the currently playing station
-    currentlyPlayingStations[entity] = {name = stationName, url = url}
-    
-    -- Update NW strings
-    entity:SetNWString("CurrentRadioStation", stationName)
-    entity:SetNWString("StationURL", url)
-    entity:SetNWString("Country", country)
 
     attemptPlayStation(entity, url, volume, entityConfig, 1)
 end)
 
--- Modify the net receiver for stopping a station
+-- Network receiver for stopping a station
 net.Receive("rRadio_StopRadioStation", function()
     local entity = net.ReadEntity()
 
@@ -1197,14 +1121,6 @@ net.Receive("rRadio_StopRadioStation", function()
         local entIndex = entity:EntIndex()
         hook.Remove("EntityRemoved", "StopRadioOnEntityRemove_" .. entIndex)
         hook.Remove("Think", "UpdateRadioPosition_" .. entIndex)
-        
-        -- Clear the currently playing station for this entity
-        currentlyPlayingStations[entity] = nil
-        
-        -- Set the NW variables on the client
-        entity:SetNWString("CurrentRadioStation", "")
-        entity:SetNWString("StationURL", "")
-        entity:SetNWString("Country", Config.Lang["Unknown"] or "Unknown")
     else
         utils.PrintError("No valid radio source found for entity in rRadio_StopRadioStation.", 2)
     end
@@ -1279,15 +1195,3 @@ local function LoadConsolidatedStations()
 end
 
 LoadConsolidatedStations()
-
-net.Receive("rRadio_UpdateClientVolume", function()
-    local entity = net.ReadEntity()
-    local newVolume = net.ReadFloat()
-    
-    if IsValid(entity) then
-        entityVolumes[entity] = newVolume
-        if currentRadioSources[entity] and IsValid(currentRadioSources[entity]) then
-            currentRadioSources[entity]:SetVolume(newVolume)
-        end
-    end
-end)
