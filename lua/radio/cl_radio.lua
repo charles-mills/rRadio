@@ -1208,27 +1208,20 @@ hook.Add("InitPostEntity", "InitializeFavorites", function()
 end)
 
 local function LoadConsolidatedStations()
-    utils.DebugPrint("Loading consolidated stations...")
     local files = file.Find("lua/radio/stations/data_*.lua", "GAME")
-    utils.DebugPrint("Found " .. #files .. " data files")
     for _, filename in ipairs(files) do
-        utils.DebugPrint("Processing file: " .. filename)
         local stations = include("radio/stations/" .. filename)
-        utils.DebugPrint("Loaded stations from file: " .. tostring(stations ~= nil))
         for country, countryStations in pairs(stations) do
             local baseName = string.match(country, "(.+)_%d+$") or country
             baseName = utils.formatCountryNameForComparison(baseName)
-            utils.DebugPrint("Processing country: " .. baseName .. " (original: " .. country .. ")")
             if not ConsolidatedStations[baseName] then
                 ConsolidatedStations[baseName] = {}
             end
             for _, station in ipairs(countryStations) do
                 table.insert(ConsolidatedStations[baseName], {name = station.n, url = station.u})
             end
-            utils.DebugPrint("Added " .. #countryStations .. " stations for " .. baseName)
         end
     end
-    utils.DebugPrint("Finished loading consolidated stations")
 end
 
 LoadConsolidatedStations()
