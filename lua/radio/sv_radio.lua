@@ -461,10 +461,6 @@ local function HandleBoomboxPlayRadio(ply, entity, stationName, url, volume, cou
     entity:SetNWString("Country", country)
     entity:SetNWBool("IsRadioSource", true)
 
-    if entity.SetStationName then
-        entity:SetStationName(stationName)
-    end
-
     AddActiveRadio(entity, stationName, url, volume)
 
     -- Broadcast to all players
@@ -566,77 +562,43 @@ net.Receive("rRadio_PlayRadioStation", function(len, ply)
     end
 end)
 
--- Function to stop a boombox radio station
+-- Modify the StopBoomboxRadio function
 local function StopBoomboxRadio(entity)
+    if not IsValid(entity) then return end
+
     local permaID = entity.PermaProps_ID
     if permaID and SavedBoomboxStates[permaID] then
         SavedBoomboxStates[permaID].isPlaying = false
         SaveBoomboxStateToDatabase(permaID, SavedBoomboxStates[permaID].station, SavedBoomboxStates[permaID].url, false, SavedBoomboxStates[permaID].volume)
     end
 
-    if entity.SetStationName then
-        entity:SetStationName("")
-    else
-        utils.DebugPrint("Warning: SetStationName function not found for entity: " .. entity:EntIndex())
-    end
+    entity:SetNWString("CurrentRadioStation", "")
+    entity:SetNWString("Country", "")
+    entity:SetNWBool("IsRadioSource", false)
 
     RemoveActiveRadio(entity)
 
+    -- Broadcast stop to all players
     net.Start("rRadio_StopRadioStation")
-        net.WriteEntity(entity)
+    net.WriteEntity(entity)
     net.Broadcast()
 
-    net.Start("rRadio_UpdateRadioStatus")
-        net.WriteEntity(entity)
-        net.WriteString("")
-    net.Broadcast()
+    utils.DebugPrint("Stopped radio for boombox: " .. entity:EntIndex())
 end
 
--- Function to stop a vehicle radio station
-local function StopVehicleRadio(entity)
-    local mainVehicle = entity:GetParent() or entity
-    if not IsValid(mainVehicle) then
-        mainVehicle = entity
-    end
-
-    RemoveActiveRadio(mainVehicle)
-
-    net.Start("rRadio_StopRadioStation")
-        net.WriteEntity(mainVehicle)
-    net.Broadcast()
-
-    net.Start("rRadio_UpdateRadioStatus")
-        net.WriteEntity(mainVehicle)
-        net.WriteString("")
-    net.Broadcast()
-end
-
--- Main function to handle rRadio_StopRadioStation network message
+-- Modify the existing network receiver for stopping radio stations
 net.Receive("rRadio_StopRadioStation", function(len, ply)
     local entity = net.ReadEntity()
+
     if not IsValid(entity) then
-        utils.DebugPrint("Received invalid entity in rRadio_StopRadioStation.")
+        utils.PrintError("Received invalid entity in rRadio_StopRadioStation.", 2)
         return
     end
 
-    local entIndex = entity:EntIndex()
-    if ActiveRadios[entIndex] then
-        -- Remove from active radios
-        ActiveRadios[entIndex] = nil
-
-        -- Broadcast to all players
-        net.Start("rRadio_StopRadioStation")
-        net.WriteEntity(entity)
-        net.Broadcast()
-
-        -- Save state if it's a permanent boombox
-        if utils.isBoombox(entity) and entity.PermaProps_ID then
-            SaveBoomboxStateToDatabase(entity.PermaProps_ID, "", "", false, 0)
-        end
-
-        utils.DebugPrint("Stopped radio for entity: " .. entIndex)
+    if DoesPlayerOwnEntity(ply, entity) then
+        StopBoomboxRadio(entity)
     else
-        utils.DebugPrint("No active radio found for entity: " .. entIndex)
+        ply:ChatPrint("You don't have permission to stop this radio.")
     end
 end)
 

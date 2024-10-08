@@ -101,7 +101,7 @@ local function getDisplayName(entity)
     if IsValid(owner) then return owner:Nick() end
     
     local ownerName = entity:GetNWString("OwnerName", "Unknown")
-    return ownerName == "Unknown" and "Boombox" or ownerName
+    return ownerName ~= "Unknown" and ownerName or "Boombox"
 end
 
 -- Function to draw the boombox information panel
@@ -112,7 +112,7 @@ local function DrawBoomboxPanel(ent, x, y)
     local subTextColor = Color(200, 200, 200, panelAlpha)
 
     local ownerName = getDisplayName(ent)
-    local stationName = ent:GetStationName()
+    local stationName = ent:GetNWString("CurrentRadioStation", "")
     local isPlaying = stationName ~= ""
     local displayStationName = isPlaying and stationName or Config.Lang["NoStationPlaying"]
     local country = isPlaying and ent:GetNWString("Country", Config.Lang["Unknown"]) or Config.Lang["None"]
@@ -215,8 +215,17 @@ end
 -- Network receiver for updating radio status
 net_Receive("rRadio_UpdateRadioStatus", function()
     local entity = net_ReadEntity()
-    if IsValid(entity) and utils.IsBoombox(entity) then
+    if IsValid(entity) and (entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox") then
         entity:SetStationName(net_ReadString())
         entity:SetNWString("Country", net_ReadString())
+    end
+end)
+
+-- Network receiver for stopping radio station
+net_Receive("rRadio_StopRadioStation", function()
+    local entity = net_ReadEntity()
+    if IsValid(entity) then
+        entity:SetNWString("CurrentRadioStation", "")
+        entity:SetNWString("Country", "")
     end
 end)

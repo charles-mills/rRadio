@@ -850,7 +850,18 @@ local function createStopButton(frame, stationListPanel, backButton, searchBox)
             net.Start("rRadio_StopRadioStation")
                 net.WriteEntity(entity)
             net.SendToServer()
+            
+            -- Immediately stop the sound locally
+            if IsValid(currentRadioSources[entity]) then
+                currentRadioSources[entity]:Stop()
+                currentRadioSources[entity] = nil
+            end
+            
             currentlyPlayingStations[entity] = nil
+            entity:SetNWString("CurrentRadioStation", "")
+            entity:SetNWString("Country", "")
+            
+            -- Repopulate the list to reflect the changes
             populateList(stationListPanel, backButton, searchBox, false)
         end
     end
@@ -1115,14 +1126,32 @@ net.Receive("rRadio_StopRadioStation", function()
         return
     end
 
+    -- Stop the sound
     if IsValid(currentRadioSources[entity]) then
         currentRadioSources[entity]:Stop()
         currentRadioSources[entity] = nil
-        local entIndex = entity:EntIndex()
-        hook.Remove("EntityRemoved", "StopRadioOnEntityRemove_" .. entIndex)
-        hook.Remove("Think", "UpdateRadioPosition_" .. entIndex)
-    else
-        utils.PrintError("No valid radio source found for entity in rRadio_StopRadioStation.", 2)
+    end
+
+    -- Update the UI
+    if IsValid(entity) then
+        entity:SetNWString("CurrentRadioStation", "")
+        entity:SetNWString("Country", "")
+    end
+
+    -- Remove from currently playing stations
+    currentlyPlayingStations[entity] = nil
+
+    -- Update the UI if the radio menu is open
+    if radioMenuOpen and LocalPlayer().currentRadioEntity == entity then
+        local frame = vgui.GetWorldPanel():FindChild("RadioMenuFrame")
+        if IsValid(frame) then
+            local stationListPanel = frame:FindChild("StationListPanel")
+            local backButton = frame:FindChild("BackButton")
+            local searchBox = frame:FindChild("SearchBox")
+            if IsValid(stationListPanel) and IsValid(backButton) and IsValid(searchBox) then
+                populateList(stationListPanel, backButton, searchBox, false)
+            end
+        end
     end
 end)
 
