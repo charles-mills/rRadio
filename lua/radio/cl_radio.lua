@@ -418,7 +418,24 @@ hook.Add("InitPostEntity", "RequestCustomStations", function()
     print("[rRadio] Requested custom stations from server")
 end)
 
--- Function to get sorted stations (including custom stations)
+-- Add this near the top of the file
+local ConsolidatedStations = {}
+
+-- Replace the existing station loading logic with this:
+local function LoadConsolidatedStations()
+    local files = file.Find("lua/radio/stations/consolidated_*.lua", "GAME")
+    for _, filename in ipairs(files) do
+        local stations = include("radio/stations/" .. filename)
+        for country, countryStations in pairs(stations) do
+            ConsolidatedStations[country] = countryStations
+        end
+    end
+end
+
+-- Call this function when initializing
+LoadConsolidatedStations()
+
+-- Update the getSortedStations function to use ConsolidatedStations
 local function getSortedStations(filterText)
     local stations = {}
     local formattedSelectedCountry = utils.formatCountryNameForComparison(selectedCountry)
@@ -433,12 +450,9 @@ local function getSortedStations(filterText)
         end
     end
 
-    -- Add stations from Config.RadioStations
-    for country, stationList in pairs(Config.RadioStations) do
-        if utils.formatCountryNameForComparison(country) == formattedSelectedCountry then
-            addStations(stationList)
-            break
-        end
+    -- Add stations from ConsolidatedStations
+    if ConsolidatedStations[formattedSelectedCountry] then
+        addStations(ConsolidatedStations[formattedSelectedCountry])
     end
 
     -- Add custom stations if they exist for the selected country
@@ -458,6 +472,8 @@ local function getSortedStations(filterText)
 
     return stations
 end
+
+-- Update other functions that use Config.RadioStations to use ConsolidatedStations instead
 
 -- Function to create a favorite icon for countries and stations
 local function createFavoriteIcon(parent, item, itemType, stationListPanel, backButton, searchBox)
@@ -670,7 +686,7 @@ local function getSortedCountries(filterText)
     local favoriteCountriesList = {}
     local nonFavoriteCountriesList = {}
 
-    for country, _ in pairs(Config.RadioStations) do
+    for country, _ in pairs(ConsolidatedStations) do
         local translatedCountry = formatCountryName(country)
         local formattedCountry = utils.formatCountryNameForComparison(country)
         if filterText == "" or string.find(translatedCountry:lower(), filterText:lower(), 1, true) then
@@ -781,7 +797,6 @@ local function createFrame()
     end
 
     return frame
-end
 
 local function createSearchBox(frame)
     local searchBox = vgui.Create("DTextEntry", frame)

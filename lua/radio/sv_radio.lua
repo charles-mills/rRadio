@@ -31,6 +31,9 @@ local EntityVolumes = {}
 local lastVolumeUpdateTime = {}
 local VOLUME_UPDATE_DEBOUNCE_TIME = 0.1 -- 100ms debounce time
 
+-- Add this near the top of the file
+local ConsolidatedStations = {}
+
 -- -------------------------------
 -- 3. Utility Functions
 -- -------------------------------
@@ -758,3 +761,19 @@ hook.Add("PlayerEnteredVehicle", "rRadio_ShowCarRadioMessageOnEnter", function(p
         end
     end)
 end)
+
+-- Add this function to load consolidated stations
+local function LoadConsolidatedStations()
+    local files = file.Find("lua/radio/stations/consolidated_*.lua", "GAME")
+    for _, filename in ipairs(files) do
+        local stations = include("radio/stations/" .. filename)
+        for country, countryStations in pairs(stations) do
+            ConsolidatedStations[country] = countryStations
+        end
+    end
+end
+
+-- Call this function when initializing
+LoadConsolidatedStations()
+
+-- Update any functions that use Config.RadioStations to use ConsolidatedStations instead
