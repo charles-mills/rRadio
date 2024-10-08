@@ -24,6 +24,14 @@ local PlayerRetryAttempts = {}
 local CustomRadioStations = {}
 local customStationsFile = "rradio_custom_stations.txt"
 
+-- Add these near the top of the file with other network strings
+util.AddNetworkString("rRadio_VolumeChange")
+util.AddNetworkString("rRadio_VolumeUpdate")
+
+-- Add these variables for rate limiting
+local playerLastVolumeChange = {}
+local volumeChangeInterval = 0.1 -- 100ms cooldown
+
 -- Add this function near the top of the file
 local function loadAuthorizedFriends(ply)
     if not IsValid(ply) then return {} end
@@ -888,3 +896,100 @@ local function LoadConsolidatedStations()
 end
 
 LoadConsolidatedStations()
+
+-- Add this function to handle volume changes
+local function HandleVolumeChange(ply, entity, volume)
+    if not IsValid(entity) then return end
+
+    -- Check if the player has permission to change the volume
+    if not DoesPlayerOwnEntity(ply, entity) then
+        ply:ChatPrint("You don't have permission to change this radio's volume.")
+        return
+    end
+
+    -- Rate limiting
+    local currentTime = CurTime()
+    if playerLastVolumeChange[ply] and currentTime - playerLastVolumeChange[ply] < volumeChangeInterval then
+        return
+    end
+    playerLastVolumeChange[ply] = currentTime
+
+    -- Update the volume for the entity
+    entity:SetNWFloat("RadioVolume", volume)
+
+    -- If it's a boombox, update the saved state
+    if utils.isBoombox(entity) and entity.PermaProps_ID then
+        local permaID = entity.PermaProps_ID
+        if SavedBoomboxStates[permaID] then
+            SavedBoomboxStates[permaID].volume = volume
+            SaveBoomboxStateToDatabase(permaID, SavedBoomboxStates[permaID].station, SavedBoomboxStates[permaID].url, SavedBoomboxStates[permaID].isPlaying, volume)
+        end
+    end
+
+    -- Broadcast the volume change to all clients
+    net.Start("rRadio_VolumeUpdate")
+    net.WriteEntity(entity)
+    net.WriteFloat(volume)
+    net.Broadcast()
+end
+
+-- Add this network receiver
+net.Receive("rRadio_VolumeChange", function(len, ply)
+    local entity = net.ReadEntity()
+    local volume = net.ReadFloat()
+    HandleVolumeChange(ply, entity, volume)
+end)
+
+-- Modify the HandleBoomboxPlayRadio function
+local function HandleBoomboxPlayRadio(ply, entity, stationName, url, volume, country)
+    if not IsValid(entity) then return end
+
+    entity:SetNWString("CurrentRadioStation", stationName)
+    entity:SetNWString("StationURL", url)
+    entity:SetNWFloat("Volume", volume)
+    entity:SetNWString("Country", country)
+    entity:SetNWBool("IsRadioSource", true)
+
+    AddActiveRadio(entity, stationName, url, volume)
+
+    -- Broadcast to all players
+    net.Start("rRadio_PlayRadioStation")
+    net.WriteEntity(entity)
+    net.WriteString(url)
+    net.WriteFloat(volume)
+    net.WriteString(country)
+    net.Broadcast()
+
+    -- Save state if it's a permanent boombox
+    if entity.PermaProps_ID then
+        SaveBoomboxStateToDatabase(entity.PermaProps_ID, stationName, url, true, volume)
+    end
+
+    utils.DebugPrint("Started radio for boombox: " .. entity:EntIndex())
+end
+
+-- Modify the HandleVehiclePlayRadio function
+local function HandleVehiclePlayRadio(entity, stationName, url, volume)
+    local mainVehicle = entity:GetParent() or entity
+    if not IsValid(mainVehicle) then mainVehicle = entity end
+
+    if ActiveRadios[mainVehicle:EntIndex()] then
+        net.Start("rRadio_StopRadioStation")
+            net.WriteEntity(mainVehicle)
+        net.Broadcast()
+        RemoveActiveRadio(mainVehicle)
+    end
+
+    AddActiveRadio(mainVehicle, stationName, url, volume)
+
+    net.Start("rRadio_PlayRadioStation")
+        net.WriteEntity(mainVehicle)
+        net.WriteString(url)
+        net.WriteFloat(volume)
+    net.Broadcast()
+
+    net.Start("rRadio_UpdateRadioStatus")
+        net.WriteEntity(mainVehicle)
+        net.WriteString(stationName)
+    net.Broadcast()
+end

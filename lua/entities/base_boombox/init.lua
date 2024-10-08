@@ -81,6 +81,9 @@ function ENT:Initialize()
 
     -- Set up the Use function
     self:SetupUse()
+
+    -- Initialize the radio volume
+    self:SetNWFloat("RadioVolume", self.Config.Volume or 0.5)
 end
 
 function ENT:SetupUse()

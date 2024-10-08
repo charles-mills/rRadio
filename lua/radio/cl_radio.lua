@@ -880,6 +880,11 @@ local function createVolumePanel(frame, stopButtonHeight, stopButtonWidth)
     return volumePanel
 end
 
+-- Add these variables near the top of the file
+local lastVolumeChangeTime = 0
+local volumeChangeDebounceTime = 0.1 -- 100ms debounce time
+
+-- Modify the createVolumeSlider function
 local function createVolumeSlider(volumePanel, entity)
     local volumeIconSize = Scale(50)
     
@@ -923,14 +928,17 @@ local function createVolumeSlider(volumePanel, entity)
             end
         end
     
-        local previousVolume = entityVolumes[entity] or getEntityConfig(entity).Volume
-        if value ~= previousVolume then
-            entityVolumes[entity] = value
-            if currentRadioSources[entity] and IsValid(currentRadioSources[entity]) then
-                currentRadioSources[entity]:SetVolume(value)
-            end
+        local currentTime = CurTime()
+        if currentTime - lastVolumeChangeTime >= volumeChangeDebounceTime then
+            lastVolumeChangeTime = currentTime
+            
+            -- Send the volume change to the server
+            net.Start("rRadio_VolumeChange")
+            net.WriteEntity(entity)
+            net.WriteFloat(value)
+            net.SendToServer()
         end
-    end    
+    end
 
     return volumeSlider
 end
@@ -1224,3 +1232,18 @@ local function LoadConsolidatedStations()
 end
 
 LoadConsolidatedStations()
+
+-- Add a new network receiver for volume changes from the server
+net.Receive("rRadio_VolumeUpdate", function()
+    local entity = net.ReadEntity()
+    local volume = net.ReadFloat()
+    
+    if IsValid(entity) then
+        entityVolumes[entity] = volume
+        
+        -- Update the volume of the currently playing station if it exists
+        if currentRadioSources[entity] and IsValid(currentRadioSources[entity]) then
+            updateRadioVolume(currentRadioSources[entity], entity:GetPos():Distance(LocalPlayer():GetPos()), LocalPlayer():GetVehicle() == entity, entity)
+        end
+    end
+end)

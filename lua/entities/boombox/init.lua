@@ -17,4 +17,7 @@ function ENT:Initialize()
     end
 
     self.Config = Config.Boombox
+
+    -- Initialize the radio volume
+    self:SetNWFloat("RadioVolume", self.Config.Volume or 0.5)
 end
