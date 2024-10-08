@@ -1,56 +1,94 @@
 import os
 import json
-import math
+import re
 
 def load_stations(file_path):
     with open(file_path, 'r', encoding='utf-8') as f:
         content = f.read()
-        # Extract the Lua table content
         content = content.split('return stations')[0].split('local stations = ')[1]
-        # Convert Lua table to Python dict
-        return json.loads(content.replace('{', '[').replace('}', ']').replace('=', ':'))
+        stations = []
+        for station in re.findall(r'\{.*?\}', content, re.DOTALL):
+            station_dict = {}
+            for key, value in re.findall(r'(\w+)\s*=\s*"(.*?)"', station):
+                station_dict[key] = value
+            if 'name' in station_dict and 'url' in station_dict:
+                stations.append(station_dict)
+    return stations
 
 def save_consolidated_file(stations, file_number):
-    output = "local stations = {\n"
+    output = "return {"
     for country, country_stations in stations.items():
-        output += f"    ['{country}'] = {{\n"
+        output += f"['{country}']={{"
         for station in country_stations:
-            output += f"        {{name = \"{station['name']}\", url = \"{station['url']}\"}},\n"
-        output += "    },\n"
-    output += "}\n\nreturn stations"
+            name = station['name'].replace("'", "\\'")
+            url = station['url'].replace("'", "\\'")
+            output += f"{{n='{name}',u='{url}'}},"
+        output += "},"
+    output += "}"
     
-    with open(f'rRadio/lua/radio/stations/consolidated_{file_number}.lua', 'w', encoding='utf-8') as f:
+    file_path = f'rRadio/lua/radio/stations/data_{file_number}.lua'
+    with open(file_path, 'w', encoding='utf-8') as f:
         f.write(output)
+    
+    return len(output.encode('utf-8'))
 
 def consolidate_stations():
     stations_dir = 'rRadio/lua/radio/stations'
     all_stations = {}
     current_file_size = 0
     file_number = 1
-    max_file_size = 62 * 1024  # 62KB
+    max_file_size = 63 * 1024  # 63KB
 
     for filename in os.listdir(stations_dir):
-        if filename.endswith('.lua') and not filename.startswith('consolidated_'):
+        if filename.endswith('.lua') and not filename.startswith('data_'):
             country = filename[:-4]  # Remove .lua extension
             file_path = os.path.join(stations_dir, filename)
             country_stations = load_stations(file_path)
             
-            # Estimate the size this country's stations would add
-            country_size = len(json.dumps(country_stations))
+            if not country_stations:
+                print(f"Warning: No valid stations found in {filename}")
+                continue
+            
+            country_size = len(json.dumps({country: country_stations}))
             
             if current_file_size + country_size > max_file_size:
-                # Save current file and start a new one
-                save_consolidated_file(all_stations, file_number)
-                all_stations = {}
-                current_file_size = 0
-                file_number += 1
-            
-            all_stations[country] = country_stations
-            current_file_size += country_size
+                if all_stations:
+                    actual_size = save_consolidated_file(all_stations, file_number)
+                    print(f"File {file_number} size: {actual_size} bytes")
+                    all_stations = {}
+                    current_file_size = 0
+                    file_number += 1
+                
+                if country_size > max_file_size:
+                    split_stations = []
+                    current_split = []
+                    split_size = 0
+                    for station in country_stations:
+                        station_size = len(json.dumps(station))
+                        if split_size + station_size > max_file_size:
+                            split_stations.append(current_split)
+                            current_split = [station]
+                            split_size = station_size
+                        else:
+                            current_split.append(station)
+                            split_size += station_size
+                    if current_split:
+                        split_stations.append(current_split)
+                    
+                    for i, split in enumerate(split_stations):
+                        actual_size = save_consolidated_file({f"{country}_{i+1}": split}, file_number)
+                        print(f"File {file_number} size: {actual_size} bytes")
+                        file_number += 1
+                else:
+                    all_stations[country] = country_stations
+                    current_file_size = country_size
+            else:
+                all_stations[country] = country_stations
+                current_file_size += country_size
 
-    # Save the last file
     if all_stations:
-        save_consolidated_file(all_stations, file_number)
+        actual_size = save_consolidated_file(all_stations, file_number)
+        print(f"File {file_number} size: {actual_size} bytes")
 
     print(f"Consolidated stations into {file_number} files.")
 

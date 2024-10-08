@@ -31,6 +31,8 @@ local savePending = false
 local lastThinkTime = 0
 local thinkThrottleInterval = 0.05 -- Throttle interval in seconds (0.05s = 20 times per second)
 
+local ConsolidatedStations = {}
+
 -- Cache frequently used functions
 local LocalPlayer = LocalPlayer
 local IsValid = IsValid
@@ -418,23 +420,6 @@ hook.Add("InitPostEntity", "RequestCustomStations", function()
     print("[rRadio] Requested custom stations from server")
 end)
 
--- Add this near the top of the file
-local ConsolidatedStations = {}
-
--- Replace the existing station loading logic with this:
-local function LoadConsolidatedStations()
-    local files = file.Find("lua/radio/stations/consolidated_*.lua", "GAME")
-    for _, filename in ipairs(files) do
-        local stations = include("radio/stations/" .. filename)
-        for country, countryStations in pairs(stations) do
-            ConsolidatedStations[country] = countryStations
-        end
-    end
-end
-
--- Call this function when initializing
-LoadConsolidatedStations()
-
 -- Update the getSortedStations function to use ConsolidatedStations
 local function getSortedStations(filterText)
     local stations = {}
@@ -472,8 +457,6 @@ local function getSortedStations(filterText)
 
     return stations
 end
-
--- Update other functions that use Config.RadioStations to use ConsolidatedStations instead
 
 -- Function to create a favorite icon for countries and stations
 local function createFavoriteIcon(parent, item, itemType, stationListPanel, backButton, searchBox)
@@ -1247,7 +1230,24 @@ hook.Add("InitPostEntity", "InitializeFavorites", function()
     end
 end)
 
--- Add this new network receiver
+local function LoadConsolidatedStations()
+    local files = file.Find("lua/radio/stations/data_*.lua", "GAME")
+    for _, filename in ipairs(files) do
+        local stations = include("radio/stations/" .. filename)
+        for country, countryStations in pairs(stations) do
+            local baseName = string.match(country, "(.+)_%d+$") or country
+            if not ConsolidatedStations[baseName] then
+                ConsolidatedStations[baseName] = {}
+            end
+            for _, station in ipairs(countryStations) do
+                table.insert(ConsolidatedStations[baseName], {name = station.n, url = station.u})
+            end
+        end
+    end
+end
+
+LoadConsolidatedStations()
+
 net.Receive("rRadio_UpdateClientVolume", function()
     local entity = net.ReadEntity()
     local newVolume = net.ReadFloat()

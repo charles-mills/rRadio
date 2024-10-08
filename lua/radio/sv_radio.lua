@@ -762,18 +762,20 @@ hook.Add("PlayerEnteredVehicle", "rRadio_ShowCarRadioMessageOnEnter", function(p
     end)
 end)
 
--- Add this function to load consolidated stations
 local function LoadConsolidatedStations()
-    local files = file.Find("lua/radio/stations/consolidated_*.lua", "GAME")
+    local files = file.Find("lua/radio/stations/data_*.lua", "GAME")
     for _, filename in ipairs(files) do
         local stations = include("radio/stations/" .. filename)
         for country, countryStations in pairs(stations) do
-            ConsolidatedStations[country] = countryStations
+            local baseName = string.match(country, "(.+)_%d+$") or country
+            if not ConsolidatedStations[baseName] then
+                ConsolidatedStations[baseName] = {}
+            end
+            for _, station in ipairs(countryStations) do
+                table.insert(ConsolidatedStations[baseName], {name = station.n, url = station.u})
+            end
         end
     end
 end
 
--- Call this function when initializing
 LoadConsolidatedStations()
-
--- Update any functions that use Config.RadioStations to use ConsolidatedStations instead

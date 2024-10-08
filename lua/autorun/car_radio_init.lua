@@ -61,6 +61,7 @@ local function LoadFiles(isServer)
     IncludeFile("misc/config.lua")
     IncludeFile("localisation/language_manager.lua")
     IncludeFile("localisation/country_translations.lua")
+    IncludeFile("localisation/language_data.lua")
     IncludeFile("misc/theme_palettes.lua")
     IncludeFile("misc/key_names.lua")
     IncludeFile("misc/utils.lua")
@@ -84,19 +85,10 @@ local function LoadFiles(isServer)
     IncludeFile("localisation/languages.lua")
 
     -- Load consolidated station files
-    local files = file.Find("radio/stations/consolidated_*.lua", "LUA")
+    local files = file.Find("radio/stations/data_*.lua", "LUA")
     for _, filename in ipairs(files) do
         IncludeFile("radio/stations/" .. filename)
     end
-
-    -- Dynamically include all radio station files
-    local stationFiles = file.Find("radio/stations/*.lua", "LUA")
-    for _, filename in ipairs(stationFiles) do
-        IncludeFile("radio/stations/" .. filename)
-    end
-
-    -- Dynamically include all language files
-    IncludeFile("localisation/languages.lua")
 end
 
 if SERVER then
