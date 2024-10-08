@@ -1,4 +1,12 @@
--- Client-side initialization
+--[[ 
+    rRadio Addon for Garry's Mod - Client Initialization
+    Description: Initializes client-side components and configurations for the rRadio addon.
+    Author: Charles Mills (https://github.com/charles-mills)
+    Date: 2024-10-08
+]]
+
+-- Include utils.lua first
+local utils = include("misc/utils.lua")
 
 -- Create all client-side console variables
 CreateClientConVar("radio_max_volume", 1, true, false)
@@ -11,7 +19,6 @@ CreateClientConVar("radio_debug_mode", "0", true, false, "Enable or disable debu
 CreateClientConVar("radio_verbose_errors", "0", true, false, "Enable or disable verbose errors for the radio.")
 
 local Config = include("misc/config.lua")
-local utils = include("misc/utils.lua")
 include("misc/key_names.lua")
 local themes = include("misc/theme_palettes.lua")
 local languageManager = include("localisation/language_manager.lua")
@@ -71,13 +78,17 @@ include("entities/base_boombox/shared.lua")
 include("entities/boombox/shared.lua")
 include("entities/golden_boombox/shared.lua")
 
--- Load consolidated station files
-local files = file.Find("radio/stations/data_*.lua", "LUA")
-for _, filename in ipairs(files) do
-    include("radio/stations/" .. filename)
-end
+-- Now include the files that depend on Config.UI and Config.Lang
+include("radio/cl_radio.lua")
+include("radio/cl_init.lua")
+include("menus/settings_menu.lua")
+include("menus/friends_menu.lua")
 
-Config.EnableGoldenBoombox = true
+-- Include boombox-related files
+include("entities/base_boombox/cl_init.lua")
+include("entities/base_boombox/shared.lua")
+include("entities/boombox/shared.lua")
+include("entities/golden_boombox/shared.lua")
 
 -- Add hooks to update UI and language when ConVars change
 cvars.AddChangeCallback("radio_theme", function(convar_name, value_old, value_new)

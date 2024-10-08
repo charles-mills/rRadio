@@ -54,10 +54,12 @@ end
     @return (string): The formatted country name.
 ]]
 function utils.formatCountryNameForComparison(name)
-    name = string.lower(name)
-    name = string.gsub(name, "[ -]", "_")
-    name = string.gsub(name, "[^a-z0-9_]", "")
-    return string.upper(string.sub(name, 1, 1)) .. string.sub(name, 2)
+    name = name:lower()
+    name = name:gsub("^the%s+", "")
+    name = name:gsub("%s+and%s+", " ")
+    name = name:gsub("^republic%s+of%s+", "")
+    -- Add more replacements as needed
+    return name
 end
 
 --[[

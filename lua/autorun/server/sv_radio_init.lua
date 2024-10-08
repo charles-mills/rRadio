@@ -1,4 +1,9 @@
--- Server-side initialization
+--[[ 
+    rRadio Addon for Garry's Mod - Server Initialization
+    Description: Initializes server-side components and configurations for the rRadio addon.
+    Author: Charles Mills (https://github.com/charles-mills)
+    Date: 2024-10-08
+]]
 
 local Config = include("misc/config.lua")
 include("misc/utils.lua")
@@ -20,7 +25,6 @@ AddCSLuaFile("menus/settings_menu.lua")
 AddCSLuaFile("menus/friends_menu.lua")
 
 -- Add boombox-related files
-AddCSLuaFile("entities/base_boombox/init.lua")
 AddCSLuaFile("entities/base_boombox/cl_init.lua")
 AddCSLuaFile("entities/base_boombox/shared.lua")
 AddCSLuaFile("entities/boombox/shared.lua")
@@ -28,8 +32,11 @@ AddCSLuaFile("entities/golden_boombox/shared.lua")
 
 -- Add consolidated station files
 local files = file.Find("radio/stations/data_*.lua", "LUA")
+-- print("[RADIO] Found " .. #files .. " station files")
+
 for _, filename in ipairs(files) do
     AddCSLuaFile("radio/stations/" .. filename)
+    -- print("[RADIO] Added station file: " .. filename)
 end
 
 -- Register all network strings

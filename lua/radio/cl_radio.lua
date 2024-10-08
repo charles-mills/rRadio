@@ -77,6 +77,9 @@ local radioMaxVolumeConVar = GetConVar("radio_max_volume")
 local radioOpenKeyConVar = GetConVar("radio_open_key")
 -- --------------------------------
 
+-- Initialize entityVolumes table
+local entityVolumes = {}
+
 -- Load favorites from file
 local function loadFavorites()
     if file.Exists(favoriteCountriesFile, "DATA") then
@@ -161,7 +164,6 @@ local selectedCountry = nil
 local radioMenuOpen = false
 local currentlyPlayingStations = {}  -- Initialize the currentlyPlayingStations table
 local currentRadioSources = {}
-local entityVolumes = {}
 local lastMessageTime = -math.huge
 local lastStationSelectTime = 0  -- Variable to store the time of the last station selection
 
@@ -410,6 +412,44 @@ hook.Add("InitPostEntity", "RequestCustomStations", function()
     print("[rRadio] Requested custom stations from server")
 end)
 
+-- Add this function to load the consolidated stations
+local function loadConsolidatedStations()
+    local files = file.Find("radio/stations/data_*.lua", "LUA")
+    print("[RADIO] Found " .. #files .. " station files")
+
+    for _, filename in ipairs(files) do
+        local stations = include("radio/stations/" .. filename)
+        print("[RADIO] Loading stations from file: " .. filename)
+        
+        for country, countryStations in pairs(stations) do
+            local baseName = string.match(country, "(.+)_%d+$") or country
+            baseName = utils.formatCountryNameForComparison(baseName)
+            print("[RADIO] Processing country: " .. country .. " (Base name: " .. baseName .. ")")
+            
+            if not ConsolidatedStations[baseName] then
+                ConsolidatedStations[baseName] = {}
+                print("[RADIO] Created new entry for " .. baseName)
+            end
+            
+            for _, station in ipairs(countryStations) do
+                table.insert(ConsolidatedStations[baseName], {name = station.n, url = station.u})
+            end
+            
+            print("[RADIO] Added " .. #countryStations .. " stations for " .. baseName)
+        end
+    end
+
+    -- Debug print to check loaded stations
+    print("[RADIO] Loaded stations:")
+    for country, stations in pairs(ConsolidatedStations) do
+        print(string.format("  %s: %d stations", country, #stations))
+    end
+end
+
+-- Call this function to load the stations
+loadConsolidatedStations()
+
+-- Update the getSortedStations function to use ConsolidatedStations instead of _G.ConsolidatedStations
 local function getSortedStations(filterText)
     utils.DebugPrint("Getting sorted stations for country: " .. tostring(selectedCountry))
     local stations = {}
@@ -906,7 +946,7 @@ local function createVolumeSlider(volumePanel, entity)
     volumeSlider:SetMax(1)
     volumeSlider:SetDecimals(2)
     
-    local currentVolume = entityVolumes[entity] or getEntityConfig(entity).Volume
+    local currentVolume = entityVolumes[entity] or (getEntityConfig and getEntityConfig(entity) and getEntityConfig(entity).Volume) or 1
     volumeSlider:SetValue(currentVolume)
     
     volumeSlider.Slider.Paint = function(self, w, h)
@@ -1206,25 +1246,6 @@ hook.Add("InitPostEntity", "InitializeFavorites", function()
         end
     end
 end)
-
-local function LoadConsolidatedStations()
-    local files = file.Find("lua/radio/stations/data_*.lua", "GAME")
-    for _, filename in ipairs(files) do
-        local stations = include("radio/stations/" .. filename)
-        for country, countryStations in pairs(stations) do
-            local baseName = string.match(country, "(.+)_%d+$") or country
-            baseName = utils.formatCountryNameForComparison(baseName)
-            if not ConsolidatedStations[baseName] then
-                ConsolidatedStations[baseName] = {}
-            end
-            for _, station in ipairs(countryStations) do
-                table.insert(ConsolidatedStations[baseName], {name = station.n, url = station.u})
-            end
-        end
-    end
-end
-
-LoadConsolidatedStations()
 
 -- Add a new network receiver for volume changes from the server
 net.Receive("rRadio_VolumeUpdate", function()
