@@ -17,7 +17,7 @@ utils.VERBOSE_ERRORS = false
 ]]
 function utils.isSitAnywhereSeat(vehicle)
     if not IsValid(vehicle) then return false end
-    return vehicle.IsSitAnywhereSeat or false
+    return vehicle:GetNWBool("IsSitAnywhereSeat", false)
 end
 
 --[[
@@ -109,22 +109,5 @@ function utils.getMainVehicleEntity(entity)
     return entity
 end
 
--- Add this function to the utils.lua file
-
---[[ 
-    Function: isValidURL
-    Description: Checks if a given string is a valid URL.
-    Parameters:
-        url (string): The URL to validate.
-    Returns:
-        (boolean): True if the URL is valid, false otherwise.
-]]
-function utils.isValidURL(url)
-    if type(url) ~= "string" then return false end
-    
-    -- Basic URL pattern matching
-    local pattern = "^https?://[%w-_%.%?%.:/%+=&]+$"
-    return string.match(url, pattern) ~= nil
-end
 
 return utils

@@ -80,8 +80,7 @@ function ENT:SetupUse()
     self.Use = function(self, activator, caller)
         if IsValid(activator) and activator:IsPlayer() then
             local owner = self:GetNWEntity("Owner")
-            local isAuthorized = (self:IsPermanent() and (activator:IsAdmin() or activator:IsSuperAdmin())) or
-                     (not self:IsPermanent() and (activator:IsAdmin() or activator:IsSuperAdmin() or activator == owner or (IsValid(owner) and self:isAuthorizedFriend(owner, activator))))
+            local isAuthorized = self:IsPermanent() or activator:IsAdmin() or activator:IsSuperAdmin() or activator == owner or (IsValid(owner) and self:isAuthorizedFriend(owner, activator))
 
             if isAuthorized then
                 net.Start("rRadio_OpenRadioMenu")
@@ -129,6 +128,10 @@ function ENT:PhysgunPickup(ply)
     end
 end
 
+hook.Add("PlayerInitialSpawn", "LoadAuthorizedFriends", function(ply)
+    ply.AuthorizedFriends = loadAuthorizedFriends(ply)
+end)
+
 function ENT:CanTool(ply, trace, toolname)
     local owner = self:GetNWEntity("Owner")
 
@@ -139,6 +142,4 @@ function ENT:CanTool(ply, trace, toolname)
     end
 end
 
-hook.Add("PlayerInitialSpawn", "LoadAuthorizedFriends", function(ply)
-    ply.AuthorizedFriends = loadAuthorizedFriends(ply)
-end)
+ENT:SetupUse()

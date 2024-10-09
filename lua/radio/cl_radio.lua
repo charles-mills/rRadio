@@ -324,10 +324,7 @@ local function getRadioMessage(keyName)
     return (Config.Lang["PressKeyToOpen"] or "Press {key} to open the radio menu"):gsub("{key}", keyName)
 end
 
--- Add these debug print statements at the beginning of the file
-print("[rRadio] cl_radio.lua loaded")
-
--- Modify the PrintrRadio_ShowCarRadioMessage function
+-- Update the function to show the radio message
 local function PrintrRadio_ShowCarRadioMessage()
     -- Ensure the convar is set to show messages
     if not shouldShowRadioMessage() then return end
@@ -337,16 +334,31 @@ local function PrintrRadio_ShowCarRadioMessage()
     -- Ensure vehicle is valid
     if not IsValid(vehicle) then return end
 
+    -- If the networked variable isn't ready, retry the function after a short delay
+    if vehicle:GetNWBool("IsSitAnywhereSeat", false) == nil then
+        timer.Simple(0.5, function()
+            PrintrRadio_ShowCarRadioMessage()
+        end)
+        return
+    end
+
+    -- Ensure it's not a sit-anywhere seat
+    if utils.isSitAnywhereSeat(vehicle) then
+        return
+    end
+
     -- Cooldown management to avoid message spam
     local currentTime = CurTime()
     if isMessageCooldownActive(currentTime) then return end
 
+    -- Update the last message time
     updateLastMessageTime(currentTime)
 
     -- Get the radio open key and the message
     local keyName = getOpenKeyName()
     local message = getRadioMessage(keyName)
 
+    -- Create and display the notification panel
     createNotificationPanel(message)
 end
 
@@ -410,6 +422,7 @@ end)
 hook.Add("InitPostEntity", "RequestCustomStations", function()
     net.Start("rRadio_RequestCustomStations")
     net.SendToServer()
+    print("[rRadio] Requested custom stations from server")
 end)
 
 -- Add this function to load the consolidated stations
@@ -1062,7 +1075,7 @@ hook.Add("Think", "CheckCarRadioMenuKey", function()
         local mainEntity = lastMainEntity
 
         if not IsValid(mainEntity) then return end
-        if (mainEntity:IsVehicle() or string.find(mainEntity:GetClass(), "lvs_")) then
+        if (mainEntity:IsVehicle() or string.find(mainEntity:GetClass(), "lvs_")) and not utils.isSitAnywhereSeat(mainEntity) then
             if not radioMenuOpen then
                 RequestOpenRadioMenu(mainEntity)
             end
@@ -1247,19 +1260,7 @@ hook.Add("InitPostEntity", "InitializeFavorites", function()
     end
 end)
 
-net.Receive("rRadio_VehicleSeatInfo", function()
-    local vehicle = net.ReadEntity()
-    local isSitAnywhereSeat = net.ReadBool()
-    
-    if IsValid(vehicle) then
-        vehicle.IsSitAnywhereSeat = isSitAnywhereSeat
-        
-        if not isSitAnywhereSeat then
-            PrintrRadio_ShowCarRadioMessage()
-        end
-    end
-end)
-
+-- Add a new network receiver for volume changes from the server
 net.Receive("rRadio_VolumeUpdate", function()
     local entity = net.ReadEntity()
     local volume = net.ReadFloat()
