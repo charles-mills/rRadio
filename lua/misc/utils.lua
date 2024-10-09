@@ -6,8 +6,8 @@
 ]]
 
 utils = utils or {}
-utils.DEBUG_MODE = true
-utils.VERBOSE_ERRORS = true
+utils.DEBUG_MODE = false
+utils.VERBOSE_ERRORS = false
 
 --[[
     Function: isSitAnywhereSeat

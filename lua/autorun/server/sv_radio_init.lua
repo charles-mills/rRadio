@@ -59,30 +59,6 @@ resource.AddFile("models")
 -- Include the base_boombox init file
 include("entities/base_boombox/init.lua")
 
--- Function to set up Use for boomboxes
-local function SetupBoomboxUse(ent)
-    if IsValid(ent) and (ent:GetClass() == "boombox" or ent:GetClass() == "golden_boombox") then
-        if ent.SetupUse then
-            ent:SetupUse()
-            print("Set up Use function for boombox: " .. ent:EntIndex())
-        else
-            print("Warning: ent.SetupUse not found for boombox: " .. ent:EntIndex())
-        end
-    end
-end
-
--- Set up Use for all existing boomboxes
-for _, ent in ipairs(ents.GetAll()) do
-    SetupBoomboxUse(ent)
-end
-
--- Set up Use for newly created boomboxes
-hook.Add("OnEntityCreated", "SetupBoomboxUseGlobal", function(ent)
-    timer.Simple(0, function()
-        SetupBoomboxUse(ent)
-    end)
-end)
-
 Config.EnableGoldenBoombox = true
 
 list.Set("SpawnableEntities", "boombox", {

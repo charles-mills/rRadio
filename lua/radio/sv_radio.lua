@@ -42,7 +42,6 @@ local function DebugPrint(msg)
     utils.DebugPrint("[rRADIO SERVER] " .. msg)
 end
 
--- Modify the DoesPlayerOwnEntity function to allow interaction with permanent boomboxes
 function DoesPlayerOwnEntity(ply, entity, action)
     if not IsValid(ply) or not IsValid(entity) then 
         utils.DebugPrint("Invalid player or entity in DoesPlayerOwnEntity")
@@ -58,8 +57,8 @@ function DoesPlayerOwnEntity(ply, entity, action)
     
     -- Check if it's a permanent boombox (world entity)
     if not IsValid(owner) and entity:IsPermanent() then
-        utils.DebugPrint("Entity is a permanent boombox, allowing interaction")
-        return true
+        utils.DebugPrint("Entity is a permanent boombox, only admins can interact")
+        return false -- Only admins can interact with permanent boomboxes
     end
     
     if IsValid(owner) then
@@ -850,19 +849,6 @@ end
 
 PermaProps.SpecialENTSSpawn["golden_boombox"] = PermaProps.SpecialENTSSpawn["boombox"]
 
-
--- Add this hook to ensure Use function is set up for all boomboxes
-hook.Add("OnEntityCreated", "EnsureBoomboxUseFunction", function(ent)
-    if IsValid(ent) and (ent:GetClass() == "boombox" or ent:GetClass() == "golden_boombox") then
-        timer.Simple(0, function()
-            if IsValid(ent) and not ent.Use then
-                ent:SetupUse()
-                DebugPrint("[CarRadio Debug] Ensured Use function for boombox: " .. ent:EntIndex())
-            end
-        end)
-    end
-end)
-
 local function LoadConsolidatedStations()
     local files = file.Find("lua/radio/stations/data_*.lua", "GAME")
     for _, filename in ipairs(files) do
@@ -955,7 +941,7 @@ end
 if utils.DEBUG_MODE then
     concommand.Add("debug_boombox", function(ply)
         local ent = ply:GetEyeTrace().Entity
-        if IsValid(ent) and (ent:GetClass() == "boombox" or ent:GetClass() == "golden_boombox") then
+        if IsValid(ent) and utils.isBoombox(ent) then
             DebugPrint("Boombox Debug Info:")
             DebugPrint("Entity Index: " .. ent:EntIndex())
             DebugPrint("Is Permanent: " .. tostring(ent:IsPermanent()))
