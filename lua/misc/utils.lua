@@ -17,7 +17,7 @@ utils.VERBOSE_ERRORS = false
 ]]
 function utils.isSitAnywhereSeat(vehicle)
     if not IsValid(vehicle) then return false end
-    return vehicle:GetNWBool("IsSitAnywhereSeat", false)
+    return vehicle.IsSitAnywhereSeat or false
 end
 
 --[[

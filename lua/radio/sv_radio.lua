@@ -26,11 +26,15 @@ util.AddNetworkString("rRadio_VolumeChange")
 util.AddNetworkString("rRadio_VolumeUpdate")
 util.AddNetworkString("rRadio_UpdateAuthorizedFriends")
 util.AddNetworkString("rRadio_RequestOpenMenu")
+util.AddNetworkString("rRadio_VehicleSeatInfo")
 
 local playerLastVolumeChange = {}
 local volumeChangeInterval = 0.1 -- 100ms cooldown
 local pendingUpdates = {}
 local UPDATE_DELAY = 2 -- 2 seconds delay
+
+-- Add this at the beginning of the file
+print("[rRadio] sv_radio.lua loaded")
 
 function DoesPlayerOwnEntity(ply, entity, action)
     if not IsValid(ply) or not IsValid(entity) then 
@@ -381,14 +385,18 @@ end)
 
 hook.Add("PlayerLeaveVehicle", "UnmarkSitAnywhereSeat", function(ply, vehicle)
     if IsValid(ply) and IsValid(vehicle) then
-        vehicle:SetNWBool("IsSitAnywhereSeat", false)
+        -- No need to unmark, as we're checking the property directly
     end
 end)
 
 hook.Add("PlayerEnteredVehicle", "rRadio_ShowCarRadioMessageOnEnter", function(ply, vehicle, role)
     if not IsValid(ply) or not IsValid(vehicle) then return end
-    if vehicle:GetNWBool("IsSitAnywhereSeat", false) then return end
-    net.Start("rRadio_ShowCarRadioMessage")
+    
+    local isSitAnywhereSeat = vehicle.playerdynseat == true
+
+    net.Start("rRadio_VehicleSeatInfo")
+    net.WriteEntity(vehicle)
+    net.WriteBool(isSitAnywhereSeat)
     net.Send(ply)
 end)
 
@@ -465,9 +473,12 @@ net.Receive("rRadio_RequestOpenMenu", function(len, ply)
             ply:ChatPrint("You don't have permission to open this radio menu.")
         end
     elseif entity:IsVehicle() or string.find(entity:GetClass(), "lvs_") then
-        -- Check if the player is in the vehicle
         local playerVehicle = ply:GetVehicle()
         local playerMainVehicle = utils.getMainVehicleEntity(playerVehicle)
+
+        if entity:GetNWBool("IsSitAnywhereSeat") then
+            return
+        end
 
         if playerMainVehicle == entity then
             net.Start("rRadio_OpenRadioMenu")
@@ -665,7 +676,7 @@ end)
 concommand.Add("rradio_list_custom_stations", function(ply, cmd, args)
     if not IsValid(ply) or ply:IsAdmin() then
         if next(CustomRadioStations) then
-            print("[rRadio] Saved custom stations:")
+            print("[rRadio] Saved custom stations: ")
             for country, stations in pairs(CustomRadioStations) do
                 print("Country: " .. country)
                 for i, station in ipairs(stations) do

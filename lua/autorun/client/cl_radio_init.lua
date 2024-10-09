@@ -54,8 +54,6 @@ local function UpdateRadioSettings()
     if utils then
         utils.DEBUG_MODE = GetConVar("radio_debug_mode"):GetBool()
         utils.VERBOSE_ERRORS = GetConVar("radio_verbose_errors"):GetBool()
-    else
-        print("[RADIO] Error: utils module not loaded properly")
     end
 end
 
@@ -101,4 +99,4 @@ cvars.AddChangeCallback("radio_language", function(convar_name, value_old, value
     hook.Run("LanguageChanged", value_new)
 end, "RadioLanguageChange")
 
-print("[RADIO] Finished client-side initialization")
+print("[rRadio] Finished client-side initialization")
