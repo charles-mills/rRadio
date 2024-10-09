@@ -26,6 +26,7 @@ Config.NETWORK_STRINGS = {
     "rRadio_UpdateRadioStatus",
     "rRadio_CustomStations",
     "rRadio_RequestCustomStations",
+    "rRadio_UpdateIsSitAnywhereSeat"
 }
 
 -- -------------------------------

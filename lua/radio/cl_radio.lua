@@ -126,6 +126,21 @@ local function loadFavorites()
     end
 end
 
+-- Table to store IsSitAnywhereSeat status for vehicles
+local vehicleSitAnywhereStatus = {}
+
+net.Receive("rRadio_UpdateIsSitAnywhereSeat", function()
+    local vehicle = net.ReadEntity()
+    local isSitAnywhereSeat = net.ReadBool()
+
+    if IsValid(vehicle) then
+        vehicleSitAnywhereStatus[vehicle] = isSitAnywhereSeat
+        print("[rRadio] Received IsSitAnywhereSeat update for vehicle:", vehicle, isSitAnywhereSeat)
+    else
+        vehicleSitAnywhereStatus[vehicle] = nil
+        print("[rRadio] Received IsSitAnywhereSeat update for invalid vehicle.")
+    end
+end)
 
 -- Save favorites to file
 local function saveFavorites()
@@ -207,6 +222,11 @@ local function getEntityConfig(entity)
     end
 end
 
+local function isSitAnywhereSeat(vehicle)
+    if not IsValid(vehicle) then return false end
+    return vehicleSitAnywhereStatus[vehicle] or false
+end
+
 local function formatCountryName(name)
     local formattedName = gsub(gsub(name, "_", " "), "(%a)([%w_']*)", function(a, b)
         return a:upper() .. b:lower()
@@ -258,7 +278,7 @@ local function shouldShowRadioMessage()
 end
 
 local function isValidVehicle(vehicle)
-    return IsValid(vehicle) and not utils.isSitAnywhereSeat(vehicle)
+    return IsValid(vehicle) and not isSitAnywhereSeat(vehicle)
 end
 
 local function isMessageCooldownActive(currentTime)
@@ -324,7 +344,6 @@ local function getRadioMessage(keyName)
     return (Config.Lang["PressKeyToOpen"] or "Press {key} to open the radio menu"):gsub("{key}", keyName)
 end
 
--- Update the function to show the radio message
 local function PrintrRadio_ShowCarRadioMessage()
     -- Ensure the convar is set to show messages
     if not shouldShowRadioMessage() then return end
@@ -333,19 +352,6 @@ local function PrintrRadio_ShowCarRadioMessage()
 
     -- Ensure vehicle is valid
     if not IsValid(vehicle) then return end
-
-    -- If the networked variable isn't ready, retry the function after a short delay
-    if vehicle:GetNWBool("IsSitAnywhereSeat", false) == nil then
-        timer.Simple(0.5, function()
-            PrintrRadio_ShowCarRadioMessage()
-        end)
-        return
-    end
-
-    -- Ensure it's not a sit-anywhere seat
-    if utils.isSitAnywhereSeat(vehicle) then
-        return
-    end
 
     -- Cooldown management to avoid message spam
     local currentTime = CurTime()
@@ -1075,7 +1081,7 @@ hook.Add("Think", "CheckCarRadioMenuKey", function()
         local mainEntity = lastMainEntity
 
         if not IsValid(mainEntity) then return end
-        if (mainEntity:IsVehicle() or string.find(mainEntity:GetClass(), "lvs_")) and not utils.isSitAnywhereSeat(mainEntity) then
+        if (mainEntity:IsVehicle() or string.find(mainEntity:GetClass(), "lvs_")) and not isSitAnywhereSeat(mainEntity) then
             if not radioMenuOpen then
                 RequestOpenRadioMenu(mainEntity)
             end

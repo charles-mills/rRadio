@@ -196,6 +196,17 @@ local function AddActiveRadio(entity, stationName, url, volume)
     end
 end
 
+local function UpdateIsSitAnywhereSeat(vehicle, isSitAnywhereSeat)
+    if not IsValid(vehicle) then return end
+
+    print("[rRadio] Sending IsSitAnywhereSeat update:", vehicle, isSitAnywhereSeat)
+
+    net.Start("rRadio_UpdateIsSitAnywhereSeat")
+        net.WriteEntity(vehicle)
+        net.WriteBool(isSitAnywhereSeat)
+    net.Broadcast()
+end
+
 -- Function to remove a radio from the active list
 local function RemoveActiveRadio(entity)
     if ActiveRadios[entity:EntIndex()] then
@@ -374,14 +385,20 @@ hook.Add("PlayerInitialSpawn", "SendActiveRadiosOnJoin", function(ply)
     end)
 end)
 
--- Add the hooks to set the networked variable
 hook.Add("PlayerEnteredVehicle", "MarkSitAnywhereSeat", function(ply, vehicle)
-    vehicle:SetNWBool("IsSitAnywhereSeat", vehicle.playerdynseat or false)
+    local isSitAnywhereSeat = vehicle.playerdynseat or false
+    vehicle:SetNWBool("IsSitAnywhereSeat", isSitAnywhereSeat)
+
+    -- Notify clients
+    UpdateIsSitAnywhereSeat(vehicle, isSitAnywhereSeat)
 end)
 
 hook.Add("PlayerLeaveVehicle", "UnmarkSitAnywhereSeat", function(ply, vehicle)
-    if IsValid(ply) and IsValid(vehicle) then
+    if IsValid(vehicle) then
         vehicle:SetNWBool("IsSitAnywhereSeat", false)
+
+        -- Notify clients
+        UpdateIsSitAnywhereSeat(vehicle, false)
     end
 end)
 
@@ -883,3 +900,17 @@ local function HandleBoomboxPlayRadio(ply, entity, stationName, url, volume, cou
         SaveBoomboxStateToDatabase(entity.PermaProps_ID, stationName, url, true, volume)
     end
 end
+
+-- Hook to send current IsSitAnywhereSeat status to players upon initial spawn
+hook.Add("PlayerInitialSpawn", "SendCurrentIsSitAnywhereSeat", function(ply)
+    -- Iterate through all existing vehicles and send their status to the newly joined player
+    for _, ent in ipairs(ents.GetAll()) do
+        if ent:IsVehicle() then
+            local isSitAnywhereSeat = ent:GetNWBool("IsSitAnywhereSeat", false)
+            net.Start("rRadio_UpdateIsSitAnywhereSeat")
+                net.WriteEntity(ent)
+                net.WriteBool(isSitAnywhereSeat)
+            net.Send(ply)
+        end
+    end
+end)
