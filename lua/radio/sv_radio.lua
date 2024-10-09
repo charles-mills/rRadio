@@ -235,8 +235,6 @@ local function RestoreBoomboxRadio(entity)
         net.WriteFloat(savedState.volume)
         net.WriteString(savedState.country or "Unknown")
         net.Broadcast()
-
-        AddActiveRadio(entity, savedState.station, savedState.url, savedState.volume)
     else
         net.Start("rRadio_UpdateRadioStatus")
         net.WriteEntity(entity)
