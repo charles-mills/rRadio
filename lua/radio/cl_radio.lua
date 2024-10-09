@@ -8,7 +8,7 @@
 -- Include necessary files
 include("misc/key_names.lua")
 include("misc/config.lua")
-include("misc/utils.lua")
+local utils = include("misc/utils.lua")
 
 -- Localization and language management
 local countryTranslations = include("localisation/country_translations.lua")
@@ -34,7 +34,6 @@ local thinkThrottleInterval = 0.05 -- Throttle interval in seconds (0.05s = 20 t
 local ConsolidatedStations = {}
 
 -- Cache frequently used functions
-local LocalPlayer = LocalPlayer
 local IsValid = IsValid
 local GetConVar = GetConVar
 local gsub = string.gsub
@@ -87,6 +86,8 @@ local function loadFavorites()
         if countriesData then
             local decoded = util.JSONToTable(countriesData)
             if decoded then
+                -- Reassign the metatable
+                setmetatable(decoded, { __index = function(t, k) return false end })
                 favoriteCountries = decoded
             else
                 utils.PrintError("Failed to decode favorite countries file.", 2)
@@ -101,6 +102,16 @@ local function loadFavorites()
         if stationsData then
             local decoded = util.JSONToTable(stationsData)
             if decoded then
+                -- Reassign the metatable for nested tables
+                for country, stations in pairs(decoded) do
+                    setmetatable(stations, { __index = function(t, station) return false end })
+                end
+                setmetatable(decoded, {
+                    __index = function(t, k)
+                        t[k] = setmetatable({}, { __index = function(t, station) return false end })
+                        return t[k]
+                    end
+                })
                 favoriteStations = decoded
             else
                 utils.PrintError("Failed to decode favorite stations file.", 2)
@@ -110,6 +121,7 @@ local function loadFavorites()
         end
     end
 end
+
 
 -- Save favorites to file
 local function saveFavorites()
@@ -136,19 +148,8 @@ local function saveFavoritesDebounced()
     end
 end
 
--- Modify the existing network receiver for opening the radio menu
-net.Receive("rRadio_OpenRadioMenu", function()
-    local entity = net.ReadEntity()
-    if IsValid(entity) then
-        LocalPlayer().currentRadioEntity = entity
-        rRadio_OpenRadioMenu()
-    else
-        utils.PrintError("Received invalid entity in rRadio_OpenRadioMenu.", 2)
-    end
-end)
-
--- Add this function to request opening the radio menu
 local function RequestOpenRadioMenu(entity)
+    entity = utils.getMainVehicleEntity(entity)
     if IsValid(entity) then
         net.Start("rRadio_RequestOpenMenu")
         net.WriteEntity(entity)
@@ -158,23 +159,16 @@ end
 
 -- Font creation
 local function createFonts()
-    local success, err = pcall(function()
-        surface.CreateFont("Roboto18", {
-            font = "Roboto",
-            size = ScreenScale(5),
-            weight = 500,
-        })
-
-        surface.CreateFont("HeaderFont", {
-            font = "Roboto",
-            size = ScreenScale(8),
-            weight = 700,
-        })
-    end)
-
-    if not success then
-        utils.PrintError("Failed to create fonts: " .. err, 2)
-    end
+    surface.CreateFont("Roboto18", {
+        font = "Roboto",
+        size = ScreenScale(5),
+        weight = 500,
+    })
+    surface.CreateFont("HeaderFont", {
+        font = "Roboto",
+        size = ScreenScale(8),
+        weight = 700,
+    })
 end
 
 createFonts()
@@ -635,24 +629,24 @@ local function handleStationButtonClick(stationListPanel, backButton, searchBox,
 
     surface.PlaySound("buttons/button17.wav")
     local entity = LocalPlayer().currentRadioEntity
-
+    entity = utils.getMainVehicleEntity(entity)
     if not IsValid(entity) then
         return
     end
 
     if currentlyPlayingStations[entity] then
         net.Start("rRadio_StopRadioStation")
-            net.WriteEntity(entity)
+        net.WriteEntity(entity)
         net.SendToServer()
     end
 
     local volume = entityVolumes[entity] or getEntityConfig(entity).Volume
     net.Start("rRadio_PlayRadioStation")
-        net.WriteEntity(entity)
-        net.WriteString(station.name)
-        net.WriteString(station.url)
-        net.WriteFloat(volume)
-        net.WriteString(selectedCountry)  -- Add this line
+    net.WriteEntity(entity)
+    net.WriteString(station.name)
+    net.WriteString(station.url)
+    net.WriteFloat(volume)
+    net.WriteString(selectedCountry)
     net.SendToServer()
 
     currentlyPlayingStations[entity] = station
@@ -890,7 +884,7 @@ local function createStopButton(frame, stationListPanel, backButton, searchBox)
         local entity = LocalPlayer().currentRadioEntity
         if IsValid(entity) then
             net.Start("rRadio_StopRadioStation")
-                net.WriteEntity(entity)
+            net.WriteEntity(entity)
             net.SendToServer()
             
             -- Immediately stop the sound locally
@@ -1089,19 +1083,17 @@ hook.Add("Think", "CheckCarRadioMenuKey", function()
     local ply = LocalPlayer()
     if not IsValid(ply) then return end
 
-    local entity = ply:GetEyeTrace().Entity
-    if not IsValid(entity) or not utils.isBoombox(entity) then
-        entity = ply:GetVehicle()
-    end
+    local vehicle = ply:GetVehicle()
+    vehicle = utils.getMainVehicleEntity(vehicle)
 
-    if not IsValid(entity) then return end
+    if not IsValid(vehicle) then return end
 
     local openKey = radioOpenKeyConVar:GetInt()
     if input.IsKeyDown(openKey) then
-        if utils.isBoombox(entity) or (entity:IsVehicle() and not utils.isSitAnywhereSeat(entity)) then
+        if (vehicle:IsVehicle() or string.find(vehicle:GetClass(), "lvs_")) and not utils.isSitAnywhereSeat(vehicle) then
             if not radioMenuOpen then
-                utils.DebugPrint("Requesting to open radio menu for entity: " .. entity:GetClass())
-                RequestOpenRadioMenu(entity)
+                utils.DebugPrint("Requesting to open radio menu for vehicle: " .. vehicle:GetClass())
+                RequestOpenRadioMenu(vehicle)
             end
         else
             utils.DebugPrint("Entity is not a valid radio source, not opening menu")
@@ -1230,6 +1222,7 @@ end)
 net.Receive("rRadio_OpenRadioMenu", function()
     local entity = net.ReadEntity()
     if IsValid(entity) then
+        entity = utils.getMainVehicleEntity(entity)
         LocalPlayer().currentRadioEntity = entity
         rRadio_OpenRadioMenu()
     else

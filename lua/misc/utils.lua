@@ -6,7 +6,7 @@
 ]]
 
 utils = utils or {}
-utils.DEBUG_MODE = false
+utils.DEBUG_MODE = true
 utils.VERBOSE_ERRORS = false
 
 --[[
@@ -86,3 +86,35 @@ function utils.L(key, ...)
     end
     return str
 end
+
+function utils.getMainVehicleEntity(entity)
+    if not IsValid(entity) then return nil end
+
+    -- Check if it's an LVS vehicle seat
+    if entity:GetClass() == "prop_vehicle_prisoner_pod" and IsValid(entity:GetParent()) then
+        local parent = entity:GetParent()
+        if string.find(parent:GetClass(), "lvs_") then
+            return parent
+        end
+    end
+
+    -- Check if it's already an LVS vehicle
+    if string.find(entity:GetClass(), "lvs_") then
+        return entity
+    end
+
+    -- For simfphys vehicles
+    if string.find(entity:GetClass(), "gmod_sent_vehicle_fphysics_") then
+        return entity
+    end
+
+    -- For standard vehicles
+    if entity:IsVehicle() then
+        return entity
+    end
+
+    -- For other cases, return the entity itself
+    return entity
+end
+
+return utils

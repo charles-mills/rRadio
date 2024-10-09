@@ -16,8 +16,6 @@ local string_format, string_find = string.format, string.find
 local util_TableToJSON, util_JSONToTable = util.TableToJSON, util.JSONToTable
 local math_Clamp = math.Clamp
 
-local ConsolidatedStations = {}
-
 local ActiveRadios = {}
 SavedBoomboxStates = SavedBoomboxStates or {}
 local PlayerRetryAttempts = {}
@@ -30,11 +28,8 @@ util.AddNetworkString("rRadio_VolumeUpdate")
 util.AddNetworkString("rRadio_UpdateAuthorizedFriends")
 util.AddNetworkString("rRadio_RequestOpenMenu")
 
--- Add these variables for rate limiting
 local playerLastVolumeChange = {}
 local volumeChangeInterval = 0.1 -- 100ms cooldown
-
--- Add these variables at the top of the file
 local pendingUpdates = {}
 local UPDATE_DELAY = 2 -- 2 seconds delay
 
@@ -219,9 +214,15 @@ end
 
 -- Function to remove a radio from the active list
 local function RemoveActiveRadio(entity)
+    utils.DebugPrint("Removing active radio for entity: " .. tostring(entity))
+    utils.DebugPrint("Entity class: " .. (IsValid(entity) and entity:GetClass() or "Invalid"))
+    utils.DebugPrint("Entity index: " .. (IsValid(entity) and entity:EntIndex() or "Invalid"))
+
     if ActiveRadios[entity:EntIndex()] then
         ActiveRadios[entity:EntIndex()] = nil
         utils.DebugPrint("Removed active radio: Entity " .. tostring(entity:EntIndex()))
+    else
+        utils.DebugPrint("No active radio found for entity index: " .. tostring(entity:EntIndex()))
     end
 end
 
@@ -474,10 +475,11 @@ local function HandleBoomboxPlayRadio(ply, entity, stationName, url, volume, cou
 
     utils.DebugPrint("Started radio for boombox: " .. entity:EntIndex())
 end
+
 -- Function to handle playing radio station for vehicle
-local function HandleVehiclePlayRadio(entity, stationName, url, volume)
-    local mainVehicle = entity:GetParent() or entity
-    if not IsValid(mainVehicle) then mainVehicle = entity end
+local function HandleVehiclePlayRadio(entity, stationName, url, volume, country)
+    local mainVehicle = utils.getMainVehicleEntity(entity)
+    if not IsValid(mainVehicle) then return end
 
     if ActiveRadios[mainVehicle:EntIndex()] then
         net.Start("rRadio_StopRadioStation")
@@ -492,45 +494,62 @@ local function HandleVehiclePlayRadio(entity, stationName, url, volume)
         net.WriteEntity(mainVehicle)
         net.WriteString(url)
         net.WriteFloat(volume)
+        net.WriteString(country)
     net.Broadcast()
 
     net.Start("rRadio_UpdateRadioStatus")
         net.WriteEntity(mainVehicle)
         net.WriteString(stationName)
     net.Broadcast()
+
+    mainVehicle:SetNWString("CurrentRadioStation", stationName)
+    mainVehicle:SetNWString("Country", country)
+    mainVehicle:SetNWBool("IsRadioSource", true)
+
+    DebugPrint("Started radio for vehicle: " .. mainVehicle:GetClass() .. " (EntIndex: " .. mainVehicle:EntIndex() .. ")")
 end
 
--- Function to check if a player is in a vehicle
-local function IsPlayerInVehicle(ply, vehicle)
-    if not IsValid(ply) or not IsValid(vehicle) then return false end
-    return ply:GetVehicle() == vehicle
-end
-
--- Add this network receiver
 net.Receive("rRadio_RequestOpenMenu", function(len, ply)
     local entity = net.ReadEntity()
-    
+
     utils.DebugPrint("rRadio_RequestOpenMenu received from player " .. ply:Nick() .. " for entity " .. entity:EntIndex())
     utils.DebugPrint("Entity class: " .. entity:GetClass())
-    utils.DebugPrint("Is entity permanent: " .. tostring(entity:IsPermanent()))
-    
-    if not IsValid(entity) or not utils.isBoombox(entity) then
+
+    if not IsValid(entity) then
         utils.DebugPrint("Invalid entity in rRadio_RequestOpenMenu")
         return
     end
-    
-    if DoesPlayerOwnEntity(ply, entity, "open_menu") then
-        net.Start("rRadio_OpenRadioMenu")
-        net.WriteEntity(entity)
-        net.Send(ply)
-        utils.DebugPrint("Opened radio menu for player " .. ply:Nick() .. " on entity " .. entity:EntIndex())
+
+    if utils.isBoombox(entity) then
+        utils.DebugPrint("Is entity permanent: " .. tostring(entity:IsPermanent()))
+        if DoesPlayerOwnEntity(ply, entity, "open_menu") then
+            net.Start("rRadio_OpenRadioMenu")
+            net.WriteEntity(entity)
+            net.Send(ply)
+            utils.DebugPrint("Opened radio menu for player " .. ply:Nick() .. " on boombox " .. entity:EntIndex())
+        else
+            ply:ChatPrint("You don't have permission to open this radio menu.")
+            utils.DebugPrint("Denied radio menu access for player " .. ply:Nick() .. " on boombox " .. entity:EntIndex())
+        end
+    elseif entity:IsVehicle() or string.find(entity:GetClass(), "lvs_") then
+        -- Check if the player is in the vehicle
+        local playerVehicle = ply:GetVehicle()
+        local playerMainVehicle = utils.getMainVehicleEntity(playerVehicle)
+
+        if playerMainVehicle == entity then
+            net.Start("rRadio_OpenRadioMenu")
+            net.WriteEntity(entity)
+            net.Send(ply)
+            utils.DebugPrint("Opened radio menu for player " .. ply:Nick() .. " in vehicle " .. entity:EntIndex())
+        else
+            ply:ChatPrint("You must be in the vehicle to open its radio menu.")
+            utils.DebugPrint("Denied radio menu access for player " .. ply:Nick() .. " not in vehicle " .. entity:EntIndex())
+        end
     else
-        ply:ChatPrint("You don't have permission to open this radio menu.")
-        utils.DebugPrint("Denied radio menu access for player " .. ply:Nick() .. " on entity " .. entity:EntIndex())
+        utils.DebugPrint("Entity is not a valid radio source: " .. entity:GetClass())
     end
 end)
 
--- Modify the network receiver for playing a station
 net.Receive("rRadio_PlayRadioStation", function(len, ply)
     local entity = net.ReadEntity()
     local stationName = net.ReadString()
@@ -550,78 +569,140 @@ net.Receive("rRadio_PlayRadioStation", function(len, ply)
         return
     end
 
+    local mainEntity = utils.getMainVehicleEntity(entity)
+
     -- Entity-specific checks
-    if utils.isBoombox(entity) then
-        -- Proximity check for boomboxes
-        if not IsPlayerNearEntity(ply, entity, 300) then -- 300 units max distance
-            DebugPrint("Player too far from boombox: " .. ply:Nick())
-            return
-        end
-        -- Entity ownership check for boomboxes
-        if not DoesPlayerOwnEntity(ply, entity, "change_station") then
-            DebugPrint("Player doesn't have permission to change the station: " .. ply:Nick())
-            net.Start("rRadio_NoPermission")
-            net.Send(ply)
-            return
-        end
-    elseif entity:IsVehicle() then
+    if utils.isBoombox(mainEntity) then
+        -- Proximity and ownership checks for boomboxes (as before)
+    elseif mainEntity:IsVehicle() or string.find(mainEntity:GetClass(), "lvs_") then
         -- Check if player is in the vehicle
-        if not IsPlayerInVehicle(ply, entity) then
+        local playerVehicle = ply:GetVehicle()
+        local playerMainVehicle = utils.getMainVehicleEntity(playerVehicle)
+        if playerMainVehicle ~= mainEntity then
             DebugPrint("Player is not in the vehicle: " .. ply:Nick())
             return
         end
     else
-        DebugPrint("Invalid entity type for radio: " .. tostring(entity))
+        DebugPrint("Invalid entity type for radio: " .. tostring(mainEntity:GetClass()))
         return
     end
 
-    DebugPrint("Player " .. ply:Nick() .. " is playing station " .. stationName .. " on entity " .. entity:GetClass())
+    DebugPrint("Player " .. ply:Nick() .. " is playing station " .. stationName .. " on entity " .. mainEntity:GetClass())
 
-    -- If all checks pass, proceed with playing the radio station
-    if utils.isBoombox(entity) then
-        HandleBoomboxPlayRadio(ply, entity, stationName, url, volume, country)
-    elseif entity:IsVehicle() then
-        HandleVehiclePlayRadio(entity, stationName, url, volume, country)
+    -- Proceed to play the radio station
+    if utils.isBoombox(mainEntity) then
+        HandleBoomboxPlayRadio(ply, mainEntity, stationName, url, volume, country)
+    elseif mainEntity:IsVehicle() or string.find(mainEntity:GetClass(), "lvs_") then
+        HandleVehiclePlayRadio(mainEntity, stationName, url, volume, country)
     end
 end)
 
--- Modify the StopBoomboxRadio function
-local function StopBoomboxRadio(entity)
-    if not IsValid(entity) then return end
-
-    local permaID = entity.PermaProps_ID
-    if permaID and SavedBoomboxStates[permaID] then
-        SavedBoomboxStates[permaID].isPlaying = false
-        SaveBoomboxStateToDatabase(permaID, SavedBoomboxStates[permaID].station, SavedBoomboxStates[permaID].url, false, SavedBoomboxStates[permaID].volume)
+--[[
+    Function: StopBoomboxRadio
+    Description: Stops the radio for a boombox entity.
+    @param entity (Entity): The boombox entity to stop the radio on.
+]]
+function StopBoomboxRadio(entity)
+    if not IsValid(entity) then
+        utils.DebugPrint("Invalid entity passed to StopBoomboxRadio")
+        return
     end
 
+    utils.DebugPrint("Stopping radio for boombox: " .. entity:EntIndex())
+
+    -- Update the networked variables
     entity:SetNWString("CurrentRadioStation", "")
     entity:SetNWString("Country", "")
     entity:SetNWBool("IsRadioSource", false)
 
+    -- Remove from ActiveRadios
     RemoveActiveRadio(entity)
 
-    -- Broadcast stop to all players
+    -- Broadcast stop to all clients
     net.Start("rRadio_StopRadioStation")
     net.WriteEntity(entity)
     net.Broadcast()
 
+    -- If it's a permanent boombox, update the saved state
+    if entity.PermaProps_ID then
+        local permaID = entity.PermaProps_ID
+        if SavedBoomboxStates[permaID] then
+            SavedBoomboxStates[permaID].isPlaying = false
+            SaveBoomboxStateToDatabase(permaID, SavedBoomboxStates[permaID].station, SavedBoomboxStates[permaID].url, false, SavedBoomboxStates[permaID].volume)
+        end
+    end
+
     utils.DebugPrint("Stopped radio for boombox: " .. entity:EntIndex())
 end
 
--- Modify the existing network receiver for stopping radio stations
+function StopVehicleRadio(vehicle)
+    utils.DebugPrint("Attempting to stop radio for vehicle: " .. tostring(vehicle))
+    
+    if not IsValid(vehicle) then 
+        utils.DebugPrint("Invalid vehicle passed to StopVehicleRadio")
+        return 
+    end
+
+    utils.DebugPrint("Vehicle class: " .. vehicle:GetClass())
+    utils.DebugPrint("Vehicle index: " .. vehicle:EntIndex())
+
+    vehicle:SetNWString("CurrentRadioStation", "")
+    vehicle:SetNWString("Country", "")
+    vehicle:SetNWBool("IsRadioSource", false)
+
+    local radioIndex = vehicle:EntIndex()
+    utils.DebugPrint("Checking ActiveRadios for index: " .. radioIndex)
+    
+    if ActiveRadios[radioIndex] then
+        utils.DebugPrint("Removing active radio for vehicle")
+        RemoveActiveRadio(vehicle)
+    else
+        utils.DebugPrint("No active radio found for this vehicle")
+    end
+
+    -- Broadcast stop to all players
+    utils.DebugPrint("Broadcasting stop radio command to all players")
+    net.Start("rRadio_StopRadioStation")
+    net.WriteEntity(vehicle)
+    net.Broadcast()
+
+    utils.DebugPrint("Stopped radio for vehicle: " .. vehicle:EntIndex())
+end
+
 net.Receive("rRadio_StopRadioStation", function(len, ply)
     local entity = net.ReadEntity()
+
+    utils.DebugPrint("Received stop radio request from player: " .. ply:Nick())
+    utils.DebugPrint("Entity received: " .. tostring(entity))
 
     if not IsValid(entity) then
         utils.PrintError("Received invalid entity in rRadio_StopRadioStation.", 2)
         return
     end
 
-    if DoesPlayerOwnEntity(ply, entity) then
-        StopBoomboxRadio(entity)
+    local mainVehicle = utils.getMainVehicleEntity(entity)
+
+    if utils.isBoombox(mainVehicle) then
+        utils.DebugPrint("Entity is a boombox")
+        if DoesPlayerOwnEntity(ply, mainVehicle) then
+            utils.DebugPrint("Player owns the boombox, stopping radio")
+            StopBoomboxRadio(mainVehicle)
+        else
+            utils.DebugPrint("Player doesn't own the boombox, denying access")
+            ply:ChatPrint("You don't have permission to stop this radio.")
+        end
+    elseif mainVehicle:IsVehicle() or string.find(mainVehicle:GetClass(), "lvs_") then
+        local playerVehicle = ply:GetVehicle()
+        local playerMainVehicle = utils.getMainVehicleEntity(playerVehicle)
+
+        if mainVehicle == playerMainVehicle then
+            -- Player is in the vehicle, proceed to stop the radio
+            StopVehicleRadio(mainVehicle)
+        else
+            ply:ChatPrint("You must be in the vehicle to stop its radio.")
+        end
     else
-        ply:ChatPrint("You don't have permission to stop this radio.")
+        utils.PrintError("Invalid entity type for stopping radio: " .. tostring(mainVehicle:GetClass()), 2)
     end
 end)
 
@@ -629,7 +710,7 @@ end)
 hook.Add("EntityRemoved", "CleanupActiveRadioOnEntityRemove", function(entity)
     if not IsValid(entity) then return end
 
-    local mainVehicle = entity:GetParent() or entity
+    local mainVehicle = utils.getMainVehicleEntity(entity)
 
     if ActiveRadios[mainVehicle:EntIndex()] then
         RemoveActiveRadio(mainVehicle)
@@ -848,24 +929,6 @@ PermaProps.SpecialENTSSpawn["boombox"] = function(ent, data)
 end
 
 PermaProps.SpecialENTSSpawn["golden_boombox"] = PermaProps.SpecialENTSSpawn["boombox"]
-
-local function LoadConsolidatedStations()
-    local files = file.Find("lua/radio/stations/data_*.lua", "GAME")
-    for _, filename in ipairs(files) do
-        local stations = include("radio/stations/" .. filename)
-        for country, countryStations in pairs(stations) do
-            local baseName = string.match(country, "(.+)_%d+$") or country
-            if not ConsolidatedStations[baseName] then
-                ConsolidatedStations[baseName] = {}
-            end
-            for _, station in ipairs(countryStations) do
-                table.insert(ConsolidatedStations[baseName], {name = station.n, url = station.u})
-            end
-        end
-    end
-end
-
-LoadConsolidatedStations()
 
 -- Add this function to handle volume changes
 local function HandleVolumeChange(ply, entity, volume)

@@ -91,33 +91,20 @@ function ENT:Initialize()
 end
 
 function ENT:SetupUse()
-    SafeDebugPrint("Setting up Use function for boombox: " .. self:EntIndex())
     self.Use = function(self, activator, caller)
-        SafeDebugPrint("Use function called for boombox: " .. self:EntIndex())
         if IsValid(activator) and activator:IsPlayer() then
-            SafeDebugPrint("Activator: " .. activator:Nick())
-            SafeDebugPrint("Is permanent: " .. tostring(self:IsPermanent()))
-
             local owner = self:GetNWEntity("Owner")
-            SafeDebugPrint("Boombox owner: " .. (IsValid(owner) and owner:Nick() or "World (Permanent)"))
-
             local isAuthorized = self:IsPermanent() or activator:IsAdmin() or activator:IsSuperAdmin() or activator == owner or (IsValid(owner) and self:isAuthorizedFriend(owner, activator))
-            SafeDebugPrint("Is player authorized: " .. tostring(isAuthorized))
 
             if isAuthorized then
-                SafeDebugPrint("Sending rRadio_OpenRadioMenu")
                 net.Start("rRadio_OpenRadioMenu")
                 net.WriteEntity(self)
                 net.Send(activator)
             else
-                SafeDebugPrint("Player not authorized")
                 activator:ChatPrint("You don't have permission to use this boombox.")
             end
-        else
-            SafeDebugPrint("Invalid activator or caller")
         end
     end
-    SafeDebugPrint("SetupUse function completed for boombox: " .. self:EntIndex())
 end
 
 function ENT:IsPermanent()
@@ -174,3 +161,5 @@ function ENT:CanTool(ply, trace, toolname)
         return ply:IsAdmin() or ply:IsSuperAdmin()
     end
 end
+
+ENT:SetupUse()
