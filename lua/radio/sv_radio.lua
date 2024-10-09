@@ -28,6 +28,7 @@ local customStationsFile = "rradio_custom_stations.txt"
 util.AddNetworkString("rRadio_VolumeChange")
 util.AddNetworkString("rRadio_VolumeUpdate")
 util.AddNetworkString("rRadio_UpdateAuthorizedFriends")
+util.AddNetworkString("rRadio_RequestOpenMenu")
 
 -- Add these variables for rate limiting
 local playerLastVolumeChange = {}
@@ -41,8 +42,8 @@ local function DebugPrint(msg)
     utils.DebugPrint("[rRADIO SERVER] " .. msg)
 end
 
--- Modify the DoesPlayerOwnEntity function to use the isAuthorizedFriend from init.lua
-local function DoesPlayerOwnEntity(ply, entity)
+-- Modify the DoesPlayerOwnEntity function to allow interaction with permanent boomboxes
+function DoesPlayerOwnEntity(ply, entity, action)
     if not IsValid(ply) or not IsValid(entity) then 
         utils.DebugPrint("Invalid player or entity in DoesPlayerOwnEntity")
         return false 
@@ -53,27 +54,20 @@ local function DoesPlayerOwnEntity(ply, entity)
         return true 
     end
     
-    local owner
-    if entity.CPPIGetOwner then
-        owner = entity:CPPIGetOwner()
-    else
-        owner = entity:GetNWEntity("Owner")
-    end
+    local owner = entity:GetNWEntity("Owner")
     
-    if owner == ply then
-        utils.DebugPrint("Player " .. ply:Nick() .. " is the owner of the entity")
+    -- Check if it's a permanent boombox (world entity)
+    if not IsValid(owner) and entity:IsPermanent() then
+        utils.DebugPrint("Entity is a permanent boombox, allowing interaction")
         return true
     end
     
     if IsValid(owner) then
-        -- Use the isAuthorizedFriend function from init.lua
-        local isAuthorized = isAuthorizedFriend(owner, ply)
-        utils.DebugPrint("Player " .. ply:Nick() .. " authorization result: " .. tostring(isAuthorized))
-        return isAuthorized
-    else
-        utils.DebugPrint("Invalid owner for entity, denying access")
-        return false
+        return owner == ply or isAuthorizedFriend(owner, ply)
     end
+    
+    utils.DebugPrint("Entity is a world entity, allowing interaction")
+    return true
 end
 
 -- Function to check if a player is near an entity
@@ -207,14 +201,21 @@ local function AddActiveRadio(entity, stationName, url, volume)
         return
     end
 
-    ActiveRadios[entity:EntIndex()] = {
-        entity = entity,
-        stationName = stationName,
-        url = url,
-        volume = volume
-    }
-
-    utils.DebugPrint("Added active radio: Entity " .. tostring(entity:EntIndex()) .. ", Station: " .. stationName)
+    local entIndex = entity:EntIndex()
+    if ActiveRadios[entIndex] then
+        utils.DebugPrint("Radio already active for entity " .. entIndex .. ". Updating instead of adding.")
+        ActiveRadios[entIndex].stationName = stationName
+        ActiveRadios[entIndex].url = url
+        ActiveRadios[entIndex].volume = volume
+    else
+        ActiveRadios[entIndex] = {
+            entity = entity,
+            stationName = stationName,
+            url = url,
+            volume = volume
+        }
+        utils.DebugPrint("Added active radio: Entity " .. entIndex .. ", Station: " .. stationName)
+    end
 end
 
 -- Function to remove a radio from the active list
@@ -422,7 +423,7 @@ local function SendActiveRadiosToPlayer(ply)
 end
 
 hook.Add("PlayerInitialSpawn", "SendActiveRadiosOnJoin", function(ply)
-    timer.Simple(3, function()
+    timer.Simple(0.5, function()
         if IsValid(ply) then
             SendActiveRadiosToPlayer(ply)
         end
@@ -506,7 +507,31 @@ local function IsPlayerInVehicle(ply, vehicle)
     return ply:GetVehicle() == vehicle
 end
 
--- Main function to handle rRadio_PlayRadioStation network message
+-- Add this network receiver
+net.Receive("rRadio_RequestOpenMenu", function(len, ply)
+    local entity = net.ReadEntity()
+    
+    utils.DebugPrint("rRadio_RequestOpenMenu received from player " .. ply:Nick() .. " for entity " .. entity:EntIndex())
+    utils.DebugPrint("Entity class: " .. entity:GetClass())
+    utils.DebugPrint("Is entity permanent: " .. tostring(entity:IsPermanent()))
+    
+    if not IsValid(entity) or not utils.isBoombox(entity) then
+        utils.DebugPrint("Invalid entity in rRadio_RequestOpenMenu")
+        return
+    end
+    
+    if DoesPlayerOwnEntity(ply, entity, "open_menu") then
+        net.Start("rRadio_OpenRadioMenu")
+        net.WriteEntity(entity)
+        net.Send(ply)
+        utils.DebugPrint("Opened radio menu for player " .. ply:Nick() .. " on entity " .. entity:EntIndex())
+    else
+        ply:ChatPrint("You don't have permission to open this radio menu.")
+        utils.DebugPrint("Denied radio menu access for player " .. ply:Nick() .. " on entity " .. entity:EntIndex())
+    end
+end)
+
+-- Modify the network receiver for playing a station
 net.Receive("rRadio_PlayRadioStation", function(len, ply)
     local entity = net.ReadEntity()
     local stationName = net.ReadString()
@@ -534,8 +559,8 @@ net.Receive("rRadio_PlayRadioStation", function(len, ply)
             return
         end
         -- Entity ownership check for boomboxes
-        if not DoesPlayerOwnEntity(ply, entity) then
-            DebugPrint("Player doesn't have permission to use the boombox: " .. ply:Nick())
+        if not DoesPlayerOwnEntity(ply, entity, "change_station") then
+            DebugPrint("Player doesn't have permission to change the station: " .. ply:Nick())
             net.Start("rRadio_NoPermission")
             net.Send(ply)
             return
@@ -638,64 +663,6 @@ hook.Add("PhysgunPickup", "AllowBoomboxPhysgun", function(ply, ent)
     return nil
 end)
 
--- Ensure PermaProps and SpecialENTSSpawn table are initialized
-if not PermaProps then PermaProps = {} end
-if not PermaProps.SpecialENTSSpawn then PermaProps.SpecialENTSSpawn = {} end
-
--- Add handling for boombox entities via a PermaProps hook
-PermaProps.SpecialENTSSpawn["boombox"] = function(ent, data)
-    if IsValid(ent) then
-        local permaID = ent.PermaProps_ID
-        if not permaID then
-            utils.DebugPrint("[CarRadio Debug] Warning: Could not find PermaProps_ID for entity " .. ent:EntIndex())
-            return
-        end
-
-        -- Set up the Use function
-        if ent.SetupUse then
-            ent:SetupUse()
-            utils.DebugPrint("[CarRadio Debug] Set up Use function for PermaProps boombox: " .. ent:EntIndex())
-        else
-            utils.DebugPrint("[CarRadio Debug] SetupUse function not found for PermaProps boombox: " .. ent:EntIndex())
-        end
-
-        -- Restore saved state
-        local savedState = SavedBoomboxStates[permaID]
-        if savedState then
-            ent:SetNWString("CurrentRadioStation", savedState.station)
-            ent:SetNWString("StationURL", savedState.url)
-            ent:SetNWFloat("Volume", savedState.volume)
-
-            if ent.SetStationName then
-                ent:SetStationName(savedState.station)
-            end
-
-            if savedState.isPlaying then
-                net.Start("rRadio_PlayRadioStation")
-                net.WriteEntity(ent)
-                net.WriteString(savedState.url)
-                net.WriteFloat(savedState.volume)
-                net.WriteString(savedState.country or "Unknown")
-                net.Broadcast()
-
-                AddActiveRadio(ent, savedState.station, savedState.url, savedState.volume)
-            end
-        else
-            utils.DebugPrint("[CarRadio Debug] No saved state found for PermaProps_ID: " .. permaID)
-        end
-
-        -- Ensure the entity is recognized as a radio source
-        ent:SetNWBool("IsRadioSource", true)
-
-        -- Explicitly set the owner to nil to ensure it remains a world entity
-        ent:SetNWEntity("Owner", nil)
-        utils.DebugPrint("[CarRadio Debug] Set owner for permanent boombox to nil (world entity)")
-    end
-end
-
--- Add handling for golden_boombox entities
-PermaProps.SpecialENTSSpawn["golden_boombox"] = PermaProps.SpecialENTSSpawn["boombox"]
-
 hook.Add("Initialize", "LoadBoomboxStatesOnStartup", function()
     utils.DebugPrint("Attempting to load Boombox States from the database")
     LoadBoomboxStatesFromDatabase()
@@ -758,7 +725,7 @@ net.Receive("rRadio_UpdateAuthorizedFriends", function(len, ply)
 end)
 
 -- Add this function to check friend authorization
-local function isAuthorizedFriend(owner, friend)
+function isAuthorizedFriend(owner, friend)
     if not IsValid(owner) or not IsValid(friend) then return false end
     
     local ownerSteamID64 = owner:SteamID64()
@@ -788,41 +755,6 @@ local function isAuthorizedFriend(owner, friend)
     return false
 end
 
--- Update the DoesPlayerOwnEntity function to use isAuthorizedFriend
-local function DoesPlayerOwnEntity(ply, entity)
-    if not IsValid(ply) or not IsValid(entity) then 
-        utils.DebugPrint("Invalid player or entity in DoesPlayerOwnEntity")
-        return false 
-    end
-    
-    if ply:IsAdmin() or ply:IsSuperAdmin() then 
-        utils.DebugPrint("Player " .. ply:Nick() .. " is admin, granting access")
-        return true 
-    end
-    
-    local owner
-    if entity.CPPIGetOwner then
-        owner = entity:CPPIGetOwner()
-    else
-        owner = entity:GetNWEntity("Owner")
-    end
-    
-    if owner == ply then
-        utils.DebugPrint("Player " .. ply:Nick() .. " is the owner of the entity")
-        return true
-    end
-    
-    if IsValid(owner) then
-        -- Use the isAuthorizedFriend function from init.lua
-        local isAuthorized = isAuthorizedFriend(owner, ply)
-        utils.DebugPrint("Player " .. ply:Nick() .. " authorization result: " .. tostring(isAuthorized))
-        return isAuthorized
-    else
-        utils.DebugPrint("Invalid owner for entity, denying access")
-        return false
-    end
-end
-
 hook.Add("CanTool", "RestrictBoomboxRemoval", function(ply, tr, tool)
     local ent = tr.Entity
     if IsValid(ent) and utils.isBoombox(ent) then
@@ -836,28 +768,23 @@ hook.Add("CanTool", "RestrictBoomboxRemoval", function(ply, tr, tool)
     end
 end)
 
--- Add this hook to ensure the Use function is set up for all boomboxes, including permanent ones
 hook.Add("OnEntityCreated", "SetupBoomboxUse", function(ent)
     if IsValid(ent) and (ent:GetClass() == "boombox" or ent:GetClass() == "golden_boombox") then
         timer.Simple(0, function()
             if IsValid(ent) then
-                if ent.SetupUse then
-                    ent:SetupUse()
-                    utils.DebugPrint("[CarRadio Debug] Set up Use function for boombox: " .. ent:EntIndex())
-                else
-                    utils.DebugPrint("[CarRadio Debug] SetupUse function not found for boombox: " .. ent:EntIndex())
-                end
+                ent:SetupUse()
+                DebugPrint("[CarRadio Debug] Set up Use function for boombox: " .. ent:EntIndex())
             end
         end)
     end
 end)
 
--- Add this function near the top of the file, after other function definitions
 local function SendActiveRadiosToPlayer(ply)
     if not IsValid(ply) then return end
 
     for _, radio in pairs(ActiveRadios) do
         if IsValid(radio.entity) then
+            DebugPrint("Sending station: " .. (radio.url or "Unknown") .. " to " .. ply:Nick())
             net.Start("rRadio_PlayRadioStation")
             net.WriteEntity(radio.entity)
             net.WriteString(radio.url)
@@ -868,7 +795,6 @@ local function SendActiveRadiosToPlayer(ply)
     end
 end
 
--- Modify the existing RetrySendActiveRadios function
 local function RetrySendActiveRadios(ply, attempt)
     if not IsValid(ply) then return end
 
@@ -891,7 +817,6 @@ local function RetrySendActiveRadios(ply, attempt)
     end
 end
 
--- Make sure this hook is present and correctly defined
 hook.Add("PlayerInitialSpawn", "SendActiveRadiosOnJoin", function(ply)
     timer.Simple(5, function()
         if IsValid(ply) then
@@ -900,22 +825,54 @@ hook.Add("PlayerInitialSpawn", "SendActiveRadiosOnJoin", function(ply)
     end)
 end)
 
--- Add this near the end of the file
-if PermaProps then
-    PermaProps.SpecialENTSSpawn = PermaProps.SpecialENTSSpawn or {}
-    PermaProps.SpecialENTSSpawn["boombox"] = function(ent)
-        if IsValid(ent) then
-            if ent.SetupUse then
-                ent:SetupUse()
-                utils.DebugPrint("[CarRadio Debug] Set up Use function for PermaProps boombox: " .. ent:EntIndex())
-            else
-                utils.DebugPrint("[CarRadio Debug] SetupUse function not found for PermaProps boombox: " .. ent:EntIndex())
+if not PermaProps then PermaProps = {} end
+if not PermaProps.SpecialENTSSpawn then PermaProps.SpecialENTSSpawn = {} end
+
+PermaProps.SpecialENTSSpawn["boombox"] = function(ent, data)
+    if IsValid(ent) then
+        -- Call Spawn and Activate to initialize the entity properly
+        ent:Spawn()
+        ent:Activate()
+
+        -- Restore saved state if any
+        local savedState = SavedBoomboxStates[ent:EntIndex()]
+        if savedState then
+            ent:SetNWString("CurrentRadioStation", savedState.station)
+            ent:SetNWString("StationURL", savedState.url)
+            ent:SetNWFloat("Volume", savedState.volume)
+
+            if savedState.isPlaying then
+                net.Start("rRadio_PlayRadioStation")
+                net.WriteEntity(ent)
+                net.WriteString(savedState.url)
+                net.WriteFloat(savedState.volume)
+                net.WriteString(savedState.country or "Unknown")
+                net.Broadcast()
+
+                AddActiveRadio(ent, savedState.station, savedState.url, savedState.volume)
             end
-            RestoreBoomboxRadio(ent)
+        else
+            DebugPrint("[rRadio] No saved state found for PermaProps boombox: " .. ent:EntIndex())
         end
+
+        DebugPrint("[rRadio] Initialized permanent boombox: " .. ent:EntIndex())
     end
-    PermaProps.SpecialENTSSpawn["golden_boombox"] = PermaProps.SpecialENTSSpawn["boombox"]
 end
+
+PermaProps.SpecialENTSSpawn["golden_boombox"] = PermaProps.SpecialENTSSpawn["boombox"]
+
+
+-- Add this hook to ensure Use function is set up for all boomboxes
+hook.Add("OnEntityCreated", "EnsureBoomboxUseFunction", function(ent)
+    if IsValid(ent) and (ent:GetClass() == "boombox" or ent:GetClass() == "golden_boombox") then
+        timer.Simple(0, function()
+            if IsValid(ent) and not ent.Use then
+                ent:SetupUse()
+                DebugPrint("[CarRadio Debug] Ensured Use function for boombox: " .. ent:EntIndex())
+            end
+        end)
+    end
+end)
 
 local function LoadConsolidatedStations()
     local files = file.Find("lua/radio/stations/data_*.lua", "GAME")
@@ -1006,28 +963,19 @@ local function HandleBoomboxPlayRadio(ply, entity, stationName, url, volume, cou
     utils.DebugPrint("Started radio for boombox: " .. entity:EntIndex())
 end
 
--- Modify the HandleVehiclePlayRadio function
-local function HandleVehiclePlayRadio(entity, stationName, url, volume)
-    local mainVehicle = entity:GetParent() or entity
-    if not IsValid(mainVehicle) then mainVehicle = entity end
-
-    if ActiveRadios[mainVehicle:EntIndex()] then
-        net.Start("rRadio_StopRadioStation")
-            net.WriteEntity(mainVehicle)
-        net.Broadcast()
-        RemoveActiveRadio(mainVehicle)
-    end
-
-    AddActiveRadio(mainVehicle, stationName, url, volume)
-
-    net.Start("rRadio_PlayRadioStation")
-        net.WriteEntity(mainVehicle)
-        net.WriteString(url)
-        net.WriteFloat(volume)
-    net.Broadcast()
-
-    net.Start("rRadio_UpdateRadioStatus")
-        net.WriteEntity(mainVehicle)
-        net.WriteString(stationName)
-    net.Broadcast()
+if utils.DEBUG_MODE then
+    concommand.Add("debug_boombox", function(ply)
+        local ent = ply:GetEyeTrace().Entity
+        if IsValid(ent) and (ent:GetClass() == "boombox" or ent:GetClass() == "golden_boombox") then
+            DebugPrint("Boombox Debug Info:")
+            DebugPrint("Entity Index: " .. ent:EntIndex())
+            DebugPrint("Is Permanent: " .. tostring(ent:IsPermanent()))
+            DebugPrint("Has Use Function: " .. tostring(ent.Use ~= nil))
+            DebugPrint("Collision Group: " .. tostring(ent:GetCollisionGroup()))
+            DebugPrint("Move Type: " .. tostring(ent:GetMoveType()))
+            DebugPrint("Owner: " .. (IsValid(ent:GetNWEntity("Owner")) and ent:GetNWEntity("Owner"):Nick() or "World"))
+        else
+            DebugPrint("Not looking at a valid boombox.")
+        end
+    end)
 end

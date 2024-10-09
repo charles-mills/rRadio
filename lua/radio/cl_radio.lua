@@ -136,6 +136,26 @@ local function saveFavoritesDebounced()
     end
 end
 
+-- Modify the existing network receiver for opening the radio menu
+net.Receive("rRadio_OpenRadioMenu", function()
+    local entity = net.ReadEntity()
+    if IsValid(entity) then
+        LocalPlayer().currentRadioEntity = entity
+        rRadio_OpenRadioMenu()
+    else
+        utils.PrintError("Received invalid entity in rRadio_OpenRadioMenu.", 2)
+    end
+end)
+
+-- Add this function to request opening the radio menu
+local function RequestOpenRadioMenu(entity)
+    if IsValid(entity) then
+        net.Start("rRadio_RequestOpenMenu")
+        net.WriteEntity(entity)
+        net.SendToServer()
+    end
+end
+
 -- Font creation
 local function createFonts()
     local success, err = pcall(function()
@@ -771,7 +791,6 @@ function populateList(stationListPanel, backButton, searchBox, resetSearch)
         populateStationList(stationListPanel, backButton, searchBox, filterText)
     end
 end
-
 local function createFrame()
     local frame = vgui.Create("DFrame")
     frame:SetTitle("")
@@ -1070,19 +1089,22 @@ hook.Add("Think", "CheckCarRadioMenuKey", function()
     local ply = LocalPlayer()
     if not IsValid(ply) then return end
 
-    local vehicle = ply:GetVehicle()
-    if not IsValid(vehicle) then return end
+    local entity = ply:GetEyeTrace().Entity
+    if not IsValid(entity) or not utils.isBoombox(entity) then
+        entity = ply:GetVehicle()
+    end
+
+    if not IsValid(entity) then return end
 
     local openKey = radioOpenKeyConVar:GetInt()
     if input.IsKeyDown(openKey) then
-        if not utils.isSitAnywhereSeat(vehicle) then
+        if utils.isBoombox(entity) or (entity:IsVehicle() and not utils.isSitAnywhereSeat(entity)) then
             if not radioMenuOpen then
-                utils.DebugPrint("Opening radio menu in a vehicle")
-                ply.currentRadioEntity = vehicle
-                rRadio_OpenRadioMenu()
+                utils.DebugPrint("Requesting to open radio menu for entity: " .. entity:GetClass())
+                RequestOpenRadioMenu(entity)
             end
         else
-            utils.DebugPrint("Vehicle is a SitAnywhere seat, not opening menu")
+            utils.DebugPrint("Entity is not a valid radio source, not opening menu")
         end
     end
 end)
@@ -1205,7 +1227,6 @@ net.Receive("rRadio_StopRadioStation", function()
     end
 end)
 
--- Add this function to handle the net message for opening the radio menu
 net.Receive("rRadio_OpenRadioMenu", function()
     local entity = net.ReadEntity()
     if IsValid(entity) then
@@ -1263,3 +1284,4 @@ net.Receive("rRadio_VolumeUpdate", function()
         end
     end
 end)
+

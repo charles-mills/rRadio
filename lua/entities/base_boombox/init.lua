@@ -27,6 +27,12 @@ local lastPermissionMessageTime = {}
 -- Cooldown period for permission messages in seconds
 local permissionMessageCooldown = 5
 
+local function SafeDebugPrint(message)
+    pcall(function()
+        utils.DebugPrint("[BaseBoombox] " .. message)
+    end)
+end
+
 -- Function to load authorized friends
 local function loadAuthorizedFriends(ply)
     if not IsValid(ply) then return {} end
@@ -44,62 +50,86 @@ end
 
 -- Function to check if a player is an authorized friend
 function ENT:isAuthorizedFriend(owner, player)
-    if not IsValid(owner) or not IsValid(player) then return false end
+    SafeDebugPrint("Checking authorization for " .. (IsValid(player) and player:Nick() or "Invalid Player"))
+    if not IsValid(owner) or not IsValid(player) then 
+        SafeDebugPrint("Invalid owner or player in isAuthorizedFriend")
+        return false 
+    end
     
-    local ownerSteamID64 = owner:SteamID64()
-    local playerSteamID = player:SteamID()
+    -- Check if the global isAuthorizedFriend function exists
+    if not isAuthorizedFriend then
+        SafeDebugPrint("Global isAuthorizedFriend function not found")
+        return false
+    end
     
-    -- Use the isAuthorizedFriend function from sv_radio.lua
-    return isAuthorizedFriend(owner, player)
+    local success, result = pcall(isAuthorizedFriend, owner, player)
+    if not success then
+        SafeDebugPrint("Error in isAuthorizedFriend: " .. tostring(result))
+        return false
+    end
+    
+    return result
 end
 
 function ENT:Initialize()
+    -- Always set up physics and collision
     self:SetModel(self.Model or "models/rammel/boombox.mdl")
     self:PhysicsInit(SOLID_VPHYSICS)
     self:SetMoveType(MOVETYPE_VPHYSICS)
     self:SetSolid(SOLID_VPHYSICS)
-
-    utils.DebugPrint("[CarRadio Debug] Boombox initialized: " .. self:EntIndex())
+    self:SetCollisionGroup(COLLISION_GROUP_NONE)
 
     if self.Color then
         self:SetColor(self.Color)
     end
 
     local phys = self:GetPhysicsObject()
-    if phys:IsValid() then
+    if IsValid(phys) then
         phys:Wake()
     end
 
-    -- Ensure the collision group allows interaction with the Physgun
-    self:SetCollisionGroup(COLLISION_GROUP_NONE)
+    self:SetNWFloat("RadioVolume", self.Config and self.Config.Volume or 0.5)
+    self:SetUseType(SIMPLE_USE)
 
     -- Set up the Use function
     self:SetupUse()
 
-    -- Initialize the radio volume
-    self:SetNWFloat("RadioVolume", self.Config.Volume or 0.5)
+    SafeDebugPrint("Boombox initialized: " .. self:EntIndex())
 end
 
 function ENT:SetupUse()
+    SafeDebugPrint("Setting up Use function for boombox: " .. self:EntIndex())
     self.Use = function(self, activator, caller)
-        if activator:IsPlayer() then
-            local owner = self:GetNWEntity("Owner")
+        SafeDebugPrint("Use function called for boombox: " .. self:EntIndex())
+        if IsValid(activator) and activator:IsPlayer() then
+            SafeDebugPrint("Activator: " .. activator:Nick())
+            SafeDebugPrint("Is permanent: " .. tostring(self:IsPermanent()))
 
-            if activator:IsAdmin() or activator:IsSuperAdmin() or activator == owner or self:isAuthorizedFriend(owner, activator) then
+            local owner = self:GetNWEntity("Owner")
+            SafeDebugPrint("Boombox owner: " .. (IsValid(owner) and owner:Nick() or "World (Permanent)"))
+
+            local isAuthorized = self:IsPermanent() or activator:IsAdmin() or activator:IsSuperAdmin() or activator == owner or (IsValid(owner) and self:isAuthorizedFriend(owner, activator))
+            SafeDebugPrint("Is player authorized: " .. tostring(isAuthorized))
+
+            if isAuthorized then
+                SafeDebugPrint("Sending rRadio_OpenRadioMenu")
                 net.Start("rRadio_OpenRadioMenu")
                 net.WriteEntity(self)
                 net.Send(activator)
-                utils.DebugPrint("[CarRadio Debug] Opening radio menu for authorized player: " .. activator:Nick())
             else
-                local currentTime = CurTime()
-                if not lastPermissionMessageTime[activator] or (currentTime - lastPermissionMessageTime[activator] > permissionMessageCooldown) then
-                    activator:ChatPrint(utils.L("NoPermissionBoombox", "You do not have permission to use this boombox."))
-                    lastPermissionMessageTime[activator] = currentTime
-                    utils.DebugPrint("[CarRadio Debug] No permission message sent to: " .. activator:Nick())
-                end
+                SafeDebugPrint("Player not authorized")
+                activator:ChatPrint("You don't have permission to use this boombox.")
             end
+        else
+            SafeDebugPrint("Invalid activator or caller")
         end
     end
+    self:SetUseType(SIMPLE_USE)
+    SafeDebugPrint("SetupUse function completed for boombox: " .. self:EntIndex())
+end
+
+function ENT:IsPermanent()
+    return self:GetNWBool("IsPermanent", false) or self.PermaProps_ID ~= nil
 end
 
 -- Spawn function called when the entity is created via the Spawn Menu or other means
@@ -136,36 +166,6 @@ function ENT:PhysgunPickup(ply)
         return ply:IsAdmin() or ply:IsSuperAdmin()
     end
 end
-
--- Add this hook to ensure the Use function is set up for all boomboxes, including permanent ones
-hook.Add("OnEntityCreated", "SetupBoomboxUse", function(ent)
-    if IsValid(ent) and (ent:GetClass() == "boombox" or ent:GetClass() == "golden_boombox") then
-        timer.Simple(0, function()
-            if IsValid(ent) then
-                if ent.SetupUse then
-                    ent:SetupUse()
-                    utils.DebugPrint("[CarRadio Debug] Set up Use function for boombox: " .. ent:EntIndex())
-                else
-                    utils.DebugPrint("[CarRadio Debug] SetupUse function not found for boombox: " .. ent:EntIndex())
-                end
-            end
-        end)
-    end
-end)
-
--- Add this to handle existing entities when the script is reloaded
-timer.Simple(0, function()
-    for _, ent in ipairs(ents.GetAll()) do
-        if IsValid(ent) and utils.isBoombox(ent) then
-            if ent.SetupUse then
-                ent:SetupUse()
-                utils.DebugPrint("[CarRadio Debug] Set up Use function for existing boombox: " .. ent:EntIndex())
-            else
-                utils.DebugPrint("[CarRadio Debug] SetupUse function not found for existing boombox: " .. ent:EntIndex())
-            end
-        end
-    end
-end)
 
 hook.Add("PlayerInitialSpawn", "LoadAuthorizedFriends", function(ply)
     ply.AuthorizedFriends = loadAuthorizedFriends(ply)

@@ -56,19 +56,17 @@ resource.AddFile("materials/models/rammel/boombox_base.vmt")
 resource.AddFile("materials")
 resource.AddFile("models")
 
-
-
 -- Include the base_boombox init file
 include("entities/base_boombox/init.lua")
 
 -- Function to set up Use for boomboxes
 local function SetupBoomboxUse(ent)
     if IsValid(ent) and (ent:GetClass() == "boombox" or ent:GetClass() == "golden_boombox") then
-        if ENT and ENT.SetupUse then
+        if ent.SetupUse then
             ent:SetupUse()
             print("Set up Use function for boombox: " .. ent:EntIndex())
         else
-            print("Warning: ENT.SetupUse not found for boombox: " .. ent:EntIndex())
+            print("Warning: ent.SetupUse not found for boombox: " .. ent:EntIndex())
         end
     end
 end
