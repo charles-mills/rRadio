@@ -768,17 +768,6 @@ hook.Add("CanTool", "RestrictBoomboxRemoval", function(ply, tr, tool)
     end
 end)
 
-hook.Add("OnEntityCreated", "SetupBoomboxUse", function(ent)
-    if IsValid(ent) and (ent:GetClass() == "boombox" or ent:GetClass() == "golden_boombox") then
-        timer.Simple(0, function()
-            if IsValid(ent) then
-                ent:SetupUse()
-                DebugPrint("[CarRadio Debug] Set up Use function for boombox: " .. ent:EntIndex())
-            end
-        end)
-    end
-end)
-
 local function SendActiveRadiosToPlayer(ply)
     if not IsValid(ply) then return end
 

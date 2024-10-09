@@ -14,18 +14,11 @@ include("misc/utils.lua")
 
 utils.DebugPrint("Loading base_boombox/init.lua")
 
-ENT = ENT or {}
 ENT.Type = "anim"
 ENT.Base = "base_entity"
 
 -- Ensure SavedBoomboxStates is initialized
 SavedBoomboxStates = SavedBoomboxStates or {}
-
--- Table to track the last time a player received a "no permission" message
-local lastPermissionMessageTime = {}
-
--- Cooldown period for permission messages in seconds
-local permissionMessageCooldown = 5
 
 local function SafeDebugPrint(message)
     pcall(function()
@@ -124,12 +117,11 @@ function ENT:SetupUse()
             SafeDebugPrint("Invalid activator or caller")
         end
     end
-    self:SetUseType(SIMPLE_USE)
     SafeDebugPrint("SetupUse function completed for boombox: " .. self:EntIndex())
 end
 
 function ENT:IsPermanent()
-    return self:GetNWBool("IsPermanent", false) or self.PermaProps_ID ~= nil
+    return self:GetNWBool("IsPermanent", false) or self.PermaProps_ID
 end
 
 -- Spawn function called when the entity is created via the Spawn Menu or other means
