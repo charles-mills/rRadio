@@ -5,12 +5,6 @@ util.AddNetworkString("rRadio_StopRadioStation")
 util.AddNetworkString("rRadio_OpenRadioMenu")
 util.AddNetworkString("rRadio_UpdateRadioStatus")
 
-local function SafeDebugPrint(message)
-    pcall(function()
-        utils.DebugPrint(message)
-    end)
-end
-
 function ENT:Initialize()
     self:SetModel("models/rammel/boombox.mdl")
     self:PhysicsInit(SOLID_VPHYSICS)

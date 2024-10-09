@@ -6,7 +6,7 @@
 ]]
 
 utils = utils or {}
-utils.DEBUG_MODE = true
+utils.DEBUG_MODE = false
 utils.VERBOSE_ERRORS = false
 
 --[[
@@ -30,13 +30,6 @@ function utils.isBoombox(ent)
     entity = ent or nil
     if not IsValid(entity) then return false end
     return entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox"
-end
-
--- Debug function to print messages if debug_mode is enabled
-function utils.DebugPrint(msg)
-    if utils.DEBUG_MODE then
-        print("[rRadio Debug] " .. msg)
-    end
 end
 
 -- Function to print errors if verbose_errors is enabled
@@ -88,33 +81,33 @@ function utils.L(key, ...)
 end
 
 function utils.getMainVehicleEntity(entity)
-    if not IsValid(entity) then return nil end
+    if not IsValid(entity) then
+        return nil
+    end
 
-    -- Check if it's an LVS vehicle seat
-    if entity:GetClass() == "prop_vehicle_prisoner_pod" and IsValid(entity:GetParent()) then
+    -- If the entity is a seat, get its parent
+    if entity:GetClass() == "prop_vehicle_prisoner_pod" or entity:GetClass() == "prop_vehicle_jeep" then
         local parent = entity:GetParent()
-        if string.find(parent:GetClass(), "lvs_") then
+        if IsValid(parent) then
             return parent
+        else
+            return entity
         end
     end
 
-    -- Check if it's already an LVS vehicle
+    -- For LVS vehicles or other custom vehicles
     if string.find(entity:GetClass(), "lvs_") then
         return entity
     end
 
-    -- For simfphys vehicles
-    if string.find(entity:GetClass(), "gmod_sent_vehicle_fphysics_") then
-        return entity
-    end
-
-    -- For standard vehicles
+    -- For other vehicle types, return the entity itself
     if entity:IsVehicle() then
         return entity
     end
 
-    -- For other cases, return the entity itself
+    -- If none of the above, return the entity itself
     return entity
 end
+
 
 return utils

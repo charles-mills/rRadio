@@ -12,19 +12,11 @@ AddCSLuaFile("shared.lua")
 include("shared.lua")
 include("misc/utils.lua")
 
-utils.DebugPrint("Loading base_boombox/init.lua")
-
 ENT.Type = "anim"
 ENT.Base = "base_entity"
 
 -- Ensure SavedBoomboxStates is initialized
 SavedBoomboxStates = SavedBoomboxStates or {}
-
-local function SafeDebugPrint(message)
-    pcall(function()
-        utils.DebugPrint("[BaseBoombox] " .. message)
-    end)
-end
 
 -- Function to load authorized friends
 local function loadAuthorizedFriends(ply)
@@ -43,21 +35,17 @@ end
 
 -- Function to check if a player is an authorized friend
 function ENT:isAuthorizedFriend(owner, player)
-    SafeDebugPrint("Checking authorization for " .. (IsValid(player) and player:Nick() or "Invalid Player"))
     if not IsValid(owner) or not IsValid(player) then 
-        SafeDebugPrint("Invalid owner or player in isAuthorizedFriend")
         return false 
     end
     
     -- Check if the global isAuthorizedFriend function exists
     if not isAuthorizedFriend then
-        SafeDebugPrint("Global isAuthorizedFriend function not found")
         return false
     end
     
     local success, result = pcall(isAuthorizedFriend, owner, player)
     if not success then
-        SafeDebugPrint("Error in isAuthorizedFriend: " .. tostring(result))
         return false
     end
     
@@ -86,8 +74,6 @@ function ENT:Initialize()
 
     -- Set up the Use function
     self:SetupUse()
-
-    SafeDebugPrint("Boombox initialized: " .. self:EntIndex())
 end
 
 function ENT:SetupUse()
@@ -128,17 +114,13 @@ function ENT:SpawnFunction(ply, tr, className)
         ent:SetNWEntity("Owner", ply)
     end
 
-    utils.DebugPrint("[CarRadio Debug] Boombox spawned by: " .. (IsValid(ply) and ply:Nick() or "Unknown"))
-
     return ent
 end
 
 -- Ensure only the owner, an admin, or a superadmin can pick up the boombox with the Physgun
 function ENT:PhysgunPickup(ply)
     local owner = self:GetNWEntity("Owner")
-    
-    utils.DebugPrint("[CarRadio Debug] PhysgunPickup: Player " .. ply:Nick() .. " attempting to pick up boombox owned by " .. (IsValid(owner) and owner:Nick() or "Unknown"))
-    
+
     if IsValid(owner) then
         return ply == owner or ply:IsAdmin() or ply:IsSuperAdmin() or self:isAuthorizedFriend(owner, ply)
     else
@@ -152,9 +134,7 @@ end)
 
 function ENT:CanTool(ply, trace, toolname)
     local owner = self:GetNWEntity("Owner")
-    
-    utils.DebugPrint("[CarRadio Debug] CanTool: Player " .. ply:Nick() .. " attempting to use " .. toolname .. " on boombox owned by " .. (IsValid(owner) and owner:Nick() or "Unknown"))
-    
+
     if IsValid(owner) then
         return ply == owner or ply:IsAdmin() or ply:IsSuperAdmin() or self:isAuthorizedFriend(owner, ply)
     else

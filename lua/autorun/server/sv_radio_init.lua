@@ -30,13 +30,11 @@ AddCSLuaFile("entities/base_boombox/shared.lua")
 AddCSLuaFile("entities/boombox/shared.lua")
 AddCSLuaFile("entities/golden_boombox/shared.lua")
 
--- Add consolidated station files
+-- Add station files
 local files = file.Find("radio/stations/data_*.lua", "LUA")
--- print("[RADIO] Found " .. #files .. " station files")
 
 for _, filename in ipairs(files) do
     AddCSLuaFile("radio/stations/" .. filename)
-    -- print("[RADIO] Added station file: " .. filename)
 end
 
 -- Register all network strings

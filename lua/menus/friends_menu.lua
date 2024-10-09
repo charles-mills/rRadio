@@ -134,11 +134,8 @@ local function SaveAuthorizedFriends(friends)
         timer.Simple(SAVE_DELAY, function()
             file.Write("rradio_authorized_friends.txt", friendsJson)
             pendingSave = false
-            utils.DebugPrint("[rRadio] Friends list saved to file")
         end)
     end
-    
-    utils.DebugPrint("[rRadio] Friends list updated and sent to server")
 end
 
 -- Modify the PANEL:SaveAuthorizedFriends method
@@ -161,7 +158,6 @@ end
 
 -- Add a friend to the authorized list
 function PANEL:AddFriendToList(name, steamid)
-    utils.DebugPrint("Adding friend to list: " .. name .. " (" .. steamid .. ")")
     local line = self.AuthorizedList:AddLine(name, steamid)
     line.Paint = function(self, w, h)
         if self:IsSelected() then
@@ -435,26 +431,22 @@ local function UpdateMenuLabels()
     local function safeUpdateLabels(menuName, labelKey)
         local menu = controlpanel.Get(menuName)
         if not IsValid(menu) then
-            utils.DebugPrint("Menu not valid for key: " .. menuName)
             return
         end
         
         menu:SetLabel(utils.L(labelKey, labelKey))
         
         if not menu.GetControls then
-            utils.DebugPrint("GetControls function not available for menu: " .. menuName)
             return
         end
         
         local controls = menu:GetControls()
         if not IsValid(controls) then
-            utils.DebugPrint("Controls not valid for menu: " .. menuName)
             return
         end
         
         local children = controls:GetChildren()
         if not children then
-            utils.DebugPrint("No children found for menu: " .. menuName)
             return
         end
         
@@ -498,17 +490,8 @@ concommand.Add("rradio_open_friends_menu", function()
     end
 end)
 
--- Add this near the top of the file
-local function DebugPrint(message)
-    if CLIENT then
-        print("[rRadio Debug] " .. message)
-    end
-end
-
--- Modify the SaveAuthorizedFriends function
 local function SaveAuthorizedFriends(friends)
     local friendsJson = util.TableToJSON(friends)
-    DebugPrint("Saving authorized friends: " .. friendsJson)
     safeFileWrite("rradio_authorized_friends.txt", friendsJson)
     
     -- Update cache
@@ -519,13 +502,9 @@ local function SaveAuthorizedFriends(friends)
     net.Start("rRadio_UpdateAuthorizedFriends")
     net.WriteString(friendsJson)
     net.SendToServer()
-    
-    DebugPrint("Sent updated friends list to server")
 end
 
--- Modify the AddFriendToList function
 function PANEL:AddFriendToList(name, steamid)
-    DebugPrint("Adding friend to list: " .. name .. " (" .. steamid .. ")")
     local line = self.AuthorizedList:AddLine(name, steamid)
     line.Paint = function(self, w, h)
         if self:IsSelected() then
@@ -543,12 +522,10 @@ function PANEL:AddFriendToList(name, steamid)
     self:SaveAuthorizedFriends()
 end
 
--- Add debug print to the network receiver in sv_radio.lua
 net.Receive("rRadio_UpdateAuthorizedFriends", function(len, ply)
     local friendsData = net.ReadString()
     local filename = "rradio/client_friends/rradio_authorized_friends_" .. ply:SteamID64() .. ".txt"
     file.Write(filename, friendsData)
-    DebugPrint("Updated friends list for " .. ply:Nick() .. ": " .. friendsData)
 end)
 
 return PANEL
