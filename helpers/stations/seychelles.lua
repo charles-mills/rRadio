@@ -1,4 +1,0 @@
-local stations = {
-}
-
-return stations
