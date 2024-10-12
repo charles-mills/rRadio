@@ -390,9 +390,10 @@ function RRADIO.Menu:CreateFooter()
 
     local totalWidth = self:GetWide() - (2 * margin)
     local stopButtonWidth = totalWidth * 0.2
-    local volumeControlWidth = totalWidth * 0.2
-    local statusPanelWidth = totalWidth * 0.5
-    local padding = totalWidth * 0.05
+    local volumeControlWidth = totalWidth * 0.18
+    local statusPanelWidth = totalWidth * 0.54
+    local padding = totalWidth * 0.02
+    local totalWidth = stopButtonWidth + (padding * 2) + statusPanelWidth + (padding * 2) + volumeControlWidth
 
     -- Stop Button
     self.StopButton = self.Footer:Add("DButton")
@@ -400,7 +401,7 @@ function RRADIO.Menu:CreateFooter()
     self.StopButton:SetFont(getFont(18, true))
     self.StopButton:SetTextColor(RRADIO.GetColors().accent)
     self.StopButton:SetSize(stopButtonWidth, self.Footer:GetTall() - margin)
-    self.StopButton:SetPos(0, margin / 2)
+    self.StopButton:SetPos(0 + padding, margin / 2)
     self.StopButton.Paint = function(s, w, h)
         local colors = RRADIO.GetColors()
         draw.RoundedBox(5, 0, 0, w, h, s:IsHovered() and colors.buttonHover or colors.button)
@@ -413,7 +414,7 @@ function RRADIO.Menu:CreateFooter()
     -- Boombox Status Panel
     self.StatusPanel = self.Footer:Add("DPanel")
     self.StatusPanel:SetSize(statusPanelWidth, self.Footer:GetTall() - margin)
-    self.StatusPanel:SetPos(stopButtonWidth + padding, margin / 2)
+    self.StatusPanel:SetPos(stopButtonWidth + (padding * 2), margin / 2)
     self.StatusPanel.Paint = function(s, w, h)
         local colors = RRADIO.GetColors()
         draw.RoundedBox(5, 0, 0, w, h, colors.button)
@@ -440,25 +441,26 @@ function RRADIO.Menu:CreateFooter()
     -- Volume Control Panel
     self.VolumeControlPanel = self.Footer:Add("DPanel")
     self.VolumeControlPanel:SetSize(volumeControlWidth, self.Footer:GetTall() - margin)
-    self.VolumeControlPanel:SetPos(totalWidth - volumeControlWidth, margin / 2)
+    self.VolumeControlPanel:SetPos(totalWidth - volumeControlWidth - padding, margin / 2)
     self.VolumeControlPanel.Paint = function(s, w, h)
         local colors = RRADIO.GetColors()
         draw.RoundedBox(5, 0, 0, w, h, colors.button)
     end
 
-    self.VolumeIcon = self.VolumeControlPanel:Add("DImage")
-    self.VolumeIcon:SetSize(24, 24)
+    local iconSize = math.min(self.VolumeControlPanel:GetTall() * 0.6, 24) -- Limit max size to 24
+    self.VolumeIcon = self.VolumeControlPanel:Add("DPanel")
+    self.VolumeIcon:SetSize(iconSize, iconSize)
     self.VolumeIcon:Dock(LEFT)
-    self.VolumeIcon:DockMargin(margin / 2, 0, margin / 2, 0)
-    self.VolumeIcon:SetMaterial(RRADIO.Icons.VOLUME)
-    
+    self.VolumeIcon:DockMargin(margin / 2, (self.VolumeControlPanel:GetTall() - iconSize) / 2, margin / 2, (self.VolumeControlPanel:GetTall() - iconSize) / 2)
+
     self.VolumeIcon.Paint = function(s, w, h)
         local colors = RRADIO.GetColors()
-        DrawIconWithColor(RRADIO.Icons.VOLUME, 0, 0, w, h, colors.text)
+        DrawIconWithColor(RRADIO.Icons.VOLUME, 0, 0, w, h, colors.accent)
     end
 
     self.VolumeSlider = self.VolumeControlPanel:Add("DSlider")
     self.VolumeSlider:Dock(FILL)
+    self.VolumeSlider:DockMargin(0, 0, margin / 2, 0)
     self.VolumeSlider:SetLockY(0.5)
     self.VolumeSlider:SetSlideX(0.5)
     self.VolumeSlider.Paint = function(s, w, h)
