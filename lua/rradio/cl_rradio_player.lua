@@ -32,28 +32,14 @@ function rRadio.PlayStation(entity, country, index)
         return
     end
 
-    sound.PlayURL(url, "3d noblock", function(station, errCode, errStr)
-        if IsValid(station) then
-            station:SetPos(entity:GetPos())
-            local volume = entity:GetNWFloat("Volume", rRadio.Config.DefaultVolume)
-            station:SetVolume(volume)
-            activeStreams[entity] = station
-
-            -- Update entity network variables
-            entity:SetNWString("CurrentStation", url)
-            entity:SetNWString("CurrentStationKey", country)
-            entity:SetNWInt("CurrentStationIndex", index)
-
-            -- Notification
-            notification.AddLegacy("Now playing: " .. rRadio.Stations[country][index].n, NOTIFY_GENERIC, 3)
-        else
-            print("Error playing station:", errStr)
-            notification.AddLegacy("Failed to play station: " .. errStr, NOTIFY_ERROR, 3)
-        end
-    end)
+    -- Check if the station is already playing
+    if entity:GetNWString("CurrentStation") == url then
+        print("Station is already playing, skipping")
+        return
+    end
 
     -- Send update to server
-    net.Start("rRadio_UpdateBoombox")
+    net.Start("rRadio_PlayStation")
     net.WriteEntity(entity)
     net.WriteString(country)
     net.WriteUInt(index, 16)
@@ -81,29 +67,48 @@ net.Receive("rRadio_UpdateBoombox", function()
         return 
     end
 
+    -- Check if the station is already playing
+    if activeStreams[boomboxEnt] and boomboxEnt:GetNWString("CurrentStation") == stationUrl then
+        print("Station is already playing, skipping")
+        return
+    end
+
     -- Stop any existing stream for this boombox
     if activeStreams[boomboxEnt] then
+        print("Stopping existing stream")
         activeStreams[boomboxEnt]:Stop()
         activeStreams[boomboxEnt] = nil
     end
 
     -- Start new stream
+    print("Attempting to play URL:", stationUrl)
     sound.PlayURL(stationUrl, "3d noblock", function(station, errCode, errStr)
         if IsValid(station) then
+            print("Stream created successfully")
             local volume = boomboxEnt:GetNWFloat("Volume", rRadio.Config.DefaultVolume)
             station:SetPos(boomboxEnt:GetPos())
             station:SetVolume(volume)
-            station:Play()
-            activeStreams[boomboxEnt] = station
+            
+            -- Add a small delay before playing
+            timer.Simple(0.1, function()
+                if IsValid(station) then
+                    station:Play()
+                    activeStreams[boomboxEnt] = station
+                    print("Stream started playing")
 
-            -- Update station info
-            boomboxEnt:SetNWString("CurrentStation", stationUrl)
-            boomboxEnt:SetNWString("CurrentStationKey", stationKey)
-            boomboxEnt:SetNWInt("CurrentStationIndex", stationIndex)
+                    -- Update station info
+                    boomboxEnt:SetNWString("CurrentStation", stationUrl)
+                    boomboxEnt:SetNWString("CurrentStationKey", stationKey)
+                    boomboxEnt:SetNWInt("CurrentStationIndex", stationIndex)
 
-            -- Notification
-            notification.AddLegacy("Now playing: " .. rRadio.Stations[stationKey][stationIndex].n, NOTIFY_GENERIC, 3)
+                    -- Notification
+                    notification.AddLegacy("Now playing: " .. rRadio.Stations[stationKey][stationIndex].n, NOTIFY_GENERIC, 3)
+                else
+                    print("Station became invalid before playing")
+                end
+            end)
         else
+            print("Failed to create stream. Error code:", errCode, "Error string:", errStr)
             rRadio.LogError("Failed to play station: " .. errStr)
             notification.AddLegacy("Failed to play station: " .. errStr, NOTIFY_ERROR, 3)
         end

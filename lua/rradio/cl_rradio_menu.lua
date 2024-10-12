@@ -5,6 +5,9 @@ RRADIO.Menu = RRADIO.Menu or {}
 
 RRADIO.GetFont = getFont
 
+local GITHUB_BUTTON_FADE_TIME = 0.3
+local githubButtonAlpha = 0
+
 function SafeColor(color)
     return IsColor(color) and color or Color(255, 255, 255)
 end
@@ -70,11 +73,10 @@ function RRADIO.Menu:UpdateSearchBarPlaceholder()
     end
 end
 
--- Optimized CreateButton function
 function RRADIO.Menu:CreateButton(text, isFirst, isLast, isFavorite, onFavoriteToggle)
     local button = self.Scroll:Add("DButton")
     button:Dock(TOP)
-    button:SetTall(self:GetTall() * 0.06)
+    button:SetTall(self:GetTall() * 0.048)
     button:DockMargin(5, isFirst and 5 or 0, 5, isLast and 5 or 0)
     button:SetText("")
     button:SetFont(getFont(14, false))
@@ -117,13 +119,37 @@ function RRADIO.Menu:CreateButton(text, isFirst, isLast, isFavorite, onFavoriteT
     return button
 end
 
--- Optimized LoadCountries function
+-- Add this function to handle the visibility and position of elements
+function RRADIO.Menu:UpdateLayoutForView()
+    if self.currentView == "settings" then
+        if IsValid(self.SearchBar) then
+            self.SearchBar:SetVisible(false)
+        end
+        if IsValid(self.ScrollBackground) then
+            self.ScrollBackground:DockMargin(
+                self.ScrollBackground:GetDockMargin(),
+                0,  -- Remove top margin
+                self.ScrollBackground:GetDockMargin(),
+                self.ScrollBackground:GetDockMargin()
+            )
+        end
+    else
+        if IsValid(self.SearchBar) then
+            self.SearchBar:SetVisible(true)
+        end
+        if IsValid(self.ScrollBackground) then
+            local margin = math.Round(self:GetWide() * 0.02)
+            self.ScrollBackground:DockMargin(margin, margin, margin, margin)
+        end
+    end
+    self:InvalidateLayout(true)
+end
+
 function RRADIO.Menu:LoadCountries()
     self.Scroll:Clear()
     self.currentView = "countries"
     
     self.BackButton:SetVisible(false)
-    self.GitHubButton:SetVisible(false) -- Hide GitHub button when not in settings
     self.Title:SetText(rRadio.Config.MenuTitle)
     self.Title:SizeToContents()
     self.Title:Center()
@@ -150,9 +176,14 @@ function RRADIO.Menu:LoadCountries()
     self:CreateCountryButtons(sortedCountries, false)
     
     self:UpdateSearchBarPlaceholder()
+    self:UpdateLayoutForView()  -- Add this line
+
+    -- Only fade out GitHub button if we're coming from settings
+    if self.currentView == "settings" then
+        self:AnimateGitHubButton(false)
+    end
 end
 
--- New helper function to create country buttons
 function RRADIO.Menu:CreateCountryButtons(countries, isFavorite)
     for i, country in ipairs(countries) do
         local formattedCountry = rRadio.FormatCountryName(country)
@@ -167,7 +198,6 @@ function RRADIO.Menu:CreateCountryButtons(countries, isFavorite)
     end
 end
 
--- Optimized LoadStations function
 function RRADIO.Menu:LoadStations(country)
     self.Scroll:Clear()
     self.currentView = "stations"
@@ -202,6 +232,7 @@ function RRADIO.Menu:LoadStations(country)
     self:CreateStationButtons(sortedStations, country, false)
     
     self:UpdateSearchBarPlaceholder()
+    self:UpdateLayoutForView()  -- Add this line
 end
 
 function RRADIO.Menu:CreateStationButtons(stationList, country, isFavorite)
@@ -246,12 +277,15 @@ function RRADIO.Menu:Init()
 
     self:LoadCountries()
     self:UpdateColors()
+
+    -- Set initial GitHub button alpha to 0
+    githubButtonAlpha = 0
 end
 
 function RRADIO.Menu:CreateHeader()
     self.Header = self:Add("DPanel")
     self.Header:Dock(TOP)
-    self.Header:SetTall(self:GetTall() * 0.08)
+    self.Header:SetTall(self:GetTall() * 0.064)
     self.Header.Paint = function(s, w, h)
         local colors = RRADIO.GetColors()
         draw.RoundedBoxEx(8, 0, 0, w, h, SafeColor(colors.bg), true, true, false, false)
@@ -273,7 +307,7 @@ function RRADIO.Menu:CreateHeader()
     self.BackButton.DoClick = function()
         surface.PlaySound(RRADIO.Sounds.CLICK)
         if self.currentView == "settings" then
-            self:LoadCountries()
+            self:CloseSettings()
         else
             self:LoadCountries()
         end
@@ -284,22 +318,33 @@ function RRADIO.Menu:CreateHeader()
     self.Title:SetText(rRadio.Config.MenuTitle)
     self.Title:SetFont(getFont(20, true))
 
-    -- Add GitHub button
     self.GitHubButton = vgui.Create("DImageButton", self.Header)
     self.GitHubButton:SetSize(buttonSize, buttonSize)
-    self.GitHubButton:SetVisible(false) -- Initially hidden
+    self.GitHubButton:SetVisible(true)
     self.GitHubButton.Paint = function(s, w, h)
-        local colors = RRADIO.GetColors()
-        surface.SetDrawColor(SafeColor(colors.text))
-        surface.SetMaterial(RRADIO.Icons.GITHUB)
-        surface.DrawTexturedRect(0, 0, w, h)
+        if githubButtonAlpha > 0 then
+            local colors = RRADIO.GetColors()
+            surface.SetDrawColor(ColorAlpha(SafeColor(colors.text), githubButtonAlpha))
+            surface.SetMaterial(RRADIO.Icons.GITHUB)
+            surface.DrawTexturedRect(0, 0, w, h)
+        end
+        return true -- This prevents the default button background from being drawn
     end
     self.GitHubButton.DoClick = function()
-        surface.PlaySound(RRADIO.Sounds.CLICK)
-        gui.OpenURL("https://github.com/charles-mills/rRadio")
+        if githubButtonAlpha > 200 then
+            surface.PlaySound(RRADIO.Sounds.CLICK)
+            gui.OpenURL("https://github.com/charles-mills/rRadio")
+        end
+    end
+    self.GitHubButton.OnCursorEntered = function(s)
+        if githubButtonAlpha > 0 then
+            s:SetCursor("hand")
+        end
+    end
+    self.GitHubButton.OnCursorExited = function(s)
+        s:SetCursor("arrow")
     end
 
-    -- Settings button (existing code)
     self.SettingsButton = vgui.Create("DImageButton", self.Header)
     self.SettingsButton:SetSize(buttonSize, buttonSize)
     self.SettingsButton.Paint = function(s, w, h)
@@ -338,8 +383,7 @@ function RRADIO.Menu:CreateSearchBar()
         local colors = RRADIO.GetColors()
         draw.RoundedBox(7, 0, 0, w, h, SafeColor(colors.button))
         s:DrawTextEntryText(SafeColor(colors.text), s:GetHighlightColor(), s:GetCursorColor())
-        
-        -- Draw placeholder text with appropriate color
+
         if s:GetText() == "" and s:GetPlaceholderText() ~= "" then
             draw.SimpleText(s:GetPlaceholderText(), s:GetFont(), 5, h/2, SafeColor(colors.text_placeholder), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
         end
@@ -353,7 +397,7 @@ function RRADIO.Menu:CreateScrollPanel()
     self.ScrollBackground = self:Add("DPanel")
     self.ScrollBackground:Dock(FILL)
     local margin = math.Round(self:GetWide() * 0.02)
-    self.ScrollBackground:DockMargin(margin, margin, margin, margin)
+    self.ScrollBackground:DockMargin(margin, 0, margin, margin)
     self.ScrollBackground.Paint = function(s, w, h)
         local colors = RRADIO.GetColors()
         draw.RoundedBox(8, 0, 0, w, h, SafeColor(colors.scrollBg))
@@ -381,9 +425,8 @@ function RRADIO.Menu:CreateControlPanel()
         draw.RoundedBox(8, 0, 0, w, h, SafeColor(colors.button))
     end
 
-    -- Stop button
     self.StopButton = self.ControlPanel:Add("DButton")
-    self.StopButton:SetText("")  -- Remove default text
+    self.StopButton:SetText("")
     
     local stopButtonFont = "rRadio_StopButton"
     surface.CreateFont(stopButtonFont, {
@@ -472,7 +515,7 @@ end
 
 function RRADIO.Menu:PerformLayout(w, h)
     local margin = math.Round(w * 0.02)
-    local buttonSize = math.max(h * 0.04, 20)
+    local buttonSize = math.max(h * 0.032, 16)
 
     if IsValid(self.BackButton) then
         self.BackButton:SetPos(margin, (self.Header:GetTall() - buttonSize) / 2)
@@ -483,18 +526,25 @@ function RRADIO.Menu:PerformLayout(w, h)
         self.Title:Center()
     end
 
-    if IsValid(self.GitHubButton) then
-        self.GitHubButton:SetPos(w - buttonSize * 3 - margin * 3, (self.Header:GetTall() - buttonSize) / 2)
+    local searchBarRightEdge = w - margin
+
+    local iconPadding = buttonSize * 0.8
+
+    local additionalOffset = buttonSize * 1.1
+
+    if IsValid(self.CloseButton) then
+        self.CloseButton:SetPos(searchBarRightEdge - buttonSize - additionalOffset, (self.Header:GetTall() - buttonSize) / 2)
     end
 
     if IsValid(self.SettingsButton) then
-        self.SettingsButton:SetPos(w - buttonSize * 2 - margin * 2, (self.Header:GetTall() - buttonSize) / 2)
+        self.SettingsButton:SetPos(searchBarRightEdge - buttonSize * 2 - iconPadding - additionalOffset, (self.Header:GetTall() - buttonSize) / 2)
     end
 
-    if IsValid(self.CloseButton) then
-        self.CloseButton:SetPos(w - buttonSize - margin, (self.Header:GetTall() - buttonSize) / 2)
+    if IsValid(self.GitHubButton) then
+        self.GitHubButton:SetPos(searchBarRightEdge - buttonSize * 3 - iconPadding * 2 - additionalOffset, (self.Header:GetTall() - buttonSize) / 2)
     end
-    
+
+    -- Rest of the function remains the same
     if IsValid(self.StopButton) and IsValid(self.VolumeControlPanel) then
         local aspectRatio = w / h
         local stopButtonWidth, volumeControlWidth
@@ -661,6 +711,10 @@ function RRADIO.Menu:UpdateColors()
     if self.currentView == "settings" then
         self:PopulateSettings()
     end
+
+    if IsValid(self.GitHubButton) then
+        self.GitHubButton:InvalidateLayout(true)
+    end
 end
 
 RRADIO.DarkModeConVar = CreateClientConVar("rradio_dark_mode", "0", true, false, "Toggle dark mode for rRadio")
@@ -674,7 +728,6 @@ function RRADIO.GetColors()
         buttonHover = isDarkMode and Color(40, 40, 40) or Color(230, 230, 230),
         accent = Color(0, 122, 255),
         text_placeholder = isDarkMode and Color(150, 150, 150) or Color(100, 100, 100),
-        -- Add more colors as needed
     }
 end
 
@@ -682,14 +735,16 @@ function RRADIO.Menu:OpenSettings()
     self.currentView = "settings"
     self.Scroll:Clear()
     self.BackButton:SetVisible(true)
-    self.GitHubButton:SetVisible(true) -- Show GitHub button in settings
     self.Title:SetText("Settings")
     self.Title:SizeToContents()
     self.Title:Center()
     
     self:PopulateSettings()
     self:UpdateColors()
-    self:UpdateSearchBarPlaceholder()
+    self:UpdateLayoutForView()  -- Add this line
+
+    -- Start fade-in animation for GitHub button
+    self:AnimateGitHubButton(true)
 end
 
 function RRADIO.Menu:PopulateSettings()
@@ -734,7 +789,35 @@ function RRADIO.Menu:PopulateSettings()
         self:UpdateColors()
     end
 
-    -- Add more settings here as needed
+end
+
+-- Add this new function to handle the GitHub button animation
+function RRADIO.Menu:AnimateGitHubButton(fadeIn)
+    local startAlpha = fadeIn and 0 or 255
+    local endAlpha = fadeIn and 255 or 0
+    local startTime = SysTime()
+
+    hook.Add("Think", "rRadio_GitHubButtonFade", function()
+        local progress = (SysTime() - startTime) / GITHUB_BUTTON_FADE_TIME
+        if progress >= 1 then
+            githubButtonAlpha = endAlpha
+            hook.Remove("Think", "rRadio_GitHubButtonFade")
+        else
+            githubButtonAlpha = Lerp(progress, startAlpha, endAlpha)
+        end
+        if IsValid(self.GitHubButton) then
+            self.GitHubButton:InvalidateLayout(true)
+        else
+            hook.Remove("Think", "rRadio_GitHubButtonFade")
+        end
+    end)
+end
+
+-- Add a new function to close settings
+function RRADIO.Menu:CloseSettings()
+    self:LoadCountries()
+    self:AnimateGitHubButton(false)
+    self:UpdateLayoutForView()  -- Add this line
 end
 
 -- Register the panel

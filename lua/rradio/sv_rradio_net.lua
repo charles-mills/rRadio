@@ -22,12 +22,14 @@ net.Receive("rRadio_PlayStation", function(len, ply)
 
     -- Check cooldown
     if playerCooldowns[ply] and playerCooldowns[ply] > CurTime() then
+        print("Rate limit hit, skipping")
         return
     end
     playerCooldowns[ply] = CurTime() + RATE_LIMIT
 
     if not IsValid(boomboxEnt) or boomboxEnt:GetClass() ~= "ent_rradio" or
        (boomboxEnt:GetOwner() ~= ply and not ply:IsAdmin() and not ply:IsSuperAdmin()) then
+        print("Invalid boombox or permissions")
         return
     end
 
@@ -40,11 +42,10 @@ net.Receive("rRadio_PlayStation", function(len, ply)
     local stationUrl = station.u
 
     if stationUrl then
-        -- Stop any currently playing station
-        if boomboxEnt:GetNWString("CurrentStation") ~= "" then
-            net.Start("rRadio_StopStation")
-            net.WriteEntity(boomboxEnt)
-            net.Broadcast()
+        -- Check if the station is already playing
+        if boomboxEnt:GetNWString("CurrentStation") == stationUrl then
+            print("Station is already playing, skipping")
+            return
         end
 
         -- Set new station
@@ -55,6 +56,8 @@ net.Receive("rRadio_PlayStation", function(len, ply)
         net.WriteUInt(stationIndex, 16)
         net.WriteString(stationUrl)
         net.Broadcast()
+        
+        print("Broadcasted new station:", stationUrl)
     end
 end)
 
