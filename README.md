@@ -16,7 +16,8 @@ rRadio is a feature-rich radio addon for Garry's Mod that allows players to list
 
 1. Clone this repository or download the ZIP file.
 2. Place the `rradio` folder in your server's `addons` directory.
-3. Restart your server or change the map to load the addon.
+3. Upload the models and materials directories to the workshop, or use your own model, to allow clients to download the boombox model (Optional - Multiplayer Only)
+5. Restart your server or change the map to load the addon.
 
 ## Usage
 
