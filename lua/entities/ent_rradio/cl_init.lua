@@ -92,9 +92,11 @@ function ENT:DrawHUD(alpha)
     local iconMaterial = canControl and RRADIO.Icons.UNLOCKED or RRADIO.Icons.LOCKED
     local iconColor = ColorAlpha(colors.accent, alpha * 255)
     
-    surface.SetDrawColor(iconColor)
-    surface.SetMaterial(iconMaterial)
-    surface.DrawTexturedRect(halfW - iconSize - 10, -halfH + 10, iconSize, iconSize)
+    if iconMaterial then  -- Check if the material is valid before using it
+        surface.SetDrawColor(iconColor)
+        surface.SetMaterial(iconMaterial)
+        surface.DrawTexturedRect(halfW - iconSize - 10, -halfH + 10, iconSize, iconSize)
+    end
 
     -- Station info
     local stationKey = self:GetNWString("CurrentStationKey", "")

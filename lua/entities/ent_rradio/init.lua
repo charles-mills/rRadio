@@ -67,3 +67,9 @@ hook.Add("PlayerChangedTeam", "rRadio_UpdateControlStatus", function(ply, oldTea
         rRadio.Ownership.UpdateControlStatus(ent)
     end
 end)
+
+-- Add this function at the end of the file
+
+function ENT:UpdateTransmitState()
+    return TRANSMIT_ALWAYS
+end

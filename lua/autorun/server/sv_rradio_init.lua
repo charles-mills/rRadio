@@ -61,3 +61,15 @@ timer.Create("rRadio_CacheCleanup", rRadio.Config.CacheCleanupInterval, 0, funct
         end
     end
 end)
+
+-- Add this at the end of the file
+
+hook.Add("Think", "rRadio_ReliabilityCheck", function()
+    for _, ply in ipairs(player.GetAll()) do
+        for _, ent in ipairs(ents.FindByClass("ent_rradio")) do
+            if not ply:TestPVS(ent) then
+                ent:SetPreventTransmit(ply, false)
+            end
+        end
+    end
+end)

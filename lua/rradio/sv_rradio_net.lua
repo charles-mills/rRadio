@@ -8,6 +8,7 @@ util.AddNetworkString("rRadio_UpdateVolume")
 util.AddNetworkString("rRadio_ToggleFavorite")
 util.AddNetworkString("rRadio_OpenMenu")
 util.AddNetworkString("rRadio_UpdateBoombox")
+util.AddNetworkString("rRadio_SyncNewPlayer")
 
 local playerCooldowns = {}
 
@@ -113,4 +114,40 @@ net.Receive("rRadio_UpdateBoombox", function(len, ply)
         net.WriteUInt(stationIndex, 16)
         net.Broadcast()
     end
+end)
+
+-- Add this function to collect boombox data
+local function CollectBoomboxData()
+    local boomboxData = {}
+    for _, ent in ipairs(ents.FindByClass("ent_rradio")) do
+        table.insert(boomboxData, {
+            entity = ent,
+            currentStation = ent:GetNWString("CurrentStation", ""),
+            currentStationKey = ent:GetNWString("CurrentStationKey", ""),
+            currentStationIndex = ent:GetNWInt("CurrentStationIndex", 0),
+            volume = ent:GetNWFloat("Volume", rRadio.Config.DefaultVolume),
+            owner = ent:GetNWEntity("Owner")
+        })
+    end
+    return boomboxData
+end
+
+hook.Add("PlayerInitialSpawn", "rRadio_SyncNewPlayer", function(ply)
+    -- Wait for the player to fully load
+    timer.Simple(5, function()
+        if IsValid(ply) then
+            local boomboxData = CollectBoomboxData()
+            net.Start("rRadio_SyncNewPlayer")
+            net.WriteUInt(#boomboxData, 8)
+            for _, data in ipairs(boomboxData) do
+                net.WriteEntity(data.entity)
+                net.WriteString(data.currentStation)
+                net.WriteString(data.currentStationKey)
+                net.WriteUInt(data.currentStationIndex, 16)
+                net.WriteFloat(data.volume)
+                net.WriteEntity(data.owner)
+            end
+            net.Send(ply)
+        end
+    end)
 end)

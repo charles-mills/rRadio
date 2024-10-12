@@ -161,3 +161,39 @@ hook.Add("Think", "rRadio_UpdateStreamPositions", function()
         end
     end
 end)
+
+-- Add this at the end of the file
+
+net.Receive("rRadio_SyncNewPlayer", function()
+    local boomboxCount = net.ReadUInt(8)
+    for i = 1, boomboxCount do
+        local boomboxEnt = net.ReadEntity()
+        local stationUrl = net.ReadString()
+        local stationKey = net.ReadString()
+        local stationIndex = net.ReadUInt(16)
+        local volume = net.ReadFloat()
+        local owner = net.ReadEntity()
+
+        if IsValid(boomboxEnt) and boomboxEnt:GetClass() == "ent_rradio" then
+            boomboxEnt:SetNWString("CurrentStation", stationUrl)
+            boomboxEnt:SetNWString("CurrentStationKey", stationKey)
+            boomboxEnt:SetNWInt("CurrentStationIndex", stationIndex)
+            boomboxEnt:SetNWFloat("Volume", volume)
+            boomboxEnt:SetNWEntity("Owner", owner)
+
+            if stationUrl ~= "" then
+                -- Start playing the stream
+                sound.PlayURL(stationUrl, "3d noblock", function(station, errCode, errStr)
+                    if IsValid(station) then
+                        station:SetPos(boomboxEnt:GetPos())
+                        station:SetVolume(volume)
+                        station:Play()
+                        activeStreams[boomboxEnt] = station
+                    else
+                        print("Failed to create stream for synced boombox. Error: " .. (errStr or "Unknown"))
+                    end
+                end)
+            end
+        end
+    end
+end)
