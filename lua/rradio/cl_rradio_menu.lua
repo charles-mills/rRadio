@@ -51,7 +51,7 @@ local function getFont(size, isHeading)
     return fontName
 end
 
-local function formatCountryName(name)
+local function rRadio.FormatCountryName(name)
     return name:gsub("_", " "):gsub("(%a)([%w']*)", function(first, rest)
         return first:upper() .. rest:lower()
     end)
@@ -129,8 +129,8 @@ function RRADIO.Menu:LoadCountries()
         end
     end
     
-    table.sort(favoriteCountries, function(a, b) return SortIgnoringThe(formatCountryName(a), formatCountryName(b)) end)
-    table.sort(sortedCountries, function(a, b) return SortIgnoringThe(formatCountryName(a), formatCountryName(b)) end)
+    table.sort(favoriteCountries, function(a, b) return SortIgnoringThe(rRadio.FormatCountryName(a), rRadio.FormatCountryName(b)) end)
+    table.sort(sortedCountries, function(a, b) return SortIgnoringThe(rRadio.FormatCountryName(a), rRadio.FormatCountryName(b)) end)
     
     self:CreateCountryButtons(favoriteCountries, true)
     self:CreateCountryButtons(sortedCountries, false)
@@ -139,7 +139,7 @@ end
 -- New helper function to create country buttons
 function RRADIO.Menu:CreateCountryButtons(countries, isFavorite)
     for i, country in ipairs(countries) do
-        local formattedCountry = formatCountryName(country)
+        local formattedCountry = rRadio.FormatCountryName(country)
         local button = self:CreateButton(formattedCountry, i == 1 and (isFavorite or #countries == 0), i == #countries and not isFavorite, isFavorite, function()
             rRadio.ToggleFavoriteCountry(country)
             self:LoadCountries()
@@ -158,7 +158,7 @@ function RRADIO.Menu:LoadStations(country)
     self.currentCountry = country
 
     self.BackButton:SetVisible(true)
-    local formattedCountry = formatCountryName(country)
+    local formattedCountry = rRadio.FormatCountryName(country)
     self.Title:SetText(formattedCountry)
     self.Title:SizeToContents()
     self.Title:Center()
@@ -421,7 +421,7 @@ function RRADIO.Menu:PerformSearch()
 
         if self.currentView == "countries" then
             for country, _ in pairs(rRadio.Stations) do
-                local formattedCountry = formatCountryName(country)
+                local formattedCountry = rRadio.FormatCountryName(country)
                 if string.find(formattedCountry:lower(), query) then
                     local isFavorite = rRadio.IsCountryFavorite(country)
                     local button = self:CreateButton(formattedCountry, false, false, isFavorite, function()

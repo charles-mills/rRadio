@@ -83,8 +83,19 @@ net.Receive("rRadio_UpdateVolume", function(len, ply)
         return
     end
 
+    -- Validate volume range on the server side
     volume = math.Clamp(volume, 0, 1)
-    boomboxEnt:SetNWFloat("Volume", volume)
+    
+    -- Check if the volume has actually changed
+    if boomboxEnt:GetNWFloat("Volume", rRadio.Config.DefaultVolume) ~= volume then
+        boomboxEnt:SetNWFloat("Volume", volume)
+        
+        -- Broadcast the volume change to all clients
+        net.Start("rRadio_UpdateVolume")
+        net.WriteEntity(boomboxEnt)
+        net.WriteFloat(volume)
+        net.Broadcast()
+    end
 end)
 
 -- Toggle Favorite

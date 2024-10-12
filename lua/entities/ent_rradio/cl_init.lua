@@ -1,5 +1,6 @@
 include("shared.lua")
 include("rradio/cl_rradio_colors.lua")
+include("rradio/sh_rradio_utils.lua")
 
 local GetFont = rRadio.GetFont or function(size, bold)
     local fontName = "rRadio_Font_" .. size .. (bold and "_Bold" or "")
@@ -72,7 +73,7 @@ function ENT:DrawHUD(alpha)
 
     if stationKey ~= "" and stationIndex > 0 and rRadio.Stations[stationKey] and rRadio.Stations[stationKey][stationIndex] then
         stationName = rRadio.Stations[stationKey][stationIndex].n
-        countryName = string.gsub(stationKey, "_", " ")
+        countryName = rRadio.FormatCountryName(stationKey)
     end
 
     draw.SimpleText(stationName, GetFont(16), -w/2 + 10, -h/2 + 40, ColorAlpha(colors.text, alpha * 255), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)

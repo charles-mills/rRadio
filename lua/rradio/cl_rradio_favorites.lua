@@ -31,7 +31,9 @@ local function SaveFavorites()
         timer.Remove(saveFavoritesTimer)
     end
     
-    saveFavoritesTimer = "rRadio_SaveFavorites_" .. CurTime()
+    -- Create a unique identifier for the timer
+    saveFavoritesTimer = "rRadio_SaveFavorites_" .. os.time()
+    
     timer.Create(saveFavoritesTimer, 1, 1, function()
         if not file.Exists("rradio/favorites", "DATA") then
             file.CreateDir("rradio/favorites")

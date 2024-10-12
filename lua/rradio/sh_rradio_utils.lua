@@ -115,3 +115,9 @@ if CLIENT then
         file.Write("rradio_recent.txt", util.TableToJSON(rRadio.RecentStations))
     end
 end
+
+function rRadio.FormatCountryName(name)
+    return name:gsub("_", " "):gsub("(%a)([%w']*)", function(first, rest)
+        return first:upper() .. rest:lower()
+    end)
+end
