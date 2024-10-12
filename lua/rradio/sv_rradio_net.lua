@@ -83,21 +83,97 @@ net.Receive("rRadio_PlayStation", function(len, ply)
     end
 
     if stationUrl then
-        boomboxEnt:SetNWString("CurrentStation", stationUrl)
+        boomboxEnt:SetNWString("CurrentStation", "tuning")
         boomboxEnt:SetNWString("CurrentStationKey", stationKey)
         boomboxEnt:SetNWInt("CurrentStationIndex", stationIndex)
         
         -- Add the boombox to the activeRadios table
         AddActiveRadio(boomboxEnt)
         
+        -- Broadcast the tuning state
         net.Start("rRadio_UpdateBoombox")
         net.WriteEntity(boomboxEnt)
         net.WriteString(stationKey)
         net.WriteUInt(stationIndex, 16)
-        net.WriteString(stationUrl)
+        net.WriteString("tuning")
         net.Broadcast()
+
+        -- Set a timer for connection timeout
+        timer.Create("rRadio_ConnectionTimeout_" .. boomboxEnt:EntIndex(), CONNECTION_TIMEOUT, 1, function()
+            if IsValid(boomboxEnt) and boomboxEnt:GetNWString("CurrentStation") == "tuning" then
+                HandleStationOutage(boomboxEnt, stationKey, stationIndex)
+            end
+        end)
+
+        -- Attempt to connect to the station
+        -- Replace this with your actual connection logic
+        timer.Simple(0.1, function()
+            if IsValid(boomboxEnt) then
+                -- Simulate a connection attempt
+                local success, errorCode = SimulateStationConnection(stationUrl)
+                
+                if success then
+                    -- Connection successful
+                    timer.Remove("rRadio_ConnectionTimeout_" .. boomboxEnt:EntIndex())
+                    boomboxEnt:SetNWString("CurrentStation", stationUrl)
+
+                    -- Broadcast the successful connection
+                    net.Start("rRadio_UpdateBoombox")
+                    net.WriteEntity(boomboxEnt)
+                    net.WriteString(stationKey)
+                    net.WriteUInt(stationIndex, 16)
+                    net.WriteString(stationUrl)
+                    net.Broadcast()
+                else
+                    -- Connection failed (including BASS errors)
+                    HandleStationOutage(boomboxEnt, stationKey, stationIndex)
+                end
+            end
+        end)
     end
 end)
+
+-- Helper function to handle station outage
+function HandleStationOutage(boomboxEnt, stationKey, stationIndex)
+    if IsValid(boomboxEnt) then
+        boomboxEnt:SetNWString("CurrentStation", "outage")
+        
+        -- Broadcast the outage state
+        net.Start("rRadio_UpdateBoombox")
+        net.WriteEntity(boomboxEnt)
+        net.WriteString(stationKey)
+        net.WriteUInt(stationIndex, 16)
+        net.WriteString("outage")
+        net.Broadcast()
+
+        -- Reset station information after outage
+        timer.Simple(2, function()
+            if IsValid(boomboxEnt) then
+                boomboxEnt:SetNWString("CurrentStationKey", "")
+                boomboxEnt:SetNWInt("CurrentStationIndex", 0)
+                boomboxEnt:SetNWString("CurrentStation", "")
+                RemoveActiveRadio(boomboxEnt)
+
+                -- Broadcast the reset state
+                net.Start("rRadio_UpdateBoombox")
+                net.WriteEntity(boomboxEnt)
+                net.WriteString("")
+                net.WriteUInt(0, 16)
+                net.WriteString("")
+                net.Broadcast()
+            end
+        end)
+    end
+end
+
+-- Simulate station connection (replace this with your actual connection logic)
+function SimulateStationConnection(url)
+    -- This is a placeholder function. Replace it with your actual connection logic.
+    -- It should return true if the connection is successful, or false and an error code if it fails.
+    local success = math.random() > 0.2  -- 80% chance of success for simulation
+    local errorCode = success and nil or "BASS_ERROR_UNKNOWN"
+    return success, errorCode
+end
 
 net.Receive("rRadio_StopStation", function(len, ply)
     if not checkRateLimit(ply) then return end
