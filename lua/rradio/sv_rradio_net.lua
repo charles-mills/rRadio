@@ -9,7 +9,8 @@
     and message handling.
 ]]
 
-local RATE_LIMIT = 1 -- 1 second cooldown
+local RATE_LIMIT = 1
+local CONNECTION_TIMEOUT = 8
 
 util.AddNetworkString("rRadio_PlayStation")
 util.AddNetworkString("rRadio_StopStation")
@@ -61,118 +62,93 @@ local function validateBoombox(ply, boomboxEnt)
     return true
 end
 
+local function validateStationURL(url)
+    return isstring(url) and (string.match(url, "^https?://") or string.match(url, "^http?://"))
+end
+
 net.Receive("rRadio_PlayStation", function(len, ply)
     if not checkRateLimit(ply) then return end
 
     local boomboxEnt = net.ReadEntity()
-    local stationKey = net.ReadString()
-    local stationIndex = net.ReadUInt(16)
+    local stationCountry = net.ReadString()
+    local stationName = net.ReadString()
     
     if not validateBoombox(ply, boomboxEnt) then return end
-    if not rRadio.Stations[stationKey] or not rRadio.Stations[stationKey][stationIndex] then
+    if not rRadio.Stations[stationCountry] then
+        rRadio.LogError("Invalid country request from " .. ply:Nick())
+        return
+    end
+
+    -- Find the station by name
+    local station = nil
+    for _, s in ipairs(rRadio.Stations[stationCountry]) do
+        if s.n == stationName then
+            station = s
+            break
+        end
+    end
+
+    if not station then
         rRadio.LogError("Invalid station request from " .. ply:Nick())
         return
     end
 
     -- Sanitize the station URL
-    local station = rRadio.Stations[stationKey][stationIndex]
     local stationUrl = station.u
-    if not isstring(stationUrl) or not string.match(stationUrl, "^https?://") then
+    if not validateStationURL(stationUrl) then
         rRadio.LogError("Invalid station URL from " .. ply:Nick())
         return
     end
 
     if stationUrl then
-        boomboxEnt:SetNWString("CurrentStation", "tuning")
-        boomboxEnt:SetNWString("CurrentStationKey", stationKey)
-        boomboxEnt:SetNWInt("CurrentStationIndex", stationIndex)
+        boomboxEnt:SetNWString("CurrentStationURL", stationUrl)
+        boomboxEnt:SetNWString("CurrentStationCountry", stationCountry)
+        boomboxEnt:SetNWString("CurrentStationName", stationName)
         
         -- Add the boombox to the activeRadios table
         AddActiveRadio(boomboxEnt)
         
-        -- Broadcast the tuning state
+        -- Broadcast the station information
         net.Start("rRadio_UpdateBoombox")
         net.WriteEntity(boomboxEnt)
-        net.WriteString(stationKey)
-        net.WriteUInt(stationIndex, 16)
-        net.WriteString("tuning")
+        net.WriteString(stationCountry)
+        net.WriteString(stationName)
+        net.WriteString(stationUrl)
         net.Broadcast()
-
-        -- Set a timer for connection timeout
-        timer.Create("rRadio_ConnectionTimeout_" .. boomboxEnt:EntIndex(), CONNECTION_TIMEOUT, 1, function()
-            if IsValid(boomboxEnt) and boomboxEnt:GetNWString("CurrentStation") == "tuning" then
-                HandleStationOutage(boomboxEnt, stationKey, stationIndex)
-            end
-        end)
-
-        -- Attempt to connect to the station
-        -- Replace this with your actual connection logic
-        timer.Simple(0.1, function()
-            if IsValid(boomboxEnt) then
-                -- Simulate a connection attempt
-                local success, errorCode = SimulateStationConnection(stationUrl)
-                
-                if success then
-                    -- Connection successful
-                    timer.Remove("rRadio_ConnectionTimeout_" .. boomboxEnt:EntIndex())
-                    boomboxEnt:SetNWString("CurrentStation", stationUrl)
-
-                    -- Broadcast the successful connection
-                    net.Start("rRadio_UpdateBoombox")
-                    net.WriteEntity(boomboxEnt)
-                    net.WriteString(stationKey)
-                    net.WriteUInt(stationIndex, 16)
-                    net.WriteString(stationUrl)
-                    net.Broadcast()
-                else
-                    -- Connection failed (including BASS errors)
-                    HandleStationOutage(boomboxEnt, stationKey, stationIndex)
-                end
-            end
-        end)
     end
 end)
 
 -- Helper function to handle station outage
-function HandleStationOutage(boomboxEnt, stationKey, stationIndex)
+function HandleStationOutage(boomboxEnt, stationCountry, stationName)
     if IsValid(boomboxEnt) then
-        boomboxEnt:SetNWString("CurrentStation", "outage")
+        boomboxEnt:SetNWString("CurrentStationURL", "outage")
         
         -- Broadcast the outage state
         net.Start("rRadio_UpdateBoombox")
         net.WriteEntity(boomboxEnt)
-        net.WriteString(stationKey)
-        net.WriteUInt(stationIndex, 16)
+        net.WriteString(stationCountry)
+        net.WriteString(stationName)
         net.WriteString("outage")
         net.Broadcast()
 
         -- Reset station information after outage
         timer.Simple(2, function()
             if IsValid(boomboxEnt) then
-                boomboxEnt:SetNWString("CurrentStationKey", "")
-                boomboxEnt:SetNWInt("CurrentStationIndex", 0)
-                boomboxEnt:SetNWString("CurrentStation", "")
+                boomboxEnt:SetNWString("CurrentStationCountry", "")
+                boomboxEnt:SetNWString("CurrentStationName", "")
+                boomboxEnt:SetNWString("CurrentStationURL", "")
                 RemoveActiveRadio(boomboxEnt)
 
                 -- Broadcast the reset state
                 net.Start("rRadio_UpdateBoombox")
                 net.WriteEntity(boomboxEnt)
                 net.WriteString("")
-                net.WriteUInt(0, 16)
+                net.WriteString("")
                 net.WriteString("")
                 net.Broadcast()
             end
         end)
     end
-end
-
--- Simulate station connection (replace this with your actual connection logic)
-function SimulateStationConnection(url)
-    -- This is a placeholder function. Replace it with your actual connection logic.
-    -- It should return true if the connection is successful, or false and an error code if it fails.
-    local success = math.random() > 0.2  -- 80% chance of success for simulation
-    local errorCode = success and nil or "BASS_ERROR_UNKNOWN"
-    return success, errorCode
 end
 
 net.Receive("rRadio_StopStation", function(len, ply)
@@ -215,14 +191,14 @@ net.Receive("rRadio_UpdateBoombox", function(len, ply)
     if not checkRateLimit(ply) then return end
 
     local boomboxEnt = net.ReadEntity()
-    local stationKey = net.ReadString()
-    local stationIndex = net.ReadUInt(16)
+    local stationCountry = net.ReadString()
+    local stationName = net.ReadString()
 
     if validateBoombox(ply, boomboxEnt) then
         net.Start("rRadio_UpdateBoombox")
         net.WriteEntity(boomboxEnt)
-        net.WriteString(stationKey)
-        net.WriteUInt(stationIndex, 16)
+        net.WriteString(stationCountry)
+        net.WriteString(stationName)
         net.Broadcast()
     end
 end)
@@ -246,9 +222,9 @@ net.Receive("rRadio_RequestBoomboxData", function(len, ply)
     for _, ent in pairs(activeRadios) do
         if IsValid(ent) then
             net.WriteEntity(ent)
-            net.WriteString(ent:GetNWString("CurrentStation", ""))
-            net.WriteString(ent:GetNWString("CurrentStationKey", ""))
-            net.WriteUInt(ent:GetNWInt("CurrentStationIndex", 0), 16)
+            net.WriteString(ent:GetNWString("CurrentStationURL", ""))
+            net.WriteString(ent:GetNWString("CurrentStationCountry", ""))
+            net.WriteString(ent:GetNWString("CurrentStationName", ""))
             net.WriteFloat(ent:GetNWFloat("Volume", rRadio.Config.DefaultVolume))
             net.WriteEntity(ent:GetNWEntity("Owner"))
         else

@@ -26,7 +26,9 @@ function ENT:Initialize()
         phys:Wake()
     end
 
-    self:SetNWString("CurrentStation", "")
+    self:SetNWString("CurrentStationName", "")
+    self:SetNWString("CurrentStationURL", "")
+    self:SetNWString("CurrentStationCountry", "")
     self:SetNWFloat("Volume", rRadio.Config.DefaultVolume)
     
     self.LastMenuOpen = 0

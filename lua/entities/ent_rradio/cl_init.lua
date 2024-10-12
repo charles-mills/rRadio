@@ -111,22 +111,15 @@ function ENT:DrawHUD(alpha)
     end
 
     -- Playing status indicator
-    local isPlaying = self:GetNWString("CurrentStation", "") ~= ""
+    local isPlaying = self:GetNWString("CurrentStationURL", "") ~= ""
     local indicatorSize = isPlaying and PulseValue(14, 18, 4) or 16
     local indicatorX = halfW - iconSize - 30 - indicatorSize
     local indicatorY = -halfH + 10 + (iconSize - indicatorSize) / 2
     draw.RoundedBox(indicatorSize / 2, indicatorX, indicatorY, indicatorSize, indicatorSize, ColorAlpha(isPlaying and colors.accent or colors.divider, alpha * 255))
 
     -- Station info
-    local stationKey = self:GetNWString("CurrentStationKey", "")
-    local stationIndex = self:GetNWInt("CurrentStationIndex", 0)
-    local stationName = "Not playing"
-    local countryName = ""
-
-    if stationKey ~= "" and stationIndex > 0 and rRadio.Stations[stationKey] and rRadio.Stations[stationKey][stationIndex] then
-        stationName = rRadio.Stations[stationKey][stationIndex].n
-        countryName = rRadio.FormatCountryName(stationKey)
-    end
+    local stationName = self:GetNWString("CurrentStationName", "Not playing")
+    local countryName = rRadio.FormatCountryName(self:GetNWString("CurrentStationCountry", ""))
 
     draw.SimpleText(stationName, GetFont(28), -halfW + 20, -halfH + 75, ColorAlpha(colors.text, alpha * 255), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
     draw.SimpleText(countryName, GetFont(28), -halfW + 20, -halfH + 120, ColorAlpha(colors.text, alpha * 255), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)

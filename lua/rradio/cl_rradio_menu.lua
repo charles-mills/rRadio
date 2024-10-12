@@ -627,7 +627,7 @@ function RRADIO.Menu:PerformSearch()
                 end)
                 button.DoClick = function()
                     surface.PlaySound(RRADIO.Sounds.CLICK)
-                    rRadio.PlayStation(self.BoomboxEntity, self.currentCountry, stationInfo.index)
+                    rRadio.PlayStation(self.BoomboxEntity, self.currentCountry, stationInfo.name)
                 end
             end
 
@@ -639,7 +639,7 @@ function RRADIO.Menu:PerformSearch()
                 end)
                 button.DoClick = function()
                     surface.PlaySound(RRADIO.Sounds.CLICK)
-                    rRadio.PlayStation(self.BoomboxEntity, self.currentCountry, stationInfo.index)
+                    rRadio.PlayStation(self.BoomboxEntity, self.currentCountry, stationInfo.name)
                 end
             end
         end
@@ -869,31 +869,30 @@ function RRADIO.Menu:CreateStationButtons(stationList, country, isFavorite)
         )
         button.DoClick = function()
             surface.PlaySound(RRADIO.Sounds.CLICK)
-            rRadio.PlayStation(self.BoomboxEntity, country, stationInfo.index)
+            rRadio.PlayStation(self.BoomboxEntity, country, stationInfo.name)
         end
     end
 end
 
--- Add this new method to the RRADIO.Menu table
+-- Update the UpdateCurrentStation method
 function RRADIO.Menu:UpdateCurrentStation(entity)
     if IsValid(entity) then
-        local stationKey = entity:GetNWString("CurrentStationKey", "")
-        local stationIndex = entity:GetNWInt("CurrentStationIndex", 0)
-        local currentStation = entity:GetNWString("CurrentStation", "")
+        local stationCountry = entity:GetNWString("CurrentStationCountry", "")
+        local stationName = entity:GetNWString("CurrentStationName", "")
+        local currentStationURL = entity:GetNWString("CurrentStationURL", "")
         
-        if currentStation == "tuning" then
-            self:UpdateStatusPanel("Tuning in", rRadio.FormatCountryName(stationKey))
-        elseif currentStation == "outage" then
-            self:UpdateStatusPanel("Station Outage", rRadio.FormatCountryName(stationKey))
+        if currentStationURL == "tuning" then
+            self:UpdateStatusPanel("Tuning in", rRadio.FormatCountryName(stationCountry))
+        elseif currentStationURL == "outage" then
+            self:UpdateStatusPanel("Station Outage", rRadio.FormatCountryName(stationCountry))
             surface.PlaySound("buttons/button10.wav")  -- Play an error sound
             timer.Simple(2, function()
                 if IsValid(self) then
                     self:UpdateStatusPanel(nil, nil)  -- Set to "Not Playing" after outage message
                 end
             end)
-        elseif stationKey ~= "" and stationIndex > 0 and rRadio.Stations[stationKey] and rRadio.Stations[stationKey][stationIndex] then
-            local stationName = rRadio.Stations[stationKey][stationIndex].n
-            local countryName = rRadio.FormatCountryName(stationKey)
+        elseif stationCountry ~= "" and stationName ~= "" then
+            local countryName = rRadio.FormatCountryName(stationCountry)
             self:UpdateStatusPanel(stationName, countryName)
         else
             self:UpdateStatusPanel(nil, nil)  -- Set to "Not Playing" for any other case
