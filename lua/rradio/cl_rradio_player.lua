@@ -51,10 +51,10 @@ function rRadio.PlayStation(entity, country, stationName)
         return
     end
 
-    -- Update entity network variables
+    -- Set the status to "tuning" locally
+    entity:SetNWString("CurrentStatus", "tuning")
+    entity:SetNWString("CurrentStationName", "Tuning in")
     entity:SetNWString("CurrentStationCountry", country)
-    entity:SetNWString("CurrentStationName", stationName)
-    entity:SetNWString("CurrentStationURL", url)
 
     -- Update menu if it's open
     if IsValid(rRadio.Menu) and rRadio.Menu.BoomboxEntity == entity then
@@ -68,8 +68,8 @@ function rRadio.PlayStation(entity, country, stationName)
     net.WriteString(stationName)
     net.SendToServer()
 
-    -- Start playing the stream immediately
-    rRadio.PlayStream(entity, url)
+    -- Start playing the stream
+    rRadio.PlayStream(entity, url, country, stationName)
 end
 
 function rRadio.StopStation(boomboxEntity)
@@ -84,7 +84,7 @@ function rRadio.StopStation(boomboxEntity)
     net.SendToServer()
 end
 
-function rRadio.PlayStream(boomboxEnt, url)
+function rRadio.PlayStream(boomboxEnt, url, country, stationName)
     if not IsValid(boomboxEnt) or not isValidURL(url) then return end
 
     if activeStreams[boomboxEnt] then
@@ -99,12 +99,24 @@ function rRadio.PlayStream(boomboxEnt, url)
             station:SetVolume(volume)
             station:Play()
             activeStreams[boomboxEnt] = station
-
-            local stationName = boomboxEnt:GetNWString("CurrentStationName")
-            local countryName = rRadio.FormatCountryName(boomboxEnt:GetNWString("CurrentStationCountry"))
+            
+            -- Update entity network variables with actual station name
+            boomboxEnt:SetNWString("CurrentStationName", stationName)
+            boomboxEnt:SetNWString("CurrentStationURL", url)
+            boomboxEnt:SetNWString("CurrentStationCountry", country)
+            boomboxEnt:SetNWString("CurrentStatus", "playing")
+            
+            -- Update menu if it's open
+            if IsValid(rRadio.Menu) and rRadio.Menu.BoomboxEntity == boomboxEnt then
+                rRadio.Menu:UpdateCurrentStation(boomboxEnt)
+            end
+            
             notification.AddLegacy("Now playing: " .. stationName, NOTIFY_GENERIC, 3)
         else
             boomboxEnt:SetNWString("CurrentStationURL", "")
+            boomboxEnt:SetNWString("CurrentStationName", "")
+            boomboxEnt:SetNWString("CurrentStationCountry", "")
+            boomboxEnt:SetNWString("CurrentStatus", "outage")
             if IsValid(rRadio.Menu) and rRadio.Menu.BoomboxEntity == boomboxEnt then
                 rRadio.Menu:UpdateCurrentStation(boomboxEnt)
             end
@@ -118,18 +130,23 @@ net.Receive("rRadio_UpdateBoombox", function()
     local stationCountry = net.ReadString()
     local stationName = net.ReadString()
     local stationUrl = net.ReadString()
+    local currentStatus = net.ReadString() -- Read the new status
 
     if not IsValid(boomboxEnt) or boomboxEnt:GetClass() ~= "ent_rradio" then return end
 
     boomboxEnt:SetNWString("CurrentStationCountry", stationCountry)
     boomboxEnt:SetNWString("CurrentStationName", stationName)
     boomboxEnt:SetNWString("CurrentStationURL", stationUrl)
+    boomboxEnt:SetNWString("CurrentStatus", currentStatus) -- Set the new status
 
     if IsValid(rRadio.Menu) and rRadio.Menu.BoomboxEntity == boomboxEnt then
         rRadio.Menu:UpdateCurrentStation(boomboxEnt)
     end
 
-    rRadio.PlayStream(boomboxEnt, stationUrl)
+    -- Only play the stream if the status is "playing"
+    if currentStatus == "playing" then
+        rRadio.PlayStream(boomboxEnt, stationUrl, stationCountry, stationName)
+    end
 end)
 
 net.Receive("rRadio_StopStation", function()

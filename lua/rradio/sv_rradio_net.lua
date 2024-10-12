@@ -108,13 +108,13 @@ net.Receive("rRadio_PlayStation", function(len, ply)
         -- Add the boombox to the activeRadios table
         AddActiveRadio(boomboxEnt)
         
-        -- Broadcast the station information
+        -- Broadcast the station information to other clients
         net.Start("rRadio_UpdateBoombox")
         net.WriteEntity(boomboxEnt)
         net.WriteString(stationCountry)
         net.WriteString(stationName)
         net.WriteString(stationUrl)
-        net.Broadcast()
+        net.SendOmit(ply)  -- Send to all players except the one who initiated the change
     end
 end)
 

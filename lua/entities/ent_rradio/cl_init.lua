@@ -95,7 +95,7 @@ function ENT:DrawHUD(alpha)
 
     -- Owner name
     local owner = self:GetNWEntity("Owner")
-    local ownerName = IsValid(owner) and owner:Nick() or "Unknown"
+    local ownerName = IsValid(owner) and owner:Nick() or "World Boombox"
     draw.SimpleText(ownerName, GetFont(36, true), -halfW + 20, -halfH + 20, ColorAlpha(colors.text, alpha * 255), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
 
     -- Control indicator (Locked/Unlocked icon)
@@ -104,21 +104,29 @@ function ENT:DrawHUD(alpha)
     local iconMaterial = canControl and RRADIO.Icons.UNLOCKED or RRADIO.Icons.LOCKED
     local iconColor = ColorAlpha(colors.accent, alpha * 255)
     
-    if iconMaterial then  -- Check if the material is valid before using it
+    if iconMaterial then
         surface.SetDrawColor(iconColor)
         surface.SetMaterial(iconMaterial)
         surface.DrawTexturedRect(halfW - iconSize - 10, -halfH + 10, iconSize, iconSize)
     end
 
     -- Playing status indicator
-    local isPlaying = self:GetNWString("CurrentStationURL", "") ~= ""
-    local indicatorSize = isPlaying and PulseValue(14, 18, 4) or 16
+    local status = self:GetNWString("CurrentStatus", "")
+    local isPlaying = status == "playing"
+    local isTuning = status == "tuning"
+    local indicatorSize = (isPlaying or isTuning) and PulseValue(14, 18, 4) or 16
     local indicatorX = halfW - iconSize - 30 - indicatorSize
     local indicatorY = -halfH + 10 + (iconSize - indicatorSize) / 2
-    draw.RoundedBox(indicatorSize / 2, indicatorX, indicatorY, indicatorSize, indicatorSize, ColorAlpha(isPlaying and colors.accent or colors.divider, alpha * 255))
+    local indicatorColor = isPlaying and colors.accent or (isTuning and colors.text or colors.divider)
+    draw.RoundedBox(indicatorSize / 2, indicatorX, indicatorY, indicatorSize, indicatorSize, ColorAlpha(indicatorColor, alpha * 255))
 
     -- Station info
     local stationName = self:GetNWString("CurrentStationName", "Not playing")
+    if status == "tuning" then
+        stationName = "Tuning in..."
+    elseif status == "outage" then
+        stationName = "Station Outage"
+    end
     local countryName = rRadio.FormatCountryName(self:GetNWString("CurrentStationCountry", ""))
 
     draw.SimpleText(stationName, GetFont(28), -halfW + 20, -halfH + 75, ColorAlpha(colors.text, alpha * 255), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)

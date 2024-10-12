@@ -10,14 +10,19 @@
 
 local RRADIO = RRADIO or {}
 RRADIO.Menu = RRADIO.Menu or {}
-RRADIO.Sounds = RRADIO.Sounds or {}
-RRADIO.Sounds.CLICK = Sound("ui/buttonclick.wav")
-RRADIO.GetFont = getFont
 
 local GITHUB_BUTTON_FADE_TIME = 0.3
 local githubButtonAlpha = 0
 local titleClickCount = 0
 local isTitleWobbling = false
+
+local draw = draw
+local surface = surface
+local vgui = vgui
+local ScrW = ScrW
+local ScrH = ScrH
+local IsValid = IsValid
+local Color = Color
 
 function SafeColor(color)
     return IsColor(color) and color or Color(255, 255, 255)
@@ -25,9 +30,10 @@ end
 
 -- Localize global functions for performance
 local SortIgnoringThe = rRadio.SortIgnoringThe or function(a, b)
+    local PATTERN_STRIP = "^The%s+"
     local function stripThe(str)
-        return str:gsub("^The%s+", ""):lower()
-    end
+        return str:gsub(PATTERN_STRIP, ""):lower()
+    end    
     return stripThe(a) < stripThe(b)
 end
 
@@ -78,6 +84,8 @@ local function getFont(size, isHeading)
     
     return fontName
 end
+
+RRADIO.GetFont = getFont
 
 -- Helper function to draw icons with color overlay
 local function DrawIconWithColor(icon, x, y, w, h, color)
@@ -266,7 +274,7 @@ function RRADIO.Menu:CreateSearchBar()
 end
 
 function RRADIO.Menu:UpdateStatusPanel(stationName, countryName)
-    local colors = RRADIO.GetColors()  -- Get the current color scheme
+    local colors = RRADIO.GetColors()
 
     local function stopTuningAnimation()
         if self.TuningTimer then
@@ -282,6 +290,18 @@ function RRADIO.Menu:UpdateStatusPanel(stationName, countryName)
 
     if IsValid(self.StationLabel) then
         if stationName then
+            -- Change the text to "Tuning in..." first
+            if stationName == "Tuning in" then
+                self.StationLabel:SetText("Tuning in...")
+            else
+                self.StationLabel:SetText(stationName)
+            end
+
+            -- Then adjust the layout
+            self.StationLabel:SetSize(self.StatusPanel:GetWide(), self.StatusPanel:GetTall() / 2)
+            self.StationLabel:SetPos(0, 0)
+            self.CountryLabel:SetVisible(true)
+
             if stationName == "Tuning in" then
                 -- Start or continue the tuning animation
                 if not self.TuningAnimation then
@@ -294,7 +314,7 @@ function RRADIO.Menu:UpdateStatusPanel(stationName, countryName)
                         end
                         self.TuningAnimation = (self.TuningAnimation + 1) % 3
                         if IsValid(self.StationLabel) then
-                            self.StationLabel:SetText("Tuning in" .. string.rep(".", self.TuningAnimation))
+                            self.StationLabel:SetText("Tuning in" .. string.rep(".", self.TuningAnimation + 1))
                         else
                             stopTuningAnimation()
                         end
@@ -318,12 +338,7 @@ function RRADIO.Menu:UpdateStatusPanel(stationName, countryName)
             else
                 -- Stop the tuning animation if it's running
                 stopTuningAnimation()
-                self.StationLabel:SetText(stationName)
             end
-            
-            self.StationLabel:SetSize(self.StatusPanel:GetWide(), self.StatusPanel:GetTall() / 2)
-            self.StationLabel:SetPos(0, 0)
-            self.CountryLabel:SetVisible(true)
         else
             -- Stop the tuning animation if it's running
             stopTuningAnimation()
@@ -333,11 +348,11 @@ function RRADIO.Menu:UpdateStatusPanel(stationName, countryName)
             self.StationLabel:SetPos(0, 0)
             self.CountryLabel:SetVisible(false)
         end
-        self.StationLabel:SetTextColor(colors.text)  -- Set text color based on current scheme
+        self.StationLabel:SetTextColor(colors.text)
     end
     if IsValid(self.CountryLabel) then
         self.CountryLabel:SetText(countryName or "")
-        self.CountryLabel:SetTextColor(colors.text)  -- Set text color based on current scheme
+        self.CountryLabel:SetTextColor(colors.text)
     end
 end
 
@@ -874,39 +889,31 @@ function RRADIO.Menu:CreateStationButtons(stationList, country, isFavorite)
     end
 end
 
--- Update the UpdateCurrentStation method
 function RRADIO.Menu:UpdateCurrentStation(entity)
     if IsValid(entity) then
         local stationCountry = entity:GetNWString("CurrentStationCountry", "")
         local stationName = entity:GetNWString("CurrentStationName", "")
-        local currentStationURL = entity:GetNWString("CurrentStationURL", "")
+        local currentStatus = entity:GetNWString("CurrentStatus", "")
         
-        if currentStationURL == "tuning" then
+        if currentStatus == "tuning" then
             self:UpdateStatusPanel("Tuning in", rRadio.FormatCountryName(stationCountry))
-        elseif currentStationURL == "outage" then
+        elseif currentStatus == "outage" then
             self:UpdateStatusPanel("Station Outage", rRadio.FormatCountryName(stationCountry))
-            surface.PlaySound("buttons/button10.wav")  -- Play an error sound
+            surface.PlaySound("buttons/button10.wav")
             timer.Simple(2, function()
                 if IsValid(self) then
-                    self:UpdateStatusPanel(nil, nil)  -- Set to "Not Playing" after outage message
+                    self:UpdateStatusPanel(nil, nil)
                 end
             end)
-        elseif stationCountry ~= "" and stationName ~= "" then
+        elseif currentStatus == "playing" and stationCountry ~= "" and stationName ~= "" then
             local countryName = rRadio.FormatCountryName(stationCountry)
             self:UpdateStatusPanel(stationName, countryName)
         else
-            self:UpdateStatusPanel(nil, nil)  -- Set to "Not Playing" for any other case
+            self:UpdateStatusPanel(nil, nil)
         end
     else
-        self:UpdateStatusPanel(nil, nil)  -- Set to "Not Playing" if entity is not valid
+        self:UpdateStatusPanel(nil, nil)
     end
-end
-
-function rRadio.OpenMenu(entity)
-    if IsValid(rRadio.Menu) then rRadio.Menu:Remove() end
-    rRadio.Menu = vgui.Create("rRadioMenu")
-    rRadio.Menu:SetBoomboxEntity(entity)
-    rRadio.Menu:UpdateCurrentStation(entity)
 end
 
 function RRADIO.Menu:SetBoomboxEntity(entity)
@@ -948,6 +955,17 @@ function RRADIO.Menu:WobbleTitle()
     end
 end
 
+function RRADIO.Menu:OnRemove()
+    -- Remove any timers or hooks associated with this menu
+    if self.TuningTimer then
+        timer.Remove(self.TuningTimer)
+    end
+    if self.TuningTimeoutTimer then
+        timer.Remove(self.TuningTimeoutTimer)
+    end
+    hook.Remove("Think", "rRadio_GitHubButtonFade")
+end
+
 -- Register the panel
 vgui.Register("rRadioMenu", RRADIO.Menu, "DFrame")
 
@@ -956,6 +974,7 @@ function rRadio.OpenMenu(entity)
     if IsValid(rRadio.Menu) then rRadio.Menu:Remove() end
     rRadio.Menu = vgui.Create("rRadioMenu")
     rRadio.Menu:SetBoomboxEntity(entity)
+    rRadio.Menu:UpdateCurrentStation(entity)
 end
 
 -- Networking
