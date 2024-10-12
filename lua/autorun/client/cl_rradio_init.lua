@@ -13,9 +13,13 @@ print("-----------------------------")
 print("| Loading ClientSide rRadio |")
 print("-----------------------------")
 
+include("rradio/cl_rradio_favorites.lua")
+
 for _, v in pairs(file.Find("rradio/cl_*.lua", "LUA")) do
-    include("rradio/" .. v)
-    print("rradio/" .. v)
+    if v ~= "cl_rradio_favorites.lua" then  -- Skip favorites as we've already included it
+        include("rradio/" .. v)
+        print("rradio/" .. v)
+    end
 end
 
 print("-----------------------------")
@@ -29,27 +33,14 @@ end
 
 print("-----------------------------")
 
--- Add this line with the other includes
-include("rradio/cl_rradio_favorites.lua")
-
 -- Initialize client-side rRadio table
 rRadio.CurrentStation = nil
-rRadio.Favorites = rRadio.Favorites or {}
-
--- Load favorites from client-side storage
-local savedFavorites = util.JSONToTable(file.Read("rradio_favorites.txt", "DATA") or "[]")
-if savedFavorites then
-    rRadio.Favorites = savedFavorites
-end
-
--- Load recent stations from client-side storage
-local savedRecent = util.JSONToTable(file.Read("rradio_recent.txt", "DATA") or "[]")
-if savedRecent then
-    rRadio.RecentStations = savedRecent
-end
 
 -- Ensure stations are loaded
 rRadio.LoadStationData()
+
+-- Load favorites
+rRadio.LoadFavorites()
 
 -- Precache sounds
 util.PrecacheSound("ui/buttonclick.wav")

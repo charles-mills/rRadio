@@ -16,12 +16,13 @@ local function LoadFavorites()
     local countriesData = file.Read("rradio/favorites/countries.json", "DATA")
     local stationsData = file.Read("rradio/favorites/stations.json", "DATA")
     
-    if countriesData then
-        rRadio.Favorites.Countries = json(countriesData) or {}
-    end
-    
-    if stationsData then
-        rRadio.Favorites.Stations = json(stationsData) or {}
+    rRadio.Favorites.Countries = json(countriesData) or {}
+    rRadio.Favorites.Stations = json(stationsData) or {}
+
+    -- Print out all favorite countries
+    print("Favorite Countries:")
+    for country, _ in pairs(rRadio.Favorites.Countries) do
+        print("- " .. country)
     end
 end
 
@@ -42,7 +43,6 @@ local function SaveFavorites()
 end
 
 function rRadio.ToggleFavoriteCountry(country)
-    rRadio.Favorites.Countries = rRadio.Favorites.Countries or {}
     if rRadio.Favorites.Countries[country] then
         rRadio.Favorites.Countries[country] = nil
     else
@@ -51,25 +51,40 @@ function rRadio.ToggleFavoriteCountry(country)
     SaveFavorites()
 end
 
-function rRadio.ToggleFavoriteStation(country, stationIndex)
-    rRadio.Favorites.Stations = rRadio.Favorites.Stations or {}
-    local key = country .. "_" .. stationIndex
-    if rRadio.Favorites.Stations[key] then
-        rRadio.Favorites.Stations[key] = nil
+function rRadio.ToggleFavoriteStation(country, stationName)
+    rRadio.Favorites.Stations[country] = rRadio.Favorites.Stations[country] or {}
+    if rRadio.Favorites.Stations[country][stationName] then
+        rRadio.Favorites.Stations[country][stationName] = nil
+        -- If no more favorite stations in this country, remove the country entry
+        if table.IsEmpty(rRadio.Favorites.Stations[country]) then
+            rRadio.Favorites.Stations[country] = nil
+        end
     else
-        rRadio.Favorites.Stations[key] = true
+        rRadio.Favorites.Stations[country][stationName] = true
     end
     SaveFavorites()
 end
 
 function rRadio.IsCountryFavorite(country)
-    return (rRadio.Favorites.Countries or {})[country] or false
+    return rRadio.Favorites.Countries[country] or false
 end
 
-function rRadio.IsStationFavorite(country, stationIndex)
-    rRadio.Favorites.Stations = rRadio.Favorites.Stations or {}
-    local key = country .. "_" .. stationIndex
-    return rRadio.Favorites.Stations[key] or false
+function rRadio.IsStationFavorite(country, stationName)
+    return rRadio.Favorites.Stations[country] and rRadio.Favorites.Stations[country][stationName] or false
+end
+
+function rRadio.GetFavoriteStations(country)
+    return rRadio.Favorites.Stations[country] or {}
+end
+
+function rRadio.GetAllFavoriteStations()
+    local allFavorites = {}
+    for country, stations in pairs(rRadio.Favorites.Stations) do
+        for stationName, _ in pairs(stations) do
+            table.insert(allFavorites, {country = country, name = stationName})
+        end
+    end
+    return allFavorites
 end
 
 -- Load favorites when the file is included
