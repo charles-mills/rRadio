@@ -94,11 +94,33 @@ net.Receive("rRadio_StopStation", function()
     end
 end)
 
--- Update stream positions
+-- Add this function near the top of the file
+local function CalculateVolume(listener, boombox, baseVolume)
+    local distance = listener:GetPos():Distance(boombox:GetPos())
+    local minDist = rRadio.Config.AudioMinDistance
+    local maxDist = rRadio.Config.AudioMaxDistance
+    local falloffExponent = rRadio.Config.AudioFalloffExponent
+
+    if distance <= minDist then
+        return baseVolume
+    elseif distance >= maxDist then
+        return 0
+    else
+        local fadeRange = maxDist - minDist
+        local fadeAmount = (distance - minDist) / fadeRange
+        return baseVolume * (1 - fadeAmount^falloffExponent)
+    end
+end
+
+-- Update the existing hook
 hook.Add("Think", "rRadio_UpdateStreamPositions", function()
+    local listener = LocalPlayer()
     for boombox, stream in pairs(activeStreams) do
         if IsValid(boombox) and IsValid(stream) then
             stream:SetPos(boombox:GetPos())
+            local baseVolume = boombox:GetNWFloat("Volume", rRadio.Config.DefaultVolume)
+            local calculatedVolume = CalculateVolume(listener, boombox, baseVolume)
+            stream:SetVolume(calculatedVolume)
         else
             -- Clean up invalid streams or boomboxes
             if IsValid(stream) then

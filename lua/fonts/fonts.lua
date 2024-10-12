@@ -1,6 +1,7 @@
 local fontFiles = {
-    "SFProDisplay-Regular.otf",
-    "SFProDisplay-Bold.otf",
+    "Roboto-Regular.ttf",
+    "Roboto-Black.ttf",
+    "Roboto-Bold.ttf",
 }
 
 for _, fontFile in ipairs(fontFiles) do

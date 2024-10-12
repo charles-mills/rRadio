@@ -14,6 +14,9 @@ rRadio.Config = {
     CacheCleanupInterval = 600, -- 10 minutes
     MaxRecentStations = 5,
     EnableRecentStations = true,
+    AudioMinDistance = 100,  -- Distance at which volume starts to fade
+    AudioMaxDistance = 500,  -- Distance at which volume becomes 0
+    AudioFalloffExponent = 1,  -- Controls the rate of volume falloff (1 for linear, 2 for quadratic, etc.)
 }
 
 if CLIENT then

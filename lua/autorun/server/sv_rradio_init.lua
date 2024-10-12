@@ -1,22 +1,51 @@
--- Server-side initialization for rRadio
+/*
+  ____  ____           _ _       
+ |  _ \|  _ \ __ _  __| (_) ___  
+ | |_) | |_) / _` |/ _` | |/ _ \ 
+ |  _ <|  _ < (_| | (_| | | (_) |
+ |_| \_\_| \_\__,_|\__,_|_|\___/ 
+                                 
+*/
 
-AddCSLuaFile("rradio/sh_rradio_config.lua")
-AddCSLuaFile("rradio/cl_rradio_menu.lua")
-AddCSLuaFile("rradio/cl_rradio_player.lua")
-AddCSLuaFile("rradio/sh_rradio_utils.lua")
+if not rRadio then rRadio = {} end
+
+print("-----------------------------")
+print("| Loading ServerSide rRadio |")
+print("-----------------------------")
+
+for _, v in pairs(file.Find("rradio/sv_*.lua", "LUA")) do
+    include("rradio/" .. v)
+    print("rradio/" .. v)
+end
+
+print("-----------------------------")
+print("|  Loading Shared rRadio    |")
+print("-----------------------------")
+
+for _, v in pairs(file.Find("rradio/sh_*.lua", "LUA")) do
+    include("rradio/" .. v)
+    AddCSLuaFile("rradio/" .. v)
+    print("rradio/" .. v)
+end
+
+print("-----------------------------")
+print("| Adding ClientSide rRadio  |")
+print("-----------------------------")
+
+for _, v in pairs(file.Find("rradio/cl_*.lua", "LUA")) do
+    AddCSLuaFile("rradio/" .. v)
+    print("rradio/" .. v)
+end
+
+print("-----------------------------")
+
+-- Add other necessary files
 AddCSLuaFile("entities/ent_rradio/cl_init.lua")
 AddCSLuaFile("entities/ent_rradio/shared.lua")
 AddCSLuaFile("autorun/client/cl_rradio_init.lua")
 AddCSLuaFile("fonts/fonts.lua")
-AddCSLuaFile("rradio/sh_rradio_stations.lua")
-
-include("rradio/sh_rradio_config.lua")
-include("rradio/sv_rradio_net.lua")
-include("rradio/sh_rradio_utils.lua")
-include("rradio/sh_rradio_stations.lua")
 
 -- Initialize rRadio tables
-rRadio = rRadio or {}
 rRadio.Cache = rRadio.Cache or {}
 
 -- Ensure Config is initialized

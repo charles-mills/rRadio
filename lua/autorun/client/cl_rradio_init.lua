@@ -1,14 +1,38 @@
--- Client-side initialization for rRadio
+/*
+  ____  ____           _ _       
+ |  _ \|  _ \ __ _  __| (_) ___  
+ | |_) | |_) / _` |/ _` | |/ _ \ 
+ |  _ <|  _ < (_| | (_| | | (_) |
+ |_| \_\_| \_\__,_|\__,_|_|\___/ 
+                                 
+*/
 
-include("rradio/sh_rradio_config.lua")
-include("rradio/cl_rradio_menu.lua")
-include("rradio/cl_rradio_player.lua")
-include("rradio/sh_rradio_utils.lua")
-include("rradio/sh_rradio_stations.lua")
-include("fonts/fonts.lua")
+if not rRadio then rRadio = {} end
+
+print("-----------------------------")
+print("| Loading ClientSide rRadio |")
+print("-----------------------------")
+
+for _, v in pairs(file.Find("rradio/cl_*.lua", "LUA")) do
+    include("rradio/" .. v)
+    print("rradio/" .. v)
+end
+
+print("-----------------------------")
+print("|  Loading Shared rRadio    |")
+print("-----------------------------")
+
+for _, v in pairs(file.Find("rradio/sh_*.lua", "LUA")) do
+    include("rradio/" .. v)
+    print("rradio/" .. v)
+end
+
+print("-----------------------------")
+
+-- Add this line with the other includes
+include("rradio/cl_rradio_favorites.lua")
 
 -- Initialize client-side rRadio table
-rRadio = rRadio or {}
 rRadio.CurrentStation = nil
 rRadio.Favorites = rRadio.Favorites or {}
 
@@ -26,3 +50,7 @@ end
 
 -- Ensure stations are loaded
 rRadio.LoadStationData()
+
+-- Precache sounds
+util.PrecacheSound("ui/buttonclick.wav")
+util.PrecacheSound("ui/slider.wav")
