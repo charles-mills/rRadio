@@ -2,33 +2,39 @@
     Author: Charles Mills
     
     Created: 2024-10-12
-    Last Updated: 2024-10-12
+    Last Updated: 2024-10-13
 
     Description:
-    Defines color schemes and related functions for the rRadio addon.
+    Defines a modern color scheme and related functions for the rRadio addon.
 ]]
 
 RRADIO = RRADIO or {}
 RRADIO.Colors = {
-    BG_LIGHT = Color(248, 248, 248),
-    BG_DARK = Color(28, 28, 30),
-    TEXT_LIGHT = Color(0, 0, 0),
-    TEXT_DARK = Color(255, 255, 255),
-    ACCENT = Color(0, 122, 255),
+    -- Light Mode Colors
+    BG_LIGHT = Color(250, 250, 252),
+    TEXT_LIGHT = Color(33, 33, 33),
     BUTTON_LIGHT = Color(255, 255, 255),
-    BUTTON_DARK = Color(58, 58, 60),
-    BUTTON_HOVER_LIGHT = Color(242, 242, 242),
-    BUTTON_HOVER_DARK = Color(68, 68, 70),
-    DIVIDER_LIGHT = Color(229, 229, 234),
-    DIVIDER_DARK = Color(44, 44, 46),
-    SCROLL_BG_LIGHT = Color(242, 242, 247),
-    SCROLL_BG_DARK = Color(38, 38, 40),
-    TEXT_PLACEHOLDER_LIGHT = Color(142, 142, 147),
-    TEXT_PLACEHOLDER_DARK = Color(142, 142, 147),
-    HEADER_LIGHT = Color(248, 248, 248, 230),
-    HEADER_DARK = Color(28, 28, 30, 230),
-    FOOTER_LIGHT = Color(248, 248, 248, 230),
-    FOOTER_DARK = Color(28, 28, 30, 230),
+    BUTTON_HOVER_LIGHT = Color(245, 245, 247),
+    DIVIDER_LIGHT = Color(230, 230, 235),
+    SCROLL_BG_LIGHT = Color(240, 240, 245),
+    TEXT_PLACEHOLDER_LIGHT = Color(150, 150, 155),
+    HEADER_LIGHT = Color(255, 255, 255, 230),
+    FOOTER_LIGHT = Color(245, 245, 250, 230),
+
+    -- Dark Mode Colors
+    BG_DARK = Color(18, 18, 22),
+    TEXT_DARK = Color(243, 245, 240),
+    BUTTON_DARK = Color(2, 2, 2),
+    BUTTON_HOVER_DARK = Color(27, 27, 27),
+    DIVIDER_DARK = Color(60, 60, 65),
+    SCROLL_BG_DARK = Color(10, 10, 12),
+    TEXT_PLACEHOLDER_DARK = Color(130, 130, 135),
+    HEADER_DARK = Color(18, 18, 22, 230),
+    FOOTER_DARK = Color(22, 22, 26, 230),
+
+    -- Accent Colors
+    ACCENT_PRIMARY = Color(66, 135, 245),  -- Blue
+    ACCENT_SECONDARY = Color(255, 122, 89),  -- Coral
 }
 
 RRADIO.DarkModeConVar = CreateClientConVar("rradio_dark_mode", "0", true, false, "Toggle dark mode for rRadio")
@@ -41,7 +47,8 @@ function RRADIO.GetColors()
         button = isDarkMode and RRADIO.Colors.BUTTON_DARK or RRADIO.Colors.BUTTON_LIGHT,
         buttonHover = isDarkMode and RRADIO.Colors.BUTTON_HOVER_DARK or RRADIO.Colors.BUTTON_HOVER_LIGHT,
         divider = isDarkMode and RRADIO.Colors.DIVIDER_DARK or RRADIO.Colors.DIVIDER_LIGHT,
-        accent = RRADIO.Colors.ACCENT,
+        accent = RRADIO.Colors.ACCENT_PRIMARY,
+        accentSecondary = RRADIO.Colors.ACCENT_SECONDARY,
         scrollBg = isDarkMode and RRADIO.Colors.SCROLL_BG_DARK or RRADIO.Colors.SCROLL_BG_LIGHT,
         text_placeholder = isDarkMode and RRADIO.Colors.TEXT_PLACEHOLDER_DARK or RRADIO.Colors.TEXT_PLACEHOLDER_LIGHT,
         header = isDarkMode and RRADIO.Colors.HEADER_DARK or RRADIO.Colors.HEADER_LIGHT,

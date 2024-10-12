@@ -266,21 +266,78 @@ function RRADIO.Menu:CreateSearchBar()
 end
 
 function RRADIO.Menu:UpdateStatusPanel(stationName, countryName)
+    local colors = RRADIO.GetColors()  -- Get the current color scheme
+
+    local function stopTuningAnimation()
+        if self.TuningTimer then
+            timer.Remove(self.TuningTimer)
+            self.TuningTimer = nil
+        end
+        if self.TuningTimeoutTimer then
+            timer.Remove(self.TuningTimeoutTimer)
+            self.TuningTimeoutTimer = nil
+        end
+        self.TuningAnimation = nil
+    end
+
     if IsValid(self.StationLabel) then
         if stationName then
-            self.StationLabel:SetText(stationName)
+            if stationName == "Tuning in" then
+                -- Start or continue the tuning animation
+                if not self.TuningAnimation then
+                    self.TuningAnimation = 0
+                    self.TuningTimer = "rRadio_TuningAnimation_" .. tostring(self)
+                    timer.Create(self.TuningTimer, 0.2, 0, function()
+                        if not IsValid(self) or not self.TuningAnimation then
+                            stopTuningAnimation()
+                            return
+                        end
+                        self.TuningAnimation = (self.TuningAnimation + 1) % 3
+                        if IsValid(self.StationLabel) then
+                            self.StationLabel:SetText("Tuning in" .. string.rep(".", self.TuningAnimation))
+                        else
+                            stopTuningAnimation()
+                        end
+                    end)
+
+                    -- Create a timeout timer
+                    self.TuningTimeoutTimer = "rRadio_TuningTimeout_" .. tostring(self)
+                    timer.Create(self.TuningTimeoutTimer, 8, 1, function()
+                        if IsValid(self) and IsValid(self.StationLabel) and self.TuningAnimation then
+                            stopTuningAnimation()
+                            surface.PlaySound("buttons/button10.wav")  -- Play an error sound
+                            self.StationLabel:SetText("Station Outage")
+                            timer.Simple(2, function()
+                                if IsValid(self) and IsValid(self.StationLabel) then
+                                    self:UpdateStatusPanel(nil, nil)
+                                end
+                            end)
+                        end
+                    end)
+                end
+            else
+                -- Stop the tuning animation if it's running
+                stopTuningAnimation()
+                self.StationLabel:SetText(stationName)
+            end
+            
             self.StationLabel:SetSize(self.StatusPanel:GetWide(), self.StatusPanel:GetTall() / 2)
             self.StationLabel:SetPos(0, 0)
             self.CountryLabel:SetVisible(true)
         else
+            -- Stop the tuning animation if it's running
+            stopTuningAnimation()
+            
             self.StationLabel:SetText("Not Playing")
             self.StationLabel:SetSize(self.StatusPanel:GetWide(), self.StatusPanel:GetTall())
             self.StationLabel:SetPos(0, 0)
             self.CountryLabel:SetVisible(false)
         end
+        self.StationLabel:SetTextColor(colors.text)  -- Set text color based on current scheme
     end
     if IsValid(self.CountryLabel) then
         self.CountryLabel:SetText(countryName or "")
+        self.CountryLabel:SetTextColor(colors.text)  -- Set text color based on current scheme
     end
 end
 
@@ -467,6 +524,14 @@ function RRADIO.Menu:UpdateColors()
     self.Title:SetTextColor(SafeColor(colors.text))
     self.SearchBar:SetTextColor(SafeColor(colors.text))
     self.StopButton:SetTextColor(SafeColor(colors.accent))
+
+    -- Update status panel colors
+    if IsValid(self.StationLabel) then
+        self.StationLabel:SetTextColor(SafeColor(colors.text))
+    end
+    if IsValid(self.CountryLabel) then
+        self.CountryLabel:SetTextColor(SafeColor(colors.text))
+    end
 
     for _, child in pairs(self.Content:GetCanvas():GetChildren()) do
         if IsValid(child) and child.Paint then
@@ -817,16 +882,24 @@ function RRADIO.Menu:UpdateCurrentStation(entity)
         local currentStation = entity:GetNWString("CurrentStation", "")
         
         if currentStation == "tuning" then
-            self:UpdateStatusPanel("Tuning in...", rRadio.FormatCountryName(stationKey))
+            self:UpdateStatusPanel("Tuning in", rRadio.FormatCountryName(stationKey))
+        elseif currentStation == "outage" then
+            self:UpdateStatusPanel("Station Outage", rRadio.FormatCountryName(stationKey))
+            surface.PlaySound("buttons/button10.wav")  -- Play an error sound
+            timer.Simple(2, function()
+                if IsValid(self) then
+                    self:UpdateStatusPanel(nil, nil)  -- Set to "Not Playing" after outage message
+                end
+            end)
         elseif stationKey ~= "" and stationIndex > 0 and rRadio.Stations[stationKey] and rRadio.Stations[stationKey][stationIndex] then
             local stationName = rRadio.Stations[stationKey][stationIndex].n
             local countryName = rRadio.FormatCountryName(stationKey)
             self:UpdateStatusPanel(stationName, countryName)
         else
-            self:UpdateStatusPanel(nil, nil)
+            self:UpdateStatusPanel(nil, nil)  -- Set to "Not Playing" for any other case
         end
     else
-        self:UpdateStatusPanel(nil, nil)
+        self:UpdateStatusPanel(nil, nil)  -- Set to "Not Playing" if entity is not valid
     end
 end
 
