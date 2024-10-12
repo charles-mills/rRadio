@@ -11,7 +11,7 @@
 
 rRadio = rRadio or {}
 rRadio.Config = {
-    MenuTitle = "Select a Country",
+    MenuTitle = "rRadio",
     MaxStationNameLength = 50,
     BoomboxModel = "models/rammel/boombox.mdl",
     DefaultVolume = 0.5,
@@ -48,4 +48,12 @@ function rRadio.UpdateConfig(key, value)
         rRadio.LogError("Invalid config key: " .. key)
     end
     return false
+end
+
+function rRadio.LoadConfig()
+    -- This function can be used to load external config files if needed
+end
+
+function rRadio.GetConfig(key, default)
+    return rRadio.Config[key] or default
 end
