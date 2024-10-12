@@ -8,6 +8,10 @@ RRADIO.GetFont = getFont
 local GITHUB_BUTTON_FADE_TIME = 0.3
 local githubButtonAlpha = 0
 
+-- At the top of the file, after other includes
+RRADIO.Sounds = RRADIO.Sounds or {}
+RRADIO.Sounds.CLICK = Sound("ui/buttonclick.wav")
+
 function SafeColor(color)
     return IsColor(color) and color or Color(255, 255, 255)
 end
@@ -377,7 +381,7 @@ function RRADIO.Menu:CreateSearchBar()
     self.SearchBar:Dock(TOP)
     self.SearchBar:SetTall(math.max(self:GetTall() * 0.0462, 26))
     local margin = math.Round(self:GetWide() * 0.02)
-    self.SearchBar:DockMargin(margin, margin, margin, margin)
+    self.SearchBar:DockMargin(margin, margin / 2, margin, margin / 4) -- Reduced bottom margin
     self.SearchBar:SetFont(getFont(15, false))
     self.SearchBar.Paint = function(s, w, h)
         local colors = RRADIO.GetColors()
@@ -397,7 +401,7 @@ function RRADIO.Menu:CreateScrollPanel()
     self.ScrollBackground = self:Add("DPanel")
     self.ScrollBackground:Dock(FILL)
     local margin = math.Round(self:GetWide() * 0.02)
-    self.ScrollBackground:DockMargin(margin, 0, margin, margin)
+    self.ScrollBackground:DockMargin(margin, 0, margin, margin / 4) -- Reduced bottom margin
     self.ScrollBackground.Paint = function(s, w, h)
         local colors = RRADIO.GetColors()
         draw.RoundedBox(8, 0, 0, w, h, SafeColor(colors.scrollBg))
@@ -419,7 +423,7 @@ function RRADIO.Menu:CreateControlPanel()
     self.ControlPanel:Dock(BOTTOM)
     self.ControlPanel:SetTall(math.max(self:GetTall() * 0.09, 36))
     local margin = math.Round(self:GetWide() * 0.02)
-    self.ControlPanel:DockMargin(margin, margin, margin, margin)
+    self.ControlPanel:DockMargin(margin, margin / 4, margin, margin) -- Reduced top margin
     self.ControlPanel.Paint = function(s, w, h)
         local colors = RRADIO.GetColors()
         draw.RoundedBox(8, 0, 0, w, h, SafeColor(colors.button))
@@ -741,16 +745,13 @@ function RRADIO.Menu:OpenSettings()
     
     self:PopulateSettings()
     self:UpdateColors()
-    self:UpdateLayoutForView()  -- Add this line
-
-    -- Start fade-in animation for GitHub button
+    self:UpdateLayoutForView()
     self:AnimateGitHubButton(true)
 end
 
 function RRADIO.Menu:PopulateSettings()
-    self.Scroll:Clear()  -- Clear existing settings before repopulating
+    self.Scroll:Clear()
 
-    -- Dark Mode Toggle
     local darkModeToggle = self.Scroll:Add("DButton")
     darkModeToggle:Dock(TOP)
     darkModeToggle:SetTall(self.Scroll:GetTall() * 0.06)
@@ -774,7 +775,6 @@ function RRADIO.Menu:PopulateSettings()
         local textY = h / 2
         draw.SimpleText("Dark Mode", getFont(14, false), textX, textY, SafeColor(colors.text), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
         
-        -- Draw toggle indicator
         local toggleSize = h * 0.6
         local toggleX = w - toggleSize - 10
         local toggleY = (h - toggleSize) / 2
@@ -791,7 +791,6 @@ function RRADIO.Menu:PopulateSettings()
 
 end
 
--- Add this new function to handle the GitHub button animation
 function RRADIO.Menu:AnimateGitHubButton(fadeIn)
     local startAlpha = fadeIn and 0 or 255
     local endAlpha = fadeIn and 255 or 0
@@ -813,11 +812,10 @@ function RRADIO.Menu:AnimateGitHubButton(fadeIn)
     end)
 end
 
--- Add a new function to close settings
 function RRADIO.Menu:CloseSettings()
     self:LoadCountries()
     self:AnimateGitHubButton(false)
-    self:UpdateLayoutForView()  -- Add this line
+    self:UpdateLayoutForView()
 end
 
 -- Register the panel
