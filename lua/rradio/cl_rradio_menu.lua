@@ -1,4 +1,12 @@
--- Client-side menu for rRadio
+--[[
+    Author: Charles Mills
+    
+    Created: 2024-10-12
+    Last Updated: 2024-10-12
+
+    Description:
+    Implements the client-side menu interface for rRadio addon.
+]]
 
 local RRADIO = RRADIO or {}
 RRADIO.Menu = RRADIO.Menu or {}
@@ -8,7 +16,6 @@ RRADIO.GetFont = getFont
 local GITHUB_BUTTON_FADE_TIME = 0.3
 local githubButtonAlpha = 0
 
--- At the top of the file, after other includes
 RRADIO.Sounds = RRADIO.Sounds or {}
 RRADIO.Sounds.CLICK = Sound("ui/buttonclick.wav")
 

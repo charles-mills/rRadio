@@ -61,14 +61,43 @@ timer.Create("rRadio_CacheCleanup", rRadio.Config.CacheCleanupInterval, 0, funct
     end
 end)
 
--- Add this at the end of the file
+local rRadioEntities = {}
+local playerPositions = {}
 
-hook.Add("Think", "rRadio_ReliabilityCheck", function()
+-- Function to update the list of rRadio entities
+local function UpdateRRadioEntities()
+    rRadioEntities = ents.FindByClass("ent_rradio")
+end
+
+-- Initial entity update
+UpdateRRadioEntities()
+
+-- Update entity list periodically
+timer.Create("rRadio_UpdateEntities", 5, 0, UpdateRRadioEntities)
+
+-- Function to check and update entity transmission
+local function CheckAndUpdateTransmission()
     for _, ply in ipairs(player.GetAll()) do
-        for _, ent in ipairs(ents.FindByClass("ent_rradio")) do
-            if not ply:TestPVS(ent) then
-                ent:SetPreventTransmit(ply, false)
+        local playerPos = ply:GetPos()
+        local lastPos = playerPositions[ply] or Vector(0, 0, 0)
+        
+        -- Only check if the player has moved more than 32 units
+        if playerPos:DistToSqr(lastPos) > 1024 then
+            playerPositions[ply] = playerPos
+            
+            for _, ent in ipairs(rRadioEntities) do
+                if IsValid(ent) and not ply:TestPVS(ent) then
+                    ent:SetPreventTransmit(ply, false)
+                end
             end
         end
     end
+end
+
+-- Run the check every second instead of every frame
+timer.Create("rRadio_ReliabilityCheck", 1, 0, CheckAndUpdateTransmission)
+
+-- Clean up player positions when a player disconnects
+hook.Add("PlayerDisconnected", "rRadio_CleanupPlayerPos", function(ply)
+    playerPositions[ply] = nil
 end)

@@ -1,4 +1,13 @@
--- Server-side networking for rRadio
+--[[
+    Author: Charles Mills
+    
+    Created: 2024-10-12
+    Last Updated: 2024-10-12
+
+    Description:
+    Handles server-side networking for rRadio addon, including network strings
+    and message handling.
+]]
 
 local RATE_LIMIT = 1 -- 1 second cooldown
 

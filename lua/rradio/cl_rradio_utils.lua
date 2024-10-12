@@ -1,3 +1,13 @@
+--[[
+    Author: Charles Mills
+    
+    Created: 2024-10-12
+    Last Updated: 2024-10-12
+
+    Description:
+    Utility functions for client-side operations in rRadio addon.
+]]
+
 local RRADIO = RRADIO or {}
 
 function RRADIO.SafeColor(color)

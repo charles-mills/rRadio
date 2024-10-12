@@ -1,4 +1,13 @@
--- Shared configuration file for rRadio
+--[[
+    Author: Charles Mills
+    
+    Created: 2024-10-12
+    Last Updated: 2024-10-12
+
+    Description:
+    Shared configuration file for rRadio. Contains settings and data
+    structures used by both client and server.
+]]
 
 rRadio = rRadio or {}
 rRadio.Config = {
@@ -27,7 +36,6 @@ else
     rRadio.Config.MenuHeight = 600 -- Default height for server-side calculations if needed
 end
 
--- Add a function to validate and update config values
 function rRadio.UpdateConfig(key, value)
     if rRadio.Config[key] ~= nil then
         if type(rRadio.Config[key]) == type(value) then

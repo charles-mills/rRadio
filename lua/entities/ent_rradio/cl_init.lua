@@ -1,3 +1,13 @@
+--[[
+    Author: Charles Mills
+    
+    Created: 2024-10-12
+    Last Updated: 2024-10-12
+
+    Description:
+    Client-side initialization and rendering for the rRadio boombox entity.
+]]
+
 include("shared.lua")
 include("rradio/cl_rradio_colors.lua")
 include("rradio/sh_rradio_utils.lua")

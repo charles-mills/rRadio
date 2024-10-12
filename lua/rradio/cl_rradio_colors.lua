@@ -1,3 +1,13 @@
+--[[
+    Author: Charles Mills
+    
+    Created: 2024-10-12
+    Last Updated: 2024-10-12
+
+    Description:
+    Defines color schemes and related functions for the rRadio addon.
+]]
+
 RRADIO = RRADIO or {}
 RRADIO.Colors = {
     BG_LIGHT = Color(248, 248, 248),

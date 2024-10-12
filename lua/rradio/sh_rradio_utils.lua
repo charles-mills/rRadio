@@ -1,4 +1,12 @@
--- Shared utilities for rRadio
+--[[
+    Author: Charles Mills
+    
+    Created: 2024-10-12
+    Last Updated: 2024-10-12
+
+    Description:
+    Shared utility functions for rRadio addon, used by both client and server.
+]]
 
 rRadio = rRadio or {}
 

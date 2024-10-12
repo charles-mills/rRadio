@@ -1,3 +1,16 @@
+--[[
+    Author: Charles Mills
+    
+    Created: 2024-10-12
+    Last Updated: 2024-10-12
+
+    Description:
+    Core initialization file for rRadio addon. Sets up global variables,
+    loads modules, and provides interfaces for addon extension.
+    This file allows other developers to integrate with and extend
+    the functionality of rRadio.
+]]
+
 rRadio = rRadio or {}
 rRadio.Modules = {}
 rRadio.Version = "2.0.0"

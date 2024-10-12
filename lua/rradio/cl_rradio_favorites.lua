@@ -1,4 +1,12 @@
--- Client-side favorites system for rRadio
+--[[
+    Author: Charles Mills
+    
+    Created: 2024-10-12
+    Last Updated: 2024-10-12
+
+    Description:
+    Handles client-side favorites system for rRadio addon.
+]]
 
 rRadio = rRadio or {}
 rRadio.Favorites = rRadio.Favorites or {

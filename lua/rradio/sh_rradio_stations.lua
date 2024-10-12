@@ -1,4 +1,12 @@
--- Shared station loading for rRadio
+--[[
+    Author: Charles Mills
+    
+    Created: 2024-10-12
+    Last Updated: 2024-10-12
+
+    Description:
+    Manages the loading and organization of radio stations for rRadio addon.
+]]
 
 rRadio = rRadio or {}
 rRadio.Stations = rRadio.Stations or {}

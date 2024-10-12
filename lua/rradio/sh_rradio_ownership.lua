@@ -1,3 +1,13 @@
+--[[
+    Author: Charles Mills
+    
+    Created: 2024-10-12
+    Last Updated: 2024-10-12
+
+    Description:
+    Handles ownership and control permissions for rRadio entities.
+]]
+
 rRadio = rRadio or {}
 rRadio.Ownership = {}
 

@@ -1,3 +1,14 @@
+--[[
+    Author: Charles Mills
+    
+    Created: 2024-10-12
+    Last Updated: 2024-10-12
+
+    Description:
+    Shared configuration file for rRadio addon. Defines default settings
+    and configuration functions.
+]]
+
 rRadio = rRadio or {}
 rRadio.Config = rRadio.Config or {}
 

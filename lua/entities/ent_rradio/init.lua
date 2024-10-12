@@ -1,9 +1,19 @@
+--[[
+    Author: Charles Mills
+    
+    Created: 2024-10-12
+    Last Updated: 2024-10-12
+
+    Description:
+    Server-side initialization and functionality for the rRadio boombox entity.
+]]
+
 AddCSLuaFile("cl_init.lua")
 AddCSLuaFile("shared.lua")
 include("shared.lua")
 include("rradio/sh_rradio_ownership.lua")
 
-local MENU_COOLDOWN = 1 -- 1 second cooldown
+local MENU_COOLDOWN = 1
 
 function ENT:Initialize()
     self:SetModel(rRadio.Config.BoomboxModel)
@@ -19,16 +29,13 @@ function ENT:Initialize()
     self:SetNWString("CurrentStation", "")
     self:SetNWFloat("Volume", rRadio.Config.DefaultVolume)
     
-    self.LastMenuOpen = 0 -- Initialize the last menu open time
+    self.LastMenuOpen = 0
 
     -- Set the owner
     local owner = self:GetCreator()
     if IsValid(owner) and owner:IsPlayer() then
         self:SetNWEntity("Owner", owner)
         rRadio.Ownership.SetupEntity(self, owner)
-        print("Setting owner for boombox: ", owner:Nick())  -- Debug print
-    else
-        print("Failed to set owner for boombox. Creator not valid.")
     end
 end
 
@@ -37,11 +44,11 @@ function ENT:Use(activator, caller)
 
     local currentTime = CurTime()
     if currentTime - self.LastMenuOpen < MENU_COOLDOWN then
-        return -- Don't open the menu if the cooldown hasn't expired
+        return
     end
 
     if rRadio.Ownership.CanControlEntity(activator, self) then
-        self.LastMenuOpen = currentTime -- Update the last menu open time
+        self.LastMenuOpen = currentTime
         
         net.Start("rRadio_OpenMenu")
         net.WriteEntity(self)

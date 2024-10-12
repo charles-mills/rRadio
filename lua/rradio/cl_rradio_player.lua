@@ -1,4 +1,14 @@
--- Client-side radio player for rRadio
+--[[
+    Author: Charles Mills
+    
+    Created: 2024-10-12
+    Last Updated: 2024-10-12
+
+    Description:
+    Client-side radio player functionality for rRadio addon. Handles stream
+    playback, volume control, station switching, and synchronization with
+    the server.
+]]
 
 local activeStreams = {}
 
