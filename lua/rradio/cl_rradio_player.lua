@@ -12,6 +12,11 @@
 
 local activeStreams = {}
 
+local function RequestBoomboxData()
+    net.Start("rRadio_RequestBoomboxData")
+    net.SendToServer()
+end
+
 function rRadio.SetVolume(boomboxEnt, volume)
     if not IsValid(boomboxEnt) then return end
     volume = math.Clamp(volume, 0, 1)
@@ -78,61 +83,44 @@ net.Receive("rRadio_UpdateBoombox", function()
     local stationIndex = net.ReadUInt(16)
     local stationUrl = net.ReadString()
 
-    print("Received rRadio_UpdateBoombox:", boomboxEnt, stationKey, stationIndex, stationUrl)
+    if not IsValid(boomboxEnt) or boomboxEnt:GetClass() ~= "ent_rradio" then return end
 
-    if not IsValid(boomboxEnt) or boomboxEnt:GetClass() ~= "ent_rradio" then 
-        print("Invalid boombox entity or wrong class")
-        return 
-    end
-
-    -- Stop any existing stream for this boombox
     if activeStreams[boomboxEnt] then
-        print("Stopping existing stream")
         activeStreams[boomboxEnt]:Stop()
         activeStreams[boomboxEnt] = nil
     end
 
-    -- Start new stream
-    print("Attempting to play URL:", stationUrl)
     sound.PlayURL(stationUrl, "3d noblock", function(station, errCode, errStr)
         if IsValid(station) then
-            print("Stream created successfully")
             local volume = boomboxEnt:GetNWFloat("Volume", rRadio.Config.DefaultVolume)
             station:SetPos(boomboxEnt:GetPos())
             station:SetVolume(volume)
             
-            -- Add a small delay before playing
             timer.Simple(0.1, function()
                 if IsValid(station) then
                     station:Play()
                     activeStreams[boomboxEnt] = station
-                    print("Stream started playing")
 
-                    -- Update station info only after successful playback
                     boomboxEnt:SetNWString("CurrentStation", stationUrl)
                     boomboxEnt:SetNWString("CurrentStationKey", stationKey)
                     boomboxEnt:SetNWInt("CurrentStationIndex", stationIndex)
 
-                    -- Update menu if it's open
                     if IsValid(rRadio.Menu) and rRadio.Menu.BoomboxEntity == boomboxEnt then
                         rRadio.Menu:UpdateCurrentStation(boomboxEnt)
                     end
 
-                    -- Notification
-                    notification.AddLegacy("Now playing: " .. rRadio.Stations[stationKey][stationIndex].n, NOTIFY_GENERIC, 3)
+                    local stationName = rRadio.Stations[stationKey] and rRadio.Stations[stationKey][stationIndex] and rRadio.Stations[stationKey][stationIndex].n or "Unknown"
+                    notification.AddLegacy("Now playing: " .. stationName, NOTIFY_GENERIC, 3)
                 else
-                    print("Station became invalid before playing")
-                    boomboxEnt:SetNWString("CurrentStation", "") -- Reset if failed
+                    boomboxEnt:SetNWString("CurrentStation", "")
                     if IsValid(rRadio.Menu) and rRadio.Menu.BoomboxEntity == boomboxEnt then
                         rRadio.Menu:UpdateCurrentStation(boomboxEnt)
                     end
                 end
             end)
         else
-            print("Failed to create stream. Error code:", errCode, "Error string:", errStr)
-            rRadio.LogError("Failed to play station: " .. errStr)
-            notification.AddLegacy("Failed to play station: " .. errStr, NOTIFY_ERROR, 3)
-            boomboxEnt:SetNWString("CurrentStation", "") -- Reset if failed
+            notification.AddLegacy("Failed to play station: " .. (errStr or "Unknown error"), NOTIFY_ERROR, 3)
+            boomboxEnt:SetNWString("CurrentStation", "")
             if IsValid(rRadio.Menu) and rRadio.Menu.BoomboxEntity == boomboxEnt then
                 rRadio.Menu:UpdateCurrentStation(boomboxEnt)
             end
@@ -152,33 +140,30 @@ net.Receive("rRadio_StopStation", function()
     end
 end)
 
-local function CalculateVolume(listener, boombox, baseVolume)
-    local distance = listener:GetPos():Distance(boombox:GetPos())
-    local minDist = rRadio.Config.AudioMinDistance
-    local maxDist = rRadio.Config.AudioMaxDistance
-    local falloffExponent = rRadio.Config.AudioFalloffExponent
-
-    if distance <= minDist then
-        return baseVolume
-    elseif distance >= maxDist then
-        return 0
-    else
-        local fadeRange = maxDist - minDist
-        local fadeAmount = (distance - minDist) / fadeRange
-        return baseVolume * (1 - fadeAmount^falloffExponent)
-    end
+local function CalculateVolume(listenerPos, boomboxPos, baseVolume)
+    local distance = listenerPos:Distance(boomboxPos)
+    local minDist, maxDist = rRadio.Config.AudioMinDistance, rRadio.Config.AudioMaxDistance
+    
+    if distance <= minDist then return baseVolume end
+    if distance >= maxDist then return 0 end
+    
+    local fadeRange = maxDist - minDist
+    local fadeAmount = (distance - minDist) / fadeRange
+    return baseVolume * (1 - fadeAmount^rRadio.Config.AudioFalloffExponent)
 end
 
 hook.Add("Think", "rRadio_UpdateStreamPositions", function()
     local listener = LocalPlayer()
+    local listenerPos = listener:GetPos()
+    
     for boombox, stream in pairs(activeStreams) do
         if IsValid(boombox) and IsValid(stream) then
-            stream:SetPos(boombox:GetPos())
+            local boomboxPos = boombox:GetPos()
+            stream:SetPos(boomboxPos)
             local baseVolume = boombox:GetNWFloat("Volume", rRadio.Config.DefaultVolume)
-            local calculatedVolume = CalculateVolume(listener, boombox, baseVolume)
+            local calculatedVolume = CalculateVolume(listenerPos, boomboxPos, baseVolume)
             stream:SetVolume(calculatedVolume)
         else
-            -- Clean up invalid streams or boomboxes
             if IsValid(stream) then
                 stream:Stop()
             end
@@ -187,9 +172,12 @@ hook.Add("Think", "rRadio_UpdateStreamPositions", function()
     end
 end)
 
--- Add this at the end of the file
-
 net.Receive("rRadio_SyncNewPlayer", function()
+    -- The server is notifying us that we can request boombox data
+    RequestBoomboxData()
+end)
+
+net.Receive("rRadio_RequestBoomboxData", function()
     local boomboxCount = net.ReadUInt(8)
     for i = 1, boomboxCount do
         local boomboxEnt = net.ReadEntity()
@@ -206,7 +194,7 @@ net.Receive("rRadio_SyncNewPlayer", function()
             boomboxEnt:SetNWFloat("Volume", volume)
             boomboxEnt:SetNWEntity("Owner", owner)
 
-            if stationUrl ~= "" then
+            if stationUrl ~= "" and stationUrl ~= "tuning" then
                 -- Start playing the stream
                 sound.PlayURL(stationUrl, "3d noblock", function(station, errCode, errStr)
                     if IsValid(station) then
@@ -221,4 +209,13 @@ net.Receive("rRadio_SyncNewPlayer", function()
             end
         end
     end
+end)
+
+hook.Add("ShutDown", "rRadio_CleanupStreams", function()
+    for _, stream in pairs(activeStreams) do
+        if IsValid(stream) then
+            stream:Stop()
+        end
+    end
+    activeStreams = {}
 end)

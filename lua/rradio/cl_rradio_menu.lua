@@ -10,14 +10,14 @@
 
 local RRADIO = RRADIO or {}
 RRADIO.Menu = RRADIO.Menu or {}
-
+RRADIO.Sounds = RRADIO.Sounds or {}
+RRADIO.Sounds.CLICK = Sound("ui/buttonclick.wav")
 RRADIO.GetFont = getFont
 
 local GITHUB_BUTTON_FADE_TIME = 0.3
 local githubButtonAlpha = 0
-
-RRADIO.Sounds = RRADIO.Sounds or {}
-RRADIO.Sounds.CLICK = Sound("ui/buttonclick.wav")
+local titleClickCount = 0
+local isTitleWobbling = false
 
 function SafeColor(color)
     return IsColor(color) and color or Color(255, 255, 255)
@@ -40,6 +40,7 @@ RRADIO.Icons = {
     STAR_FULL = Material("hud/star_full.png", "smooth mips"),
     DARK_MODE = Material("hud/dark_mode.png", "smooth mips"),
     GITHUB = Material("hud/github.png", "smooth mips"),
+    VOLUME = Material("hud/volume.png", "smooth mips"),
 }
 
 -- Sounds
@@ -48,6 +49,7 @@ RRADIO.Sounds = {
     OPEN = Sound("ui/buttonclickrelease.wav"),
     CLOSE = Sound("ui/buttonclickrelease.wav"),
     SLIDER = Sound("ui/slider.wav"),
+    CELEBRATE = Sound("garrysmod/balloon_pop_cute.wav"),
 }
 
 -- Font cache
@@ -77,6 +79,13 @@ local function getFont(size, isHeading)
     return fontName
 end
 
+-- Helper function to draw icons with color overlay
+local function DrawIconWithColor(icon, x, y, w, h, color)
+    surface.SetDrawColor(color)
+    surface.SetMaterial(icon)
+    surface.DrawTexturedRect(x, y, w, h)
+end
+
 function RRADIO.Menu:Init()
     local w, h = ScrW() * 0.5, ScrH() * 0.7
     self:SetSize(w, h)
@@ -86,8 +95,10 @@ function RRADIO.Menu:Init()
     self:SetDraggable(false)
     self:ShowCloseButton(false)
 
+    -- Add blur effect
     self.Paint = function(s, w, h)
         local colors = RRADIO.GetColors()
+        Derma_DrawBackgroundBlur(self, 0)
         draw.RoundedBox(10, 0, 0, w, h, colors.bg)
     end
 
@@ -107,6 +118,8 @@ function RRADIO.Menu:Init()
 
     -- Set initial GitHub button alpha to 0
     githubButtonAlpha = 0
+
+    titleClickCount = 0 -- Reset the click count when the menu is opened
 end
 
 function RRADIO.Menu:CreateHeader()
@@ -122,83 +135,75 @@ function RRADIO.Menu:CreateHeader()
 
     local buttonSize = math.max(self:GetTall() * 0.04, 20)
 
-    self.Title = vgui.Create("DLabel", self.Header)
+    self.Title = self.Header:Add("DButton")
     self.Title:SetText(rRadio.Config.MenuTitle)
     self.Title:SetFont(getFont(20, true))
     self.Title:SizeToContents()
-
-    -- Create buttons without setting their position
-    self.CloseButton = vgui.Create("DImageButton", self.Header)
-    self.CloseButton:SetSize(buttonSize, buttonSize)
-    self.CloseButton.Paint = function(s, w, h)
-        local colors = RRADIO.GetColors()
-        surface.SetDrawColor(SafeColor(colors.text))
-        surface.SetMaterial(RRADIO.Icons.CLOSE)
-        surface.DrawTexturedRect(0, 0, w, h)
+    self.Title:SetTextColor(RRADIO.GetColors().text)
+    self.Title:SetCursor("arrow")  -- Set default cursor
+    self.Title.Paint = function(s, w, h)
+        draw.SimpleText(s:GetText(), s:GetFont(), w/2, h/2, s:GetTextColor(), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
     end
-    self.CloseButton.DoClick = function()
-        surface.PlaySound(RRADIO.Sounds.CLOSE)
+    
+    self.Title.DoClick = function()
+        if self.currentView == "countries" then
+            titleClickCount = titleClickCount + 1
+            if titleClickCount == 3 and not isTitleWobbling then
+                self:WobbleTitle()
+            end
+        end
+    end
+
+    local function CreateIconButton(icon, clickFunction)
+        local button = vgui.Create("DButton", self.Header)
+        button:SetSize(buttonSize, buttonSize)
+        button:SetText("")
+        
+        button.Paint = function(s, w, h)
+            local colors = RRADIO.GetColors()
+            local iconColor = colors.text
+            if s:IsHovered() then
+                iconColor = ColorAlpha(iconColor, 200)
+            end
+            DrawIconWithColor(icon, 0, 0, w, h, iconColor)
+        end
+        
+        button.DoClick = function()
+            surface.PlaySound(RRADIO.Sounds.CLICK)
+            clickFunction()
+        end
+        
+        return button
+    end
+
+    self.CloseButton = CreateIconButton(RRADIO.Icons.CLOSE, function()
         self:AlphaTo(0, 0.3, 0, function()
             self:Remove()
+            titleClickCount = 0 -- Reset the click count when the menu is closed
+            -- Remove the blur effect when the menu is closed
+            if IsValid(self.BlurPanel) then
+                self.BlurPanel:Remove()
+            end
         end)
-    end
+    end)
 
-    self.SettingsButton = vgui.Create("DImageButton", self.Header)
-    self.SettingsButton:SetSize(buttonSize, buttonSize)
-    self.SettingsButton.Paint = function(s, w, h)
-        local colors = RRADIO.GetColors()
-        surface.SetDrawColor(SafeColor(colors.text))
-        surface.SetMaterial(RRADIO.Icons.SETTINGS)
-        surface.DrawTexturedRect(0, 0, w, h)
-    end
-    self.SettingsButton.DoClick = function()
-        surface.PlaySound(RRADIO.Sounds.CLICK)
+    self.SettingsButton = CreateIconButton(RRADIO.Icons.SETTINGS, function()
         self:OpenSettings()
-    end
+    end)
 
-    self.GitHubButton = vgui.Create("DImageButton", self.Header)
-    self.GitHubButton:SetSize(buttonSize, buttonSize)
-    self.GitHubButton:SetVisible(true)
-    self.GitHubButton.Paint = function(s, w, h)
-        if githubButtonAlpha > 0 then
-            local colors = RRADIO.GetColors()
-            surface.SetDrawColor(ColorAlpha(SafeColor(colors.text), githubButtonAlpha))
-            surface.SetMaterial(RRADIO.Icons.GITHUB)
-            surface.DrawTexturedRect(0, 0, w, h)
-        end
-        return true
-    end
-    self.GitHubButton.DoClick = function()
-        if githubButtonAlpha > 200 then
-            surface.PlaySound(RRADIO.Sounds.CLICK)
-            gui.OpenURL("https://github.com/charles-mills/rRadio")
-        end
-    end
-    self.GitHubButton.OnCursorEntered = function(s)
-        if githubButtonAlpha > 0 then
-            s:SetCursor("hand")
-        end
-    end
-    self.GitHubButton.OnCursorExited = function(s)
-        s:SetCursor("arrow")
-    end
+    self.GitHubButton = CreateIconButton(RRADIO.Icons.GITHUB, function()
+        gui.OpenURL("https://github.com/charles-mills/rRadio")
+    end)
+    self.GitHubButton:SetVisible(false)
+    self.GitHubButton:SetAlpha(0)
 
-    self.BackButton = vgui.Create("DImageButton", self.Header)
-    self.BackButton:SetSize(buttonSize, buttonSize)
-    self.BackButton.Paint = function(s, w, h)
-        local colors = RRADIO.GetColors()
-        surface.SetDrawColor(SafeColor(colors.text))
-        surface.SetMaterial(RRADIO.Icons.BACK)
-        surface.DrawTexturedRect(0, 0, w, h)
-    end
-    self.BackButton.DoClick = function()
-        surface.PlaySound(RRADIO.Sounds.CLICK)
+    self.BackButton = CreateIconButton(RRADIO.Icons.BACK, function()
         if self.currentView == "settings" then
             self:CloseSettings()
         else
             self:LoadCountries()
         end
-    end
+    end)
     self.BackButton:SetVisible(false)
 end
 
@@ -226,6 +231,7 @@ function RRADIO.Menu:PerformLayout(w, h)
 
     if IsValid(self.GitHubButton) then
         self.GitHubButton:SetPos(rightEdge - buttonSize, (self.Header:GetTall() - buttonSize) / 2)
+        self.GitHubButton:SetAlpha(githubButtonAlpha)  -- Set the alpha based on the githubButtonAlpha value
     end
 
     -- Center the title
@@ -372,7 +378,12 @@ function RRADIO.Menu:CreateFooter()
     self.VolumeIcon:SetSize(24, 24)
     self.VolumeIcon:Dock(LEFT)
     self.VolumeIcon:DockMargin(margin / 2, 0, margin / 2, 0)
-    self.VolumeIcon:SetImage("icon16/sound.png")
+    self.VolumeIcon:SetMaterial(RRADIO.Icons.VOLUME)
+    
+    self.VolumeIcon.Paint = function(s, w, h)
+        local colors = RRADIO.GetColors()
+        DrawIconWithColor(RRADIO.Icons.VOLUME, 0, 0, w, h, colors.text)
+    end
 
     self.VolumeSlider = self.VolumeControlPanel:Add("DSlider")
     self.VolumeSlider:Dock(FILL)
@@ -401,18 +412,22 @@ function RRADIO.Menu:CreateButton(text, isFirst, isLast, isFavorite, onFavoriteT
     button:SetText("")
     button:SetFont(getFont(14, false))
     
-    local favoriteButton = vgui.Create("DImageButton", button)
+    local favoriteButton = vgui.Create("DButton", button)
     local iconSize = button:GetTall() * 0.6
     favoriteButton:SetSize(iconSize, iconSize)
     favoriteButton:Dock(LEFT)
     favoriteButton:DockMargin(5, (button:GetTall() - iconSize) / 2, 5, (button:GetTall() - iconSize) / 2)
-    
-    local colors = RRADIO.GetColors()
+    favoriteButton:SetText("")
+
     favoriteButton.Paint = function(s, w, h)
-        surface.SetDrawColor(SafeColor(colors.text))
-        surface.SetMaterial(isFavorite and RRADIO.Icons.STAR_FULL or RRADIO.Icons.STAR_EMPTY)
-        surface.DrawTexturedRect(0, 0, w, h)
+        local colors = RRADIO.GetColors()
+        local iconColor = colors.text
+        if s:IsHovered() then
+            iconColor = ColorAlpha(iconColor, 200)
+        end
+        DrawIconWithColor(isFavorite and RRADIO.Icons.STAR_FULL or RRADIO.Icons.STAR_EMPTY, 0, 0, w, h, iconColor)
     end
+
     favoriteButton.DoClick = function()
         onFavoriteToggle()
         isFavorite = not isFavorite
@@ -422,10 +437,10 @@ function RRADIO.Menu:CreateButton(text, isFirst, isLast, isFavorite, onFavoriteT
     local hoverAlpha = 0
     button.Paint = function(s, w, h)
         local colors = RRADIO.GetColors()
-        local bgColor = ColorAlpha(s:IsHovered() and colors.buttonHover or colors.button, 255 - hoverAlpha)
+        local bgColor = ColorAlpha(s:IsHovered() and colors.buttonHover or colors.button, 255)
         draw.RoundedBox(5, 0, 0, w, h, bgColor)
         
-        local textColor = ColorAlpha(colors.text, 255 - hoverAlpha)
+        local textColor = ColorAlpha(colors.text, 255 - (hoverAlpha * 0.3)) -- Reduce the alpha change for text
         draw.SimpleText(text, s:GetFont(), w/2, h/2, textColor, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
 
         if s:IsHovered() and hoverAlpha < 255 then
@@ -455,7 +470,7 @@ function RRADIO.Menu:UpdateColors()
 
     for _, child in pairs(self.Content:GetCanvas():GetChildren()) do
         if IsValid(child) and child.Paint then
-            child:SetTextColor(SafeColor(colors.text))
+            child:InvalidateLayout(true)
         end
     end
 
@@ -469,6 +484,15 @@ function RRADIO.Menu:UpdateColors()
     if IsValid(self.GitHubButton) then
         self.GitHubButton:InvalidateLayout(true)
     end
+
+    if IsValid(self.Title) then
+        self.Title:SetTextColor(RRADIO.GetColors().text)
+    end
+
+    -- Invalidate layout for all header buttons
+    if IsValid(self.CloseButton) then self.CloseButton:InvalidateLayout(true) end
+    if IsValid(self.SettingsButton) then self.SettingsButton:InvalidateLayout(true) end
+    if IsValid(self.BackButton) then self.BackButton:InvalidateLayout(true) end
 end
 
 function RRADIO.Menu:UpdateSearchBarPlaceholder()
@@ -569,6 +593,7 @@ function RRADIO.Menu:OpenSettings()
     self:UpdateColors()
     self:UpdateLayoutForView()
     self:AnimateGitHubButton(true)
+    self.GitHubButton:SetVisible(true)  -- Show the GitHub button in settings
 end
 
 function RRADIO.Menu:PopulateSettings()
@@ -603,6 +628,8 @@ function RRADIO.Menu:PopulateSettings()
         local isDarkMode = RRADIO.IsDarkMode()
         draw.RoundedBox(toggleSize / 2, toggleX, toggleY, toggleSize, toggleSize, SafeColor(isDarkMode and colors.accent or colors.buttonHover))
         draw.RoundedBox(toggleSize / 2, isDarkMode and (toggleX + toggleSize / 2) or toggleX, toggleY, toggleSize / 2, toggleSize, SafeColor(colors.bg))
+
+        DrawIconWithColor(RRADIO.Icons.DARK_MODE, 5, (h - iconSize) / 2, iconSize, iconSize, colors.text)
     end
 
     darkModeToggle.DoClick = function()
@@ -626,7 +653,7 @@ function RRADIO.Menu:AnimateGitHubButton(fadeIn)
             githubButtonAlpha = Lerp(progress, startAlpha, endAlpha)
         end
         if IsValid(self.GitHubButton) then
-            self.GitHubButton:InvalidateLayout(true)
+            self.GitHubButton:SetAlpha(githubButtonAlpha)
         else
             hook.Remove("Think", "rRadio_GitHubButtonFade")
         end
@@ -636,6 +663,11 @@ end
 function RRADIO.Menu:CloseSettings()
     self:LoadCountries()
     self:AnimateGitHubButton(false)
+    timer.Simple(GITHUB_BUTTON_FADE_TIME, function()
+        if IsValid(self.GitHubButton) then
+            self.GitHubButton:SetVisible(false)
+        end
+    end)
     self:UpdateLayoutForView()
 end
 
@@ -699,11 +731,9 @@ function RRADIO.Menu:LoadCountries()
     
     self:UpdateSearchBarPlaceholder()
     self:UpdateLayoutForView()
-
-    -- Only fade out GitHub button if we're coming from settings
-    if self.currentView == "settings" then
-        self:AnimateGitHubButton(false)
-    end
+    self:AnimateGitHubButton(false)
+    self.GitHubButton:SetVisible(false)  -- Hide the GitHub button when loading countries
+    titleClickCount = 0  -- Reset click count when loading countries
 end
 
 function RRADIO.Menu:CreateCountryButtons(countries, isFavorite)
@@ -757,6 +787,7 @@ function RRADIO.Menu:LoadStations(country)
     
     self:UpdateSearchBarPlaceholder()
     self:UpdateLayoutForView()
+    titleClickCount = 0  -- Reset click count when loading stations
 end
 
 function RRADIO.Menu:CreateStationButtons(stationList, country, isFavorite)
@@ -799,26 +830,50 @@ function RRADIO.Menu:UpdateCurrentStation(entity)
     end
 end
 
--- Modify the rRadio.OpenMenu function
 function rRadio.OpenMenu(entity)
     if IsValid(rRadio.Menu) then rRadio.Menu:Remove() end
     rRadio.Menu = vgui.Create("rRadioMenu")
     rRadio.Menu:SetBoomboxEntity(entity)
-    rRadio.Menu:UpdateCurrentStation(entity)  -- Add this line
+    rRadio.Menu:UpdateCurrentStation(entity)
 end
 
--- Modify the RRADIO.Menu:SetBoomboxEntity method
 function RRADIO.Menu:SetBoomboxEntity(entity)
     self.BoomboxEntity = entity
     if IsValid(self.VolumeSlider) then
         local volume = entity:GetNWFloat("Volume", rRadio.Config.DefaultVolume)
         self.VolumeSlider:SetSlideX(volume)
     end
-    self:UpdateCurrentStation(entity)  -- Add this line
+    self:UpdateCurrentStation(entity)
 end
 
 function RRADIO.IsDarkMode()
     return RRADIO.DarkModeConVar:GetBool()
+end
+
+function RRADIO.Menu:WobbleTitle()
+    if isTitleWobbling or not IsValid(self.Title) then return end
+    isTitleWobbling = true
+    
+    local startTime = SysTime()
+    local duration = 1 -- Duration of the wobble in seconds
+    local wobbleFrequency = 10
+    local wobbleAmplitude = 15
+    
+    local originalPaint = self.Title.Paint
+    self.Title.Paint = function(s, w, h)
+        local progress = (SysTime() - startTime) / duration
+        if progress >= 1 then
+            isTitleWobbling = false
+            surface.PlaySound(RRADIO.Sounds.CELEBRATE)
+            titleClickCount = 0
+            s.Paint = originalPaint
+            return
+        end
+        
+        local wobbleOffset = math.sin(progress * math.pi * 2 * wobbleFrequency) * wobbleAmplitude * (1 - progress)
+        
+        draw.SimpleText(rRadio.Config.MenuTitle, s:GetFont(), w/2 + wobbleOffset, h/2, s:GetTextColor(), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+    end
 end
 
 -- Register the panel
