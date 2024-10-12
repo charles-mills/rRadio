@@ -43,7 +43,6 @@ print("-----------------------------")
 AddCSLuaFile("entities/ent_rradio/cl_init.lua")
 AddCSLuaFile("entities/ent_rradio/shared.lua")
 AddCSLuaFile("autorun/client/cl_rradio_init.lua")
-AddCSLuaFile("fonts/fonts.lua")
 
 -- Initialize rRadio tables
 rRadio.Cache = rRadio.Cache or {}

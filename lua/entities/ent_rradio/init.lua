@@ -51,7 +51,6 @@ function ENT:Use(activator, caller)
     end
 end
 
--- Optional: Update control status when a player spawns or changes team
 hook.Add("PlayerInitialSpawn", "rRadio_UpdateControlStatus", function(ply)
     timer.Simple(1, function()
         if IsValid(ply) then
@@ -67,8 +66,6 @@ hook.Add("PlayerChangedTeam", "rRadio_UpdateControlStatus", function(ply, oldTea
         rRadio.Ownership.UpdateControlStatus(ent)
     end
 end)
-
--- Add this function at the end of the file
 
 function ENT:UpdateTransmitState()
     return TRANSMIT_ALWAYS

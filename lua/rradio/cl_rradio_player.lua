@@ -32,10 +32,14 @@ function rRadio.PlayStation(entity, country, index)
         return
     end
 
-    -- Check if the station is already playing
-    if entity:GetNWString("CurrentStation") == url then
-        print("Station is already playing, skipping")
-        return
+    -- Update status to "Tuning in..." immediately
+    entity:SetNWString("CurrentStationKey", country)
+    entity:SetNWInt("CurrentStationIndex", index)
+    entity:SetNWString("CurrentStation", "tuning") -- Use a special value to indicate tuning
+
+    -- Update menu if it's open
+    if IsValid(rRadio.Menu) and rRadio.Menu.BoomboxEntity == entity then
+        rRadio.Menu:UpdateCurrentStation(entity)
     end
 
     -- Send update to server
@@ -48,6 +52,10 @@ end
 
 function rRadio.StopStation(boomboxEntity)
     if not IsValid(boomboxEntity) then return end
+
+    if IsValid(rRadio.Menu) then
+        rRadio.Menu:UpdateStatusPanel()
+    end
     
     net.Start("rRadio_StopStation")
     net.WriteEntity(boomboxEntity)
@@ -65,12 +73,6 @@ net.Receive("rRadio_UpdateBoombox", function()
     if not IsValid(boomboxEnt) or boomboxEnt:GetClass() ~= "ent_rradio" then 
         print("Invalid boombox entity or wrong class")
         return 
-    end
-
-    -- Check if the station is already playing
-    if activeStreams[boomboxEnt] and boomboxEnt:GetNWString("CurrentStation") == stationUrl then
-        print("Station is already playing, skipping")
-        return
     end
 
     -- Stop any existing stream for this boombox
@@ -96,21 +98,34 @@ net.Receive("rRadio_UpdateBoombox", function()
                     activeStreams[boomboxEnt] = station
                     print("Stream started playing")
 
-                    -- Update station info
+                    -- Update station info only after successful playback
                     boomboxEnt:SetNWString("CurrentStation", stationUrl)
                     boomboxEnt:SetNWString("CurrentStationKey", stationKey)
                     boomboxEnt:SetNWInt("CurrentStationIndex", stationIndex)
+
+                    -- Update menu if it's open
+                    if IsValid(rRadio.Menu) and rRadio.Menu.BoomboxEntity == boomboxEnt then
+                        rRadio.Menu:UpdateCurrentStation(boomboxEnt)
+                    end
 
                     -- Notification
                     notification.AddLegacy("Now playing: " .. rRadio.Stations[stationKey][stationIndex].n, NOTIFY_GENERIC, 3)
                 else
                     print("Station became invalid before playing")
+                    boomboxEnt:SetNWString("CurrentStation", "") -- Reset if failed
+                    if IsValid(rRadio.Menu) and rRadio.Menu.BoomboxEntity == boomboxEnt then
+                        rRadio.Menu:UpdateCurrentStation(boomboxEnt)
+                    end
                 end
             end)
         else
             print("Failed to create stream. Error code:", errCode, "Error string:", errStr)
             rRadio.LogError("Failed to play station: " .. errStr)
             notification.AddLegacy("Failed to play station: " .. errStr, NOTIFY_ERROR, 3)
+            boomboxEnt:SetNWString("CurrentStation", "") -- Reset if failed
+            if IsValid(rRadio.Menu) and rRadio.Menu.BoomboxEntity == boomboxEnt then
+                rRadio.Menu:UpdateCurrentStation(boomboxEnt)
+            end
         end
     end)
 end)

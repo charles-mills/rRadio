@@ -252,6 +252,25 @@ function RRADIO.Menu:CreateSearchBar()
     self:UpdateSearchBarPlaceholder()
 end
 
+function RRADIO.Menu:UpdateStatusPanel(stationName, countryName)
+    if IsValid(self.StationLabel) then
+        if stationName then
+            self.StationLabel:SetText(stationName)
+            self.StationLabel:SetSize(self.StatusPanel:GetWide(), self.StatusPanel:GetTall() / 2)
+            self.StationLabel:SetPos(0, 0)
+            self.CountryLabel:SetVisible(true)
+        else
+            self.StationLabel:SetText("Not Playing")
+            self.StationLabel:SetSize(self.StatusPanel:GetWide(), self.StatusPanel:GetTall())
+            self.StationLabel:SetPos(0, 0)
+            self.CountryLabel:SetVisible(false)
+        end
+    end
+    if IsValid(self.CountryLabel) then
+        self.CountryLabel:SetText(countryName or "")
+    end
+end
+
 function RRADIO.Menu:CreateContentArea()
     self.ScrollBackground = self:Add("DPanel")
     self.ScrollBackground:Dock(FILL)
@@ -276,7 +295,7 @@ end
 function RRADIO.Menu:CreateFooter()
     self.Footer = self:Add("DPanel")
     self.Footer:Dock(BOTTOM)
-    self.Footer:SetTall(math.max(self:GetTall() * 0.09, 36))
+    self.Footer:SetTall(math.max(self:GetTall() * 0.09, 50))
     local margin = math.Round(self:GetWide() * 0.02)
     self.Footer:DockMargin(margin, margin / 4, margin, margin)
     self.Footer.Paint = function(s, w, h)
@@ -284,13 +303,19 @@ function RRADIO.Menu:CreateFooter()
         draw.RoundedBoxEx(8, 0, 0, w, h, colors.footer, false, false, true, true)
     end
 
+    local totalWidth = self:GetWide() - (2 * margin)
+    local stopButtonWidth = totalWidth * 0.2
+    local volumeControlWidth = totalWidth * 0.2
+    local statusPanelWidth = totalWidth * 0.5
+    local padding = totalWidth * 0.05
+
+    -- Stop Button
     self.StopButton = self.Footer:Add("DButton")
     self.StopButton:SetText("STOP")
     self.StopButton:SetFont(getFont(18, true))
     self.StopButton:SetTextColor(RRADIO.GetColors().accent)
-    self.StopButton:Dock(LEFT)
-    self.StopButton:SetWide(self.Footer:GetWide() * 0.25)
-    self.StopButton:DockMargin(margin / 2, margin / 2, margin / 2, margin / 2)
+    self.StopButton:SetSize(stopButtonWidth, self.Footer:GetTall() - margin)
+    self.StopButton:SetPos(0, margin / 2)
     self.StopButton.Paint = function(s, w, h)
         local colors = RRADIO.GetColors()
         draw.RoundedBox(5, 0, 0, w, h, s:IsHovered() and colors.buttonHover or colors.button)
@@ -300,15 +325,46 @@ function RRADIO.Menu:CreateFooter()
         rRadio.StopStation(self.BoomboxEntity)
     end
 
+    -- Boombox Status Panel
+    self.StatusPanel = self.Footer:Add("DPanel")
+    self.StatusPanel:SetSize(statusPanelWidth, self.Footer:GetTall() - margin)
+    self.StatusPanel:SetPos(stopButtonWidth + padding, margin / 2)
+    self.StatusPanel.Paint = function(s, w, h)
+        local colors = RRADIO.GetColors()
+        draw.RoundedBox(5, 0, 0, w, h, colors.button)
+    end
+
+    local labelHeight = self.StatusPanel:GetTall() / 2
+
+    self.StationLabel = self.StatusPanel:Add("DLabel")
+    self.StationLabel:SetFont(getFont(16, true))
+    self.StationLabel:SetTextColor(RRADIO.GetColors().text)
+    self.StationLabel:SetSize(statusPanelWidth, self.StatusPanel:GetTall())
+    self.StationLabel:SetPos(0, 0)
+    self.StationLabel:SetContentAlignment(5)  -- Center alignment
+    self.StationLabel:SetText("Not Playing")
+
+    self.CountryLabel = self.StatusPanel:Add("DLabel")
+    self.CountryLabel:SetFont(getFont(14, false))
+    self.CountryLabel:SetTextColor(RRADIO.GetColors().text)
+    self.CountryLabel:SetSize(statusPanelWidth, labelHeight)
+    self.CountryLabel:SetPos(0, labelHeight)
+    self.CountryLabel:SetContentAlignment(5)  -- Center alignment
+    self.CountryLabel:SetText("")
+
+    -- Volume Control Panel
     self.VolumeControlPanel = self.Footer:Add("DPanel")
-    self.VolumeControlPanel:Dock(FILL)
-    self.VolumeControlPanel:DockMargin(margin / 2, margin / 2, margin / 2, margin / 2)
-    self.VolumeControlPanel.Paint = function() end
+    self.VolumeControlPanel:SetSize(volumeControlWidth, self.Footer:GetTall() - margin)
+    self.VolumeControlPanel:SetPos(totalWidth - volumeControlWidth, margin / 2)
+    self.VolumeControlPanel.Paint = function(s, w, h)
+        local colors = RRADIO.GetColors()
+        draw.RoundedBox(5, 0, 0, w, h, colors.button)
+    end
 
     self.VolumeIcon = self.VolumeControlPanel:Add("DImage")
     self.VolumeIcon:SetSize(24, 24)
     self.VolumeIcon:Dock(LEFT)
-    self.VolumeIcon:DockMargin(0, 0, margin / 2, 0)
+    self.VolumeIcon:DockMargin(margin / 2, 0, margin / 2, 0)
     self.VolumeIcon:SetImage("icon16/sound.png")
 
     self.VolumeSlider = self.VolumeControlPanel:Add("DSlider")
@@ -329,9 +385,6 @@ function RRADIO.Menu:CreateFooter()
         rRadio.SetVolume(self.BoomboxEntity, value)
     end
 end
-
--- The rest of your existing functions (CreateButton, LoadCountries, CreateCountryButtons, etc.) can remain largely unchanged.
--- Just update the styling in these functions to match the new design, such as adding rounded corners and using the new color scheme.
 
 function RRADIO.Menu:CreateButton(text, isFirst, isLast, isFavorite, onFavoriteToggle)
     local button = self.Content:Add("DButton")
@@ -718,12 +771,43 @@ function RRADIO.Menu:CreateStationButtons(stationList, country, isFavorite)
     end
 end
 
+-- Add this new method to the RRADIO.Menu table
+function RRADIO.Menu:UpdateCurrentStation(entity)
+    if IsValid(entity) then
+        local stationKey = entity:GetNWString("CurrentStationKey", "")
+        local stationIndex = entity:GetNWInt("CurrentStationIndex", 0)
+        local currentStation = entity:GetNWString("CurrentStation", "")
+        
+        if currentStation == "tuning" then
+            self:UpdateStatusPanel("Tuning in...", rRadio.FormatCountryName(stationKey))
+        elseif stationKey ~= "" and stationIndex > 0 and rRadio.Stations[stationKey] and rRadio.Stations[stationKey][stationIndex] then
+            local stationName = rRadio.Stations[stationKey][stationIndex].n
+            local countryName = rRadio.FormatCountryName(stationKey)
+            self:UpdateStatusPanel(stationName, countryName)
+        else
+            self:UpdateStatusPanel(nil, nil)
+        end
+    else
+        self:UpdateStatusPanel(nil, nil)
+    end
+end
+
+-- Modify the rRadio.OpenMenu function
+function rRadio.OpenMenu(entity)
+    if IsValid(rRadio.Menu) then rRadio.Menu:Remove() end
+    rRadio.Menu = vgui.Create("rRadioMenu")
+    rRadio.Menu:SetBoomboxEntity(entity)
+    rRadio.Menu:UpdateCurrentStation(entity)  -- Add this line
+end
+
+-- Modify the RRADIO.Menu:SetBoomboxEntity method
 function RRADIO.Menu:SetBoomboxEntity(entity)
     self.BoomboxEntity = entity
     if IsValid(self.VolumeSlider) then
         local volume = entity:GetNWFloat("Volume", rRadio.Config.DefaultVolume)
         self.VolumeSlider:SetSlideX(volume)
     end
+    self:UpdateCurrentStation(entity)  -- Add this line
 end
 
 function RRADIO.IsDarkMode()
@@ -745,6 +829,13 @@ net.Receive("rRadio_OpenMenu", function()
     local entity = net.ReadEntity()
     if IsValid(entity) and entity:GetClass() == "ent_rradio" then
         rRadio.OpenMenu(entity)
+    end
+end)
+
+net.Receive("rRadio_UpdateBoombox", function()
+    local boomboxEnt = net.ReadEntity()
+    if IsValid(rRadio.Menu) and IsValid(boomboxEnt) and rRadio.Menu.BoomboxEntity == boomboxEnt then
+        rRadio.Menu:UpdateCurrentStation(boomboxEnt)
     end
 end)
 

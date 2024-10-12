@@ -2,7 +2,7 @@
 
 rRadio = rRadio or {}
 rRadio.Config = {
-    MenuTitle = "rRadio | Internet Radio",
+    MenuTitle = "Select a Country",
     MaxStationNameLength = 50,
     BoomboxModel = "models/rammel/boombox.mdl",
     DefaultVolume = 0.5,
