@@ -17,16 +17,44 @@ function rRadio.SetVolume(boomboxEnt, volume)
     net.SendToServer()
 end
 
-function rRadio.PlayStation(boomboxEntity, country, index)
-    print("PlayStation called:", boomboxEntity, country, index)
-    if not IsValid(boomboxEntity) then 
-        print("Invalid boombox entity")
-        return 
+function rRadio.PlayStation(entity, country, index)
+    if not IsValid(entity) or not country or not index then return end
+
+    local station = rRadio.Stations[country] and rRadio.Stations[country][index]
+    if not station then
+        print("Invalid station: Country =", country, "Index =", index)
+        return
     end
-    
-    print("Sending rRadio_PlayStation net message")
-    net.Start("rRadio_PlayStation")
-    net.WriteEntity(boomboxEntity)
+
+    local url = station.u
+    if not url or url == "" then
+        print("Invalid station URL for:", station.n)
+        return
+    end
+
+    sound.PlayURL(url, "3d noblock", function(station, errCode, errStr)
+        if IsValid(station) then
+            station:SetPos(entity:GetPos())
+            local volume = entity:GetNWFloat("Volume", rRadio.Config.DefaultVolume)
+            station:SetVolume(volume)
+            activeStreams[entity] = station
+
+            -- Update entity network variables
+            entity:SetNWString("CurrentStation", url)
+            entity:SetNWString("CurrentStationKey", country)
+            entity:SetNWInt("CurrentStationIndex", index)
+
+            -- Notification
+            notification.AddLegacy("Now playing: " .. rRadio.Stations[country][index].n, NOTIFY_GENERIC, 3)
+        else
+            print("Error playing station:", errStr)
+            notification.AddLegacy("Failed to play station: " .. errStr, NOTIFY_ERROR, 3)
+        end
+    end)
+
+    -- Send update to server
+    net.Start("rRadio_UpdateBoombox")
+    net.WriteEntity(entity)
     net.WriteString(country)
     net.WriteUInt(index, 16)
     net.SendToServer()
@@ -94,7 +122,6 @@ net.Receive("rRadio_StopStation", function()
     end
 end)
 
--- Add this function near the top of the file
 local function CalculateVolume(listener, boombox, baseVolume)
     local distance = listener:GetPos():Distance(boombox:GetPos())
     local minDist = rRadio.Config.AudioMinDistance
@@ -112,7 +139,6 @@ local function CalculateVolume(listener, boombox, baseVolume)
     end
 end
 
--- Update the existing hook
 hook.Add("Think", "rRadio_UpdateStreamPositions", function()
     local listener = LocalPlayer()
     for boombox, stream in pairs(activeStreams) do

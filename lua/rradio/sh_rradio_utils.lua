@@ -33,11 +33,22 @@ end
 rRadio.StationIndex = rRadio.StationIndex or {}
 
 function rRadio.BuildStationIndex()
+    rRadio.StationIndex = {}  -- Clear the existing index
     for country, stations in pairs(rRadio.Stations) do
         for i, station in ipairs(stations) do
             local key = string.lower(station.n)
             rRadio.StationIndex[key] = rRadio.StationIndex[key] or {}
-            table.insert(rRadio.StationIndex[key], {country = country, index = i})
+            -- Check if the station already exists in the index
+            local exists = false
+            for _, indexedStation in ipairs(rRadio.StationIndex[key]) do
+                if indexedStation.country == country and indexedStation.index == i then
+                    exists = true
+                    break
+                end
+            end
+            if not exists then
+                table.insert(rRadio.StationIndex[key], {country = country, index = i})
+            end
         end
     end
 end
@@ -120,4 +131,51 @@ function rRadio.FormatCountryName(name)
     return name:gsub("_", " "):gsub("(%a)([%w']*)", function(first, rest)
         return first:upper() .. rest:lower()
     end)
+end
+
+-- New functions moved from cl_rradio_menu.lua
+
+function rRadio.SafeColor(color)
+    return IsColor(color) and color or Color(255, 255, 255)
+end
+
+function rRadio.SortIgnoringThe(a, b)
+    local function stripThe(str)
+        return str:gsub("^The%s+", ""):lower()
+    end
+    return stripThe(a) < stripThe(b)
+end
+
+function rRadio.GetScaledFontSize(baseSize)
+    local scaleFactor = math.min(ScrW() / 1920, ScrH() / 1080) * 1.5
+    return math.Round(baseSize * scaleFactor)
+end
+
+function rRadio.IsDarkMode()
+    if CLIENT then
+        return GetConVar("rradio_dark_mode"):GetBool()
+    end
+    return false -- Default to light mode on the server or in shared context
+end
+
+function rRadio.ToggleDarkMode()
+    if CLIENT then
+        local darkModeConVar = GetConVar("rradio_dark_mode")
+        darkModeConVar:SetBool(not darkModeConVar:GetBool())
+        hook.Run("rRadio_ColorSchemeChanged")
+    end
+end
+
+function rRadio.GetColors()
+    local isDarkMode = rRadio.IsDarkMode()
+    return {
+        bg = isDarkMode and Color(18, 18, 18) or Color(255, 255, 255),
+        text = isDarkMode and Color(255, 255, 255) or Color(0, 0, 0),
+        button = isDarkMode and Color(30, 30, 30) or Color(240, 240, 240),
+        buttonHover = isDarkMode and Color(40, 40, 40) or Color(230, 230, 230),
+        accent = Color(0, 122, 255),
+        text_placeholder = isDarkMode and Color(150, 150, 150) or Color(100, 100, 100),
+        scrollBg = isDarkMode and Color(25, 25, 25) or Color(245, 245, 245),
+        divider = isDarkMode and Color(50, 50, 50) or Color(200, 200, 200),
+    }
 end

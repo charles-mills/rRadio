@@ -1,6 +1,6 @@
 rRadio = rRadio or {}
 rRadio.Modules = {}
-rRadio.Version = "1.0.0"
+rRadio.Version = "2.0.0"
 rRadio.Events = {}
 
 function rRadio.LoadModules()

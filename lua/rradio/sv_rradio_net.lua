@@ -62,15 +62,13 @@ end)
 net.Receive("rRadio_StopStation", function(len, ply)
     local boomboxEnt = net.ReadEntity()
     
-    if not IsValid(boomboxEnt) or boomboxEnt:GetClass() ~= "ent_rradio" or
-       (boomboxEnt:GetOwner() ~= ply and not ply:IsAdmin() and not ply:IsSuperAdmin()) then
-        return
+    if IsValid(boomboxEnt) and boomboxEnt:GetClass() == "ent_rradio" and
+       (boomboxEnt:GetOwner() == ply or ply:IsAdmin() or ply:IsSuperAdmin()) then
+        -- Broadcast the stop command to all clients
+        net.Start("rRadio_StopStation")
+        net.WriteEntity(boomboxEnt)
+        net.Broadcast()
     end
-
-    boomboxEnt:SetNWString("CurrentStation", "")
-    net.Start("rRadio_StopStation")
-    net.WriteEntity(boomboxEnt)
-    net.Broadcast()
 end)
 
 -- Update Volume
@@ -108,14 +106,28 @@ net.Receive("rRadio_ToggleFavorite", function(len, ply)
         rRadio.LogError("Invalid favorite toggle request from " .. ply:Nick())
         return
     end
-
-    -- You might want to add server-side logic here if needed
-    -- For example, you could store favorites per player on the server
 end)
 
 net.Receive("rRadio_OpenMenu", function(len, ply)
     local ent = net.ReadEntity()
     if IsValid(ent) and ent:GetClass() == "ent_rradio" then
         -- The menu opening is handled client-side, so we don't need to do anything here
+    end
+end)
+
+-- Update Boombox
+net.Receive("rRadio_UpdateBoombox", function(len, ply)
+    local boomboxEnt = net.ReadEntity()
+    local stationKey = net.ReadString()
+    local stationIndex = net.ReadUInt(16)
+
+    if IsValid(boomboxEnt) and boomboxEnt:GetClass() == "ent_rradio" and
+       (boomboxEnt:GetOwner() == ply or ply:IsAdmin() or ply:IsSuperAdmin()) then
+        -- Broadcast the update to all clients
+        net.Start("rRadio_UpdateBoombox")
+        net.WriteEntity(boomboxEnt)
+        net.WriteString(stationKey)
+        net.WriteUInt(stationIndex, 16)
+        net.Broadcast()
     end
 end)

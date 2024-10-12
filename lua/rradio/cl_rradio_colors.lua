@@ -13,6 +13,8 @@ RRADIO.Colors = {
     DIVIDER_DARK = Color(50, 50, 50),
     SCROLL_BG_LIGHT = Color(245, 245, 247),
     SCROLL_BG_DARK = Color(28, 28, 30),
+    TEXT_PLACEHOLDER_LIGHT = Color(150, 150, 150),
+    TEXT_PLACEHOLDER_DARK = Color(120, 120, 120),
 }
 
 RRADIO.DarkModeConVar = CreateClientConVar("rradio_dark_mode", "0", true, false, "Toggle dark mode for rRadio")
@@ -26,7 +28,8 @@ function RRADIO.GetColors()
         buttonHover = isDarkMode and RRADIO.Colors.BUTTON_HOVER_DARK or RRADIO.Colors.BUTTON_HOVER_LIGHT,
         divider = isDarkMode and RRADIO.Colors.DIVIDER_DARK or RRADIO.Colors.DIVIDER_LIGHT,
         accent = RRADIO.Colors.ACCENT,
-        scrollBg = isDarkMode and RRADIO.Colors.SCROLL_BG_DARK or RRADIO.Colors.SCROLL_BG_LIGHT
+        scrollBg = isDarkMode and RRADIO.Colors.SCROLL_BG_DARK or RRADIO.Colors.SCROLL_BG_LIGHT,
+        text_placeholder = isDarkMode and RRADIO.Colors.TEXT_PLACEHOLDER_DARK or RRADIO.Colors.TEXT_PLACEHOLDER_LIGHT,
     }
 
     -- Ensure all colors are valid

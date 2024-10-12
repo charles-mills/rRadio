@@ -2,7 +2,7 @@
 
 rRadio = rRadio or {}
 rRadio.Config = {
-    MenuTitle = "rRadio",
+    MenuTitle = "rRadio | Internet Radio",
     MaxStationNameLength = 50,
     BoomboxModel = "models/rammel/boombox.mdl",
     DefaultVolume = 0.5,
@@ -16,7 +16,7 @@ rRadio.Config = {
     EnableRecentStations = true,
     AudioMinDistance = 100,  -- Distance at which volume starts to fade
     AudioMaxDistance = 500,  -- Distance at which volume becomes 0
-    AudioFalloffExponent = 1,  -- Controls the rate of volume falloff (1 for linear, 2 for quadratic, etc.)
+    AudioFalloffExponent = 2,  -- Controls the rate of volume falloff (1 for linear, 2 for quadratic, etc.)
 }
 
 if CLIENT then
