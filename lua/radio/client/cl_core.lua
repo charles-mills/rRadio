@@ -1,5 +1,3 @@
--- lua/autorun/client/cl_core.lua
-
 --[[
     Radio Addon Client-Side Main Script
     Author: Charles Mills
@@ -40,9 +38,24 @@ local settingsMenuOpen = false
 local entityVolumes = {}
 local openRadioMenu
 
+-- Add these variables near the top of the file, with other local variables
+local lastIconUpdate = 0
+local iconUpdateDelay = 0.1 -- 100ms delay
+local pendingIconUpdate = nil
+local isUpdatingIcon = false
+
 -- ------------------------------
 --      Utility Functions
 -- ------------------------------
+
+local function LerpColor(t, col1, col2)
+    return Color(
+        Lerp(t, col1.r, col2.r),
+        Lerp(t, col1.g, col2.g),
+        Lerp(t, col1.b, col2.b),
+        Lerp(t, col1.a or 255, col2.a or 255)
+    )
+end
 
 --[[
     Function: reopenRadioMenu
@@ -813,41 +826,45 @@ local function openSettingsMenu(parentFrame, backButton)
 
     -- Superadmin: Permanent Boombox Section
     if LocalPlayer():IsSuperAdmin() then
-        addHeader(Config.Lang["SuperadminSettings"] or "Superadmin Settings")
+        local currentEntity = LocalPlayer().currentRadioEntity
+        local isBoombox = IsValid(currentEntity) and (currentEntity:GetClass() == "boombox" or currentEntity:GetClass() == "golden_boombox")
 
-        local permanentCheckbox = addCheckbox(Config.Lang["MakeBoomboxPermanent"] or "Make Boombox Permanent", "")
-        permanentCheckbox:SetChecked(IsValid(LocalPlayer().currentRadioEntity) and LocalPlayer().currentRadioEntity:GetNWBool("IsPermanent", false))
+        if isBoombox then
+            addHeader(Config.Lang["SuperadminSettings"] or "Superadmin Settings")
 
-        permanentCheckbox.OnChange = function(self, value)
-            if not IsValid(LocalPlayer().currentRadioEntity) then
-                self:SetChecked(false)
-                return
+            local permanentCheckbox = addCheckbox(Config.Lang["MakeBoomboxPermanent"] or "Make Boombox Permanent", "")
+            permanentCheckbox:SetChecked(currentEntity:GetNWBool("IsPermanent", false))
+
+            permanentCheckbox.OnChange = function(self, value)
+                if not IsValid(currentEntity) then
+                    self:SetChecked(false)
+                    return
+                end
+
+                if value then
+                    net.Start("MakeBoomboxPermanent")
+                        net.WriteEntity(currentEntity)
+                    net.SendToServer()
+                else
+                    net.Start("RemoveBoomboxPermanent")
+                        net.WriteEntity(currentEntity)
+                    net.SendToServer()
+                end
             end
 
-            local ent = LocalPlayer().currentRadioEntity
-            if value then
-                net.Start("MakeBoomboxPermanent")
-                    net.WriteEntity(ent)
-                net.SendToServer()
-            else
-                net.Start("RemoveBoomboxPermanent")
-                    net.WriteEntity(ent)
-                net.SendToServer()
-            end
+            -- Listen for confirmation from the server
+            net.Receive("BoomboxPermanentConfirmation", function()
+                local message = net.ReadString()
+                chat.AddText(Color(0, 255, 0), "[Boombox] ", Color(255, 255, 255), message)
+
+                -- Update the checkbox state based on the message
+                if string.find(message, "marked as permanent") then
+                    permanentCheckbox:SetChecked(true)
+                elseif string.find(message, "permanence has been removed") then
+                    permanentCheckbox:SetChecked(false)
+                end
+            end)
         end
-
-        -- Listen for confirmation from the server
-        net.Receive("BoomboxPermanentConfirmation", function()
-            local message = net.ReadString()
-            chat.AddText(Color(0, 255, 0), "[Boombox] ", Color(255, 255, 255), message)
-
-            -- Update the checkbox state based on the message
-            if string.find(message, "marked as permanent") then
-                permanentCheckbox:SetChecked(true)
-            elseif string.find(message, "permanence has been removed") then
-                permanentCheckbox:SetChecked(false)
-            end
-        end)
     end
 
     -- Add footer
@@ -857,7 +874,7 @@ local function openSettingsMenu(parentFrame, backButton)
     footer:SetPos(0, settingsFrame:GetTall() - footerHeight)
     footer:SetText("")
     footer.Paint = function(self, w, h)
-        draw.RoundedBox(8, 0, 0, w, h, self:IsHovered() and Config.UI.ButtonHoverColor or Config.UI.ButtonColor)
+        draw.RoundedBox(8, 0, 0, w, h, self:IsHovered() and Config.UI.BackgroundColor or Config.UI.BackgroundColor)
     end
     footer.DoClick = function()
         gui.OpenURL("https://github.com/charles-mills/rRadio")
@@ -900,20 +917,19 @@ openRadioMenu = function(openSettings)
     if radioMenuOpen then return end
     radioMenuOpen = true
 
-    local backButton  -- Declare backButton here so it's accessible everywhere in this function
+    local backButton
 
     local frame = vgui.Create("DFrame")
-    currentFrame = frame  -- Store the current frame
+    currentFrame = frame
     frame:SetTitle("")
     frame:SetSize(Scale(Config.UI.FrameSize.width), Scale(Config.UI.FrameSize.height))
     frame:Center()
-    frame:SetDraggable(true)
+    frame:SetDraggable(false)
     frame:ShowCloseButton(false)
     frame:MakePopup()
-    frame.OnClose = function() radioMenuOpen = false end
-
-    -- Declare settingsFrame here so it's accessible in backButton.DoClick
-    settingsFrame = nil  -- Make settingsFrame accessible globally within this function
+    frame.OnClose = function() 
+        radioMenuOpen = false 
+    end
 
     frame.Paint = function(self, w, h)
         draw.RoundedBox(8, 0, 0, w, h, Config.UI.BackgroundColor)
@@ -962,131 +978,63 @@ openRadioMenu = function(openSettings)
     local stopButtonText = Config.Lang["StopRadio"] or "STOP"
     local stopButtonFont = calculateFontSizeForStopButton(stopButtonText, stopButtonWidth, stopButtonHeight)
 
-    local stopButton = vgui.Create("DButton", frame)
-    stopButton:SetPos(Scale(10), Scale(Config.UI.FrameSize.height) - Scale(90))
-    stopButton:SetSize(stopButtonWidth, stopButtonHeight)
-    stopButton:SetText(stopButtonText)
-    stopButton:SetFont(stopButtonFont)
-    stopButton:SetTextColor(Config.UI.TextColor)
-    stopButton.Paint = function(self, w, h)
-        draw.RoundedBox(8, 0, 0, w, h, Config.UI.CloseButtonColor)
-        if self:IsHovered() then
-            draw.RoundedBox(8, 0, 0, w, h, Config.UI.CloseButtonHoverColor)
+    -- Modify the buttons to include hover animations
+    local function createAnimatedButton(parent, x, y, w, h, text, textColor, bgColor, hoverColor, clickFunc)
+        local button = vgui.Create("DButton", parent)
+        button:SetPos(x, y)
+        button:SetSize(w, h)
+        button:SetText(text)
+        button:SetTextColor(textColor)
+        button.bgColor = bgColor
+        button.hoverColor = hoverColor
+        button.lerp = 0
+        
+        button.Paint = function(self, w, h)
+            local color = LerpColor(self.lerp, self.bgColor, self.hoverColor)
+            draw.RoundedBox(8, 0, 0, w, h, color)
         end
-    end
-
-    local buttonSize = Scale(25)
-    local topMargin = Scale(7)
-    local buttonPadding = Scale(5)
-
-    -- Close Button
-    local closeButton = vgui.Create("DButton", frame)
-    closeButton:SetSize(buttonSize, buttonSize)
-    closeButton:SetPos(frame:GetWide() - buttonSize - Scale(10), topMargin)
-    closeButton:SetText("")
-
-    closeButton.Paint = function(self, w, h)
-        surface.SetMaterial(Material("hud/close.png"))
-        surface.SetDrawColor(self:IsHovered() and Config.UI.ButtonHoverColor or Config.UI.TextColor)
-        surface.DrawTexturedRect(0, 0, w, h)
-    end
-
-    closeButton.DoClick = function()
-        surface.PlaySound("buttons/lightswitch2.wav")
-        frame:Close()
-    end
-
-    -- Settings Button
-    local settingsButton = vgui.Create("DButton", frame)
-    settingsButton:SetSize(buttonSize, buttonSize)
-    settingsButton:SetPos(closeButton:GetX() - buttonSize - buttonPadding, topMargin)
-    settingsButton:SetText("")
-
-    settingsButton.Paint = function(self, w, h)
-        surface.SetMaterial(Material("hud/settings.png"))
-        surface.SetDrawColor(self:IsHovered() and Config.UI.ButtonHoverColor or Config.UI.TextColor)
-        surface.DrawTexturedRect(0, 0, w, h)
-    end
-
-    settingsButton.DoClick = function()
-        surface.PlaySound("buttons/lightswitch2.wav")
-        settingsMenuOpen = true
-        openSettingsMenu(currentFrame, backButton)
-        backButton:SetVisible(true)
-        backButton:SetEnabled(true)
-        searchBox:SetVisible(false)
-        stationListPanel:SetVisible(false)
-    end
-
-    backButton = vgui.Create("DButton", frame)
-    backButton:SetSize(buttonSize, buttonSize)
-    backButton:SetPos(settingsButton:GetX() - buttonSize - buttonPadding, topMargin)
-    backButton:SetText("")
-
-    backButton.Paint = function(self, w, h)
-        surface.SetMaterial(Material("hud/return.png"))
-        if self:IsVisible() then
-            surface.SetDrawColor(self:IsHovered() and Config.UI.ButtonHoverColor or Config.UI.TextColor)
-        else
-            surface.SetDrawColor(0, 0, 0, 0)
-        end
-        surface.DrawTexturedRect(0, 0, w, h)
-    end
-
-    backButton.DoClick = function()
-        surface.PlaySound("buttons/lightswitch2.wav")
-        if settingsMenuOpen then
-            settingsMenuOpen = false
-            if IsValid(settingsFrame) then
-                settingsFrame:Remove()
-                settingsFrame = nil
+        
+        button.Think = function(self)
+            if self:IsHovered() then
+                self.lerp = math.Approach(self.lerp, 1, FrameTime() * 5)
+            else
+                self.lerp = math.Approach(self.lerp, 0, FrameTime() * 5)
             end
-            searchBox:SetVisible(true)
-            stationListPanel:SetVisible(true)
-            backButton:SetVisible(selectedCountry ~= nil)
-            backButton:SetEnabled(selectedCountry ~= nil)
-        elseif selectedCountry ~= nil then
-            selectedCountry = nil
-            backButton:SetVisible(false)
-            backButton:SetEnabled(false)
-        else
-            backButton:SetVisible(false)
-            backButton:SetEnabled(false)
         end
-        populateList(stationListPanel, backButton, searchBox, true)
+        
+        button.DoClick = clickFunc
+        
+        return button
     end
 
-    -- Set the visibility and interactivity of the back button
-    if selectedCountry == nil and not settingsMenuOpen then
-        backButton:SetVisible(false)
-        backButton:SetEnabled(false)
-    else
-        backButton:SetVisible(true)
-        backButton:SetEnabled(true)
-    end
-
-    stopButton.DoClick = function()
-        surface.PlaySound("buttons/button6.wav")
-        local entity = LocalPlayer().currentRadioEntity
-        if IsValid(entity) then
-            net.Start("StopCarRadioStation")
-                net.WriteEntity(entity)
-            net.SendToServer()
-            currentlyPlayingStation = nil
-            currentlyPlayingStations[entity] = nil
-            populateList(stationListPanel, backButton, searchBox, false)
-            -- Ensure back button visibility is correct
-            if backButton then
-                if selectedCountry == nil and not settingsMenuOpen then
-                    backButton:SetVisible(false)
-                    backButton:SetEnabled(false)
-                else
-                    backButton:SetVisible(true)
-                    backButton:SetEnabled(true)
+    local stopButton = createAnimatedButton(
+        frame, 
+        Scale(10), 
+        Scale(Config.UI.FrameSize.height) - Scale(90), 
+        stopButtonWidth, 
+        stopButtonHeight, 
+        stopButtonText, 
+        Config.UI.TextColor, 
+        Config.UI.CloseButtonColor, 
+        Config.UI.CloseButtonHoverColor, 
+        function()
+            surface.PlaySound("buttons/button6.wav")
+            local entity = LocalPlayer().currentRadioEntity
+            if IsValid(entity) then
+                net.Start("StopCarRadioStation")
+                    net.WriteEntity(entity)
+                net.SendToServer()
+                currentlyPlayingStation = nil
+                currentlyPlayingStations[entity] = nil
+                populateList(stationListPanel, backButton, searchBox, false)
+                if backButton then
+                    backButton:SetVisible(selectedCountry ~= nil or settingsMenuOpen)
+                    backButton:SetEnabled(selectedCountry ~= nil or settingsMenuOpen)
                 end
             end
         end
-    end
+    )
+    stopButton:SetFont(stopButtonFont)
 
     local volumePanel = vgui.Create("DPanel", frame)
     volumePanel:SetPos(Scale(20) + stopButtonWidth, Scale(Config.UI.FrameSize.height) - Scale(90))
@@ -1103,18 +1051,34 @@ openRadioMenu = function(openSettings)
 
     -- Function to update the volume icon based on the current volume
     local function updateVolumeIcon(value)
+        local iconName
         if value < 0.01 then
-            volumeIcon:SetImage("hud/vol_mute.png")
+            iconName = "vol_mute"
         elseif value <= 0.65 then
-            volumeIcon:SetImage("hud/vol_down.png")
+            iconName = "vol_down"
         else
-            volumeIcon:SetImage("hud/vol_up.png")
+            iconName = "vol_up"
         end
+        
+        local mat = Material("hud/" .. iconName .. ".png")
+        volumeIcon:SetMaterial(mat)
     end
 
-    local entity = LocalPlayer().currentRadioEntity
+    -- Override the Paint function of volumeIcon to apply the text color
+    volumeIcon.Paint = function(self, w, h)
+        surface.SetDrawColor(Config.UI.TextColor)
+        surface.SetMaterial(self:GetMaterial())
+        surface.DrawTexturedRect(0, 0, w, h)
+    end
 
-    local currentVolume = entityVolumes[entity] or (getEntityConfig(entity) and getEntityConfig(entity).Volume) or 0.5
+    -- Get the current entity and its volume
+    local entity = LocalPlayer().currentRadioEntity
+    local currentVolume = 0.5 -- Default volume
+
+    if IsValid(entity) then
+        currentVolume = entityVolumes[entity] or (getEntityConfig(entity) and getEntityConfig(entity).Volume) or 0.5
+    end
+
     -- Set initial icon
     updateVolumeIcon(currentVolume)
 
@@ -1154,11 +1118,13 @@ openRadioMenu = function(openSettings)
             value = 0
         end
 
-        -- Immediately update client-side volume and icon
+        -- Immediately update client-side volume
         entityVolumes[entity] = value
         if currentRadioSources[entity] and IsValid(currentRadioSources[entity]) then
             currentRadioSources[entity]:SetVolume(value)
         end
+
+        -- Update the icon
         updateVolumeIcon(value)
 
         -- Debounce server communication
@@ -1179,6 +1145,103 @@ openRadioMenu = function(openSettings)
     function sbar.btnUp:Paint(w, h) draw.RoundedBox(8, 0, 0, w, h, Config.UI.ScrollbarColor) end
     function sbar.btnDown:Paint(w, h) draw.RoundedBox(8, 0, 0, w, h, Config.UI.ScrollbarColor) end
     function sbar.btnGrip:Paint(w, h) draw.RoundedBox(8, 0, 0, w, h, Config.UI.ScrollbarGripColor) end
+
+    -- Modify the close, settings, and back buttons to use the new animated button function
+    local buttonSize = Scale(25)
+    local topMargin = Scale(7)
+    local buttonPadding = Scale(5)
+
+    local closeButton = createAnimatedButton(
+        frame, 
+        frame:GetWide() - buttonSize - Scale(10), 
+        topMargin, 
+        buttonSize, 
+        buttonSize, 
+        "", 
+        Config.UI.TextColor, 
+        Color(0, 0, 0, 0), 
+        Config.UI.ButtonHoverColor, 
+        function()
+            surface.PlaySound("buttons/lightswitch2.wav")
+            frame:Close()
+        end
+    )
+    closeButton.Paint = function(self, w, h)
+        surface.SetMaterial(Material("hud/close.png"))
+        surface.SetDrawColor(ColorAlpha(Config.UI.TextColor, 255 * (0.5 + 0.5 * self.lerp)))
+        surface.DrawTexturedRect(0, 0, w, h)
+    end
+
+    local settingsButton = createAnimatedButton(
+        frame, 
+        closeButton:GetX() - buttonSize - buttonPadding, 
+        topMargin, 
+        buttonSize, 
+        buttonSize, 
+        "", 
+        Config.UI.TextColor, 
+        Color(0, 0, 0, 0), 
+        Config.UI.ButtonHoverColor, 
+        function()
+            surface.PlaySound("buttons/lightswitch2.wav")
+            settingsMenuOpen = true
+            openSettingsMenu(currentFrame, backButton)
+            backButton:SetVisible(true)
+            backButton:SetEnabled(true)
+            searchBox:SetVisible(false)
+            stationListPanel:SetVisible(false)
+        end
+    )
+    settingsButton.Paint = function(self, w, h)
+        surface.SetMaterial(Material("hud/settings.png"))
+        surface.SetDrawColor(ColorAlpha(Config.UI.TextColor, 255 * (0.5 + 0.5 * self.lerp)))
+        surface.DrawTexturedRect(0, 0, w, h)
+    end
+
+    backButton = createAnimatedButton(
+        frame, 
+        settingsButton:GetX() - buttonSize - buttonPadding, 
+        topMargin, 
+        buttonSize, 
+        buttonSize, 
+        "", 
+        Config.UI.TextColor, 
+        Color(0, 0, 0, 0), 
+        Config.UI.ButtonHoverColor, 
+        function()
+            surface.PlaySound("buttons/lightswitch2.wav")
+            if settingsMenuOpen then
+                settingsMenuOpen = false
+                if IsValid(settingsFrame) then
+                    settingsFrame:Remove()
+                    settingsFrame = nil
+                end
+                searchBox:SetVisible(true)
+                stationListPanel:SetVisible(true)
+                backButton:SetVisible(selectedCountry ~= nil)
+                backButton:SetEnabled(selectedCountry ~= nil)
+            elseif selectedCountry ~= nil then
+                selectedCountry = nil
+                backButton:SetVisible(false)
+                backButton:SetEnabled(false)
+            else
+                backButton:SetVisible(false)
+                backButton:SetEnabled(false)
+            end
+            populateList(stationListPanel, backButton, searchBox, true)
+        end
+    )
+    backButton.Paint = function(self, w, h)
+        if self:IsVisible() then
+            surface.SetMaterial(Material("hud/return.png"))
+            surface.SetDrawColor(ColorAlpha(Config.UI.TextColor, 255 * (0.5 + 0.5 * self.lerp)))
+            surface.DrawTexturedRect(0, 0, w, h)
+        end
+    end
+
+    -- Set the visibility and interactivity of the back button
+    backButton:SetVisible(selectedCountry ~= nil or settingsMenuOpen)
+    backButton:SetEnabled(selectedCountry ~= nil or settingsMenuOpen)
 
     if not settingsMenuOpen then
         populateList(stationListPanel, backButton, searchBox, true)
@@ -1212,12 +1275,19 @@ hook.Add("Think", "OpenCarRadioMenu", function()
     end
 end)
 
---[[
-    Network Receiver: PlayCarRadioStation
-    Handles playing a radio station on the client.
-]]
+-- Add this function near the top of the file
+local function GetVehicleEntity(entity)
+    if IsValid(entity) and entity:IsVehicle() then
+        local parent = entity:GetParent()
+        return IsValid(parent) and parent or entity
+    end
+    return entity
+end
+
+-- Modify the PlayCarRadioStation network receiver
 net.Receive("PlayCarRadioStation", function()
     local entity = net.ReadEntity()
+    entity = GetVehicleEntity(entity)  -- Use the new function
     local stationName = net.ReadString()
     local url = net.ReadString()
     local volume = net.ReadFloat()
@@ -1297,7 +1367,9 @@ net.Receive("PlayCarRadioStation", function()
                             local playerPos = LocalPlayer():GetPos()
                             local entityPos = entity:GetPos()
                             local distanceSqr = playerPos:DistToSqr(entityPos)
-                            local isPlayerInCar = LocalPlayer():GetVehicle() == entity
+                            local isPlayerInCar = LocalPlayer():GetVehicle() == entity or 
+                                                  (IsValid(LocalPlayer():GetVehicle()) and 
+                                                   LocalPlayer():GetVehicle():GetParent() == entity)
 
                             updateRadioVolume(station, distanceSqr, isPlayerInCar, entity)
                         else
@@ -1341,13 +1413,10 @@ net.Receive("PlayCarRadioStation", function()
     attemptPlayStation(1)
 end)
 
-
---[[
-    Network Receiver: StopCarRadioStation
-    Stops playing the radio station on the client.
-]]
+-- Modify the StopCarRadioStation network receiver
 net.Receive("StopCarRadioStation", function()
     local entity = net.ReadEntity()
+    entity = GetVehicleEntity(entity)  -- Use the new function
 
     if IsValid(entity) and IsValid(currentRadioSources[entity]) then
         currentRadioSources[entity]:Stop()
@@ -1362,6 +1431,30 @@ net.Receive("StopCarRadioStation", function()
                 stationStatus = "stopped",
                 stationName = ""
             }
+        end
+    end
+end)
+
+-- Modify the UpdateRadioVolume network receiver
+net.Receive("UpdateRadioVolume", function()
+    local entity = net.ReadEntity()
+    entity = GetVehicleEntity(entity)  -- Use the new function
+    local volume = net.ReadFloat()
+
+    if not IsValid(entity) then return end
+
+    entityVolumes[entity] = volume
+
+    -- Update the volume for the current radio source
+    if currentRadioSources[entity] and IsValid(currentRadioSources[entity]) then
+        currentRadioSources[entity]:SetVolume(volume)
+    end
+
+    -- Update the volume slider if the radio menu is open
+    if radioMenuOpen and IsValid(currentFrame) then
+        local volumeSlider = currentFrame:GetChildren()[6]:GetChildren()[2] -- Adjust this index if needed
+        if IsValid(volumeSlider) and volumeSlider:GetName() == "DNumSlider" then
+            volumeSlider:SetValue(volume)
         end
     end
 end)
