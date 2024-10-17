@@ -1,3 +1,5 @@
+-- lua/autorun/client/cl_core.lua
+
 --[[
     Radio Addon Client-Side Main Script
     Author: Charles Mills
@@ -324,7 +326,7 @@ local function calculateFontSizeForStopButton(text, buttonWidth, buttonHeight)
     surface.SetFont(fontName)
     local textWidth = surface.GetTextSize(text)
 
-    while textWidth > buttonWidth * 0.9 do
+    while textWidth > buttonWidth * 0.9 and maxFontSize > 10 do
         maxFontSize = maxFontSize - 1
         surface.CreateFont(fontName, {
             font = "Roboto",
@@ -605,16 +607,16 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
 
                 if currentlyPlayingStations[entity] then
                     net.Start("StopCarRadioStation")
-                    net.WriteEntity(entity)
+                        net.WriteEntity(entity)
                     net.SendToServer()
                 end
 
                 local volume = entityVolumes[entity] or (getEntityConfig(entity) and getEntityConfig(entity).Volume) or 0.5
                 net.Start("PlayCarRadioStation")
-                net.WriteEntity(entity)
-                net.WriteString(station.name)
-                net.WriteString(station.url)
-                net.WriteFloat(volume)
+                    net.WriteEntity(entity)
+                    net.WriteString(station.name)
+                    net.WriteString(station.url)
+                    net.WriteFloat(volume)
                 net.SendToServer()
 
                 currentlyPlayingStations[entity] = station
@@ -623,19 +625,16 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
             end
         end
     end
-
-    -- Ensure the back button visibility is updated
-    if backButton then
-        if selectedCountry == nil and not settingsMenuOpen then
-            backButton:SetVisible(false)
-            backButton:SetEnabled(false)
-        else
-            backButton:SetVisible(true)
-            backButton:SetEnabled(true)
-        end
-    end
 end
 
+--[[
+    Function: openSettingsMenu
+    Opens the settings menu within the radio menu.
+
+    Parameters:
+    - parentFrame: The parent frame of the settings menu.
+    - backButton: The back button to return to the main menu.
+]]
 local function openSettingsMenu(parentFrame, backButton)
     settingsFrame = vgui.Create("DPanel", parentFrame)
     settingsFrame:SetSize(parentFrame:GetWide() - Scale(20), parentFrame:GetTall() - Scale(50) - Scale(10))
@@ -711,24 +710,17 @@ local function openSettingsMenu(parentFrame, backButton)
             draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonColor)
         end
 
-        local checkbox = vgui.Create("DCheckBox", container)
+        local checkbox = vgui.Create("DCheckBoxLabel", container)
         checkbox:SetPos(Scale(10), (container:GetTall() - Scale(25)) / 2)
-        checkbox:SetSize(Scale(25), Scale(25))
+        checkbox:SetText(text)
         checkbox:SetConVar(convar)
+        checkbox:SetTextColor(Config.UI.TextColor)
+        checkbox:SetFont("Roboto18")
+        checkbox:SetValue(GetConVar(convar):GetBool())
 
-        checkbox.Paint = function(self, w, h)
-            draw.RoundedBox(4, 0, 0, w, h, Config.UI.SearchBoxColor)
-            if self:GetChecked() then
-                draw.RoundedBox(4, Scale(2), Scale(2), w - Scale(4), h - Scale(4), Config.UI.TextColor)
-            end
+        checkbox.OnChange = function(self, value)
+            RunConsoleCommand(convar, value and "1" or "0")
         end
-
-        local label = vgui.Create("DLabel", container)
-        label:SetText(text)
-        label:SetTextColor(Config.UI.TextColor)
-        label:SetFont("Roboto18")
-        label:SizeToContents()
-        label:SetPos(Scale(45), container:GetTall() / 2 - label:GetTall() / 2)
 
         return checkbox
     end
@@ -796,6 +788,54 @@ local function openSettingsMenu(parentFrame, backButton)
     addHeader(Config.Lang["GeneralOptions"] or "General Options")
     addCheckbox(Config.Lang["ShowCarMessages"] or "Show Car Radio Messages", "car_radio_show_messages")
     addCheckbox(Config.Lang["ShowBoomboxHUD"] or "Show Boombox Hover Text", "boombox_show_text")
+
+    -- Superadmin: Permanent Boombox Section
+    if LocalPlayer():IsSuperAdmin() then
+        addHeader(Config.Lang["PermanentBoombox"] or "Permanent Boombox")
+
+        local permanentCheckbox = vgui.Create("DCheckBoxLabel", scrollPanel)
+        permanentCheckbox:SetText(Config.Lang["MakeBoomboxPermanent"] or "Make Boombox Permanent")
+        permanentCheckbox:SetTextColor(Config.UI.TextColor)
+        permanentCheckbox:SetFont("Roboto18")
+        permanentCheckbox:Dock(TOP)
+        permanentCheckbox:DockMargin(Scale(5), Scale(5), Scale(5), Scale(5))
+
+        -- Set initial value based on the currentRadioEntity's permanence
+        if IsValid(LocalPlayer().currentRadioEntity) then
+            permanentCheckbox:SetChecked(LocalPlayer().currentRadioEntity:GetNWBool("IsPermanent", false))
+        end
+
+        permanentCheckbox.OnChange = function(self, value)
+            if not IsValid(LocalPlayer().currentRadioEntity) then
+                self:SetChecked(false)
+                return
+            end
+
+            local ent = LocalPlayer().currentRadioEntity
+            if value then
+                net.Start("MakeBoomboxPermanent")
+                    net.WriteEntity(ent)
+                net.SendToServer()
+            else
+                net.Start("RemoveBoomboxPermanent")
+                    net.WriteEntity(ent)
+                net.SendToServer()
+            end
+        end
+
+        -- Listen for confirmation from the server
+        net.Receive("BoomboxPermanentConfirmation", function()
+            local message = net.ReadString()
+            chat.AddText(Color(0, 255, 0), "[Boombox] ", Color(255, 255, 255), message)
+
+            -- Update the checkbox state based on the message
+            if string.find(message, "marked as permanent") then
+                permanentCheckbox:SetChecked(true)
+            elseif string.find(message, "permanence has been removed") then
+                permanentCheckbox:SetChecked(false)
+            end
+        end)
+    end
 
     -- Add footer
     local footerHeight = Scale(60)
@@ -1017,7 +1057,7 @@ openRadioMenu = function(openSettings)
         local entity = LocalPlayer().currentRadioEntity
         if IsValid(entity) then
             net.Start("StopCarRadioStation")
-            net.WriteEntity(entity)
+                net.WriteEntity(entity)
             net.SendToServer()
             currentlyPlayingStation = nil
             currentlyPlayingStations[entity] = nil
@@ -1066,8 +1106,8 @@ openRadioMenu = function(openSettings)
     updateVolumeIcon(currentVolume)
 
     local volumeSlider = vgui.Create("DNumSlider", volumePanel)
-    volumeSlider:SetPos(volumeIcon:GetWide() - Scale(200), Scale(5))
-    volumeSlider:SetSize(volumePanel:GetWide() - volumeIcon:GetWide() + Scale(180), volumePanel:GetTall() - Scale(20))
+    volumeSlider:SetPos(-Scale(170), Scale(5))
+    volumeSlider:SetSize(Scale(Config.UI.FrameSize.width) + Scale(120) - stopButtonWidth, volumePanel:GetTall() - Scale(20))
     volumeSlider:SetText("")
     volumeSlider:SetMin(0)
     volumeSlider:SetMax(1)
@@ -1076,11 +1116,11 @@ openRadioMenu = function(openSettings)
     volumeSlider:SetValue(currentVolume)
 
     volumeSlider.Slider.Paint = function(self, w, h)
-        draw.RoundedBox(4, 0, h / 2 - 4, w, 16, Config.UI.TextColor)
+        draw.RoundedBox(8, 0, h / 2 - 4, w, 16, Config.UI.TextColor)
     end
 
     volumeSlider.Slider.Knob.Paint = function(self, w, h)
-        draw.RoundedBox(8, 0, Scale(-2), w * 2, h * 2, Config.UI.BackgroundColor)
+        draw.RoundedBox(12, 0, Scale(-2), w * 2, h * 2, Config.UI.BackgroundColor)
     end
 
     volumeSlider.TextArea:SetVisible(false)
@@ -1114,8 +1154,8 @@ openRadioMenu = function(openSettings)
 
             -- Send volume update to server
             net.Start("UpdateRadioVolume")
-            net.WriteEntity(entity)
-            net.WriteFloat(value)
+                net.WriteEntity(entity)
+                net.WriteFloat(value)
             net.SendToServer()
         end
     end
@@ -1288,6 +1328,7 @@ net.Receive("PlayCarRadioStation", function()
     attemptPlayStation(1)
 end)
 
+
 --[[
     Network Receiver: StopCarRadioStation
     Stops playing the radio station on the client.
@@ -1299,13 +1340,12 @@ net.Receive("StopCarRadioStation", function()
         currentRadioSources[entity]:Stop()
         currentRadioSources[entity] = nil
         currentlyPlayingStations[entity] = nil
-        local entIndex = entity:EntIndex()
-        hook.Remove("EntityRemoved", "StopRadioOnEntityRemove_" .. entIndex)
-        hook.Remove("Think", "UpdateRadioPosition_" .. entIndex)
+        hook.Remove("EntityRemoved", "StopRadioOnEntityRemove_" .. entity:EntIndex())
+        hook.Remove("Think", "UpdateRadioPosition_" .. entity:EntIndex())
 
         -- Update boombox status to "stopped"
         if IsValid(entity) and (entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox") then
-            BoomboxStatuses[entIndex] = {
+            BoomboxStatuses[entity:EntIndex()] = {
                 stationStatus = "stopped",
                 stationName = ""
             }
@@ -1318,9 +1358,9 @@ end)
     Opens the radio menu for the player.
 ]]
 net.Receive("OpenRadioMenu", function()
-    local entity = net.ReadEntity()
-    if IsValid(entity) then
-        LocalPlayer().currentRadioEntity = entity
+    local ent = net.ReadEntity()
+    if IsValid(ent) then
+        LocalPlayer().currentRadioEntity = ent
         if not radioMenuOpen then
             openRadioMenu()
         end

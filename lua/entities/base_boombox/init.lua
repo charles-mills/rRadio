@@ -1,3 +1,5 @@
+-- lua/entities/boombox/init.lua
+
 AddCSLuaFile("cl_init.lua")
 AddCSLuaFile("shared.lua")
 
@@ -8,7 +10,6 @@ SavedBoomboxStates = SavedBoomboxStates or {}
 
 -- Table to track the last time a player received a "no permission" message
 local lastPermissionMessageTime = {}
-
 -- Cooldown period for permission messages in seconds
 local permissionMessageCooldown = 5
 
@@ -29,6 +30,15 @@ function ENT:Initialize()
 
     -- Ensure the collision group allows interaction with the Physgun
     self:SetCollisionGroup(COLLISION_GROUP_NONE)
+
+    -- Initialize boombox properties
+    self.StationName = self.StationName or ""
+    self.StationURL = self.StationURL or ""
+    self.Volume = self.Volume or 1.0
+
+    -- Initialize permanence
+    self.IsPermanent = false
+    self:SetNWBool("IsPermanent", false)
 end
 
 -- Spawn function called when the entity is created via the Spawn Menu or other means
@@ -62,16 +72,16 @@ function ENT:PhysgunPickup(ply)
     return ply == owner or not IsValid(owner)
 end
 
--- Only allow the owner, a superadmin
+-- Only allow the owner or a superadmin to use the boombox
 function ENT:Use(activator, caller)
     if activator:IsPlayer() then
         local owner = self:GetNWEntity("Owner")
 
-        -- Check if the player is the owner, a superadmin
+        -- Check if the player is the owner or a superadmin
         if activator == owner or activator:IsSuperAdmin() then
             net.Start("OpenRadioMenu")
-            net.WriteEntity(self)
-            net.Send(activator)
+                net.WriteEntity(self)
+                net.Send(activator)
         else
             local currentTime = CurTime()
 
@@ -82,4 +92,36 @@ function ENT:Use(activator, caller)
             end
         end
     end
+end
+
+-- Function to make the boombox permanent (called by the server)
+function ENT:MakePermanent()
+    if self.IsPermanent then return end
+    self.IsPermanent = true
+    self:SetNWBool("IsPermanent", true)
+end
+
+-- Function to remove permanence from the boombox (called by the server)
+function ENT:RemovePermanent()
+    if not self.IsPermanent then return end
+    self.IsPermanent = false
+    self:SetNWBool("IsPermanent", false)
+
+    -- Optionally stop the radio if it's playing
+    if self.StopRadio then
+        self:StopRadio()
+    end
+end
+
+-- Prevent non-superadmins from using tools or physgun on boomboxes
+function ENT:CanTool(ply, tool)
+    if not IsValid(ply) then return false end
+    if ply:IsSuperAdmin() then return true end
+    return false
+end
+
+function ENT:CanPhysgun(ply)
+    if not IsValid(ply) then return false end
+    if ply:IsSuperAdmin() then return true end
+    return false
 end

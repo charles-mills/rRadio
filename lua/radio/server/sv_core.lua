@@ -1,3 +1,5 @@
+print("[rRadio] Initializing server-side core")
+
 -- Network Strings
 util.AddNetworkString("PlayCarRadioStation")
 util.AddNetworkString("StopCarRadioStation")
@@ -18,10 +20,18 @@ local PlayerCooldowns = {}
 -- Global table to store boombox statuses
 BoomboxStatuses = BoomboxStatuses or {}
 
+local SavePermanentBoombox, RemovePermanentBoombox, LoadPermanentBoomboxes
+
+include("sv_permanent.lua")
+
+-- After including sv_permanent.lua, assign the functions
+SavePermanentBoombox = _G.SavePermanentBoombox
+RemovePermanentBoombox = _G.RemovePermanentBoombox
+LoadPermanentBoomboxes = _G.LoadPermanentBoomboxes
+
 --[[
     Function: AddActiveRadio
     Adds a radio to the active radios list.
-
     Parameters:
     - entity: The entity representing the radio.
     - stationName: The name of the station.
@@ -46,7 +56,6 @@ end
 --[[
     Function: RemoveActiveRadio
     Removes a radio from the active radios list.
-
     Parameters:
     - entity: The entity representing the radio.
 ]]
@@ -58,7 +67,6 @@ end
 --[[
     Function: SendActiveRadiosToPlayer
     Sends active radios to a specific player with limited retries.
-
     Parameters:
     - ply: The player to send active radios to.
 ]]
@@ -185,6 +193,16 @@ net.Receive("PlayCarRadioStation", function(len, ply)
             return
         end
 
+        -- Ensure the entity has a permanent ID if it's permanent
+        if entity.IsPermanent and entity:GetNWString("PermanentID", "") == "" then
+            entity:SetNWString("PermanentID", os.time() .. "_" .. math.random(1000, 9999))
+        end
+
+        -- Set networked variables
+        entity:SetNWString("StationName", stationName)
+        entity:SetNWString("StationURL", stationURL)
+        entity:SetNWFloat("Volume", volume)
+
         if entity.SetVolume then
             entity:SetVolume(volume)
         end
@@ -206,6 +224,11 @@ net.Receive("PlayCarRadioStation", function(len, ply)
             net.WriteEntity(entity)
             net.WriteString(stationName)
         net.Broadcast()
+
+        -- Save to database if permanent
+        if entity.IsPermanent and SavePermanentBoombox then
+            SavePermanentBoombox(entity)
+        end
 
     elseif entity:IsVehicle() then
         -- Allow only superadmins to interact with vehicle radios
@@ -272,6 +295,11 @@ net.Receive("StopCarRadioStation", function(len, ply)
             return
         end
 
+        -- Don't clear the PermanentID when stopping the radio
+        entity:SetNWString("StationName", "")
+        entity:SetNWString("StationURL", "")
+        entity:SetNWFloat("Volume", 0)
+
         if entity.SetStationName then
             entity:SetStationName("")
         end
@@ -286,6 +314,11 @@ net.Receive("StopCarRadioStation", function(len, ply)
             net.WriteEntity(entity)
             net.WriteString("")
         net.Broadcast()
+
+        -- Save to database if permanent
+        if entity.IsPermanent and SavePermanentBoombox then
+            SavePermanentBoombox(entity)
+        end
 
     elseif entity:IsVehicle() then
         -- Allow only superadmins to interact with vehicle radios
@@ -313,7 +346,6 @@ end)
 --[[
     Network Receiver: UpdateRadioVolume
     Updates the volume of a boombox.
-
     Parameters:
     - entity: The boombox entity.
     - volume: The new volume level.
@@ -331,6 +363,11 @@ net.Receive("UpdateRadioVolume", function(len, ply)
 
         entity:SetVolume(volume)
         print("[rRadio] Volume updated for entity:", entity, "Volume:", volume)
+
+        -- Save to database if permanent
+        if entity.IsPermanent and SavePermanentBoombox then
+            SavePermanentBoombox(entity)
+        end
     else
         print("[rRadio] UpdateRadioVolume: Invalid entity or unsupported class.")
     end
@@ -348,7 +385,6 @@ end)
 --[[
     Function: IsDarkRP
     Utility function to detect if the gamemode is DarkRP or DerivedRP.
-
     Returns:
     - Boolean indicating if DarkRP is detected.
 ]]
@@ -359,7 +395,6 @@ end
 --[[
     Function: AssignOwner
     Assigns ownership of an entity using CPPI.
-
     Parameters:
     - ply: The player to assign as the owner.
     - ent: The entity to assign ownership to.
@@ -428,3 +463,16 @@ hook.Add("PlayerDisconnected", "ClearPlayerDataOnDisconnect", function(ply)
     print("[rRadio] Cleared player data for disconnected player:", ply:Nick())
 end)
 
+-- Add a hook to load permanent boomboxes when the server starts
+hook.Add("InitPostEntity", "LoadPermanentBoomboxesOnServerStart", function()
+    timer.Simple(0.5, function()
+        if LoadPermanentBoomboxes then
+            LoadPermanentBoomboxes()
+        else
+            print("[rRadio] Error: LoadPermanentBoomboxes function not found")
+        end
+    end)
+end)
+
+-- At the end of the file, add:
+_G.AddActiveRadio = AddActiveRadio
