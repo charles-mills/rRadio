@@ -1,7 +1,7 @@
 -- Include necessary files
 include("radio/key_names.lua")
 include("radio/config.lua")
-local LanguageManager = include("language_manager.lua")
+local LanguageManager = include("radio/lang/cl_language_manager.lua")
 local themes = include("themes.lua") or {}
 local keyCodeMapping = include("radio/key_names.lua")
 
@@ -725,6 +725,7 @@ local function openSettingsMenu(parentFrame, backButton)
 
     addDropdown(Config.Lang["SelectLanguage"] or "Select Language", languageChoices, currentLanguageName, function(_, _, _, data)
         RunConsoleCommand("radio_language", data)
+        LanguageManager:SetLanguage(data)
         Config.Lang = LanguageManager.translations[data]
         parentFrame:Close()
         timer.Simple(0.1, function()

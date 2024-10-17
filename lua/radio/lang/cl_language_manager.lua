@@ -10,6 +10,7 @@ Adding a new Language?
 
 
 local LanguageManager = {}
+
 LanguageManager.languages = {
     de = "Deutsch",
     en = "English",
@@ -24,9 +25,9 @@ LanguageManager.languages = {
     tr = "Türkçe",
 }
 
-LanguageManager.translations = include("radio/lang/cl_localisation_strings.lua")
-LanguageManager.countryTranslationsA = include("radio/lang/cl_country_translations_a.lua")
-LanguageManager.countryTranslationsB = include("radio/lang/cl_country_translations_b.lua")
+LanguageManager.translations = include("cl_localisation_strings.lua")
+LanguageManager.countryTranslationsA = include("cl_country_translations_a.lua")
+LanguageManager.countryTranslationsB = include("cl_country_translations_b.lua")
 
 -- Merge country translations
 LanguageManager.countryTranslations = {}
@@ -70,6 +71,14 @@ end
 -- Function to get all available languages
 function LanguageManager:GetAvailableLanguages()
     return self.languages
+end
+
+-- Function to get a translation for a specific language
+function LanguageManager:GetTranslation(lang, key)
+    if self.translations[lang] and self.translations[lang][key] then
+        return self.translations[lang][key]
+    end
+    return key -- Return the key if translation is not found
 end
 
 return LanguageManager

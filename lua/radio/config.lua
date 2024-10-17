@@ -2,18 +2,14 @@ local Config = {}
 
 Config.RadioStations = {}
 
--- Import the LanguageManager
-local LanguageManager = include("language_manager.lua")
-
--- Add this near the top of the file, after loading the LanguageManager
-local function getTranslatedLanguageName(lang)
-    return LanguageManager.languages[lang] or lang
-end
+-- Update the LanguageManager import
+local LanguageManager = include("radio/lang/cl_language_manager.lua")
 
 -- Modify the loadLanguage function
 local function loadLanguage()
     local lang = GetConVar("radio_language"):GetString() or "en"
     LanguageManager:SetLanguage(lang)
+    Config.Lang = LanguageManager.translations[lang]
 end
 
 -- Create a ConVar for language selection if it doesn't exist

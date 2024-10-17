@@ -1,6 +1,6 @@
 local keyCodeMapping = include("radio/key_names.lua")
 local themes = include("themes.lua")
-local languageManager = include("language_manager.lua")
+local languageManager = include("radio/lang/cl_language_manager.lua")
 
 -- Create the client convar to enable/disable chat messages
 CreateClientConVar("car_radio_show_messages", "1", true, false, "Enable or disable car radio messages.")
