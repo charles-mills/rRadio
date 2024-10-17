@@ -278,6 +278,12 @@ local function LoadPermanentBoomboxes(isReload)
         ent:Spawn()
         ent:Activate()
 
+        -- Freeze the boombox
+        local phys = ent:GetPhysicsObject()
+        if IsValid(phys) then
+            phys:EnableMotion(false)
+        end
+
         -- Set networked variables
         ent:SetNWString("PermanentID", row.permanent_id)
         ent:SetNWString("StationName", row.station_name)
