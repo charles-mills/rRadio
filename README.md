@@ -55,6 +55,7 @@ This project is licensed under the GNU General Public License v3.0 (GPL-3.0). Se
 ## Credits
 
 - Created by Charles Mills
+- UI Icons by [Flaticon](https://www.flaticon.com/uicons/")
 - Default stations list sourced from [Radio-Browser.info](https://www.radio-browser.info/)
 
 ## Support
