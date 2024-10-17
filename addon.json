@@ -1,0 +1,12 @@
+{
+  "title": "rRadio (Boombox and In-Car Radio)",
+  "type": "ServerContent",
+  "tags": [
+    "fun",
+    "roleplay",
+    "realism"
+  ],
+  "ignore": [
+    "helpers/*"
+  ]
+}
