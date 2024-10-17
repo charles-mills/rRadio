@@ -1,9 +1,22 @@
--- Include necessary files
+--[[
+    Radio Addon Client-Side Main Script
+    Author: Charles Mills
+    Description: This file contains the main client-side functionality for the Radio Addon.
+    Date: October 17, 2024
+]]--
+
+-- ------------------------------
+--          Imports
+-- ------------------------------
 include("radio/key_names.lua")
 include("radio/config.lua")
 local LanguageManager = include("radio/lang/cl_language_manager.lua")
 local themes = include("themes.lua") or {}
 local keyCodeMapping = include("radio/key_names.lua")
+
+-- ------------------------------
+--      Global Variables
+-- ------------------------------
 
 -- Global table to store boombox statuses
 BoomboxStatuses = BoomboxStatuses or {}
@@ -26,7 +39,17 @@ local settingsMenuOpen = false
 local entityVolumes = {}
 local openRadioMenu
 
--- Modify the reopenRadioMenu function to accept parameters
+-- ------------------------------
+--      Utility Functions
+-- ------------------------------
+
+--[[
+    Function: reopenRadioMenu
+    Reopens the radio menu with optional settings flag.
+
+    Parameters:
+    - openSettingsMenuFlag: Boolean to determine if settings menu should be opened.
+]]
 local function reopenRadioMenu(openSettingsMenuFlag)
     if openRadioMenu then
         timer.Simple(0.1, function()
@@ -91,6 +114,10 @@ local function saveFavorites()
     file.Write(favoriteStationsFile, util.TableToJSON(favStationsTable))
 end
 
+-- ------------------------------
+--          UI Setup
+-- ------------------------------
+
 -- Font creation
 local function createFonts()
     surface.CreateFont("Roboto18", {
@@ -108,7 +135,10 @@ end
 
 createFonts()
 
--- State Variables
+-- ------------------------------
+--      State Variables
+-- ------------------------------
+
 local selectedCountry = nil
 local radioMenuOpen = false
 local currentlyPlayingStation = nil
@@ -123,7 +153,9 @@ local formattedCountryNames = {}
 -- Flag to ensure station data is loaded only once
 local stationDataLoaded = false
 
--- Utility Functions
+-- ------------------------------
+--      Helper Functions
+-- ------------------------------
 
 --[[
     Function: Scale
@@ -264,8 +296,9 @@ local function PrintCarRadioMessage()
     )
 end
 
--- Network Handlers
-net.Receive("CarRadioMessage", PrintCarRadioMessage)
+-- ------------------------------
+--      UI Helper Functions
+-- ------------------------------
 
 --[[
     Function: calculateFontSizeForStopButton
@@ -397,6 +430,10 @@ local function createStationStarIcon(parent, country, station, stationListPanel,
     return starIcon
 end
 
+-- ------------------------------
+--      Station Data Loading
+-- ------------------------------
+
 -- Load station data
 local StationData = {}
 
@@ -425,6 +462,10 @@ end
 
 -- Call LoadStationData at the beginning
 LoadStationData()
+
+-- ------------------------------
+--      UI Population
+-- ------------------------------
 
 --[[
     Function: populateList
@@ -795,6 +836,10 @@ local function openSettingsMenu(parentFrame, backButton)
     contributeSubLabel:SetPos(Scale(50), footerHeight / 2 + Scale(2))
 end
 
+-- ------------------------------
+--      Main UI Function
+-- ------------------------------
+
 --[[
     Function: openRadioMenu
     Opens the radio menu UI for the player.
@@ -1097,6 +1142,10 @@ openRadioMenu = function(openSettings)
     _G.openRadioMenu = openRadioMenu
 end
 
+-- ------------------------------
+--      Hooks and Net Messages
+-- ------------------------------
+
 --[[
     Hook: Think
     Opens the car radio menu when the player presses the designated key.
@@ -1278,6 +1327,10 @@ net.Receive("OpenRadioMenu", function()
         end
     end
 end)
+
+-- ------------------------------
+--      Initialization
+-- ------------------------------
 
 -- Load the favorite stations and countries when the script initializes
 loadFavorites()
