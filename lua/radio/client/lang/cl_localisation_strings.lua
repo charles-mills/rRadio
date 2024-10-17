@@ -31,7 +31,10 @@ LANG.de["ShowCarMessages"] = "Animation beim Einsteigen im Fahrzeug anzeigen"
 LANG.de["ShowBoomboxHUD"] = "Boombox-HUD anzeigen"
 LANG.de["Contribute"] = "Möchten Sie mitwirken?"
 LANG.de["SubmitPullRequest"] = "Eine Pull-Anfrage einreichen :)"
-
+LANG.de["SuperadminSettings"] = "Superadmin-Einstellungen"
+LANG.de["MakeBoomboxPermanent"] = "Boombox als permanent markieren"
+LANG.de["Enabled"] = "Aktiviert"
+LANG.de["Disabled"] = "Deaktiviert"
 
 -- English
 LANG.en["SelectCountry"] = "Select a Country"
@@ -52,6 +55,10 @@ LANG.en["ShowCarMessages"] = "Show Animation When Entering Vehicle"
 LANG.en["ShowBoomboxHUD"] = "Show the Boombox HUD"
 LANG.en["Contribute"] = "Want to contribute?"
 LANG.en["SubmitPullRequest"] = "Submit a Pull Request :)"
+LANG.en["SuperadminSettings"] = "Superadmin Settings"
+LANG.en["MakeBoomboxPermanent"] = "Make Boombox Permanent"
+LANG.en["Enabled"] = "Enabled"
+LANG.en["Disabled"] = "Disabled"
 
 
 -- Spanish
@@ -73,7 +80,10 @@ LANG.es["ShowCarMessages"] = "Mostrar animación al entrar en el vehículo"
 LANG.es["ShowBoomboxHUD"] = "Mostrar el HUD de Boombox"
 LANG.es["Contribute"] = "¿Quieres contribuir?"
 LANG.es["SubmitPullRequest"] = "Enviar una Pull Request :)"
-
+LANG.es["SuperadminSettings"] = "Configuraciones de Superadmin"
+LANG.es["MakeBoomboxPermanent"] = "Marcar Boombox como permanente"
+LANG.es["Enabled"] = "Activado"
+LANG.es["Disabled"] = "Desactivado"
 
 -- French
 LANG.fr["SelectCountry"] = "Sélectionnez un pays"
@@ -94,6 +104,10 @@ LANG.fr["ShowCarMessages"] = "Afficher l'animation lors de l'entrée dans le vé
 LANG.fr["ShowBoomboxHUD"] = "Afficher le HUD de Boombox"
 LANG.fr["Contribute"] = "Voulez-vous contribuer?"
 LANG.fr["SubmitPullRequest"] = "Envoyez une Pull Request :)"
+LANG.fr["SuperadminSettings"] = "Paramètres de Superadmin"
+LANG.fr["MakeBoomboxPermanent"] = "Marquer Boombox comme permanent"
+LANG.fr["Enabled"] = "Activé"
+LANG.fr["Disabled"] = "Désactivé"
 
 
 -- Italian
@@ -115,6 +129,10 @@ LANG.it["ShowCarMessages"] = "Mostra animazione all'entrata nel veicolo"
 LANG.it["ShowBoomboxHUD"] = "Mostra il HUD della Boombox"
 LANG.it["Contribute"] = "Vuoi contribuire?"
 LANG.it["SubmitPullRequest"] = "Invia una Pull Request :)"
+LANG.it["SuperadminSettings"] = "Configurazioni di Superadmin"
+LANG.it["MakeBoomboxPermanent"] = "Rendi Boombox permanente"
+LANG.it["Enabled"] = "Attivo"
+LANG.it["Disabled"] = "Disattivato"
 
 
 -- Japanese
@@ -136,6 +154,10 @@ LANG.ja["ShowCarMessages"] = "車内に入るとアニメーションを表示"
 LANG.ja["ShowBoomboxHUD"] = "BoomboxのHUDを表示"
 LANG.ja["Contribute"] = "貢献したいですか？"
 LANG.ja["SubmitPullRequest"] = "Pull Requestを送信 :)"
+LANG.ja["SuperadminSettings"] = "Superadminの設定"
+LANG.ja["MakeBoomboxPermanent"] = "Boomboxを永久にする"
+LANG.ja["Enabled"] = "有効"
+LANG.ja["Disabled"] = "無効"
 
 
 -- Korean
@@ -143,7 +165,7 @@ LANG.ko["SelectCountry"] = "국가 선택"
 LANG.ko["StopRadio"] = "정지"
 LANG.ko["SearchPlaceholder"] = "검색..."
 LANG.ko["PressKeyToOpen"] = "{key}을 눌러 방송국을 선택하십시오"
-LANG.ko["NoStations"] = "경고: {country}에 대한 방송국을 찾을 수 없습니다"
+LANG.ko["NoStations"] = "경고: {country}에 대한 ��송국을 찾을 수 없습니다"
 LANG.ko["Interact"] = "나와 상호작용하세요!"
 LANG.ko["PAUSED"] = "일시정지"
 LANG.ko["Settings"] = "설정"
@@ -157,6 +179,10 @@ LANG.ko["ShowCarMessages"] = "차량 진입 시 애니메이션 표시"
 LANG.ko["ShowBoomboxHUD"] = "Boombox의 HUD 표시"
 LANG.ko["Contribute"] = "기여하고 싶습니까?"
 LANG.ko["SubmitPullRequest"] = "Pull Request를 제출 :)"
+LANG.ko["SuperadminSettings"] = "Superadmin의 설정"
+LANG.ko["MakeBoomboxPermanent"] = "Boombox를 영구적으로 만들기"
+LANG.ko["Enabled"] = "활성화"
+LANG.ko["Disabled"] = "비활성화"
 
 
 -- Portuguese (Brazil)
@@ -178,6 +204,10 @@ LANG.pt_br["ShowCarMessages"] = "Mostrar animação ao entrar no veículo"
 LANG.pt_br["ShowBoomboxHUD"] = "Mostrar o HUD da Boombox"
 LANG.pt_br["Contribute"] = "Quer contribuir?"
 LANG.pt_br["SubmitPullRequest"] = "Enviar uma Pull Request :)"
+LANG.pt_br["SuperadminSettings"] = "Configurações de Superadmin"
+LANG.pt_br["MakeBoomboxPermanent"] = "Marcar Boombox como permanente"
+LANG.pt_br["Enabled"] = "Ativado"
+LANG.pt_br["Disabled"] = "Desativado"
 
 
 -- Russian
@@ -199,7 +229,10 @@ LANG.ru["ShowCarMessages"] = "Показывать анимацию при вх�
 LANG.ru["ShowBoomboxHUD"] = "Показывать HUD Boombox"
 LANG.ru["Contribute"] = "Хотите внести свой вклад?"
 LANG.ru["SubmitPullRequest"] = "Отправить Pull Request :)"
-
+LANG.ru["SuperadminSettings"] = "Настройки СуперАдмина"
+LANG.ru["MakeBoomboxPermanent"] = "Сделать Boombox постоянным"
+LANG.ru["Enabled"] = "Включено"
+LANG.ru["Disabled"] = "Выключено"
 
 -- Turkish
 LANG.tr["SelectCountry"] = "Ülke seç"
@@ -220,6 +253,10 @@ LANG.tr["ShowCarMessages"] = "Araçta giriş yapıldığında animasyon göster"
 LANG.tr["ShowBoomboxHUD"] = "Boombox HUD'unu göster"
 LANG.tr["Contribute"] = "Katkıda bulunmak ister misiniz?"
 LANG.tr["SubmitPullRequest"] = "Pull Request gönder :)"
+LANG.tr["SuperadminSettings"] = "Superadmin ayarları"
+LANG.tr["MakeBoomboxPermanent"] = "Boombox'u sabit yap"
+LANG.tr["Enabled"] = "Aktif"
+LANG.tr["Disabled"] = "Pasif"
 
 
 -- Chinese (Simplified)
@@ -241,6 +278,9 @@ LANG.zh_cn["ShowCarMessages"] = "进入车内时显示动画"
 LANG.zh_cn["ShowBoomboxHUD"] = "显示 Boombox HUD"
 LANG.zh_cn["Contribute"] = "想要贡献吗？"
 LANG.zh_cn["SubmitPullRequest"] = "发送 Pull Request :)"
-
+LANG.zh_cn["SuperadminSettings"] = "Superadmin 设置"
+LANG.zh_cn["MakeBoomboxPermanent"] = "将 Boombox 设为永久"
+LANG.zh_cn["Enabled"] = "启用"
+LANG.zh_cn["Disabled"] = "禁用"
 
 return LANG

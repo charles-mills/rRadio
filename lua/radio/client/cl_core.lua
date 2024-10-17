@@ -53,11 +53,11 @@ local openRadioMenu
 ]]
 local function reopenRadioMenu(openSettingsMenuFlag)
     if openRadioMenu then
-        timer.Simple(0.1, function()
-            if IsValid(LocalPlayer()) and LocalPlayer().currentRadioEntity then
+        if IsValid(LocalPlayer()) and LocalPlayer().currentRadioEntity then
+            timer.Simple(0.1, function()
                 openRadioMenu(openSettingsMenuFlag)
-            end
-        end)
+            end)
+        end
     else
         print("Error: openRadioMenu function not found")
     end
@@ -540,6 +540,12 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                 populateList(stationListPanel, backButton, searchBox, true)
             end
         end
+
+        -- Set back button visibility
+        if backButton then
+            backButton:SetVisible(false)
+            backButton:SetEnabled(false)
+        end
     else
         local stations = StationData[selectedCountry] or {}
 
@@ -624,6 +630,12 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                 populateList(stationListPanel, backButton, searchBox, false)
             end
         end
+
+        -- Set back button visibility
+        if backButton then
+            backButton:SetVisible(true)
+            backButton:SetEnabled(true)
+        end
     end
 end
 
@@ -704,19 +716,31 @@ local function openSettingsMenu(parentFrame, backButton)
     local function addCheckbox(text, convar)
         local container = vgui.Create("DPanel", scrollPanel)
         container:Dock(TOP)
-        container:SetTall(Scale(35))  -- Slightly reduced height
-        container:DockMargin(0, 0, 0, Scale(5))  -- Reduced bottom margin
+        container:SetTall(Scale(40))
+        container:DockMargin(0, 0, 0, Scale(5))
         container.Paint = function(self, w, h)
             draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonColor)
         end
 
-        local checkbox = vgui.Create("DCheckBoxLabel", container)
-        checkbox:SetPos(Scale(10), (container:GetTall() - Scale(25)) / 2)
-        checkbox:SetText(text)
+        local checkbox = vgui.Create("DCheckBox", container)
+        checkbox:SetPos(Scale(10), (container:GetTall() - Scale(20)) / 2)
+        checkbox:SetSize(Scale(20), Scale(20))
         checkbox:SetConVar(convar)
-        checkbox:SetTextColor(Config.UI.TextColor)
-        checkbox:SetFont("Roboto18")
-        checkbox:SetValue(GetConVar(convar):GetBool())
+
+        checkbox.Paint = function(self, w, h)
+            draw.RoundedBox(4, 0, 0, w, h, Config.UI.SearchBoxColor)
+            if self:GetChecked() then
+                surface.SetDrawColor(Config.UI.TextColor)
+                surface.DrawRect(Scale(4), Scale(4), w - Scale(8), h - Scale(8))
+            end
+        end
+
+        local label = vgui.Create("DLabel", container)
+        label:SetText(text)
+        label:SetTextColor(Config.UI.TextColor)
+        label:SetFont("Roboto18")
+        label:SizeToContents()
+        label:SetPos(Scale(40), (container:GetTall() - label:GetTall()) / 2)
 
         checkbox.OnChange = function(self, value)
             RunConsoleCommand(convar, value and "1" or "0")
@@ -760,9 +784,7 @@ local function openSettingsMenu(parentFrame, backButton)
         LanguageManager:SetLanguage(data)
         Config.Lang = LanguageManager.translations[data]
         parentFrame:Close()
-        timer.Simple(0.1, function()
-            reopenRadioMenu(true)  -- Reopen and open settings menu
-        end)
+        reopenRadioMenu(true)  -- Reopen and open settings menu
     end)
 
     -- Key Selection
@@ -791,19 +813,10 @@ local function openSettingsMenu(parentFrame, backButton)
 
     -- Superadmin: Permanent Boombox Section
     if LocalPlayer():IsSuperAdmin() then
-        addHeader(Config.Lang["PermanentBoombox"] or "Permanent Boombox")
+        addHeader(Config.Lang["SuperadminSettings"] or "Superadmin Settings")
 
-        local permanentCheckbox = vgui.Create("DCheckBoxLabel", scrollPanel)
-        permanentCheckbox:SetText(Config.Lang["MakeBoomboxPermanent"] or "Make Boombox Permanent")
-        permanentCheckbox:SetTextColor(Config.UI.TextColor)
-        permanentCheckbox:SetFont("Roboto18")
-        permanentCheckbox:Dock(TOP)
-        permanentCheckbox:DockMargin(Scale(5), Scale(5), Scale(5), Scale(5))
-
-        -- Set initial value based on the currentRadioEntity's permanence
-        if IsValid(LocalPlayer().currentRadioEntity) then
-            permanentCheckbox:SetChecked(LocalPlayer().currentRadioEntity:GetNWBool("IsPermanent", false))
-        end
+        local permanentCheckbox = addCheckbox(Config.Lang["MakeBoomboxPermanent"] or "Make Boombox Permanent", "")
+        permanentCheckbox:SetChecked(IsValid(LocalPlayer().currentRadioEntity) and LocalPlayer().currentRadioEntity:GetNWBool("IsPermanent", false))
 
         permanentCheckbox.OnChange = function(self, value)
             if not IsValid(LocalPlayer().currentRadioEntity) then
@@ -1028,10 +1041,10 @@ openRadioMenu = function(openSettings)
                 settingsFrame:Remove()
                 settingsFrame = nil
             end
-            backButton:SetVisible(selectedCountry ~= nil)
-            backButton:SetEnabled(selectedCountry ~= nil)
             searchBox:SetVisible(true)
             stationListPanel:SetVisible(true)
+            backButton:SetVisible(selectedCountry ~= nil)
+            backButton:SetEnabled(selectedCountry ~= nil)
         elseif selectedCountry ~= nil then
             selectedCountry = nil
             backButton:SetVisible(false)

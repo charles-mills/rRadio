@@ -13,10 +13,9 @@ util.AddNetworkString("BoomboxPermanentConfirmation")
 -- Create the ConVar for boombox permanence
 CreateConVar("boombox_permanent", "0", FCVAR_ARCHIVE + FCVAR_REPLICATED, "Toggle boombox permanence")
 
--- At the top of the file, add this table to track spawned boomboxes by their position
 local spawnedBoomboxesByPosition = {}
-
 local spawnedBoomboxes = {}
+local currentMap = game.GetMap()
 
 -- Initialize the SQLite database
 local function InitializeDatabase()
@@ -24,7 +23,8 @@ local function InitializeDatabase()
         local query = [[
             CREATE TABLE permanent_boomboxes (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                permanent_id TEXT UNIQUE,
+                map TEXT NOT NULL,
+                permanent_id TEXT,
                 model TEXT NOT NULL,
                 pos_x REAL NOT NULL,
                 pos_y REAL NOT NULL,
@@ -34,7 +34,8 @@ local function InitializeDatabase()
                 angle_roll REAL NOT NULL,
                 station_name TEXT,
                 station_url TEXT,
-                volume REAL NOT NULL
+                volume REAL NOT NULL,
+                UNIQUE(map, permanent_id)
             );
         ]]
         
@@ -46,7 +47,29 @@ local function InitializeDatabase()
             print("[Permanent Boombox] Database table 'permanent_boomboxes' created successfully.")
         end
     else
-        print("[Permanent Boombox] Table 'permanent_boomboxes' already exists.")
+        -- Check if the 'map' column exists
+        local columnCheckQuery = "PRAGMA table_info(permanent_boomboxes);"
+        local columns = sql.Query(columnCheckQuery)
+        local mapColumnExists = false
+        
+        for _, column in ipairs(columns) do
+            if column.name == "map" then
+                mapColumnExists = true
+                break
+            end
+        end
+        
+        -- If 'map' column doesn't exist, add it
+        if not mapColumnExists then
+            local alterTableQuery = "ALTER TABLE permanent_boomboxes ADD COLUMN map TEXT NOT NULL DEFAULT '';"
+            local result = sql.Query(alterTableQuery)
+            if result == false then
+                print("[Permanent Boombox] Failed to add 'map' column to 'permanent_boomboxes' table.")
+                print("[Permanent Boombox] SQL Error: " .. sql.LastError())
+            else
+                print("[Permanent Boombox] Added 'map' column to 'permanent_boomboxes' table successfully.")
+            end
+        end
     end
 end
 
@@ -91,12 +114,12 @@ local function SavePermanentBoombox(ent)
         ent:SetNWString("PermanentID", permanentID)
     end
 
-    -- Check if the boombox already exists
+    -- Check if the boombox already exists for this map
     local query = string.format([[
         SELECT id FROM permanent_boomboxes
-        WHERE permanent_id = '%s'
+        WHERE map = '%s' AND permanent_id = '%s'
         LIMIT 1;
-    ]], permanentID)
+    ]], currentMap, permanentID)
 
     local result = sql.Query(query)
     if sql.LastError() then
@@ -129,10 +152,10 @@ local function SavePermanentBoombox(ent)
     else
         -- Insert new entry
         local insertQuery = string.format([[
-            INSERT INTO permanent_boomboxes (permanent_id, model, pos_x, pos_y, pos_z, angle_pitch, angle_yaw, angle_roll, station_name, station_url, volume)
-            VALUES ('%s', '%s', %f, %f, %f, %f, %f, %f, '%s', '%s', %f);
+            INSERT INTO permanent_boomboxes (map, permanent_id, model, pos_x, pos_y, pos_z, angle_pitch, angle_yaw, angle_roll, station_name, station_url, volume)
+            VALUES ('%s', '%s', '%s', %f, %f, %f, %f, %f, %f, '%s', '%s', %f);
         ]],
-            permanentID, model, pos.x, pos.y, pos.z, ang.p, ang.y, ang.r,
+            currentMap, permanentID, model, pos.x, pos.y, pos.z, ang.p, ang.y, ang.r,
             stationName, stationURL, volume
         )
         local success = sql.Query(insertQuery)
@@ -173,8 +196,8 @@ local function RemovePermanentBoombox(ent)
 
     local deleteQuery = string.format([[
         DELETE FROM permanent_boomboxes
-        WHERE permanent_id = '%s';
-    ]], permanentID)
+        WHERE map = '%s' AND permanent_id = '%s';
+    ]], currentMap, permanentID)
 
     local success = sql.Query(deleteQuery)
     if success == false then
@@ -213,7 +236,7 @@ local function LoadPermanentBoomboxes(isReload)
         return
     end
 
-    local loadQuery = "SELECT * FROM permanent_boomboxes;"
+    local loadQuery = string.format("SELECT * FROM permanent_boomboxes WHERE map = '%s';", currentMap)
     local result = sql.Query(loadQuery)
     
     if result == false then
@@ -398,15 +421,13 @@ concommand.Add("rradio_clear_permanent_db", function(ply, cmd, args)
         return
     end
 
-    -- Drop the existing table
-    sql.Query("DROP TABLE IF EXISTS permanent_boomboxes;")
+    -- Clear all boomboxes from the database
+    local clearQuery = "DELETE FROM permanent_boomboxes;"
+    sql.Query(clearQuery)
     
-    -- Reinitialize the database
-    InitializeDatabase()
-    
-    print("[Permanent Boombox] Permanent boombox database has been cleared and reinitialized.")
+    print("[Permanent Boombox] Permanent boombox database has been cleared for all maps.")
     if IsValid(ply) then
-        ply:ChatPrint("Permanent boombox database has been cleared and reinitialized.")
+        ply:ChatPrint("Permanent boombox database has been cleared for all maps.")
     end
 end)
 
@@ -433,7 +454,11 @@ concommand.Add("rradio_reload_permanent_boomboxes", function(ply, cmd, args)
     end
 end)
 
--- Make sure to update the global function assignment
 _G.LoadPermanentBoomboxes = function()
     LoadPermanentBoomboxes(false)
 end
+
+hook.Add("Initialize", "UpdateCurrentMapForPermanentBoomboxes", function()
+    currentMap = game.GetMap()
+    print("[Permanent Boombox] Current map set to: " .. currentMap)
+end)
