@@ -8,11 +8,10 @@
 -- ------------------------------
 --          Imports
 -- ------------------------------
-include("radio/key_names.lua")
-include("radio/config.lua")
-local LanguageManager = include("radio/lang/cl_language_manager.lua")
-local themes = include("themes.lua") or {}
-local keyCodeMapping = include("radio/key_names.lua")
+include("radio/shared/sh_config.lua")
+local LanguageManager = include("radio/client/lang/cl_language_manager.lua")
+local themes = include("radio/client/cl_themes.lua") or {}
+local keyCodeMapping = include("radio/client/cl_key_names.lua")
 
 -- ------------------------------
 --      Global Variables
@@ -443,9 +442,9 @@ local StationData = {}
 ]]
 local function LoadStationData()
     if stationDataLoaded then return end
-    local dataFiles = file.Find("radio/stations/data_*.lua", "LUA")
+    local dataFiles = file.Find("radio/client/stations/data_*.lua", "LUA")
     for _, filename in ipairs(dataFiles) do
-        local data = include("radio/stations/" .. filename)
+        local data = include("radio/client/stations/" .. filename)
         for country, stations in pairs(data) do
             -- Extract base country name by removing any suffixes like '_number' at the end
             local baseCountry = country:gsub("_(%d+)$", "")

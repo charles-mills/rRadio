@@ -10,9 +10,9 @@ local Config = {}
 -- ------------------------------
 --          Imports
 -- ------------------------------
-local LanguageManager = include("radio/lang/cl_language_manager.lua")
-local themes = include("themes.lua") or {}
-local keyCodeMapping = include("radio/key_names.lua") or {}
+local LanguageManager = include("radio/client/lang/cl_language_manager.lua")
+local themes = include("radio/client/cl_themes.lua") or {}
+local keyCodeMapping = include("radio/client/cl_key_names.lua") or {}
 
 -- ------------------------------
 --      Configuration Tables
@@ -86,6 +86,28 @@ local openKeyConVar = EnsureConVar(
     "Select the key to open the car radio menu."
 )
 
+local radioMaxVolume = EnsureConVar(
+    "radio_max_volume", 
+    1,
+    true,
+    "Set the maximum volume for the radio."
+)
+
+local radioTheme = EnsureConVar(
+    "radio_theme",
+    "dark",
+    true,
+    "Set the theme for the radio."
+)
+
+local carRadioShowMessages = EnsureConVar(
+    "car_radio_show_messages",
+    "1",
+    true,
+    "Enable or disable car radio messages."
+)
+
+
 -- ------------------------------
 --         Language Setup
 -- ------------------------------
@@ -119,7 +141,7 @@ end
 -- Function to load stations for a specific country
 local function loadStationsForCountry(rawCountryName)
     local formattedName = formatCountryName(rawCountryName)
-    local path = "radio/stations/" .. rawCountryName .. ".lua"
+    local path = "radio/client/stations/" .. rawCountryName .. ".lua"
 
     if file.Exists(path, "LUA") then
         local stations = include(path)
@@ -134,7 +156,7 @@ local function loadStationsForCountry(rawCountryName)
 end
 
 -- Dynamically detect and load all country station files
-local stationFiles = file.Find("radio/stations/*.lua", "LUA")
+local stationFiles = file.Find("radio/client/stations/*.lua", "LUA")
 for _, filename in ipairs(stationFiles) do
     local countryName = string.StripExtension(filename)
     loadStationsForCountry(countryName)

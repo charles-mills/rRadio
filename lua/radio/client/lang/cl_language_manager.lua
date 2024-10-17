@@ -2,8 +2,8 @@
 Adding a new Language?
 
 1) Add your language code to the languages table below. The key should be the language code (e.g., "fr" for French), and the value should be the display name of the language (e.g., "Français").
-2) Create a new Lua file in the 'radio/lang/' directory with the name of your language code (e.g., 'fr.lua' for French).
-3) Add translations for each key in the 'radio/lang/en.lua' file to your new language file.
+2) Create a new Lua file in the 'radio/client/lang/' directory with the name of your language code (e.g., 'fr.lua' for French).
+3) Add translations for each key in the 'radio/client/lang/en.lua' file to your new language file.
 4) Complete country translations by accessing country_translations.lua and adding translations for each country name (optional).
 4) Submit a pull request and your language will be added to the official addon :)
 */

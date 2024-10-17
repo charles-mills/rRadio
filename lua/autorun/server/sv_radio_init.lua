@@ -1,29 +1,28 @@
 print("[RADIO] Starting server-side initialization")
 
 -- Add all the necessary Lua files for the client
-AddCSLuaFile("radio/config.lua")
-AddCSLuaFile("radio/lang/cl_language_manager.lua")
-AddCSLuaFile("radio/cl_radio.lua")
-AddCSLuaFile("radio/theme_menu.lua")
-AddCSLuaFile("themes.lua")
-AddCSLuaFile("radio/cl_init.lua")
-AddCSLuaFile("radio/key_names.lua")
-AddCSLuaFile("radio/utils.lua")
+AddCSLuaFile("radio/shared/sh_config.lua")
+AddCSLuaFile("radio/client/lang/cl_language_manager.lua")
+AddCSLuaFile("radio/client/cl_core.lua")
+AddCSLuaFile("radio/client/cl_settings.lua")
+AddCSLuaFile("radio/client/cl_themes.lua")
+AddCSLuaFile("radio/client/cl_key_names.lua")
+AddCSLuaFile("radio/shared/sh_utils.lua")
 
 -- Dynamically include all radio station data files
-local dataFiles = file.Find("radio/stations/data_*.lua", "LUA")
+local dataFiles = file.Find("radio/client/stations/data_*.lua", "LUA")
 for _, filename in ipairs(dataFiles) do
-    AddCSLuaFile("radio/stations/" .. filename)
+    AddCSLuaFile("radio/client/stations/" .. filename)
 end
 
 -- Dynamically include all language files
-local langFiles = file.Find("radio/lang/*.lua", "LUA")
+local langFiles = file.Find("radio/client/lang/*.lua", "LUA")
 for _, filename in ipairs(langFiles) do
-    AddCSLuaFile("radio/lang/" .. filename)
+    AddCSLuaFile("radio/client/lang/" .. filename)
 end
 
 -- Include the server-side radio logic
-include("radio/sv_radio.lua")
+include("radio/server/sv_core.lua")
 
 -- Add resources
 resource.AddFile("models/rammel/boombox.mdl")

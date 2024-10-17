@@ -1,5 +1,5 @@
 include("shared.lua")
-include("radio/config.lua")
+include("radio/shared/sh_config.lua")
 
 -- Global table to store boombox statuses
 BoomboxStatuses = BoomboxStatuses or {}
