@@ -8,13 +8,15 @@ util.AddNetworkString("UpdateRadioVolume")
 
 -- Active radios and saved boombox states
 local ActiveRadios = {}
-local SavedBoomboxStates = {}
 
 -- Table to track retry attempts per player
 local PlayerRetryAttempts = {}
 
 -- Table to track player cooldowns for net messages
 local PlayerCooldowns = {}
+
+-- Global table to store boombox statuses
+BoomboxStatuses = BoomboxStatuses or {}
 
 --[[
     Function: AddActiveRadio
@@ -37,6 +39,8 @@ local function AddActiveRadio(entity, stationName, url, volume)
         url = url,
         volume = volume
     }
+
+    print("[rRadio] Added active radio:", entity, "Station:", stationName)
 end
 
 --[[
@@ -48,126 +52,7 @@ end
 ]]
 local function RemoveActiveRadio(entity)
     ActiveRadios[entity:EntIndex()] = nil
-end
-
---[[
-    Function: RestoreBoomboxRadio
-    Restores the boombox radio state using saved data.
-
-    Parameters:
-    - entity: The boombox entity to restore.
-]]
-local function RestoreBoomboxRadio(entity)
-    local permaID = entity.PermaProps_ID
-    if not permaID then
-        return
-    end
-
-    local savedState = SavedBoomboxStates[permaID]
-    if savedState then
-        entity:SetNWString("CurrentRadioStation", savedState.station)
-        entity:SetNWString("StationURL", savedState.url)
-
-        if entity.SetStationName then
-            entity:SetStationName(savedState.station)
-        end
-
-        if savedState.isPlaying then
-            net.Start("PlayCarRadioStation")
-                net.WriteEntity(entity)
-                net.WriteString(savedState.station)
-                net.WriteString(savedState.url)
-                net.WriteFloat(savedState.volume)
-            net.Broadcast()
-            AddActiveRadio(entity, savedState.station, savedState.url, savedState.volume)
-        end
-    end
-end
-
--- Hook to restore boombox radio state on entity creation
-hook.Add("OnEntityCreated", "RestoreBoomboxRadioForPermaProps", function(entity)
-    timer.Simple(0.5, function()
-        if IsValid(entity) and (entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox") then
-            RestoreBoomboxRadio(entity)
-        end
-    end)
-end)
-
---[[
-    Function: CreateBoomboxStatesTable
-    Creates the boombox_states table in the SQLite database if it doesn't exist.
-]]
-local function CreateBoomboxStatesTable()
-    local createTableQuery = [[
-        CREATE TABLE IF NOT EXISTS boombox_states (
-            permaID INTEGER PRIMARY KEY,
-            station TEXT,
-            url TEXT,
-            isPlaying INTEGER,
-            volume REAL
-        )
-    ]]
-    sql.Query(createTableQuery)
-end
-
-hook.Add("Initialize", "CreateBoomboxStatesTable", CreateBoomboxStatesTable)
-
---[[
-    Function: SaveBoomboxStateToDatabase
-    Saves the boombox state to the database.
-
-    Parameters:
-    - permaID: The unique PermaProps ID of the boombox.
-    - stationName: The name of the station.
-    - url: The URL of the station.
-    - isPlaying: Boolean indicating if the boombox is playing.
-    - volume: The volume level.
-]]
-local function SaveBoomboxStateToDatabase(permaID, stationName, url, isPlaying, volume)
-    -- Ensure inputs are valid
-    permaID = tonumber(permaID)
-    stationName = tostring(stationName or "")
-    url = tostring(url or "")
-    isPlaying = isPlaying and 1 or 0
-    volume = tonumber(volume) or 0
-
-    local query = string.format("REPLACE INTO boombox_states (permaID, station, url, isPlaying, volume) VALUES (%d, %s, %s, %d, %f)",
-        permaID, sql.SQLStr(stationName), sql.SQLStr(url), isPlaying, volume)
-    sql.Query(query)
-end
-
---[[
-    Function: RemoveBoomboxStateFromDatabase
-    Removes the boombox state from the database.
-
-    Parameters:
-    - permaID: The unique PermaProps ID of the boombox.
-]]
-local function RemoveBoomboxStateFromDatabase(permaID)
-    permaID = tonumber(permaID)
-    local query = string.format("DELETE FROM boombox_states WHERE permaID = %d", permaID)
-    sql.Query(query)
-end
-
---[[
-    Function: LoadBoomboxStatesFromDatabase
-    Loads boombox states from the database into the SavedBoomboxStates table.
-]]
-local function LoadBoomboxStatesFromDatabase()
-    local rows = sql.Query("SELECT * FROM boombox_states")
-    if rows then
-        for _, row in ipairs(rows) do
-            local permaID = tonumber(row.permaID)
-            SavedBoomboxStates[permaID] = {
-                station = row.station,
-                url = row.url,
-                isPlaying = tonumber(row.isPlaying) == 1,
-                volume = tonumber(row.volume)
-            }
-        end
-    else
-        SavedBoomboxStates = {}
-    end
+    print("[rRadio] Removed active radio:", entity)
 end
 
 --[[
@@ -212,10 +97,11 @@ local function SendActiveRadiosToPlayer(ply)
         if IsValid(radio.entity) then
             net.Start("PlayCarRadioStation")
                 net.WriteEntity(radio.entity)
-                net.WriteString(radio.stationName) -- Include stationName
+                net.WriteString(radio.stationName)
                 net.WriteString(radio.url)
                 net.WriteFloat(radio.volume)
             net.Send(ply)
+            print("[rRadio] Sent active radio to player:", ply:Nick(), "Station:", radio.stationName)
         end
     end
 
@@ -274,6 +160,7 @@ net.Receive("PlayCarRadioStation", function(len, ply)
     local volume = net.ReadFloat()
 
     if not IsValid(entity) then
+        print("[rRadio] PlayCarRadioStation: Invalid entity.")
         return
     end
 
@@ -281,9 +168,8 @@ net.Receive("PlayCarRadioStation", function(len, ply)
     local entityClass = entity:GetClass()
 
     if entityClass == "golden_boombox" or entityClass == "boombox" then
-        -- Check ownership
-        local owner = entity:GetNWEntity("Owner")
-        if owner ~= ply and not ply:IsSuperAdmin() then
+        -- Allow only superadmins to interact
+        if not ply:IsSuperAdmin() then
             ply:ChatPrint("You do not have permission to control this boombox.")
             return
         end
@@ -297,17 +183,6 @@ net.Receive("PlayCarRadioStation", function(len, ply)
         if #stationURL > 500 then
             ply:ChatPrint("URL is too long.")
             return
-        end
-
-        local permaID = entity.PermaProps_ID
-        if permaID then
-            SavedBoomboxStates[permaID] = {
-                station = stationName,
-                url = stationURL,
-                isPlaying = true,
-                volume = volume
-            }
-            SaveBoomboxStateToDatabase(permaID, stationName, stationURL, true, volume)
         end
 
         if entity.SetVolume then
@@ -331,10 +206,11 @@ net.Receive("PlayCarRadioStation", function(len, ply)
             net.WriteEntity(entity)
             net.WriteString(stationName)
         net.Broadcast()
-    elseif entity:IsVehicle() then
-        entity = entity:GetParent() or entity
 
-        if not IsValid(entity) or not entity:IsVehicle() then
+    elseif entity:IsVehicle() then
+        -- Allow only superadmins to interact with vehicle radios
+        if not ply:IsSuperAdmin() then
+            ply:ChatPrint("You do not have permission to control this vehicle radio.")
             return
         end
 
@@ -360,7 +236,7 @@ net.Receive("PlayCarRadioStation", function(len, ply)
 
         net.Start("PlayCarRadioStation")
             net.WriteEntity(entity)
-            net.WriteString(stationName) -- Include stationName
+            net.WriteString(stationName)
             net.WriteString(stationURL)
             net.WriteFloat(volume)
         net.Broadcast()
@@ -370,6 +246,7 @@ net.Receive("PlayCarRadioStation", function(len, ply)
             net.WriteString(stationName)
         net.Broadcast()
     else
+        print("[rRadio] PlayCarRadioStation: Unsupported entity class:", entityClass)
         return
     end
 end)
@@ -381,21 +258,18 @@ end)
 net.Receive("StopCarRadioStation", function(len, ply)
     local entity = net.ReadEntity()
 
-    if not IsValid(entity) then return end
+    if not IsValid(entity) then
+        print("[rRadio] StopCarRadioStation: Invalid entity.")
+        return
+    end
 
     local entityClass = entity:GetClass()
 
     if entityClass == "golden_boombox" or entityClass == "boombox" then
-        local owner = entity:GetNWEntity("Owner")
-        if owner ~= ply and not ply:IsSuperAdmin() then
+        -- Allow only superadmins to interact
+        if not ply:IsSuperAdmin() then
             ply:ChatPrint("You do not have permission to control this boombox.")
             return
-        end
-
-        local permaID = entity.PermaProps_ID
-        if permaID and SavedBoomboxStates[permaID] then
-            SavedBoomboxStates[permaID].isPlaying = false
-            SaveBoomboxStateToDatabase(permaID, SavedBoomboxStates[permaID].station, SavedBoomboxStates[permaID].url, false, SavedBoomboxStates[permaID].volume)
         end
 
         if entity.SetStationName then
@@ -414,9 +288,9 @@ net.Receive("StopCarRadioStation", function(len, ply)
         net.Broadcast()
 
     elseif entity:IsVehicle() then
-        entity = entity:GetParent() or entity
-
-        if not IsValid(entity) or not entity:IsVehicle() then
+        -- Allow only superadmins to interact with vehicle radios
+        if not ply:IsSuperAdmin() then
+            ply:ChatPrint("You do not have permission to control this vehicle radio.")
             return
         end
 
@@ -431,17 +305,34 @@ net.Receive("StopCarRadioStation", function(len, ply)
             net.WriteString("")
         net.Broadcast()
     else
-        -- Invalid entity
+        print("[rRadio] StopCarRadioStation: Unsupported entity class:", entityClass)
         return
     end
 end)
 
+--[[
+    Network Receiver: UpdateRadioVolume
+    Updates the volume of a boombox.
+
+    Parameters:
+    - entity: The boombox entity.
+    - volume: The new volume level.
+]]
 net.Receive("UpdateRadioVolume", function(len, ply)
     local entity = net.ReadEntity()
     local volume = net.ReadFloat()
 
-    if IsValid(entity) and entity:GetClass() == "boombox" then
+    if IsValid(entity) and (entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox") then
+        -- Allow only superadmins to update volume
+        if not ply:IsSuperAdmin() then
+            ply:ChatPrint("You do not have permission to control this boombox's volume.")
+            return
+        end
+
         entity:SetVolume(volume)
+        print("[rRadio] Volume updated for entity:", entity, "Volume:", volume)
+    else
+        print("[rRadio] UpdateRadioVolume: Invalid entity or unsupported class.")
     end
 end)
 
@@ -474,12 +365,18 @@ end
     - ent: The entity to assign ownership to.
 ]]
 local function AssignOwner(ply, ent)
+    if not IsValid(ply) or not IsValid(ent) then
+        print("[rRadio] Invalid player or entity during ownership assignment.")
+        return
+    end
+
     if ent.CPPISetOwner then
-        ent:CPPISetOwner(ply)  -- Assign the owner using CPPI
+        ent:CPPISetOwner(ply)  -- Assign the owner using CPPI if available
     end
 
     -- Set the owner as a networked entity so the client can access it
     ent:SetNWEntity("Owner", ply)
+    print("[rRadio] Assigned owner:", ply:Nick(), "to entity:", ent)
 end
 
 -- Hook into InitPostEntity to ensure everything is initialized
@@ -488,9 +385,11 @@ hook.Add("InitPostEntity", "SetupBoomboxHooks", function()
         if IsDarkRP() then
             hook.Add("playerBoughtCustomEntity", "AssignBoomboxOwnerInDarkRP", function(ply, entTable, ent, price)
                 if IsValid(ent) and (ent:GetClass() == "boombox" or ent:GetClass() == "golden_boombox") then
-                    AssignOwner(ply, ent)
+                    -- No owner assignment since boomboxes should only be usable by superadmins
+                    print("[rRadio] Boombox purchased by:", ply:Nick(), "No owner assigned.")
                 end
             end)
+            print("[rRadio] Set up DarkRP hooks for boombox ownership.")
         end
     end)
 end)
@@ -499,70 +398,26 @@ end)
 hook.Add("CanTool", "AllowBoomboxToolgun", function(ply, tr, tool)
     local ent = tr.Entity
     if IsValid(ent) and (ent:GetClass() == "boombox" or ent:GetClass() == "golden_boombox") then
-        local owner = ent:GetNWEntity("Owner")
-        if owner == ply then
-            return true  -- Allow owner to use tools on the boombox
-        else
-            return false -- Disallow others
+        if ply:IsSuperAdmin() then
+            return true
         end
+
+        -- Since no owner is assigned, disallow tool usage for non-superadmins
+        print("[rRadio] Non-superadmin attempting to use tools on boombox:", ent)
+        return false
     end
 end)
 
 hook.Add("PhysgunPickup", "AllowBoomboxPhysgun", function(ply, ent)
     if IsValid(ent) and (ent:GetClass() == "boombox" or ent:GetClass() == "golden_boombox") then
-        local owner = ent:GetNWEntity("Owner")
-        if owner == ply then
-            return true  -- Allow owner to physgun the boombox
-        else
-            return false -- Disallow others
-        end
-    end
-end)
-
--- PermaProps integration for boomboxes
-if not PermaProps then PermaProps = {} end
-PermaProps.SpecialENTSSpawn = PermaProps.SpecialENTSSpawn or {}
-PermaProps.SpecialENTSSpawn["boombox"] = function(ent, data)
-    local permaID = ent.PermaProps_ID
-    if not permaID then return end
-
-    local savedState = SavedBoomboxStates[permaID]
-    if savedState then
-        ent:SetNWString("CurrentRadioStation", savedState.station)
-        ent:SetNWString("StationURL", savedState.url)
-
-        if ent.SetStationName then
-            ent:SetStationName(savedState.station)
+        if ply:IsSuperAdmin() then
+            print("[rRadio] Superadmin is Physgun picking up:", ent)
+            return true
         end
 
-        if savedState.isPlaying then
-            net.Start("PlayCarRadioStation")
-                net.WriteEntity(ent)
-                net.WriteString(savedState.station) -- Corrected variable
-                net.WriteString(savedState.url)     -- Corrected variable
-                net.WriteFloat(savedState.volume)   -- Corrected variable
-            net.Broadcast()
-
-            AddActiveRadio(ent, savedState.station, savedState.url, savedState.volume)
-        end
-    end
-end
-
-PermaProps.SpecialENTSSpawn["golden_boombox"] = PermaProps.SpecialENTSSpawn["boombox"]
-
-hook.Add("Initialize", "LoadBoomboxStatesOnStartup", function()
-    LoadBoomboxStatesFromDatabase()
-end)
-
--- Clear all boombox states from the database (Admin Only)
-concommand.Add("rradio_remove_all", function(ply, cmd, args)
-    if not ply or ply:IsAdmin() then
-        sql.Query("DELETE FROM boombox_states")
-        SavedBoomboxStates = {}
-        ActiveRadios = {}
-        ply:ChatPrint("All boombox states have been cleared.")
-    else
-        ply:ChatPrint("You do not have permission to run this command.")
+        -- Since no owner is assigned, disallow physgun pickup for non-superadmins
+        print("[rRadio] Non-superadmin attempting to Physgun pickup boombox:", ent)
+        return false
     end
 end)
 
@@ -570,51 +425,6 @@ end)
 hook.Add("PlayerDisconnected", "ClearPlayerDataOnDisconnect", function(ply)
     PlayerRetryAttempts[ply] = nil
     PlayerCooldowns[ply] = nil
+    print("[rRadio] Cleared player data for disconnected player:", ply:Nick())
 end)
 
--- PermaProps compatibility
-local function HasPermaPropsPermission(ply, name)
-    if not PermaProps or not PermaProps.Permissions or not PermaProps.Permissions[ply:GetUserGroup()] then 
-        return false 
-    end
-
-    local userGroup = ply:GetUserGroup()
-    local permissions = PermaProps.Permissions[userGroup]
-
-    if permissions.Custom == false and permissions.Inherits and PermaProps.Permissions[permissions.Inherits] then
-        return PermaProps.Permissions[permissions.Inherits][name]
-    end
-
-    return permissions[name]
-end
-
--- CanTool hook for PermaProps
-hook.Add("CanTool", "BoomboxPermaPropsTool", function(ply, tr, tool)
-    local ent = tr.Entity
-    if IsValid(ent) and ent.PermaProps and (ent:GetClass() == "boombox" or ent:GetClass() == "golden_boombox") then
-        if tool == "permaprops" then
-            return true
-        end
-        return HasPermaPropsPermission(ply, "Tool") or ply:IsSuperAdmin()
-    end
-end)
-
--- CanProperty hook for PermaProps
-hook.Add("CanProperty", "BoomboxPermaPropsProperty", function(ply, property, ent)
-    if IsValid(ent) and ent.PermaProps and (ent:GetClass() == "boombox" or ent:GetClass() == "golden_boombox") then
-        return HasPermaPropsPermission(ply, "Property") or ply:IsSuperAdmin()
-    end
-end)
-
-hook.Add("PhysgunPickup", "AllowBoomboxPhysgunPermaProps", function(ply, ent)
-    if IsValid(ent) and (ent:GetClass() == "boombox" or ent:GetClass() == "golden_boombox") then
-        local owner = ent:GetNWEntity("Owner")
-        if ent.PermaProps then
-            return HasPermaPropsPermission(ply, "Physgun") or ply:IsSuperAdmin()
-        elseif owner == ply or ply:IsSuperAdmin() then
-            return true
-        else
-            return false
-        end
-    end
-end)

@@ -29,6 +29,10 @@ local function GetRainbowColor(frequency)
     return rainbowColor
 end
 
+local function ShouldRotateIcon(status)
+    return status == "playing" or status == "tuning"
+end
+
 local rotationAngle = 0
 
 -- Initialize entity variables
@@ -95,12 +99,10 @@ function ENT:Draw()
     if stationStatus == "tuning" then
         text = "Tuning in..."
         textColor.r, textColor.g, textColor.b = 255, 255, 255
-        rotationAngle = (rotationAngle + ROTATION_SPEED) % 360
     elseif stationStatus == "playing" and stationName ~= "" then
         text = stationName
         local tempColor = GetRainbowColor(1)
         textColor.r, textColor.g, textColor.b = tempColor.r, tempColor.g, tempColor.b
-        rotationAngle = (rotationAngle + ROTATION_SPEED) % 360
     else
         local interactText = Config.Lang and Config.Lang["Interact"] or "Press E to Interact"
         local owner = self:GetNWEntity("Owner")
@@ -108,6 +110,11 @@ function ENT:Draw()
         if LocalPlayer() == owner or LocalPlayer():IsSuperAdmin() then
             text = interactText
         end
+    end
+
+    -- Update rotation angle only if the boombox is playing or tuning
+    if ShouldRotateIcon(stationStatus) then
+        rotationAngle = (rotationAngle + ROTATION_SPEED) % 360
     end
 
     -- Calculate text size for positioning

@@ -51,39 +51,24 @@ function ENT:SpawnFunction(ply, tr, className)
     return ent
 end
 
--- Replace the existing PhysgunPickup function with this one
-
 function ENT:PhysgunPickup(ply)
     local owner = self:GetNWEntity("Owner")
-    local isPermaProp = self.PermaProps_ID ~= nil
 
     -- Always allow superadmins to pick up the boombox
     if ply:IsSuperAdmin() then
         return true
     end
 
-    if isPermaProp then
-        -- For PermaProp boomboxes
-        if PermaProps and PermaProps.HasPermission then
-            return PermaProps.HasPermission(ply, "Physgun")
-        else
-            -- Fallback if PermaProps is not available
-            return false
-        end
-    else
-        -- For regular boomboxes
-        return ply == owner or not IsValid(owner)
-    end
+    return ply == owner or not IsValid(owner)
 end
 
--- Only allow the owner, a superadmin, or players with PermaProps permission to use the boombox
+-- Only allow the owner, a superadmin
 function ENT:Use(activator, caller)
     if activator:IsPlayer() then
         local owner = self:GetNWEntity("Owner")
-        local isPermaProp = self.PermaProps_ID ~= nil
 
-        -- Check if the player is the owner, a superadmin, or has PermaProps permission
-        if activator == owner or activator:IsSuperAdmin() or (isPermaProp and PermaProps and PermaProps.HasPermission and PermaProps.HasPermission(activator, "Use")) then
+        -- Check if the player is the owner, a superadmin
+        if activator == owner or activator:IsSuperAdmin() then
             net.Start("OpenRadioMenu")
             net.WriteEntity(self)
             net.Send(activator)
