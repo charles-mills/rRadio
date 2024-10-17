@@ -38,7 +38,6 @@ local settingsMenuOpen = false
 local entityVolumes = {}
 local openRadioMenu
 
--- Add these variables near the top of the file, with other local variables
 local lastIconUpdate = 0
 local iconUpdateDelay = 0.1 -- 100ms delay
 local pendingIconUpdate = nil
