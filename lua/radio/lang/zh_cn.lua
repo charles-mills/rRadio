@@ -16,5 +16,7 @@ LANG["SelectKey"] = "选择按键打开电台菜单（在车内）"
 LANG["GeneralOptions"] = "常规选项"
 LANG["ShowCarMessages"] = "进入车内时显示动画"
 LANG["ShowBoomboxHUD"] = "显示 Boombox HUD"
+LANG["Contribute"] = "想要贡献吗？"
+LANG["SubmitPullRequest"] = "发送 Pull Request :)"
 
 return LANG

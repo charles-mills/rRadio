@@ -12,9 +12,11 @@ LANG["LanguageSelection"] = "Language Selection"
 LANG["ThemeSelection"] = "Theme Selection"
 LANG["SelectTheme"] = "Select Theme"
 LANG["SelectLanguage"] = "Select Language"
-LANG["SelectKey"] = "Select Key to Open Radio Menu (In Vehicle)"
+LANG["SelectKey"] = "Select Key to Open Car Radio Menu"
 LANG["GeneralOptions"] = "General Options"
 LANG["ShowCarMessages"] = "Show Animation When Entering Vehicle"
 LANG["ShowBoomboxHUD"] = "Show the Boombox HUD"
+LANG["Contribute"] = "Want to contribute?"
+LANG["SubmitPullRequest"] = "Submit a Pull Request :)"
 
 return LANG

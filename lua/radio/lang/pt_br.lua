@@ -16,5 +16,7 @@ LANG["SelectKey"] = "Selecione a tecla para abrir o menu da rádio (No veículo)
 LANG["GeneralOptions"] = "Opções gerais"
 LANG["ShowCarMessages"] = "Mostrar animação ao entrar no veículo"
 LANG["ShowBoomboxHUD"] = "Mostrar o HUD da Boombox"
+LANG["Contribute"] = "Quer contribuir?"
+LANG["SubmitPullRequest"] = "Enviar uma Pull Request :)"
 
 return LANG

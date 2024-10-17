@@ -16,5 +16,7 @@ LANG["SelectKey"] = "Выберите клавишу для открытия м�
 LANG["GeneralOptions"] = "Общие параметры"
 LANG["ShowCarMessages"] = "Показывать анимацию при входе в машину"
 LANG["ShowBoomboxHUD"] = "Показывать HUD Boombox"
+LANG["Contribute"] = "Хотите внести свой вклад?"
+LANG["SubmitPullRequest"] = "Отправить Pull Request :)"
 
 return LANG

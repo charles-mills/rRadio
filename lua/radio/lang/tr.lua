@@ -16,5 +16,7 @@ LANG["SelectKey"] = "Radyo menüsünü açmak için bir tuş seçin (Araç için
 LANG["GeneralOptions"] = "Genel Seçenekler"
 LANG["ShowCarMessages"] = "Araçta giriş yapıldığında animasyon göster"
 LANG["ShowBoomboxHUD"] = "Boombox HUD'unu göster"
+LANG["Contribute"] = "Katkıda bulunmak ister misiniz?"
+LANG["SubmitPullRequest"] = "Pull Request gönder :)"
 
 return LANG

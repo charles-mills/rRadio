@@ -612,21 +612,25 @@ local function openSettingsMenu(parentFrame, backButton)
     scrollPanel:Dock(FILL)
     scrollPanel:DockMargin(Scale(5), Scale(5), Scale(5), Scale(5))
 
-    local function addHeader(text)
+    local function addHeader(text, isFirst)
         local header = vgui.Create("DLabel", scrollPanel)
         header:SetText(text)
-        header:SetFont("Roboto18")  -- Reduced font size for section headers
+        header:SetFont("Roboto18")
         header:SetTextColor(Config.UI.TextColor)
         header:Dock(TOP)
-        header:DockMargin(0, Scale(10), 0, Scale(5))  -- Reduced vertical margins
+        if isFirst then
+            header:DockMargin(0, Scale(5), 0, Scale(0))  -- Reduced top margin for the first header
+        else
+            header:DockMargin(0, Scale(10), 0, Scale(5))  -- Original margin for subsequent headers
+        end
         header:SetContentAlignment(4)
     end
 
     local function addDropdown(text, choices, currentValue, onSelect)
         local container = vgui.Create("DPanel", scrollPanel)
         container:Dock(TOP)
-        container:SetTall(Scale(50))  -- Slightly reduced height
-        container:DockMargin(0, 0, 0, Scale(5))  -- Reduced bottom margin
+        container:SetTall(Scale(50))
+        container:DockMargin(0, 0, 0, Scale(5))
         container.Paint = function(self, w, h)
             draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonColor)
         end
@@ -694,7 +698,7 @@ local function openSettingsMenu(parentFrame, backButton)
     end
 
     -- Theme Selection
-    addHeader(Config.Lang["ThemeSelection"] or "Theme Selection")
+    addHeader(Config.Lang["ThemeSelection"] or "Theme Selection", true)  -- Set isFirst to true for the first header
     local themeChoices = {}
     if themes then
         for themeName, _ in pairs(themes) do
@@ -757,8 +761,45 @@ local function openSettingsMenu(parentFrame, backButton)
 
     -- General Options
     addHeader(Config.Lang["GeneralOptions"] or "General Options")
-    addCheckbox(Config.Lang["ShowCarRadioMessages"] or "Show Car Radio Messages", "car_radio_show_messages")
-    addCheckbox(Config.Lang["ShowBoomboxHoverText"] or "Show Boombox Hover Text", "boombox_show_text")
+    addCheckbox(Config.Lang["ShowCarMessages"] or "Show Car Radio Messages", "car_radio_show_messages")
+    addCheckbox(Config.Lang["ShowBoomboxHUD"] or "Show Boombox Hover Text", "boombox_show_text")
+
+    -- Add footer
+    local footerHeight = Scale(60)
+    local footer = vgui.Create("DButton", settingsFrame)
+    footer:SetSize(settingsFrame:GetWide(), footerHeight)
+    footer:SetPos(0, settingsFrame:GetTall() - footerHeight)
+    footer:SetText("")
+    footer.Paint = function(self, w, h)
+        draw.RoundedBox(8, 0, 0, w, h, self:IsHovered() and Config.UI.ButtonHoverColor or Config.UI.ButtonColor)
+    end
+    footer.DoClick = function()
+        gui.OpenURL("https://github.com/charles-mills/rRadio")
+    end
+
+    local githubIcon = vgui.Create("DImage", footer)
+    githubIcon:SetSize(Scale(32), Scale(32))
+    githubIcon:SetPos(Scale(10), (footerHeight - Scale(32)) / 2)
+    githubIcon:SetImage("hud/github.png")
+    githubIcon.Paint = function(self, w, h)
+        surface.SetDrawColor(Config.UI.TextColor)
+        surface.SetMaterial(Material("hud/github.png"))
+        surface.DrawTexturedRect(0, 0, w, h)
+    end
+
+    local contributeTitleLabel = vgui.Create("DLabel", footer)
+    contributeTitleLabel:SetText(Config.Lang["Contribute"] or "Want to contribute?")
+    contributeTitleLabel:SetFont("Roboto18")
+    contributeTitleLabel:SetTextColor(Config.UI.TextColor)
+    contributeTitleLabel:SizeToContents()
+    contributeTitleLabel:SetPos(Scale(50), footerHeight / 2 - contributeTitleLabel:GetTall() + Scale(2))
+
+    local contributeSubLabel = vgui.Create("DLabel", footer)
+    contributeSubLabel:SetText(Config.Lang["SubmitPullRequest"] or "Submit a pull request :)")
+    contributeSubLabel:SetFont("Roboto18")
+    contributeSubLabel:SetTextColor(Config.UI.TextColor)
+    contributeSubLabel:SizeToContents()
+    contributeSubLabel:SetPos(Scale(50), footerHeight / 2 + Scale(2))
 end
 
 --[[
@@ -887,7 +928,6 @@ openRadioMenu = function(openSettings)
         stationListPanel:SetVisible(false)
     end
 
-    -- Back Button (declared earlier)
     backButton = vgui.Create("DButton", frame)
     backButton:SetSize(buttonSize, buttonSize)
     backButton:SetPos(settingsButton:GetX() - buttonSize - buttonPadding, topMargin)

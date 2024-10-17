@@ -16,5 +16,7 @@ LANG["SelectKey"] = "라디오 메뉴를 여는 키를 선택하십시오 (차�
 LANG["GeneralOptions"] = "일반 옵션"
 LANG["ShowCarMessages"] = "차량 진입 시 애니메이션 표시"
 LANG["ShowBoomboxHUD"] = "Boombox의 HUD 표시"
+LANG["Contribute"] = "기여하고 싶습니까?"
+LANG["SubmitPullRequest"] = "Pull Request를 제출 :)"
 
 return LANG
