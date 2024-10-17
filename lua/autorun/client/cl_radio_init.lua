@@ -1,6 +1,5 @@
 print("[RADIO] Starting client-side initialization")
 
--- Load configuration and other necessary files in the correct order
 Config = include("radio/config.lua")
 include("radio/lang/cl_language_manager.lua")
 include("themes.lua")
