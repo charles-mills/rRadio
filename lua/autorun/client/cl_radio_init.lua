@@ -1,0 +1,15 @@
+print("[RADIO] Starting client-side initialization")
+
+-- Load configuration and other necessary files in the correct order
+Config = include("radio/config.lua")
+include("language_manager.lua")
+include("themes.lua")
+include("radio/theme_menu.lua")
+include("radio/key_names.lua")
+include("radio/cl_init.lua")
+include("radio/cl_radio.lua")
+include("radio/utils.lua")
+include("radio/lang/cl_localisation_strings.lua")
+include("radio/lang/cl_country_translations_a.lua")
+include("radio/lang/cl_country_translations_b.lua")
+print("[RADIO] Finished client-side initialization")

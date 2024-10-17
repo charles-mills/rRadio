@@ -2,17 +2,26 @@ local Config = {}
 
 Config.RadioStations = {}
 
-local function loadLanguage()
-    local lang = Config.Language or GetConVar("gmod_language"):GetString() or "en"
-    local path = "radio/lang/" .. lang .. ".lua"
-    
-    if file.Exists(path, "LUA") then
-        Config.Lang = include(path)
-    else
-        Config.Lang = include("radio/lang/en.lua")
-    end
+-- Import the LanguageManager
+local LanguageManager = include("language_manager.lua")
+
+-- Add this near the top of the file, after loading the LanguageManager
+local function getTranslatedLanguageName(lang)
+    return LanguageManager.languages[lang] or lang
 end
 
+-- Modify the loadLanguage function
+local function loadLanguage()
+    local lang = GetConVar("radio_language"):GetString() or "en"
+    LanguageManager:SetLanguage(lang)
+end
+
+-- Create a ConVar for language selection if it doesn't exist
+if not ConVarExists("radio_language") then
+    CreateClientConVar("radio_language", "en", true, false, "Set the language for the radio addon")
+end
+
+-- Call loadLanguage to set the initial language
 loadLanguage()
 
 -- Function to format the country name for UI display
@@ -57,7 +66,6 @@ end
 
 Config.OpenKey = openKeyConvar:GetInt()
 
-
 -- Boombox Settings (Normal)
 Config.Boombox = {
     Volume = 1, -- Default radio volume (range: 0.0 to 1.0)
@@ -84,5 +92,17 @@ Config.VehicleRadio = {
     RetryAttempts = 3, -- Number of retry attempts to play a station in case of failure
     RetryDelay = 2 -- Delay in seconds between retry attempts
 }
+
+-- Function to get a localized string
+function Config.GetLocalizedString(key)
+    return LanguageManager:Translate(key)
+end
+
+-- Add this near the top of the file, after loading the LanguageManager
+local function getTranslatedCountryName(country)
+    return LanguageManager:GetCountryTranslation(LanguageManager.currentLanguage, country)
+end
+
+-- You can then use this function when working with country names in the config file
 
 return Config

@@ -1,8 +1,7 @@
 -- Include necessary files
 include("radio/key_names.lua")
 include("radio/config.lua")
-local countryTranslations = include("country_translations.lua")
-local languageManager = include("language_manager.lua")
+local LanguageManager = include("language_manager.lua")
 local themes = include("themes.lua") or {}
 local keyCodeMapping = include("radio/key_names.lua")
 
@@ -184,11 +183,8 @@ local function formatCountryName(name)
         return formattedCountryNames[cacheKey]
     end
 
-    -- Reformat and then translate the country name
-    local formattedName = name:gsub("_", " "):gsub("(%a)([%w_\']*)", function(a, b)
-        return string.upper(a) .. string.lower(b)
-    end)
-    local translatedName = countryTranslations:GetCountryName(lang, formattedName)
+    -- Use the LanguageManager to get the translated country name
+    local translatedName = LanguageManager:GetCountryTranslation(lang, name)
 
     formattedCountryNames[cacheKey] = translatedName
     return translatedName
@@ -720,24 +716,20 @@ local function openSettingsMenu(parentFrame, backButton)
     -- Language Selection
     addHeader(Config.Lang["LanguageSelection"] or "Language Selection")
     local languageChoices = {}
-    if languageManager and languageManager.languages then
-        for code, name in pairs(languageManager.languages) do
-            table.insert(languageChoices, {name = name, data = code})
-        end
-    else
-        table.insert(languageChoices, {name = "English", data = "en"})
+    for code, name in pairs(LanguageManager:GetAvailableLanguages()) do
+        table.insert(languageChoices, {name = name, data = code})
     end
 
     local currentLanguage = GetConVar("radio_language"):GetString()
-    local currentLanguageName = languageManager and languageManager.languages[currentLanguage] or "English"
+    local currentLanguageName = LanguageManager:GetLanguageName(currentLanguage)
 
     addDropdown(Config.Lang["SelectLanguage"] or "Select Language", languageChoices, currentLanguageName, function(_, _, _, data)
         RunConsoleCommand("radio_language", data)
-        if languageManager and languageManager.translations then
-            Config.Lang = languageManager.translations[data]
-        end
+        Config.Lang = LanguageManager.translations[data]
         parentFrame:Close()
-        reopenRadioMenu(true)  -- Reopen and open settings menu
+        timer.Simple(0.1, function()
+            reopenRadioMenu(true)  -- Reopen and open settings menu
+        end)
     end)
 
     -- Key Selection

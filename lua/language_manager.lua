@@ -24,22 +24,25 @@ LanguageManager.languages = {
     tr = "Türkçe",
 }
 
-LanguageManager.translations = {}
+LanguageManager.translations = include("radio/lang/cl_localisation_strings.lua")
+LanguageManager.countryTranslationsA = include("radio/lang/cl_country_translations_a.lua")
+LanguageManager.countryTranslationsB = include("radio/lang/cl_country_translations_b.lua")
 
--- Function to load and add a language
-function LanguageManager:AddLanguage(code, displayName, translations)
-    self.translations[code] = translations
-    self.languages[code] = displayName
+-- Merge country translations
+LanguageManager.countryTranslations = {}
+for k, v in pairs(LanguageManager.countryTranslationsA) do
+    LanguageManager.countryTranslations[k] = v
+end
+for k, v in pairs(LanguageManager.countryTranslationsB) do
+    LanguageManager.countryTranslations[k] = v
 end
 
--- Function to get a translation
-function LanguageManager:GetTranslation(code, key)
-    local lang = self.translations[code]
-    if lang and lang[key] then
-        return lang[key]
-    else
-        return self.translations["en"] and self.translations["en"][key] or key -- Fallback to English or the key itself
-    end
+-- Use the GetCountryName function from countryTranslationsB
+LanguageManager.GetCountryName = LanguageManager.countryTranslationsB.GetCountryName
+
+-- Function to get a country translation
+function LanguageManager:GetCountryTranslation(lang, country_key)
+    return self:GetCountryName(lang, country_key)
 end
 
 -- Function to set the current language (default to English)
@@ -68,21 +71,5 @@ end
 function LanguageManager:GetAvailableLanguages()
     return self.languages
 end
-
--- Function to load language files from the 'radio/lang/' directory
-function LanguageManager:LoadLanguageFiles()
-    for code, displayName in pairs(self.languages) do
-        local path = "radio/lang/" .. code .. ".lua"
-        if file.Exists(path, "LUA") then
-            local translations = include(path)
-            self:AddLanguage(code, displayName, translations)
-        else
-            print("[LanguageManager] Language file not found for code: " .. code .. " at path: " .. path)
-        end
-    end
-end
-
--- Load all language files
-LanguageManager:LoadLanguageFiles()
 
 return LanguageManager
