@@ -378,14 +378,12 @@ end
     Parameters:
     - parent: The parent UI element.
     - country: The country code.
-    - stationListPanel: The station list panel.
-    - backButton: The back button.
-    - searchBox: The search box.
+    - updateList: The function to update the list.
 
     Returns:
     - The created star icon UI element.
 ]]
-local function createStarIcon(parent, country, stationListPanel, backButton, searchBox)
+local function createStarIcon(parent, country, updateList)
     local starIcon = vgui.Create("DImageButton", parent)
     starIcon:SetSize(Scale(24), Scale(24))
     starIcon:SetPos(Scale(8), (Scale(40) - Scale(24)) / 2)
@@ -404,8 +402,16 @@ local function createStarIcon(parent, country, stationListPanel, backButton, sea
 
         saveFavorites()
 
-        if stationListPanel then
-            populateList(stationListPanel, backButton, searchBox, false)
+        -- Update the star icon
+        if favoriteCountries[country] then
+            starIcon:SetImage("hud/star_full.png")
+        else
+            starIcon:SetImage("hud/star.png")
+        end
+
+        -- Call the updateList function to refresh the list
+        if updateList then
+            updateList()
         end
     end
 
@@ -420,14 +426,12 @@ end
     - parent: The parent UI element.
     - country: The country code.
     - station: The station data.
-    - stationListPanel: The station list panel.
-    - backButton: The back button.
-    - searchBox: The search box.
+    - updateList: The function to update the list.
 
     Returns:
     - The created star icon UI element.
 ]]
-local function createStationStarIcon(parent, country, station, stationListPanel, backButton, searchBox)
+local function createStationStarIcon(parent, country, station, updateList)
     local starIcon = vgui.Create("DImageButton", parent)
     starIcon:SetSize(Scale(24), Scale(24))
     starIcon:SetPos(Scale(8), (Scale(40) - Scale(24)) / 2)
@@ -453,9 +457,16 @@ local function createStationStarIcon(parent, country, station, stationListPanel,
 
         saveFavorites()
 
-        -- Repopulate the list to reflect the change immediately
-        if stationListPanel then
-            populateList(stationListPanel, backButton, searchBox, false)
+        -- Update the star icon
+        if favoriteStations[country] and favoriteStations[country][station.name] then
+            starIcon:SetImage("hud/star_full.png")
+        else
+            starIcon:SetImage("hud/star.png")
+        end
+
+        -- Call the updateList function to refresh the list
+        if updateList then
+            updateList()
         end
     end
 
@@ -523,6 +534,10 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
     local filterText = searchBox:GetText():lower()
     local lang = GetConVar("radio_language"):GetString() or "en"
 
+    local function updateList()
+        populateList(stationListPanel, backButton, searchBox, false)
+    end
+
     if selectedCountry == nil then
         local countries = {}
         for country, _ in pairs(StationData) do
@@ -556,8 +571,8 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                 end
             end
 
-            -- Add the star icon
-            createStarIcon(countryButton, country.original, stationListPanel, backButton, searchBox)
+            -- Add the star icon with the updateList function
+            createStarIcon(countryButton, country.original, updateList)
 
             countryButton.DoClick = function()
                 surface.PlaySound("buttons/button3.wav")
@@ -613,8 +628,7 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                 end
             end
 
-            -- Add the star icon
-            createStationStarIcon(stationButton, selectedCountry, station, stationListPanel, backButton, searchBox)
+            createStationStarIcon(stationButton, selectedCountry, station, updateList)
 
             stationButton.DoClick = function()
                 local currentTime = CurTime()
