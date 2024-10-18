@@ -83,7 +83,6 @@ function ENT:Use(activator, caller)
         else
             local currentTime = CurTime()
 
-            -- Check if the player has recently received a "no permission" message
             if not lastPermissionMessageTime[activator] or (currentTime - lastPermissionMessageTime[activator] > permissionMessageCooldown) then
                 activator:ChatPrint("You do not have permission to use this boombox.")
                 lastPermissionMessageTime[activator] = currentTime

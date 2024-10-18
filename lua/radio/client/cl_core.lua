@@ -1320,6 +1320,34 @@ hook.Add("Think", "OpenCarRadioMenu", function()
     end
 end)
 
+-- Add this near the top of the file, after other net message handlers
+
+net.Receive("UpdateRadioStatus", function()
+    local entity = net.ReadEntity()
+    local stationName = net.ReadString()
+    local isPlaying = net.ReadBool()
+    local status = net.ReadString()
+
+    if IsValid(entity) then
+        BoomboxStatuses[entity:EntIndex()] = {
+            stationStatus = status,
+            stationName = stationName
+        }
+
+        -- Immediately update the entity's networked variables
+        entity:SetNWString("Status", status)
+        entity:SetNWString("StationName", stationName)
+        entity:SetNWBool("IsPlaying", isPlaying)
+
+        -- If the status is "playing", update the currently playing stations
+        if status == "playing" then
+            currentlyPlayingStations[entity] = { name = stationName }
+        elseif status == "stopped" then
+            currentlyPlayingStations[entity] = nil
+        end
+    end
+end)
+
 net.Receive("PlayCarRadioStation", function()
     local entity = net.ReadEntity()
     entity = GetVehicleEntity(entity)
@@ -1329,7 +1357,18 @@ net.Receive("PlayCarRadioStation", function()
 
     if not IsValid(entity) or type(url) ~= "string" or type(volume) ~= "number" then
         print("[Radio Error] Invalid data received")
-        return -- Invalid data received
+        return
+    end
+
+    -- Set the boombox status to "tuning" immediately
+    if IsValid(entity) and (entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox") then
+        BoomboxStatuses[entity:EntIndex()] = {
+            stationStatus = "tuning",
+            stationName = stationName
+        }
+        entity:SetNWString("Status", "tuning")
+        entity:SetNWString("StationName", stationName)
+        entity:SetNWBool("IsPlaying", true)
     end
 
     local entityRetryAttempts = 5
@@ -1352,14 +1391,6 @@ net.Receive("PlayCarRadioStation", function()
 
         if currentRadioSources[entity] and IsValid(currentRadioSources[entity]) then
             currentRadioSources[entity]:Stop()
-        end
-
-        -- Set the boombox status to "tuning" locally
-        if IsValid(entity) and (entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox") then
-            BoomboxStatuses[entity:EntIndex()] = {
-                stationStatus = "tuning",
-                stationName = ""
-            }
         end
 
         local function tryPlayStation(playAttempt)
@@ -1386,7 +1417,7 @@ net.Receive("PlayCarRadioStation", function()
                             if IsValid(entity) and (entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox") then
                                 BoomboxStatuses[entity:EntIndex()] = {
                                     stationStatus = "playing",
-                                    stationName = stationName -- Use the stationName received
+                                    stationName = stationName
                                 }
                             end
                         else
@@ -1458,26 +1489,26 @@ net.Receive("StopCarRadioStation", function()
     local entity = net.ReadEntity()
     entity = GetVehicleEntity(entity)
 
-    if entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox" then
-        if not utils.canInteractWithBoombox(LocalPlayer(), entity) then
-            return -- Don't process the stop command if the player doesn't have permission
+    if IsValid(entity) then
+        if currentRadioSources[entity] and IsValid(currentRadioSources[entity]) then
+            currentRadioSources[entity]:Stop()
         end
-    end
-
-    if IsValid(entity) and IsValid(currentRadioSources[entity]) then
-        currentRadioSources[entity]:Stop()
         currentRadioSources[entity] = nil
         currentlyPlayingStations[entity] = nil
-        hook.Remove("EntityRemoved", "StopRadioOnEntityRemove_" .. entity:EntIndex())
-        hook.Remove("Think", "UpdateRadioPosition_" .. entity:EntIndex())
-
+        
         -- Update boombox status to "stopped"
-        if IsValid(entity) and (entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox") then
+        if entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox" then
             BoomboxStatuses[entity:EntIndex()] = {
                 stationStatus = "stopped",
                 stationName = ""
             }
+            entity:SetNWString("Status", "stopped")
+            entity:SetNWString("StationName", "")
+            entity:SetNWBool("IsPlaying", false)
         end
+
+        hook.Remove("EntityRemoved", "StopRadioOnEntityRemove_" .. entity:EntIndex())
+        hook.Remove("Think", "UpdateRadioPosition_" .. entity:EntIndex())
     end
 end)
 
@@ -1490,14 +1521,12 @@ net.Receive("UpdateRadioVolume", function()
 
     entityVolumes[entity] = volume
 
-    -- Update the volume for the current radio source
     if currentRadioSources[entity] and IsValid(currentRadioSources[entity]) then
         currentRadioSources[entity]:SetVolume(volume)
     end
 
-    -- Update the volume slider if the radio menu is open
     if radioMenuOpen and IsValid(currentFrame) then
-        local volumeSlider = currentFrame:GetChildren()[6]:GetChildren()[2] -- Adjust this index if needed
+        local volumeSlider = currentFrame:GetChildren()[6]:GetChildren()[2]
         if IsValid(volumeSlider) and volumeSlider:GetName() == "DNumSlider" then
             volumeSlider:SetValue(volume)
         end

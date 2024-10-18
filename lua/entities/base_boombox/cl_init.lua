@@ -38,7 +38,6 @@ local rotationAngle = 0
 -- Initialize entity variables
 function ENT:Initialize()
     self:SetRenderBounds(self:OBBMins(), self:OBBMaxs())
-    -- No need to initialize self.stationStatus or self.stationName since we're using BoomboxStatuses
 end
 
 -- Drawing the boombox HUD
@@ -84,12 +83,12 @@ function ENT:Draw()
 
     -- Get the boombox status from the global table
     local statusData = BoomboxStatuses[self:EntIndex()]
-    local stationStatus = "stopped"
-    local stationName = ""
+    local stationStatus = self:GetNWString("Status", "stopped")
+    local stationName = self:GetNWString("StationName", "")
 
     if statusData then
-        stationStatus = statusData.stationStatus or "stopped"
-        stationName = statusData.stationName or ""
+        stationStatus = statusData.stationStatus or stationStatus
+        stationName = statusData.stationName or stationName
     end
 
     -- Determine the text to display based on the boombox's status

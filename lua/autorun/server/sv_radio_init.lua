@@ -1,6 +1,5 @@
 print("[RADIO] Starting server-side initialization")
 
--- Add all the necessary Lua files for the client
 AddCSLuaFile("radio/shared/sh_config.lua")
 AddCSLuaFile("radio/client/lang/cl_language_manager.lua")
 AddCSLuaFile("radio/client/cl_core.lua")
