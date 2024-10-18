@@ -56,6 +56,9 @@ local lastGlobalAction = 0     -- Timestamp of the last global radio action
 local VOLUME_UPDATE_DEBOUNCE_TIME = 0.1  -- 100ms debounce time for volume updates
 local volumeUpdateQueue = {}
 
+local STATION_CHANGE_COOLDOWN = 0.5
+local lastStationChangeTimes = {}
+
 --[[
     Function: AddActiveRadio
     Adds a radio to the active radios list.
@@ -217,6 +220,32 @@ local function GetVehicleEntity(entity)
 end
 
 --[[
+    Function: GetEntityOwner
+    Gets the owner of an entity, using CPPI if available, otherwise falling back to other methods.
+    Parameters:
+    - entity: The entity to check ownership for.
+    Returns:
+    - The owner of the entity, or nil if no owner is found.
+]]
+local function GetEntityOwner(entity)
+    if not IsValid(entity) then return nil end
+    
+    -- Try CPPI first
+    if entity.CPPIGetOwner then
+        return entity:CPPIGetOwner()
+    end
+    
+    -- Fallback to NWEntity owner
+    local nwOwner = entity:GetNWEntity("Owner")
+    if IsValid(nwOwner) then
+        return nwOwner
+    end
+    
+    -- If all else fails, return nil
+    return nil
+end
+
+--[[
     Network Receiver: PlayCarRadioStation
     Handles playing a radio station for vehicles, LVS vehicles, and boomboxes.
 ]]
@@ -237,6 +266,34 @@ net.Receive("PlayCarRadioStation", function(len, ply)
     end
     PlayerCooldowns[ply] = currentTime
 
+    local entity = net.ReadEntity()
+    entity = GetVehicleEntity(entity)
+    local stationName = net.ReadString()
+    local stationURL = net.ReadString()
+    local volume = net.ReadFloat()
+
+    if not IsValid(entity) then
+        return
+    end
+
+    -- Entity-specific cooldown check
+    local currentTime = CurTime()
+    local lastChangeTime = lastStationChangeTimes[entity] or 0
+    if currentTime - lastChangeTime < STATION_CHANGE_COOLDOWN then
+        -- Instead of returning, just update the time without sending a message
+        lastStationChangeTimes[entity] = currentTime
+    else
+        lastStationChangeTimes[entity] = currentTime
+    end
+
+    -- Stop the current station before playing a new one
+    if ActiveRadios[entity:EntIndex()] then
+        net.Start("StopCarRadioStation")
+            net.WriteEntity(entity)
+        net.Broadcast()
+        RemoveActiveRadio(entity)
+    end
+
     -- Check total number of active radios
     if table.Count(ActiveRadios) >= MAX_ACTIVE_RADIOS then
         ply:ChatPrint("The maximum number of active radios has been reached. Please try again later.")
@@ -246,22 +303,12 @@ net.Receive("PlayCarRadioStation", function(len, ply)
     -- Check player's personal radio limit
     local playerActiveRadios = 0
     for _, radio in pairs(ActiveRadios) do
-        if IsValid(radio.entity) and radio.entity:CPPIGetOwner() == ply then
+        if IsValid(radio.entity) and GetEntityOwner(radio.entity) == ply then
             playerActiveRadios = playerActiveRadios + 1
         end
     end
     if playerActiveRadios >= PLAYER_RADIO_LIMIT then
         ply:ChatPrint("You have reached your maximum number of active radios.")
-        return
-    end
-
-    local entity = net.ReadEntity()
-    entity = GetVehicleEntity(entity)
-    local stationName = net.ReadString()
-    local stationURL = net.ReadString()
-    local volume = net.ReadFloat()
-
-    if not IsValid(entity) then
         return
     end
 
@@ -298,7 +345,7 @@ net.Receive("PlayCarRadioStation", function(len, ply)
                 net.WriteEntity(entity)
                 net.WriteString(stationName)
                 net.WriteBool(true)  -- isPlaying = true
-                net.WriteString("tuning")  -- Add this line to indicate tuning status
+                net.WriteString("tuning")  -- Indicate tuning status
             net.Broadcast()
 
             -- Update the station immediately for client-side responsiveness
@@ -306,7 +353,7 @@ net.Receive("PlayCarRadioStation", function(len, ply)
             entity:SetNWString("StationURL", stationURL)
             entity:SetNWFloat("Volume", volume)
             entity:SetNWBool("IsPlaying", true)
-            entity:SetNWString("Status", "tuning")  -- Add this line
+            entity:SetNWString("Status", "tuning")  -- Set status to tuning
 
             AddActiveRadio(entity, stationName, stationURL, volume)
 
@@ -317,10 +364,10 @@ net.Receive("PlayCarRadioStation", function(len, ply)
                 net.WriteFloat(volume)
             net.Broadcast()
 
-            net.Start("UpdateRadioStatus")
-                net.WriteEntity(entity)
-                net.WriteString(stationName)
-            net.Broadcast()
+            -- Remove the timer that was setting the status to "playing"
+            if timer.Exists("StationUpdate_" .. entIndex) then
+                timer.Remove("StationUpdate_" .. entIndex)
+            end
 
             -- Save to database if permanent
             if entity.IsPermanent and SavePermanentBoombox then
@@ -371,6 +418,9 @@ net.Receive("StopCarRadioStation", function(len, ply)
         return
     end
 
+    -- Remove the cooldown check for stopping a station
+    -- This allows players to stop a station without triggering the cooldown
+
     local entityClass = entity:GetClass()
     local lvsVehicle = IsLVSVehicle(entity)
 
@@ -385,7 +435,7 @@ net.Receive("StopCarRadioStation", function(len, ply)
         entity:SetNWString("StationName", "")
         entity:SetNWString("StationURL", "")
         entity:SetNWBool("IsPlaying", false)
-        entity:SetNWString("Status", "stopped")  -- Add this line
+        entity:SetNWString("Status", "stopped")
 
         RemoveActiveRadio(entity)
 
@@ -399,7 +449,7 @@ net.Receive("StopCarRadioStation", function(len, ply)
             net.WriteEntity(entity)
             net.WriteString("")
             net.WriteBool(false)
-            net.WriteString("stopped")  -- Add this line
+            net.WriteString("stopped")
         net.Broadcast()
 
         -- Debounce the database update
@@ -508,7 +558,6 @@ net.Receive("UpdateRadioVolume", function(len, ply)
     end
 end)
 
--- Add this hook to clean up timers when entities are removed
 hook.Add("EntityRemoved", "CleanupVolumeUpdateTimers", function(entity)
     local entIndex = entity:EntIndex()
     if timer.Exists("VolumeUpdate_" .. entIndex) then

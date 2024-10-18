@@ -34,13 +34,13 @@ if not file.IsDir(dataDir, "DATA") then
     file.CreateDir(dataDir)
 end
 
-local currentFrame = nil  -- Store the current frame
+local currentFrame = nil
 local settingsMenuOpen = false
 local entityVolumes = {}
 local openRadioMenu
 
 local lastIconUpdate = 0
-local iconUpdateDelay = 0.1 -- 100ms delay
+local iconUpdateDelay = 0.1
 local pendingIconUpdate = nil
 local isUpdatingIcon = false
 
@@ -1362,154 +1362,138 @@ net.Receive("PlayCarRadioStation", function()
 
     -- Set the boombox status to "tuning" immediately
     if IsValid(entity) and (entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox") then
+        entity:SetNWString("Status", "tuning")
+        entity:SetNWString("StationName", stationName)
+        entity:SetNWBool("IsPlaying", true)
+        
+        -- Update the BoomboxStatuses table immediately
         BoomboxStatuses[entity:EntIndex()] = {
             stationStatus = "tuning",
             stationName = stationName
         }
-        entity:SetNWString("Status", "tuning")
-        entity:SetNWString("StationName", stationName)
-        entity:SetNWBool("IsPlaying", true)
     end
 
-    local entityRetryAttempts = 5
-    local entityRetryDelay = 0.5  -- Delay in seconds between entity retries
+    -- Stop the current station before playing a new one
+    if currentRadioSources[entity] and IsValid(currentRadioSources[entity]) then
+        currentRadioSources[entity]:Stop()
+        currentRadioSources[entity] = nil
+    end
 
-    local function attemptPlayStation(attempt)
-        if not IsValid(entity) then
-            print("[Radio Debug] Entity not valid, attempt:", attempt)
-            if attempt < entityRetryAttempts then
-                timer.Simple(entityRetryDelay, function()
-                    attemptPlayStation(attempt + 1)
-                end)
-            else
-                print("[Radio Error] Max retry attempts reached for entity")
+    sound.PlayURL(url, "3d mono", function(station, errorID, errorName)
+        if IsValid(station) then
+            station:SetPos(entity:GetPos())
+            station:SetVolume(volume)
+            station:Play()
+            currentRadioSources[entity] = station
+            entity.RadioSource = station  -- Store the sound object on the entity
+
+            -- Set 3D fade distance according to the entity's configuration
+            local entityConfig = getEntityConfig(entity)
+            if entityConfig then
+                station:Set3DFadeDistance(entityConfig.MinVolumeDistance, entityConfig.MaxHearingDistance)
             end
-            return
-        end
 
-        local entityConfig = getEntityConfig(entity)
+            -- Modify the checkStationState function
+            local function checkStationState()
+                if not IsValid(entity) or not IsValid(station) then
+                    return
+                end
 
-        if currentRadioSources[entity] and IsValid(currentRadioSources[entity]) then
-            currentRadioSources[entity]:Stop()
-        end
-
-        local function tryPlayStation(playAttempt)
-            sound.PlayURL(url, "3d mono", function(station, errorID, errorName)
-                if IsValid(station) then
-                    station:SetPos(entity:GetPos())
-                    station:SetVolume(volume)
-                    station:Play()
-                    currentRadioSources[entity] = station
-
-                    -- Set 3D fade distance according to the entity's configuration
-                    if entityConfig then
-                        station:Set3DFadeDistance(entityConfig.MinVolumeDistance, entityConfig.MaxHearingDistance)
+                if station:GetState() == GMOD_CHANNEL_PLAYING then
+                    -- Station has started playing
+                    if IsValid(entity) and (entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox") then
+                        entity:SetNWString("Status", "playing")
+                        net.Start("UpdateRadioStatus")
+                            net.WriteEntity(entity)
+                            net.WriteString(stationName)
+                            net.WriteBool(true)
+                            net.WriteString("playing")
+                        net.SendToServer()
                     end
-
-                    -- Monitor the station's playback state
-                    local function checkStationState()
-                        if not IsValid(entity) or not IsValid(station) then
-                            return
-                        end
-
-                        if station:GetState() == GMOD_CHANNEL_PLAYING then
-                            -- Station has started playing
-                            if IsValid(entity) and (entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox") then
-                                BoomboxStatuses[entity:EntIndex()] = {
-                                    stationStatus = "playing",
-                                    stationName = stationName
-                                }
-                            end
-                        else
-                            -- Continue checking
-                            timer.Simple(0.1, checkStationState)
-                        end
+                elseif station:GetState() == GMOD_CHANNEL_STOPPED then
+                    -- Station has stopped
+                    if IsValid(entity) and (entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox") then
+                        entity:SetNWString("Status", "stopped")
+                        net.Start("UpdateRadioStatus")
+                            net.WriteEntity(entity)
+                            net.WriteString("")
+                            net.WriteBool(false)
+                            net.WriteString("stopped")
+                        net.SendToServer()
                     end
-
-                    -- Start checking the station state
-                    checkStationState()
-
-                    -- Update the station's position relative to the entity's movement
-                    hook.Add("Think", "UpdateRadioPosition_" .. entity:EntIndex(), function()
-                        if IsValid(entity) and IsValid(station) then
-                            station:SetPos(entity:GetPos())
-
-                            local playerPos = LocalPlayer():GetPos()
-                            local entityPos = entity:GetPos()
-                            local distanceSqr = playerPos:DistToSqr(entityPos)
-                            local isPlayerInCar = LocalPlayer():GetVehicle() == entity or 
-                                                  (IsValid(LocalPlayer():GetVehicle()) and 
-                                                   LocalPlayer():GetVehicle():GetParent() == entity)
-
-                            updateRadioVolume(station, distanceSqr, isPlayerInCar, entity)
-                        else
-                            hook.Remove("Think", "UpdateRadioPosition_" .. entity:EntIndex())
-                        end
-                    end)
-
-                    -- Stop the station if the entity is removed
-                    hook.Add("EntityRemoved", "StopRadioOnEntityRemove_" .. entity:EntIndex(), function(ent)
-                        if ent == entity then
-                            if IsValid(currentRadioSources[entity]) then
-                                currentRadioSources[entity]:Stop()
-                            end
-                            currentRadioSources[entity] = nil
-                            hook.Remove("EntityRemoved", "StopRadioOnEntityRemove_" .. entity:EntIndex())
-                            hook.Remove("Think", "UpdateRadioPosition_" .. entity:EntIndex())
-                            BoomboxStatuses[entity:EntIndex()] = nil
-                        end
-                    end)
                 else
-                    print("[Radio Error] Failed to create station. Error ID:", errorID, "Error Name:", errorName)
-                    if playAttempt < entityConfig.RetryAttempts then
-                        timer.Simple(entityConfig.RetryDelay, function()
-                            tryPlayStation(playAttempt + 1)
-                        end)
-                    else
-                        print("[Radio Error] Max retry attempts reached for playing station")
-                        -- Set the boombox status to "stopped" if it fails to play
-                        if IsValid(entity) and (entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox") then
-                            BoomboxStatuses[entity:EntIndex()] = {
-                                stationStatus = "stopped",
-                                stationName = ""
-                            }
-                        end
-                    end
+                    -- Continue checking
+                    timer.Simple(0.1, checkStationState)
+                end
+            end
+
+            -- Start checking the station state
+            checkStationState()
+
+            -- Update the station's position relative to the entity's movement
+            hook.Add("Think", "UpdateRadioPosition_" .. entity:EntIndex(), function()
+                if IsValid(entity) and IsValid(station) then
+                    station:SetPos(entity:GetPos())
+
+                    local playerPos = LocalPlayer():GetPos()
+                    local entityPos = entity:GetPos()
+                    local distanceSqr = playerPos:DistToSqr(entityPos)
+                    local isPlayerInCar = LocalPlayer():GetVehicle() == entity or 
+                                          (IsValid(LocalPlayer():GetVehicle()) and 
+                                           LocalPlayer():GetVehicle():GetParent() == entity)
+
+                    updateRadioVolume(station, distanceSqr, isPlayerInCar, entity)
+                else
+                    hook.Remove("Think", "UpdateRadioPosition_" .. entity:EntIndex())
                 end
             end)
+
+            -- Stop the station if the entity is removed
+            hook.Add("EntityRemoved", "StopRadioOnEntityRemove_" .. entity:EntIndex(), function(ent)
+                if ent == entity then
+                    if IsValid(currentRadioSources[entity]) then
+                        currentRadioSources[entity]:Stop()
+                    end
+                    currentRadioSources[entity] = nil
+                    entity.RadioSource = nil  -- Clear the stored sound object
+                    hook.Remove("EntityRemoved", "StopRadioOnEntityRemove_" .. entity:EntIndex())
+                    hook.Remove("Think", "UpdateRadioPosition_" .. entity:EntIndex())
+                    BoomboxStatuses[entity:EntIndex()] = nil
+                end
+            end)
+        else
+            print("[Radio Error] Failed to create station. Error ID:", errorID, "Error Name:", errorName)
+            if IsValid(entity) and (entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox") then
+                entity:SetNWString("Status", "stopped")
+                entity:SetNWString("StationName", "")
+                entity:SetNWBool("IsPlaying", false)
+            end
         end
-
-        tryPlayStation(1)
-    end
-
-    attemptPlayStation(1)
+    end)
 end)
 
 net.Receive("StopCarRadioStation", function()
     local entity = net.ReadEntity()
     entity = GetVehicleEntity(entity)
 
-    if IsValid(entity) then
-        if currentRadioSources[entity] and IsValid(currentRadioSources[entity]) then
-            currentRadioSources[entity]:Stop()
-        end
-        currentRadioSources[entity] = nil
-        currentlyPlayingStations[entity] = nil
-        
-        -- Update boombox status to "stopped"
-        if entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox" then
-            BoomboxStatuses[entity:EntIndex()] = {
-                stationStatus = "stopped",
-                stationName = ""
-            }
-            entity:SetNWString("Status", "stopped")
-            entity:SetNWString("StationName", "")
-            entity:SetNWBool("IsPlaying", false)
-        end
+    if not IsValid(entity) then return end
 
-        hook.Remove("EntityRemoved", "StopRadioOnEntityRemove_" .. entity:EntIndex())
-        hook.Remove("Think", "UpdateRadioPosition_" .. entity:EntIndex())
+    if currentRadioSources[entity] and IsValid(currentRadioSources[entity]) then
+        currentRadioSources[entity]:Stop()
     end
+    currentRadioSources[entity] = nil
+    entity.RadioSource = nil  -- Clear the stored sound object
+    currentlyPlayingStations[entity] = nil
+    
+    -- Update boombox status to "stopped"
+    if entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox" then
+        entity:SetNWString("Status", "stopped")
+        entity:SetNWString("StationName", "")
+        entity:SetNWBool("IsPlaying", false)
+    end
+
+    hook.Remove("EntityRemoved", "StopRadioOnEntityRemove_" .. entity:EntIndex())
+    hook.Remove("Think", "UpdateRadioPosition_" .. entity:EntIndex())
 end)
 
 net.Receive("UpdateRadioVolume", function()

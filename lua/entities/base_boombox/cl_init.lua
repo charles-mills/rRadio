@@ -35,6 +35,12 @@ end
 
 local rotationAngle = 0
 
+-- Add this near the top of the file
+local function IsStationPlaying(entity)
+    local source = entity.RadioSource
+    return IsValid(source) and source:GetState() == GMOD_CHANNEL_PLAYING
+end
+
 -- Initialize entity variables
 function ENT:Initialize()
     self:SetRenderBounds(self:OBBMins(), self:OBBMaxs())
@@ -81,14 +87,20 @@ function ENT:Draw()
     ang:RotateAroundAxis(ang:Right(), -90)
     ang:RotateAroundAxis(ang:Up(), 90)
 
-    -- Get the boombox status from the global table
-    local statusData = BoomboxStatuses[self:EntIndex()]
-    local stationStatus = self:GetNWString("Status", "stopped")
-    local stationName = self:GetNWString("StationName", "")
+    -- Get the boombox status
+    local entIndex = self:EntIndex()
+    local statusData = BoomboxStatuses[entIndex] or {}
+    local stationStatus = statusData.stationStatus or self:GetNWString("Status", "stopped")
+    local stationName = statusData.stationName or self:GetNWString("StationName", "")
 
-    if statusData then
-        stationStatus = statusData.stationStatus or stationStatus
-        stationName = statusData.stationName or stationName
+    -- Check if the station is actually playing
+    if stationStatus == "tuning" and IsStationPlaying(self) then
+        stationStatus = "playing"
+        self:SetNWString("Status", "playing")
+        BoomboxStatuses[entIndex] = {
+            stationStatus = "playing",
+            stationName = stationName
+        }
     end
 
     -- Determine the text to display based on the boombox's status
@@ -102,7 +114,7 @@ function ENT:Draw()
         text = stationName
         local tempColor = GetRainbowColor(1)
         textColor.r, textColor.g, textColor.b = tempColor.r, tempColor.g, tempColor.b
-    else
+    elseif stationStatus == "stopped" then
         local interactText = Config.Lang and Config.Lang["Interact"] or "Press E to Interact"
         local owner = self:GetNWEntity("Owner")
         
