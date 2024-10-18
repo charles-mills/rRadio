@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
     inputs:
       reason:
-        description: 'Lolll'
+        description: 'Reason for manual build'
         required: false
         default: 'Manual build and minify'
 
@@ -23,39 +23,42 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      # Step 2: Install Dependencies (Lua, LuaRocks, Build Tools)
+      # Step 2: Set up Node.js
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'  # Specify the Node.js version you prefer
+
+      # Step 3: Install luamin via npm
+      - name: Install luamin
+        run: |
+          npm install -g luamin
+
+      # Step 4: Install Lua and LuaRocks
       - name: Install Lua, LuaRocks, and Build Essentials
         run: |
           sudo apt-get update
-          sudo apt-get install -y lua5.3 luarocks build-essential liblua5.3-dev git
+          sudo apt-get install -y lua5.3 luarocks build-essential liblua5.3-dev
 
-      # Step 3: Install LuaFileSystem
+      # Step 5: Install LuaFileSystem
       - name: Install LuaFileSystem
         run: |
           sudo luarocks install luafilesystem
 
-      # Step 4: Install LuaMinify
-      - name: Install LuaMinify
-        run: |
-          git clone https://github.com/stravant/lua-minify
-          cd lua-minify
-          make
-          sudo make install  # This installs the lua-minify executable to /usr/local/bin
-
-      # Step 5: Verify Installations
+      # Step 6: Verify Installations
       - name: Verify Installations
         run: |
           lua -v
           luarocks --version
-          lua-minify -h
+          luamin -h
           lua -e "require('lfs')"
 
-      # Step 6: Run Makefile Targets
+      # Step 7: Run Makefile Targets
       - name: Run Makefile to Minify Lua Files
         run: |
           make minify
 
-      # Step 7: Upload Minified Lua Files as Artifacts
+      # Step 8: Upload Minified Lua Files as Artifacts
       - name: Upload Minified Lua Files
         uses: actions/upload-artifact@v3
         with:

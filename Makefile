@@ -1,7 +1,7 @@
 # Variables
-LUA_MINIFY=lua-minify    # Command to run LuaMinify
-LUA_DIR=lua              # Directory containing Lua files
-MIN_EXT=.min.lua         # Extension for minified files
+LUA_MINIFY=luamin         # Command to run LuaMinify
+LUA_DIR=lua               # Directory containing Lua files
+MIN_EXT=.min.lua          # Extension for minified files
 
 # Default target
 all: minify
@@ -12,7 +12,7 @@ minify:
 	@find $(LUA_DIR) -type f -name "*.lua" ! -name "*$(MIN_EXT)" | while read file; do \
 		min_file="$$file$(MIN_EXT)"; \
 		echo "Minifying $$file to $$min_file"; \
-		$(LUA_MINIFY) "$$file" "$$min_file"; \
+		$(LUA_MINIFY) "$$file" > "$$min_file"; \
 	done
 	@echo "Lua minification completed."
 
