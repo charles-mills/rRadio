@@ -1,8 +1,6 @@
-# .github/workflows/build.yml
-
 name: Lua Project Build and Minify
 
-# Trigger the workflow on pushes and pull requests affecting the lua/ directory
+# Trigger the workflow on pushes, pull requests affecting the lua/ directory, and manual trigger
 on:
   push:
     paths:
@@ -10,6 +8,12 @@ on:
   pull_request:
     paths:
       - 'lua/**'
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Reason for manual trigger'
+        required: false
+        default: 'Manual build and minify'
 
 jobs:
   build:
@@ -51,7 +55,6 @@ jobs:
         run: |
           make minify
 
-      # Step 7: (Optional) Upload Minified Lua Files as Artifacts
       - name: Upload Minified Lua Files
         uses: actions/upload-artifact@v3
         with:
