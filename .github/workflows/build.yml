@@ -1,6 +1,5 @@
 name: Build and Minify
 
-# Trigger the workflow on pushes and pull requests affecting the lua/ directory
 on:
   push:
     paths:
@@ -11,7 +10,7 @@ on:
   workflow_dispatch:
     inputs:
       reason:
-        description: 'Reason for manual trigger'
+        description: 'Lolll'
         required: false
         default: 'Manual build and minify'
 
@@ -28,64 +27,38 @@ jobs:
       - name: Install Lua, LuaRocks, and Build Essentials
         run: |
           sudo apt-get update
-          sudo apt-get install -y lua5.3 luarocks build-essential liblua5.3-dev
+          sudo apt-get install -y lua5.3 luarocks build-essential liblua5.3-dev git
 
-      # Step 3: Verify Lua Installation
-      - name: Verify Lua Installation
-        run: |
-          lua -v
-          luarocks --version
-
-      # Step 4: Install LuaFileSystem
+      # Step 3: Install LuaFileSystem
       - name: Install LuaFileSystem
         run: |
           sudo luarocks install luafilesystem
 
-      # Step 5: Install LuaMinify (luamin)
-      - name: Install LuaMinify (luamin)
+      # Step 4: Install LuaMinify
+      - name: Install LuaMinify
         run: |
-          sudo luarocks install luamin
+          git clone https://github.com/ysc3839/lua-minify.git
+          cd lua-minify
+          make
+          sudo make install  # This installs the lua-minify executable to /usr/local/bin
 
-      # Step 6: Verify Installations
+      # Step 5: Verify Installations
       - name: Verify Installations
         run: |
-          which luamin
-          luamin -h
+          lua -v
+          luarocks --version
+          lua-minify -h
           lua -e "require('lfs')"
 
-      # Step 7: Run Makefile Targets
+      # Step 6: Run Makefile Targets
       - name: Run Makefile to Minify Lua Files
         run: |
           make minify
 
-      # Step 8: Upload Minified Lua Files as Artifacts
+      # Step 7: Upload Minified Lua Files as Artifacts
       - name: Upload Minified Lua Files
         uses: actions/upload-artifact@v3
         with:
           name: minified-lua
           path: |
             lua/**/*.min.lua
-            # Include other paths if needed
-
-      # Step 9: (Optional) Create GitHub Release with Artifacts
-      # Uncomment and configure if you wish to automatically create releases
-      # - name: Create GitHub Release
-      #   id: create_release
-      #   uses: actions/create-release@v1
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #   with:
-      #     tag_name: v1.0.${{ github.run_number }}
-      #     release_name: Release v1.0.${{ github.run_number }}
-      #     draft: false
-      #     prerelease: false
-
-      # - name: Upload Release Asset
-      #   uses: actions/upload-release-asset@v1
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #   with:
-      #     upload_url: ${{ steps.create_release.outputs.upload_url }}
-      #     asset_path: ./lua
-      #     asset_name: minified-lua.zip
-      #     asset_content_type: application/zip
