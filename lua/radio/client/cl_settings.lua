@@ -12,6 +12,16 @@ local keyCodeMapping = include("radio/client/cl_key_names.lua")
 local themes = include("radio/client/cl_themes.lua")
 local languageManager = include("radio/client/lang/cl_language_manager.lua")
 
+-- Add this near the top of the file
+local function updateCountryList()
+    if radioMenuOpen and IsValid(currentFrame) then
+        local stationListPanel = currentFrame:GetChildren()[3]
+        if IsValid(stationListPanel) and stationListPanel:GetName() == "DScrollPanel" then
+            populateList(stationListPanel, nil, currentFrame:GetChildren()[2], true)
+        end
+    end
+end
+
 -- Create the client convar to enable/disable chat messages
 CreateClientConVar("car_radio_show_messages", "1", true, false, "Enable or disable car radio messages.")
 CreateClientConVar("radio_language", "en", true, false, "Select the language for the radio UI.")
@@ -32,10 +42,13 @@ end
 
 -- Function to apply the selected language
 local function applyLanguage(languageCode)
+    print("Applying language: " .. languageCode)
     if languageManager.languages[languageCode] then
-        Config.Lang = languageManager.translations[languageCode]  -- Get the translations from the language manager
+        Config.Lang = languageManager.translations[languageCode]
+        print("Language translations loaded")
         hook.Run("LanguageChanged", languageCode)
-        hook.Run("LanguageUpdated")  -- Custom hook to trigger list update
+        hook.Run("LanguageUpdated")
+        updateCountryList()
     else
         print("Invalid language code: " .. languageCode)
     end

@@ -43,7 +43,16 @@ LanguageManager.GetCountryName = LanguageManager.countryTranslationsB.GetCountry
 
 -- Function to get a country translation
 function LanguageManager:GetCountryTranslation(lang, country_key)
-    return self:GetCountryName(lang, country_key)
+    -- Reformat the country name (e.g., "the_united_kingdom" -> "The United Kingdom")
+    local formattedName = country_key:gsub("_", " "):gsub("(%a)([%w_']*)", function(a, b) return string.upper(a) .. string.lower(b) end)
+    
+    -- Get the translated name if it exists and is not empty; otherwise, use the formatted name
+    local translatedName = self.countryTranslations[lang] and self.countryTranslations[lang][formattedName]
+    if translatedName == nil or translatedName == "" then
+        translatedName = formattedName
+    end
+    
+    return translatedName
 end
 
 -- Function to set the current language (default to English)

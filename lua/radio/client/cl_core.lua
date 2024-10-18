@@ -17,6 +17,7 @@ local LanguageManager = include("radio/client/lang/cl_language_manager.lua")
 local themes = include("radio/client/cl_themes.lua") or {}
 local keyCodeMapping = include("radio/client/cl_key_names.lua")
 local utils = include("radio/shared/sh_utils.lua")
+local CountryIndices = include("radio/client/cl_country_indices.lua")
 
 -- ------------------------------
 --      Global Variables
@@ -47,6 +48,9 @@ local lastIconUpdate = 0
 local iconUpdateDelay = 0.1
 local pendingIconUpdate = nil
 local isUpdatingIcon = false
+
+-- Add this global variable if it doesn't exist already
+StationData = StationData or {}
 
 -- ------------------------------
 --      Utility Functions
@@ -253,6 +257,10 @@ local function formatCountryName(name)
 
     -- Use the LanguageManager to get the translated country name
     local translatedName = LanguageManager:GetCountryTranslation(lang, name)
+
+    if not translatedName or translatedName == "" then
+        translatedName = name  -- Fallback to original name if translation is not found
+    end
 
     formattedCountryNames[cacheKey] = translatedName
     return translatedName
@@ -505,6 +513,7 @@ local function LoadStationData()
         end
     end
     stationDataLoaded = true
+    CountryIndices.initializeCountryIndices(StationData)  -- Pass StationData here
 end
 
 -- Call LoadStationData at the beginning
@@ -525,6 +534,9 @@ LoadStationData()
     - resetSearch: Boolean indicating whether to reset the search box.
 ]]
 local function populateList(stationListPanel, backButton, searchBox, resetSearch)
+    -- Clear the formatted country names cache to force refresh
+    formattedCountryNames = {}
+
     if not stationListPanel then
         return
     end
@@ -547,7 +559,12 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
         for country, _ in pairs(StationData) do
             local translatedCountry = formatCountryName(country)
             if filterText == "" or translatedCountry:lower():find(filterText, 1, true) then
-                table.insert(countries, { original = country, translated = translatedCountry, isPrioritized = favoriteCountries[country] })
+                table.insert(countries, { 
+                    original = country, 
+                    translated = translatedCountry,
+                    isPrioritized = favoriteCountries[country],
+                    index = CountryIndices.countryIndices[country]
+                })
             end
         end
 
@@ -1235,7 +1252,6 @@ openRadioMenu = function(openSettings)
         surface.SetDrawColor(ColorAlpha(Config.UI.TextColor, 255 * (0.5 + 0.5 * self.lerp)))
         surface.DrawTexturedRect(0, 0, w, h)
     end
-
     backButton = createAnimatedButton(
         frame, 
         settingsButton:GetX() - buttonSize - buttonPadding, 
@@ -1553,3 +1569,4 @@ hook.Add("EntityRemoved", "BoomboxCleanup", function(ent)
         BoomboxStatuses[ent:EntIndex()] = nil
     end
 end)
+
