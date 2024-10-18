@@ -1,4 +1,9 @@
-print("[rRadio] Initializing server-side core")
+--[[
+    Radio Addon Server-Side Main Script
+    Author: Charles Mills
+    Description: This file contains the main server-side functionality for the Radio Addon.
+    Date: October 17, 2024
+]]--
 
 -- Network Strings
 util.AddNetworkString("PlayCarRadioStation")
@@ -55,8 +60,6 @@ local function AddActiveRadio(entity, stationName, url, volume)
         url = url,
         volume = volume
     }
-
-    print("[rRadio] Added active radio:", entity, "Station:", stationName)
 end
 
 --[[
@@ -67,7 +70,6 @@ end
 ]]
 local function RemoveActiveRadio(entity)
     ActiveRadios[entity:EntIndex()] = nil
-    print("[rRadio] Removed active radio:", entity)
 end
 
 --[[
@@ -115,7 +117,6 @@ local function SendActiveRadiosToPlayer(ply)
                 net.WriteString(radio.url)
                 net.WriteFloat(radio.volume)
             net.Send(ply)
-            print("[rRadio] Sent active radio to player:", ply:Nick(), "Station:", radio.stationName)
         end
     end
 
@@ -204,7 +205,6 @@ net.Receive("PlayCarRadioStation", function(len, ply)
     local volume = net.ReadFloat()
 
     if not IsValid(entity) then
-        print("[rRadio] PlayCarRadioStation: Invalid entity.")
         return
     end
 
@@ -284,7 +284,6 @@ net.Receive("PlayCarRadioStation", function(len, ply)
                 net.WriteString(stationName)
             net.Broadcast()
         else
-            print("[rRadio] PlayCarRadioStation: Unsupported entity class:", entityClass)
             return
         end
     end
@@ -299,10 +298,9 @@ end)
 ]]
 net.Receive("StopCarRadioStation", function(len, ply)
     local entity = net.ReadEntity()
-    entity = GetVehicleEntity(entity)  -- Use the new function
+    entity = GetVehicleEntity(entity)
 
     if not IsValid(entity) then
-        print("[rRadio] StopCarRadioStation: Invalid entity.")
         return
     end
 
@@ -340,7 +338,6 @@ net.Receive("StopCarRadioStation", function(len, ply)
         timer.Create("StationUpdate_" .. entIndex, DEBOUNCE_TIME, 1, function()
             if IsValid(entity) and entity.IsPermanent and SavePermanentBoombox then
                 SavePermanentBoombox(entity)
-                print("[rRadio] Saved station stop to database for entity:", entity)
             end
         end)
 
@@ -358,7 +355,6 @@ net.Receive("StopCarRadioStation", function(len, ply)
             net.WriteString("")
         net.Broadcast()
     else
-        print("[rRadio] StopCarRadioStation: Unsupported entity class:", entityClass)
         return
     end
 end)
@@ -376,7 +372,6 @@ net.Receive("UpdateRadioVolume", function(len, ply)
     local volume = net.ReadFloat()
 
     if not IsValid(entity) then
-        print("[rRadio] UpdateRadioVolume: Invalid entity.")
         return
     end
 
@@ -410,7 +405,6 @@ net.Receive("UpdateRadioVolume", function(len, ply)
     timer.Create("VolumeUpdate_" .. entIndex, DEBOUNCE_TIME, 1, function()
         if IsValid(radioEntity) and radioEntity.IsPermanent and SavePermanentBoombox then
             SavePermanentBoombox(radioEntity)
-            print("[rRadio] Saved volume update to database for entity:", radioEntity)
         end
     end)
 end)
@@ -443,7 +437,6 @@ end
 ]]
 local function AssignOwner(ply, ent)
     if not IsValid(ply) or not IsValid(ent) then
-        print("[rRadio] Invalid player or entity during ownership assignment.")
         return
     end
 
@@ -453,7 +446,6 @@ local function AssignOwner(ply, ent)
 
     -- Set the owner as a networked entity so the client can access it
     ent:SetNWEntity("Owner", ply)
-    print("[rRadio] Assigned owner:", ply:Nick(), "to entity:", ent)
 end
 
 -- Hook into InitPostEntity to ensure everything is initialized
@@ -463,10 +455,8 @@ hook.Add("InitPostEntity", "SetupBoomboxHooks", function()
             hook.Add("playerBoughtCustomEntity", "AssignBoomboxOwnerInDarkRP", function(ply, entTable, ent, price)
                 if IsValid(ent) and (ent:GetClass() == "boombox" or ent:GetClass() == "golden_boombox") then
                     AssignOwner(ply, ent)
-                    print("[rRadio] Boombox purchased by:", ply:Nick(), "Owner assigned.")
                 end
             end)
-            print("[rRadio] Set up DarkRP hooks for boombox ownership.")
         end
     end)
 end)
@@ -489,15 +479,12 @@ end)
 hook.Add("PlayerDisconnected", "ClearPlayerDataOnDisconnect", function(ply)
     PlayerRetryAttempts[ply] = nil
     PlayerCooldowns[ply] = nil
-    print("[rRadio] Cleared player data for disconnected player:", ply:Nick())
 end)
 
 hook.Add("InitPostEntity", "LoadPermanentBoomboxesOnServerStart", function()
     timer.Simple(0.5, function()
         if LoadPermanentBoomboxes then
             LoadPermanentBoomboxes()
-        else
-            print("[rRadio] Error: LoadPermanentBoomboxes function not found")
         end
     end)
 end)

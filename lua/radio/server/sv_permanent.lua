@@ -41,12 +41,6 @@ local function InitializeDatabase()
         ]]
         
         local result = sql.Query(query)
-        if result == false then
-            print("[Permanent Boombox] Failed to create 'permanent_boomboxes' table.")
-            print("[Permanent Boombox] SQL Error: " .. sql.LastError())
-        else
-            print("[Permanent Boombox] Database table 'permanent_boomboxes' created successfully.")
-        end
     else
         -- Check if the 'map' column exists
         local columnCheckQuery = "PRAGMA table_info(permanent_boomboxes);"
@@ -64,12 +58,6 @@ local function InitializeDatabase()
         if not mapColumnExists then
             local alterTableQuery = "ALTER TABLE permanent_boomboxes ADD COLUMN map TEXT NOT NULL DEFAULT '';"
             local result = sql.Query(alterTableQuery)
-            if result == false then
-                print("[Permanent Boombox] Failed to add 'map' column to 'permanent_boomboxes' table.")
-                print("[Permanent Boombox] SQL Error: " .. sql.LastError())
-            else
-                print("[Permanent Boombox] Added 'map' column to 'permanent_boomboxes' table successfully.")
-            end
         end
     end
 end
@@ -89,18 +77,14 @@ end
 
 -- Function to add or update a permanent boombox in the database
 local function SavePermanentBoombox(ent)
-    print("[Permanent Boombox] Attempting to save boombox to database:", ent)
     if not IsValid(ent) then 
-        print("[Permanent Boombox] Error: Invalid entity")
         return 
     end
 
     -- Check if the table exists
     if not sql.TableExists("permanent_boomboxes") then
-        print("[Permanent Boombox] Error: Table 'permanent_boomboxes' does not exist")
         InitializeDatabase()  -- Try to create the table
         if not sql.TableExists("permanent_boomboxes") then
-            print("[Permanent Boombox] Error: Failed to create table 'permanent_boomboxes'")
             return
         end
     end
@@ -111,14 +95,6 @@ local function SavePermanentBoombox(ent)
     local stationName = sanitize(ent:GetNWString("StationName", ""))
     local stationURL = sanitize(ent:GetNWString("StationURL", ""))
     local volume = ent:GetNWFloat("Volume", 1.0)
-
-    print("[Permanent Boombox] Entity details:")
-    print("  Model:", model)
-    print("  Position:", pos)
-    print("  Angles:", ang)
-    print("  Station Name:", stationName)
-    print("  Station URL:", stationURL)
-    print("  Volume:", volume)
 
     local permanentID = ent:GetNWString("PermanentID", "")
     if permanentID == "" then
@@ -133,12 +109,8 @@ local function SavePermanentBoombox(ent)
         LIMIT 1;
     ]], sql.SQLStr(currentMap), sql.SQLStr(permanentID))
 
-    print("[Permanent Boombox] Executing select query:", query)
-
     local result = sql.Query(query)
     if result == false then
-        print("[Permanent Boombox] SQL Error during select query:", sql.LastError())
-        print("[Permanent Boombox] Failed query:", query)
         return
     end
 
@@ -155,16 +127,7 @@ local function SavePermanentBoombox(ent)
             sql.SQLStr(model), pos.x, pos.y, pos.z, ang.p, ang.y, ang.r,
             sql.SQLStr(stationName), sql.SQLStr(stationURL), volume, tonumber(id)
         )
-        print("[Permanent Boombox] Executing update query:", updateQuery)
         result = sql.Query(updateQuery)
-        if result == false then
-            print("[Permanent Boombox] Failed to update boombox in database:", ent)
-            print("[Permanent Boombox] SQL Error:", sql.LastError())
-            print("[Permanent Boombox] Update Query:", updateQuery)
-        else
-            print("[Permanent Boombox] Updated permanent boombox in database:", ent)
-            print("[Permanent Boombox] Permanent ID:", permanentID)
-        end
     else
         -- Insert new entry
         local insertQuery = string.format([[
@@ -174,42 +137,22 @@ local function SavePermanentBoombox(ent)
             sql.SQLStr(currentMap), sql.SQLStr(permanentID), sql.SQLStr(model), pos.x, pos.y, pos.z, ang.p, ang.y, ang.r,
             sql.SQLStr(stationName), sql.SQLStr(stationURL), volume
         )
-        print("[Permanent Boombox] Executing insert query:", insertQuery)
         result = sql.Query(insertQuery)
-        if result == false then
-            print("[Permanent Boombox] Failed to add boombox to database:", ent)
-            print("[Permanent Boombox] SQL Error:", sql.LastError())
-            print("[Permanent Boombox] Insert Query:", insertQuery)
-        else
-            print("[Permanent Boombox] Added permanent boombox to database:", ent)
-            print("[Permanent Boombox] Permanent ID:", permanentID)
-        end
     end
 
     -- After saving, verify the entry
     local verifyQuery = string.format("SELECT * FROM permanent_boomboxes WHERE permanent_id = %s", sql.SQLStr(permanentID))
-    print("[Permanent Boombox] Executing verify query:", verifyQuery)
     local verifyResult = sql.Query(verifyQuery)
-    if verifyResult and #verifyResult > 0 then
-        print("[Permanent Boombox] Verified: Boombox exists in database after save.")
-        PrintTable(verifyResult[1])  -- Print the saved data
-    else
-        print("[Permanent Boombox] Error: Boombox not found in database after save attempt.")
-        print("[Permanent Boombox] Verify Query:", verifyQuery)
-        print("[Permanent Boombox] SQL Error:", sql.LastError())
-    end
 end
 
 -- Function to remove a permanent boombox from the database
 local function RemovePermanentBoombox(ent)
     if not IsValid(ent) then 
-        print("[Permanent Boombox] Error: Invalid entity passed to RemovePermanentBoombox")
         return 
     end
     
     local permanentID = ent:GetNWString("PermanentID", "")
     if permanentID == "" then 
-        print("[Permanent Boombox] Error: Entity has no PermanentID")
         return 
     end
 
@@ -219,25 +162,10 @@ local function RemovePermanentBoombox(ent)
     ]], currentMap, permanentID)
 
     local success = sql.Query(deleteQuery)
-    if success == false then
-        print("[Permanent Boombox] Failed to remove boombox from database:", ent)
-        print("[Permanent Boombox] SQL Error:", sql.LastError())
-        print("[Permanent Boombox] Delete Query:", deleteQuery)
-    else
-        print("[Permanent Boombox] Successfully removed permanent boombox from database. PermanentID:", permanentID)
-    end
 end
 
 -- Function to load and spawn all permanent boomboxes from the database
-local function LoadPermanentBoomboxes(isReload)
-    if isReload then
-        print("[Permanent Boombox] Reloading permanent boomboxes.")
-    else
-        print("[Permanent Boombox] Loading permanent boomboxes for the first time.")
-    end
-
-    print("[Permanent Boombox] Attempting to load permanent boomboxes from database.")
-    
+local function LoadPermanentBoomboxes(isReload)    
     -- Clear the tracking tables
     table.Empty(spawnedBoomboxes)
     table.Empty(spawnedBoomboxesByPosition)
@@ -245,49 +173,35 @@ local function LoadPermanentBoomboxes(isReload)
     -- Remove existing permanent boomboxes
     for _, ent in ipairs(ents.FindByClass("boombox")) do
         if ent.IsPermanent then
-            print("[Permanent Boombox] Removing existing permanent boombox:", ent)
             ent:Remove()
         end
     end
 
     if not sql.TableExists("permanent_boomboxes") then
-        print("[Permanent Boombox] Error: Table 'permanent_boomboxes' does not exist.")
         return
     end
 
     local loadQuery = string.format("SELECT * FROM permanent_boomboxes WHERE map = '%s';", currentMap)
     local result = sql.Query(loadQuery)
     
-    if result == false then
-        print("[Permanent Boombox] SQL Error when loading boomboxes: " .. sql.LastError())
-        return
-    elseif result == nil or #result == 0 then
-        print("[Permanent Boombox] No permanent boomboxes found in the database.")
+    if not result or #result == 0 then
         return
     end
 
-    print("[Permanent Boombox] Found " .. #result .. " boomboxes in the database.")
-
     for i, row in ipairs(result) do
-        print(string.format("[Permanent Boombox] Processing boombox #%d: ID=%s, Model=%s, Pos=(%f, %f, %f)", 
-            i, row.permanent_id, row.model, row.pos_x, row.pos_y, row.pos_z))
-
         -- Check if this boombox has already been spawned by ID
         if spawnedBoomboxes[row.permanent_id] then
-            print("[Permanent Boombox] Skipping duplicate boombox #" .. i .. " with ID: " .. row.permanent_id)
             continue
         end
 
         -- Check if a boombox already exists at this position
         local posKey = string.format("%.2f,%.2f,%.2f", row.pos_x, row.pos_y, row.pos_z)
         if spawnedBoomboxesByPosition[posKey] then
-            print("[Permanent Boombox] Skipping duplicate boombox #" .. i .. " at position: " .. posKey)
             continue
         end
 
         local ent = ents.Create("boombox")
         if not IsValid(ent) then
-            print("[Permanent Boombox] Failed to create boombox entity from database entry #" .. i)
             continue
         end
 
@@ -325,20 +239,13 @@ local function LoadPermanentBoomboxes(isReload)
             -- Add to active radios
             if AddActiveRadio then
                 AddActiveRadio(ent, row.station_name, row.station_url, row.volume)
-            else
-                print("[Permanent Boombox] Warning: AddActiveRadio function not found")
             end
         end
 
         -- Mark this boombox as spawned
         spawnedBoomboxes[row.permanent_id] = true
         spawnedBoomboxesByPosition[posKey] = true
-
-        print("[Permanent Boombox] Successfully loaded permanent boombox #" .. i .. ": " .. tostring(ent))
     end
-
-    print("[Permanent Boombox] Finished loading permanent boomboxes.")
-    print("[Permanent Boombox] Total boomboxes spawned: " .. table.Count(spawnedBoomboxes))
 end
 
 -- Remove the existing hooks
@@ -349,11 +256,9 @@ hook.Remove("PostCleanupMap", "ReloadPermanentBoomboxes")
 hook.Add("PostCleanupMap", "LoadPermanentBoomboxes", function()
     timer.Simple(5, function()
         if not initialLoadComplete then
-            print("[Permanent Boombox] Performing initial load of permanent boomboxes.")
             LoadPermanentBoomboxes()
             initialLoadComplete = true
         else
-            print("[Permanent Boombox] Reloading permanent boomboxes after map change.")
             LoadPermanentBoomboxes()
         end
     end)
@@ -426,8 +331,6 @@ net.Receive("RemoveBoomboxPermanent", function(len, ply)
     net.Start("BoomboxPermanentConfirmation")
         net.WriteString("Boombox permanence has been removed.")
     net.Send(ply)
-
-    print("[Permanent Boombox] Permanence removed for boombox:", ent, "by player:", ply:Nick())
 end)
 
 -- Make functions globally accessible
@@ -447,7 +350,6 @@ concommand.Add("rradio_clear_permanent_db", function(ply, cmd, args)
     local clearQuery = "DELETE FROM permanent_boomboxes;"
     sql.Query(clearQuery)
     
-    print("[Permanent Boombox] Permanent boombox database has been cleared for all maps.")
     if IsValid(ply) then
         ply:ChatPrint("Permanent boombox database has been cleared for all maps.")
     end
@@ -470,7 +372,6 @@ concommand.Add("rradio_reload_permanent_boomboxes", function(ply, cmd, args)
     -- Reload permanent boomboxes
     LoadPermanentBoomboxes(true)
     
-    print("[Permanent Boombox] Permanent boomboxes have been reloaded.")
     if IsValid(ply) then
         ply:ChatPrint("Permanent boomboxes have been reloaded.")
     end
@@ -482,5 +383,4 @@ end
 
 hook.Add("Initialize", "UpdateCurrentMapForPermanentBoomboxes", function()
     currentMap = game.GetMap()
-    print("[Permanent Boombox] Current map set to: " .. currentMap)
 end)
