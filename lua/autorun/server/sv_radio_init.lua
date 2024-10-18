@@ -1,5 +1,15 @@
 print("[RADIO] Starting server-side initialization")
 
+
+--[[
+
+BUGS:
+- Stations not correctly being restored.
+- Access controls not working.
+
+]]--
+
+
 -- Add all the necessary Lua files for the client
 AddCSLuaFile("radio/shared/sh_config.lua")
 AddCSLuaFile("radio/client/lang/cl_language_manager.lua")
@@ -30,10 +40,28 @@ resource.AddFile("models/rammel/boombox.phy")
 resource.AddFile("models/rammel/boombox.vvd")
 resource.AddFile("models/rammel/boombox.dx80.vtx")
 resource.AddFile("models/rammel/boombox.dx90.vtx")
-resource.AddFile("materials/models/")
-resource.AddFile("materials/hud/")
+resource.AddFile("materials/models/boombox_back.vmt")
+resource.AddFile("materials/models/boombox_back.vtf")
+resource.AddFile("materials/models/boombox_back_n.vtf")
+resource.AddFile("materials/models/boombox_base.vmt")
+resource.AddFile("materials/models/boombox_base.vtf")
+resource.AddFile("materials/models/boombox_base_n.vtf")
+resource.AddFile("materials/models/plastic_base.vmt")
+resource.AddFile("materials/models/plastic_base.vtf")
+resource.AddFile("materials/models/plastic_base_n.vtf")
 resource.AddFile("materials/entities/boombox.png")
 resource.AddFile("materials/entities/golden_boombox.png")
+resource.AddFile("materials/hud/close.png")
+resource.AddFile("materials/hud/github.png")
+resource.AddFile("materials/hud/radio.png.png")
+resource.AddFile("materials/hud/settings.png")
+resource.AddFile("materials/hud/return.png")
+resource.AddFile("materials/hud/star_full.png")
+resource.AddFile("materials/hud/star.png")
+resource.AddFile("materials/hud/vol_down.png")
+resource.AddFile("materials/hud/vol_up.png")
+resource.AddFile("materials/hud/vol_mute.png")
+resource.AddFile("materials/hud/volume.png")
 
 -- Add CSLuaFiles for boombox entities
 AddCSLuaFile("entities/base_boombox/init.lua")
