@@ -1,15 +1,5 @@
 print("[RADIO] Starting server-side initialization")
 
-
---[[
-
-BUGS:
-- Stations not correctly being restored.
-- Access controls not working.
-
-]]--
-
-
 -- Add all the necessary Lua files for the client
 AddCSLuaFile("radio/shared/sh_config.lua")
 AddCSLuaFile("radio/client/lang/cl_language_manager.lua")
@@ -40,15 +30,15 @@ resource.AddFile("models/rammel/boombox.phy")
 resource.AddFile("models/rammel/boombox.vvd")
 resource.AddFile("models/rammel/boombox.dx80.vtx")
 resource.AddFile("models/rammel/boombox.dx90.vtx")
-resource.AddFile("materials/models/boombox_back.vmt")
-resource.AddFile("materials/models/boombox_back.vtf")
-resource.AddFile("materials/models/boombox_back_n.vtf")
-resource.AddFile("materials/models/boombox_base.vmt")
-resource.AddFile("materials/models/boombox_base.vtf")
-resource.AddFile("materials/models/boombox_base_n.vtf")
-resource.AddFile("materials/models/plastic_base.vmt")
-resource.AddFile("materials/models/plastic_base.vtf")
-resource.AddFile("materials/models/plastic_base_n.vtf")
+resource.AddFile("materials/models/rammel/boombox_back.vmt")
+resource.AddFile("materials/models/rammel/boombox_back.vtf")
+resource.AddFile("materials/models/rammel/boombox_back_n.vtf")
+resource.AddFile("materials/models/rammel/boombox_base.vmt")
+resource.AddFile("materials/models/rammel/boombox_base.vtf")
+resource.AddFile("materials/models/rammel/boombox_base_n.vtf")
+resource.AddFile("materials/models/rammel/plastic_base.vmt")
+resource.AddFile("materials/models/rammel/plastic_base.vtf")
+resource.AddFile("materials/models/rammel/plastic_base_n.vtf")
 resource.AddFile("materials/entities/boombox.png")
 resource.AddFile("materials/entities/golden_boombox.png")
 resource.AddFile("materials/hud/close.png")
