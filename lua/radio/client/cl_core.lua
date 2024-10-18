@@ -172,6 +172,24 @@ local stationDataLoaded = false
 -- ------------------------------
 
 --[[
+    Function: GetVehicleEntity
+    Retrieves the vehicle entity from a given entity.
+
+    Parameters:
+    - entity: The entity to check.
+
+    Returns:
+    - The vehicle entity or the original entity if not a vehicle.
+]]
+local function GetVehicleEntity(entity)
+    if IsValid(entity) and entity:IsVehicle() then
+        local parent = entity:GetParent()
+        return IsValid(parent) and parent or entity
+    end
+    return entity
+end
+
+--[[
     Function: Scale
     Scales a value based on the screen width.
 
@@ -1288,31 +1306,16 @@ hook.Add("Think", "OpenCarRadioMenu", function()
     end
 end)
 
--- Add this function near the top of the file
-local function GetVehicleEntity(entity)
-    if IsValid(entity) and entity:IsVehicle() then
-        local parent = entity:GetParent()
-        return IsValid(parent) and parent or entity
-    end
-    return entity
-end
-
--- Modify the PlayCarRadioStation network receiver
 net.Receive("PlayCarRadioStation", function()
     local entity = net.ReadEntity()
-    entity = GetVehicleEntity(entity)  -- Use the new function
+    entity = GetVehicleEntity(entity)
     local stationName = net.ReadString()
     local url = net.ReadString()
     local volume = net.ReadFloat()
 
     if not IsValid(entity) or type(url) ~= "string" or type(volume) ~= "number" then
+        print("[Radio Error] Invalid data received")
         return -- Invalid data received
-    end
-
-    if entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox" then
-        if not utils.canInteractWithBoombox(LocalPlayer(), entity) then
-            return -- Don't process the station change if the player doesn't have permission
-        end
     end
 
     local entityRetryAttempts = 5
@@ -1320,10 +1323,13 @@ net.Receive("PlayCarRadioStation", function()
 
     local function attemptPlayStation(attempt)
         if not IsValid(entity) then
+            print("[Radio Debug] Entity not valid, attempt:", attempt)
             if attempt < entityRetryAttempts then
                 timer.Simple(entityRetryDelay, function()
                     attemptPlayStation(attempt + 1)
                 end)
+            else
+                print("[Radio Error] Max retry attempts reached for entity")
             end
             return
         end
@@ -1344,7 +1350,7 @@ net.Receive("PlayCarRadioStation", function()
 
         local function tryPlayStation(playAttempt)
             sound.PlayURL(url, "3d mono", function(station, errorID, errorName)
-                if IsValid(station) and IsValid(entity) then
+                if IsValid(station) then
                     station:SetPos(entity:GetPos())
                     station:SetVolume(volume)
                     station:Play()
@@ -1409,11 +1415,13 @@ net.Receive("PlayCarRadioStation", function()
                         end
                     end)
                 else
+                    print("[Radio Error] Failed to create station. Error ID:", errorID, "Error Name:", errorName)
                     if playAttempt < entityConfig.RetryAttempts then
                         timer.Simple(entityConfig.RetryDelay, function()
                             tryPlayStation(playAttempt + 1)
                         end)
                     else
+                        print("[Radio Error] Max retry attempts reached for playing station")
                         -- Set the boombox status to "stopped" if it fails to play
                         if IsValid(entity) and (entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox") then
                             BoomboxStatuses[entity:EntIndex()] = {
@@ -1432,10 +1440,9 @@ net.Receive("PlayCarRadioStation", function()
     attemptPlayStation(1)
 end)
 
--- Modify the StopCarRadioStation network receiver
 net.Receive("StopCarRadioStation", function()
     local entity = net.ReadEntity()
-    entity = GetVehicleEntity(entity)  -- Use the new function
+    entity = GetVehicleEntity(entity)
 
     if entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox" then
         if not utils.canInteractWithBoombox(LocalPlayer(), entity) then
@@ -1460,10 +1467,9 @@ net.Receive("StopCarRadioStation", function()
     end
 end)
 
--- Modify the UpdateRadioVolume network receiver
 net.Receive("UpdateRadioVolume", function()
     local entity = net.ReadEntity()
-    entity = GetVehicleEntity(entity)  -- Use the new function
+    entity = GetVehicleEntity(entity)
     local volume = net.ReadFloat()
 
     if not IsValid(entity) then return end

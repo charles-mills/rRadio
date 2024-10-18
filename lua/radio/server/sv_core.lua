@@ -132,7 +132,6 @@ hook.Add("PlayerInitialSpawn", "SendActiveRadiosOnJoin", function(ply)
     end)
 end)
 
--- Add the hooks to set the networked variable
 hook.Add("PlayerEnteredVehicle", "MarkSitAnywhereSeat", function(ply, vehicle)
     if vehicle.playerdynseat then
         vehicle:SetNWBool("IsSitAnywhereSeat", true)
