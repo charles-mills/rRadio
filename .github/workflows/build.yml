@@ -1,6 +1,6 @@
-name: Lua Project Build and Minify
+name: Build and Minify
 
-# Trigger the workflow on pushes, pull requests affecting the lua/ directory, and manual trigger
+# Trigger the workflow on pushes and pull requests affecting the lua/ directory
 on:
   push:
     paths:
@@ -20,49 +20,55 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout the repository
+      # Step 1: Check out the repository
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      # Step 2: Install Dependencies (Lua, LuaRocks)
-      - name: Install Lua and LuaRocks
+      # Step 2: Install Dependencies (Lua, LuaRocks, Build Tools)
+      - name: Install Lua, LuaRocks, and Build Essentials
         run: |
           sudo apt-get update
-          sudo apt-get install -y lua5.3 luarocks
+          sudo apt-get install -y lua5.3 luarocks build-essential liblua5.3-dev
 
-      # Step 3: Install LuaFileSystem (required by build.lua)
+      # Step 3: Verify Lua Installation
+      - name: Verify Lua Installation
+        run: |
+          lua -v
+          luarocks --version
+
+      # Step 4: Install LuaFileSystem
       - name: Install LuaFileSystem
         run: |
           sudo luarocks install luafilesystem
 
-      # Step 4: Install LuaMinify
-      # Assuming LuaMinify is not available via LuaRocks, install it manually
-      - name: Install LuaMinify
+      # Step 5: Install LuaMinify (luamin)
+      - name: Install LuaMinify (luamin)
         run: |
-          git clone https://github.com/ysc3839/lua-minify.git
-          cd lua-minify
-          make  # Assuming Makefile exists for LuaMinify
-          sudo make install  # Installs LuaMinify to a standard location
+          sudo luarocks install luamin
 
-      # Step 5: Verify Installation of LuaMinify
-      - name: Verify LuaMinify Installation
+      # Step 6: Verify Installations
+      - name: Verify Installations
         run: |
           which luamin
           luamin -h
+          lua -e "require('lfs')"
 
-      # Step 6: Run Makefile Targets
+      # Step 7: Run Makefile Targets
       - name: Run Makefile to Minify Lua Files
         run: |
           make minify
 
+      # Step 8: Upload Minified Lua Files as Artifacts
       - name: Upload Minified Lua Files
         uses: actions/upload-artifact@v3
         with:
           name: minified-lua
           path: |
-            lua/**/*.lua
+            lua/**/*.min.lua
+            # Include other paths if needed
 
-      # Step 8: (Optional) Create GitHub Release with Artifacts
+      # Step 9: (Optional) Create GitHub Release with Artifacts
+      # Uncomment and configure if you wish to automatically create releases
       # - name: Create GitHub Release
       #   id: create_release
       #   uses: actions/create-release@v1
