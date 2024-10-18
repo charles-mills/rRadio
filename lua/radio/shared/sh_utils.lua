@@ -11,3 +11,30 @@ function utils.isSitAnywhereSeat(vehicle)
     if not IsValid(vehicle) then return false end
     return vehicle:GetNWBool("IsSitAnywhereSeat", false)
 end
+
+--[[
+    Function: getOwner
+    Description: Gets the owner of an entity.
+    @param ent (Entity): The entity to check.
+    @return (Player): The owner of the entity, or nil if no owner.
+]]
+function utils.getOwner(ent)
+    if not IsValid(ent) then return nil end
+    return ent:GetNWEntity("Owner")
+end
+
+--[[
+    Function: canInteractWithBoombox
+    Description: Checks if a player can interact with a boombox.
+    @param ply (Player): The player attempting to interact.
+    @param boombox (Entity): The boombox entity.
+    @return (boolean): True if the player can interact, false otherwise.
+]]
+function utils.canInteractWithBoombox(ply, boombox)
+    if not IsValid(ply) or not IsValid(boombox) then return false end
+    if ply:IsSuperAdmin() then return true end
+    local owner = utils.getOwner(boombox)
+    return IsValid(owner) and owner == ply
+end
+
+return utils

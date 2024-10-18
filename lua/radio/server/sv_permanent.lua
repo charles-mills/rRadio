@@ -13,6 +13,7 @@ util.AddNetworkString("BoomboxPermanentConfirmation")
 -- Create the ConVar for boombox permanence
 CreateConVar("boombox_permanent", "0", FCVAR_ARCHIVE + FCVAR_REPLICATED, "Toggle boombox permanence")
 
+local initialLoadComplete = false
 local spawnedBoomboxesByPosition = {}
 local spawnedBoomboxes = {}
 local currentMap = game.GetMap()
@@ -93,6 +94,17 @@ local function SavePermanentBoombox(ent)
         print("[Permanent Boombox] Error: Invalid entity")
         return 
     end
+
+    -- Check if the table exists
+    if not sql.TableExists("permanent_boomboxes") then
+        print("[Permanent Boombox] Error: Table 'permanent_boomboxes' does not exist")
+        InitializeDatabase()  -- Try to create the table
+        if not sql.TableExists("permanent_boomboxes") then
+            print("[Permanent Boombox] Error: Failed to create table 'permanent_boomboxes'")
+            return
+        end
+    end
+
     local model = sanitize(ent:GetModel())
     local pos = ent:GetPos()
     local ang = ent:GetAngles()
@@ -117,13 +129,16 @@ local function SavePermanentBoombox(ent)
     -- Check if the boombox already exists for this map
     local query = string.format([[
         SELECT id FROM permanent_boomboxes
-        WHERE map = '%s' AND permanent_id = '%s'
+        WHERE map = %s AND permanent_id = %s
         LIMIT 1;
-    ]], currentMap, permanentID)
+    ]], sql.SQLStr(currentMap), sql.SQLStr(permanentID))
+
+    print("[Permanent Boombox] Executing select query:", query)
 
     local result = sql.Query(query)
-    if sql.LastError() then
+    if result == false then
         print("[Permanent Boombox] SQL Error during select query:", sql.LastError())
+        print("[Permanent Boombox] Failed query:", query)
         return
     end
 
@@ -132,16 +147,17 @@ local function SavePermanentBoombox(ent)
         local id = result[1].id
         local updateQuery = string.format([[
             UPDATE permanent_boomboxes
-            SET model = '%s', pos_x = %f, pos_y = %f, pos_z = %f,
+            SET model = %s, pos_x = %f, pos_y = %f, pos_z = %f,
                 angle_pitch = %f, angle_yaw = %f, angle_roll = %f,
-                station_name = '%s', station_url = '%s', volume = %f
+                station_name = %s, station_url = %s, volume = %f
             WHERE id = %d;
         ]],
-            model, pos.x, pos.y, pos.z, ang.p, ang.y, ang.r,
-            stationName, stationURL, volume, tonumber(id)
+            sql.SQLStr(model), pos.x, pos.y, pos.z, ang.p, ang.y, ang.r,
+            sql.SQLStr(stationName), sql.SQLStr(stationURL), volume, tonumber(id)
         )
-        local success = sql.Query(updateQuery)
-        if success == false then
+        print("[Permanent Boombox] Executing update query:", updateQuery)
+        result = sql.Query(updateQuery)
+        if result == false then
             print("[Permanent Boombox] Failed to update boombox in database:", ent)
             print("[Permanent Boombox] SQL Error:", sql.LastError())
             print("[Permanent Boombox] Update Query:", updateQuery)
@@ -153,13 +169,14 @@ local function SavePermanentBoombox(ent)
         -- Insert new entry
         local insertQuery = string.format([[
             INSERT INTO permanent_boomboxes (map, permanent_id, model, pos_x, pos_y, pos_z, angle_pitch, angle_yaw, angle_roll, station_name, station_url, volume)
-            VALUES ('%s', '%s', '%s', %f, %f, %f, %f, %f, %f, '%s', '%s', %f);
+            VALUES (%s, %s, %s, %f, %f, %f, %f, %f, %f, %s, %s, %f);
         ]],
-            currentMap, permanentID, model, pos.x, pos.y, pos.z, ang.p, ang.y, ang.r,
-            stationName, stationURL, volume
+            sql.SQLStr(currentMap), sql.SQLStr(permanentID), sql.SQLStr(model), pos.x, pos.y, pos.z, ang.p, ang.y, ang.r,
+            sql.SQLStr(stationName), sql.SQLStr(stationURL), volume
         )
-        local success = sql.Query(insertQuery)
-        if success == false then
+        print("[Permanent Boombox] Executing insert query:", insertQuery)
+        result = sql.Query(insertQuery)
+        if result == false then
             print("[Permanent Boombox] Failed to add boombox to database:", ent)
             print("[Permanent Boombox] SQL Error:", sql.LastError())
             print("[Permanent Boombox] Insert Query:", insertQuery)
@@ -169,11 +186,13 @@ local function SavePermanentBoombox(ent)
         end
     end
 
-    -- After saving, let's verify the entry
-    local verifyQuery = string.format("SELECT * FROM permanent_boomboxes WHERE permanent_id = '%s'", permanentID)
+    -- After saving, verify the entry
+    local verifyQuery = string.format("SELECT * FROM permanent_boomboxes WHERE permanent_id = %s", sql.SQLStr(permanentID))
+    print("[Permanent Boombox] Executing verify query:", verifyQuery)
     local verifyResult = sql.Query(verifyQuery)
     if verifyResult and #verifyResult > 0 then
         print("[Permanent Boombox] Verified: Boombox exists in database after save.")
+        PrintTable(verifyResult[1])  -- Print the saved data
     else
         print("[Permanent Boombox] Error: Boombox not found in database after save attempt.")
         print("[Permanent Boombox] Verify Query:", verifyQuery)
@@ -321,9 +340,6 @@ local function LoadPermanentBoomboxes(isReload)
     print("[Permanent Boombox] Finished loading permanent boomboxes.")
     print("[Permanent Boombox] Total boomboxes spawned: " .. table.Count(spawnedBoomboxes))
 end
-
--- Near the top of the file, add this flag
-local initialLoadComplete = false
 
 -- Remove the existing hooks
 hook.Remove("InitPostEntity", "LoadPermanentBoomboxes")

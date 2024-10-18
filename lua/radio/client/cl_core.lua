@@ -12,6 +12,7 @@ include("radio/shared/sh_config.lua")
 local LanguageManager = include("radio/client/lang/cl_language_manager.lua")
 local themes = include("radio/client/cl_themes.lua") or {}
 local keyCodeMapping = include("radio/client/cl_key_names.lua")
+local utils = include("radio/shared/sh_utils.lua")
 
 -- ------------------------------
 --      Global Variables
@@ -501,29 +502,24 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
         searchBox:SetText("")
     end
 
-    local filterText = searchBox:GetText()
+    local filterText = searchBox:GetText():lower()
     local lang = GetConVar("radio_language"):GetString() or "en"
 
     if selectedCountry == nil then
         local countries = {}
         for country, _ in pairs(StationData) do
             local translatedCountry = formatCountryName(country)
-            if filterText == "" or string.find(translatedCountry:lower(), filterText:lower(), 1, true) then
-                table.insert(countries, { original = country, translated = translatedCountry })
+            if filterText == "" or translatedCountry:lower():find(filterText, 1, true) then
+                table.insert(countries, { original = country, translated = translatedCountry, isPrioritized = favoriteCountries[country] })
             end
         end
 
+        -- Optimized sorting
         table.sort(countries, function(a, b)
-            local aIsPrioritized = favoriteCountries[a.original]
-            local bIsPrioritized = favoriteCountries[b.original]
-
-            if aIsPrioritized and not bIsPrioritized then
-                return true
-            elseif not aIsPrioritized and bIsPrioritized then
-                return false
-            else
-                return a.translated < b.translated
+            if a.isPrioritized ~= b.isPrioritized then
+                return a.isPrioritized
             end
+            return a.translated < b.translated
         end)
 
         for _, country in ipairs(countries) do
@@ -560,27 +556,21 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
         end
     else
         local stations = StationData[selectedCountry] or {}
-
-        -- List favorite stations first
         local favoriteStationsList = {}
+
         for _, station in ipairs(stations) do
-            if station and station.name and (filterText == "" or string.find(station.name:lower(), filterText:lower(), 1, true)) then
+            if station and station.name and (filterText == "" or station.name:lower():find(filterText, 1, true)) then
                 local isFavorite = favoriteStations[selectedCountry] and favoriteStations[selectedCountry][station.name]
                 table.insert(favoriteStationsList, { station = station, favorite = isFavorite })
             end
         end
 
+        -- Optimized sorting
         table.sort(favoriteStationsList, function(a, b)
-            if a.favorite and not b.favorite then
-                return true
-            elseif not a.favorite and b.favorite then
-                return false
-            else
-                -- Check if either station name is nil before comparing
-                if a.station.name == nil then return false end
-                if b.station.name == nil then return true end
-                return a.station.name < b.station.name
+            if a.favorite ~= b.favorite then
+                return a.favorite
             end
+            return (a.station.name or "") < (b.station.name or "")
         end)
 
         for _, stationData in ipairs(favoriteStationsList) do
@@ -914,8 +904,21 @@ end
 ]]
 openRadioMenu = function(openSettings)
     if radioMenuOpen then return end
+    
+    local ply = LocalPlayer()
+    local entity = ply.currentRadioEntity
+    
+    if not IsValid(entity) then return end
+    
+    if entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox" then
+        if not utils.canInteractWithBoombox(ply, entity) then
+            chat.AddText(Color(255, 0, 0), "You don't have permission to interact with this boombox.")
+            return
+        end
+    end
+    
     radioMenuOpen = true
-
+    
     local backButton
 
     local frame = vgui.Create("DFrame")
@@ -1266,11 +1269,22 @@ end
 ]]
 hook.Add("Think", "OpenCarRadioMenu", function()
     local openKey = GetConVar("car_radio_open_key"):GetInt()
-    local vehicle = LocalPlayer():GetVehicle()
+    local ply = LocalPlayer()
+    local vehicle = ply:GetVehicle()
 
-    if input.IsKeyDown(openKey) and not radioMenuOpen and IsValid(vehicle) and not utils.isSitAnywhereSeat(vehicle) then
-        LocalPlayer().currentRadioEntity = vehicle
-        openRadioMenu()
+    if input.IsKeyDown(openKey) and not radioMenuOpen then
+        if IsValid(vehicle) and not utils.isSitAnywhereSeat(vehicle) then
+            ply.currentRadioEntity = vehicle
+            openRadioMenu()
+        elseif IsValid(ply.currentRadioEntity) and (ply.currentRadioEntity:GetClass() == "boombox" or ply.currentRadioEntity:GetClass() == "golden_boombox") then
+            -- Check permission for boomboxes
+            if utils.canInteractWithBoombox(ply, ply.currentRadioEntity) then
+                openRadioMenu()
+            else
+                -- Optionally, display a message to the player
+                chat.AddText(Color(255, 0, 0), "You don't have permission to interact with this boombox.")
+            end
+        end
     end
 end)
 
@@ -1293,6 +1307,12 @@ net.Receive("PlayCarRadioStation", function()
 
     if not IsValid(entity) or type(url) ~= "string" or type(volume) ~= "number" then
         return -- Invalid data received
+    end
+
+    if entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox" then
+        if not utils.canInteractWithBoombox(LocalPlayer(), entity) then
+            return -- Don't process the station change if the player doesn't have permission
+        end
     end
 
     local entityRetryAttempts = 5
@@ -1417,6 +1437,12 @@ net.Receive("StopCarRadioStation", function()
     local entity = net.ReadEntity()
     entity = GetVehicleEntity(entity)  -- Use the new function
 
+    if entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox" then
+        if not utils.canInteractWithBoombox(LocalPlayer(), entity) then
+            return -- Don't process the stop command if the player doesn't have permission
+        end
+    end
+
     if IsValid(entity) and IsValid(currentRadioSources[entity]) then
         currentRadioSources[entity]:Stop()
         currentRadioSources[entity] = nil
@@ -1465,9 +1491,14 @@ end)
 net.Receive("OpenRadioMenu", function()
     local ent = net.ReadEntity()
     if IsValid(ent) then
-        LocalPlayer().currentRadioEntity = ent
-        if not radioMenuOpen then
-            openRadioMenu()
+        local ply = LocalPlayer()
+        if ent:IsVehicle() or utils.canInteractWithBoombox(ply, ent) then
+            ply.currentRadioEntity = ent
+            if not radioMenuOpen then
+                openRadioMenu()
+            end
+        else
+            chat.AddText(Color(255, 0, 0), "You don't have permission to interact with this boombox.")
         end
     end
 end)
