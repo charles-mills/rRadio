@@ -1,3 +1,13 @@
+--[[
+    Radio Addon Client-Side Settings Management
+    Author: Charles Mills
+    Description: This file handles the client-side settings for the Radio Addon.
+                 It manages user preferences, ConVars, and provides functions
+                 for saving and loading user-specific settings such as favorite
+                 stations, volume levels, and UI preferences.
+    Date: October 17, 2024
+]]--
+
 local keyCodeMapping = include("radio/client/cl_key_names.lua")
 local themes = include("radio/client/cl_themes.lua")
 local languageManager = include("radio/client/lang/cl_language_manager.lua")

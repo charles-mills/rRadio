@@ -2,6 +2,9 @@
     Radio Addon Shared Configuration
     Author: Charles Mills
     Description: This file contains the main configuration settings for the Radio Addon.
+                 It defines global variables, ConVars, and functions used across both
+                 client and server. This includes settings for boomboxes, vehicle radios,
+                 UI themes, language options, and various other customizable parameters.
     Date: October 17, 2024
 ]]--
 
@@ -106,7 +109,6 @@ local carRadioShowMessages = EnsureConVar(
     true,
     "Enable or disable car radio messages."
 )
-
 
 -- ------------------------------
 --         Language Setup

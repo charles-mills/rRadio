@@ -1,3 +1,12 @@
+--[[
+    Radio Addon Client-Side Key Name Mappings
+    Author: Charles Mills
+    Description: This file provides a mapping between key codes and their corresponding
+                 human-readable names. It's used to display key bindings in the settings
+                 menu and for interpreting user input for radio controls.
+    Date: October 17, 2024
+]]--
+
 local keyCodeMapping = {
     [KEY_A] = "A",
     [KEY_B] = "B",

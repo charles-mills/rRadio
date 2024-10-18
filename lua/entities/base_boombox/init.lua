@@ -1,3 +1,12 @@
+--[[
+    Base Boombox Entity Initialization
+    Author: Charles Mills
+    Description: This file initializes the base boombox entity, setting up its physical properties,
+                 network variables, and core functionality. It handles entity spawning, permissions,
+                 and interaction logic for the boombox entities in the Radio Addon.
+    Date: October 17, 2024
+]]--
+
 AddCSLuaFile("cl_init.lua")
 AddCSLuaFile("shared.lua")
 

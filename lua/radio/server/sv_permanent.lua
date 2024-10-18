@@ -1,7 +1,11 @@
 --[[
-    Permanent Boombox Server-Side Script
+    Radio Addon Server-Side Permanent Boombox Management
     Author: Charles Mills
-    Description: Handles making boomboxes permanent, saving to and loading from a SQLite database.
+    Description: This file handles the server-side functionality for managing permanent boomboxes.
+                 It includes functions for saving, loading, and removing permanent boomboxes using
+                 a SQLite database. The file also manages network communications for permanent
+                 boombox actions and provides console commands for administrators to manage the
+                 permanent boombox system.
     Date: October 17, 2024
 ]]--
 

@@ -1,7 +1,11 @@
 --[[
-    Radio Addon Client-Side Main Script
+    Radio Addon Client-Side Core Functionality
     Author: Charles Mills
-    Description: This file contains the main client-side functionality for the Radio Addon.
+    Description: This file implements the main client-side features of the Radio Addon.
+                 It includes the user interface for the radio menu, handles playback of
+                 radio stations, manages favorites, and processes network messages from
+                 the server. It also includes various utility functions for UI elements,
+                 sound management, and entity interactions.
     Date: October 17, 2024
 ]]--
 

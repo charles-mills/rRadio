@@ -1,3 +1,12 @@
+--[[
+    Radio Addon Shared Utility Functions
+    Author: Charles Mills
+    Description: This file provides utility functions used by both client and server scripts
+                 in the Radio Addon. It includes helper functions for entity checks,
+                 permission validations, and other common operations used throughout the addon.
+    Date: October 17, 2024
+]]--
+
 utils = utils or {}
 utils.debug_mode = false
 

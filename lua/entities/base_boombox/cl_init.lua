@@ -1,3 +1,13 @@
+--[[
+    Base Boombox Entity Client-Side Initialization
+    Author: Charles Mills
+    Description: This file handles the client-side initialization and rendering of the base boombox entity.
+                 It manages the 3D2D HUD display, including status indicators and text rendering.
+                 The file also handles visual effects such as icon rotation and color transitions
+                 based on the boombox's current state (playing, tuning, or stopped).
+    Date: October 17, 2024
+]]--
+
 include("shared.lua")
 include("radio/shared/sh_config.lua")
 

@@ -1,15 +1,12 @@
 --[[
-    Radio Addon Server-Side Main Script
+    Radio Addon Server-Side Core Functionality
     Author: Charles Mills
-    Description: This file contains the main server-side functionality for the Radio Addon.
+    Description: This file contains the core server-side functionality for the Radio Addon.
+                 It handles network communications, manages active radios, processes player
+                 requests for playing and stopping stations, and coordinates with permanent
+                 boombox functionality. It also includes utility functions for entity ownership
+                 and permissions.
     Date: October 17, 2024
-]]--
-
---[[
-
-BUGS:
-- The "tuning in" status is not being set correctly.
-
 ]]--
 
 -- Network Strings

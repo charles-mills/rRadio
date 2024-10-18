@@ -1,3 +1,12 @@
+--[[
+    Radio Addon Client-Side Themes
+    Author: Charles Mills
+    Description: This file defines various visual themes for the Radio Addon's user interface.
+                 It includes color schemes and style settings for different UI elements,
+                 allowing users to customize the look and feel of the radio menu.
+    Date: October 17, 2024
+]]--
+
 local themes = {}
 
 -- Dark Theme
