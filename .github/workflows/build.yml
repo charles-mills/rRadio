@@ -37,7 +37,7 @@ jobs:
       # Step 4: Install LuaMinify
       - name: Install LuaMinify
         run: |
-          git clone https://github.com/ysc3839/lua-minify.git
+          git clone https://github.com/stravant/lua-minify
           cd lua-minify
           make
           sudo make install  # This installs the lua-minify executable to /usr/local/bin
