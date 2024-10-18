@@ -521,3 +521,9 @@ hook.Add("EntityRemoved", "CleanupRadioTimers", function(entity)
 end)
 
 _G.AddActiveRadio = AddActiveRadio
+
+hook.Add("InitPostEntity", "EnsureActiveRadioFunctionAvailable", function()
+    if not _G.AddActiveRadio then
+        _G.AddActiveRadio = AddActiveRadio
+    end
+end)
