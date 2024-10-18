@@ -31,8 +31,8 @@ local favoriteCountries = {}
 local favoriteStations = {}
 
 local dataDir = "rradio"
-local favoriteCountriesFile = dataDir .. "/favorite_countries.txt"
-local favoriteStationsFile = dataDir .. "/favorite_stations.txt"
+local favoriteCountriesFile = dataDir .. "/favorite_countries.json"
+local favoriteStationsFile = dataDir .. "/favorite_stations.json"
 
 -- Ensure the data directory exists
 if not file.IsDir(dataDir, "DATA") then
@@ -49,7 +49,6 @@ local iconUpdateDelay = 0.1
 local pendingIconUpdate = nil
 local isUpdatingIcon = false
 
--- Add this global variable if it doesn't exist already
 StationData = StationData or {}
 
 -- ------------------------------
@@ -90,25 +89,13 @@ end
 ]]
 local function loadFavorites()
     if file.Exists(favoriteCountriesFile, "DATA") then
-        local favList = util.JSONToTable(file.Read(favoriteCountriesFile, "DATA")) or {}
-        favoriteCountries = {}
-        for _, country in ipairs(favList) do
-            favoriteCountries[country] = true
-        end
+        local content = file.Read(favoriteCountriesFile, "DATA")
+        favoriteCountries = util.JSONToTable(content) or {}
     end
 
     if file.Exists(favoriteStationsFile, "DATA") then
-        local favStations = util.JSONToTable(file.Read(favoriteStationsFile, "DATA")) or {}
-        favoriteStations = {}
-        for country, stations in pairs(favStations) do
-            favoriteStations[country] = {}
-            for _, station in ipairs(stations) do
-                favoriteStations[country][station] = true
-            end
-            if next(favoriteStations[country]) == nil then
-                favoriteStations[country] = nil
-            end
-        end
+        local content = file.Read(favoriteStationsFile, "DATA")
+        favoriteStations = util.JSONToTable(content) or {}
     end
 end
 
@@ -117,23 +104,8 @@ end
     Saves favorite countries and stations from sets into files.
 ]]
 local function saveFavorites()
-    local favCountriesList = {}
-    for country, _ in pairs(favoriteCountries) do
-        table.insert(favCountriesList, country)
-    end
-    file.Write(favoriteCountriesFile, util.TableToJSON(favCountriesList))
-
-    local favStationsTable = {}
-    for country, stations in pairs(favoriteStations) do
-        favStationsTable[country] = {}
-        for station, _ in pairs(stations) do
-            table.insert(favStationsTable[country], station)
-        end
-        if next(favStationsTable[country]) == nil then
-            favStationsTable[country] = nil
-        end
-    end
-    file.Write(favoriteStationsFile, util.TableToJSON(favStationsTable))
+    file.Write(favoriteCountriesFile, util.TableToJSON(favoriteCountries))
+    file.Write(favoriteStationsFile, util.TableToJSON(favoriteStations))
 end
 
 -- ------------------------------
@@ -406,10 +378,9 @@ local function createStarIcon(parent, country, updateList)
     end
 
     starIcon.DoClick = function()
-        if favoriteCountries[country] then
+        favoriteCountries[country] = not favoriteCountries[country]
+        if not favoriteCountries[country] then
             favoriteCountries[country] = nil
-        else
-            favoriteCountries[country] = true
         end
 
         saveFavorites()
@@ -458,13 +429,13 @@ local function createStationStarIcon(parent, country, station, updateList)
             favoriteStations[country] = {}
         end
 
-        if favoriteStations[country][station.name] then
+        favoriteStations[country][station.name] = not favoriteStations[country][station.name]
+        if not favoriteStations[country][station.name] then
             favoriteStations[country][station.name] = nil
-            if next(favoriteStations[country]) == nil then
-                favoriteStations[country] = nil
-            end
-        else
-            favoriteStations[country][station.name] = true
+        end
+
+        if next(favoriteStations[country]) == nil then
+            favoriteStations[country] = nil
         end
 
         saveFavorites()
@@ -1333,7 +1304,6 @@ hook.Add("Think", "OpenCarRadioMenu", function()
             if utils.canInteractWithBoombox(ply, ply.currentRadioEntity) then
                 openRadioMenu()
             else
-                -- Optionally, display a message to the player
                 chat.AddText(Color(255, 0, 0), "You don't have permission to interact with this boombox.")
             end
         end

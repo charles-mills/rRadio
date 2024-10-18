@@ -26,20 +26,9 @@ LanguageManager.languages = {
 }
 
 LanguageManager.translations = include("cl_localisation_strings.lua")
-LanguageManager.countryTranslationsA = include("cl_country_translations_a.lua")
-LanguageManager.countryTranslationsB = include("cl_country_translations_b.lua")
+LanguageManager.countryTranslations = include("cl_country_translations.lua")
 
--- Merge country translations
-LanguageManager.countryTranslations = {}
-for k, v in pairs(LanguageManager.countryTranslationsA) do
-    LanguageManager.countryTranslations[k] = v
-end
-for k, v in pairs(LanguageManager.countryTranslationsB) do
-    LanguageManager.countryTranslations[k] = v
-end
-
--- Use the GetCountryName function from countryTranslationsB
-LanguageManager.GetCountryName = LanguageManager.countryTranslationsB.GetCountryName
+LanguageManager.GetCountryName = LanguageManager.countryTranslations.GetCountryName
 
 -- Function to get a country translation
 function LanguageManager:GetCountryTranslation(lang, country_key)
