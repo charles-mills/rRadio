@@ -62,6 +62,14 @@ To add custom stations:
 2. Follow the format of existing station files to add your stations.
 3. Restart the server or change the map to load the new stations.
 
+## Demo Video
+
+Watch a demo of the rRadio addon in action on [YouTube](https://www.youtube.com/watch?v=ghL9JCKeZMI).
+
+## Support
+
+If you encounter any issues or have any questions, please open an issue on this GitHub repository.
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a pull request.
