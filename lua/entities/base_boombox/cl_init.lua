@@ -45,7 +45,6 @@ end
 
 local rotationAngle = 0
 
--- Add this near the top of the file
 local function IsStationPlaying(entity)
     local source = entity.RadioSource
     return IsValid(source) and source:GetState() == GMOD_CHANNEL_PLAYING
