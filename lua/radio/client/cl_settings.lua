@@ -12,7 +12,6 @@ local keyCodeMapping = include("radio/client/cl_key_names.lua")
 local themes = include("radio/client/cl_themes.lua")
 local languageManager = include("radio/client/lang/cl_language_manager.lua")
 
--- Add this near the top of the file
 local function updateCountryList()
     if radioMenuOpen and IsValid(currentFrame) then
         local stationListPanel = currentFrame:GetChildren()[3]

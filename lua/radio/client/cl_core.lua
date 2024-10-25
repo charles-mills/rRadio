@@ -487,9 +487,6 @@ local function LoadStationData()
     CountryIndices.initializeCountryIndices(StationData)  -- Pass StationData here
 end
 
--- Call LoadStationData at the beginning
-LoadStationData()
-
 -- ------------------------------
 --      UI Population
 -- ------------------------------
@@ -1004,7 +1001,6 @@ openRadioMenu = function(openSettings)
     local stopButtonText = Config.Lang["StopRadio"] or "STOP"
     local stopButtonFont = calculateFontSizeForStopButton(stopButtonText, stopButtonWidth, stopButtonHeight)
 
-    -- Modify the buttons to include hover animations
     local function createAnimatedButton(parent, x, y, w, h, text, textColor, bgColor, hoverColor, clickFunc)
         local button = vgui.Create("DButton", parent)
         button:SetPos(x, y)
@@ -1310,8 +1306,6 @@ hook.Add("Think", "OpenCarRadioMenu", function()
     end
 end)
 
--- Add this near the top of the file, after other net message handlers
-
 net.Receive("UpdateRadioStatus", function()
     local entity = net.ReadEntity()
     local stationName = net.ReadString()
@@ -1532,6 +1526,7 @@ end)
 
 -- Load the favorite stations and countries when the script initializes
 loadFavorites()
+LoadStationData()
 
 -- Cleanup when the boombox entity is removed
 hook.Add("EntityRemoved", "BoomboxCleanup", function(ent)
