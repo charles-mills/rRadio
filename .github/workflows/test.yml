@@ -3,14 +3,9 @@ name: GLuaTest Runner
 on:
   pull_request:
   workflow_dispatch:
-    inputs:
-      gamemode:
-        description: 'Gamemode to use'
-        required: false
-        default: 'darkrp'
 
 jobs:
   run-tests:
     uses: CFC-Servers/GLuaTest/.github/workflows/run_tests.yml@main
     with:
-      gamemode: ${{ inputs.gamemode || 'darkrp' }}
+      gamemode: darkrp
