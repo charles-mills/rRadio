@@ -14,3 +14,11 @@ jobs:
     uses: CFC-Servers/GLuaTest/.github/workflows/run_tests.yml@main
     with:
       gamemode: ${{ inputs.gamemode || 'darkrp' }}
+      debug: true
+      pre_include: |
+        print("[DEBUG] Loading test dependencies...")
+        include("autorun/server/sv_radio_init.lua")
+        if CLIENT then
+          include("autorun/client/cl_radio_init.lua")
+        end
+        print("[DEBUG] Dependencies loaded")

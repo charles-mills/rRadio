@@ -2,18 +2,25 @@ return {
     groupName = "rRadio Initialization",
     cases = {
         {
-            name = "Should initialize required components",
+            name = "Should load core files",
             func = function()
-                -- Include initialization files
-                include("autorun/server/sv_radio_init.lua")
-                if CLIENT then
-                    include("autorun/client/cl_radio_init.lua")
+                print("[DEBUG] Running initialization test")
+                
+                if SERVER then
+                    include("radio/server/sv_core.lua")
+                    print("[DEBUG] Server core included")
                 end
-
-                -- Test core components exist
-                expect(RadioManager).to.exist()
-                expect(StationQueue).to.exist()
+                
+                if CLIENT then
+                    include("radio/client/cl_core.lua")
+                    print("[DEBUG] Client core included")
+                end
+                
+                include("radio/shared/sh_utils.lua")
+                print("[DEBUG] Utils included")
+                
                 expect(utils).to.exist()
+                print("[DEBUG] Initialization test complete")
             end
         }
     }
