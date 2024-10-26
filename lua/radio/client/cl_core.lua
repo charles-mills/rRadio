@@ -20,6 +20,7 @@ local utils = include("radio/shared/sh_utils.lua")
 local CountryIndices = include("radio/client/cl_country_indices.lua")
 local ErrorHandler = include("radio/client/cl_error_handler.lua")
 local MemoryManager = include("radio/client/cl_memory_manager.lua")
+local UIPerformance = include("radio/client/cl_ui_performance.lua")
 
 -- ------------------------------
 --      Global Variables
@@ -180,7 +181,7 @@ end
     - The scaled value.
 ]]
 local function Scale(value)
-    return value * (ScrW() / 2560)
+    return UIPerformance:GetScale(value)
 end
 
 --[[
@@ -1084,17 +1085,25 @@ openRadioMenu = function(openSettings)
         button.hoverColor = hoverColor
         button.lerp = 0
         
-        button.Paint = function(self, w, h)
+        -- Optimize paint function
+        button.Paint = UIPerformance:OptimizePaintFunction(button, function(self, w, h)
             local color = LerpColor(self.lerp, self.bgColor, self.hoverColor)
             draw.RoundedBox(8, 0, 0, w, h, color)
-        end
+        end)
         
+        -- Optimize think function
+        local lastThink = 0
         button.Think = function(self)
+            local currentTime = RealTime()
+            if currentTime - lastThink < UIPerformance.frameUpdateThreshold then return end
+            
             if self:IsHovered() then
                 self.lerp = math.Approach(self.lerp, 1, FrameTime() * 5)
             else
                 self.lerp = math.Approach(self.lerp, 0, FrameTime() * 5)
             end
+            
+            lastThink = currentTime
         end
         
         button.DoClick = clickFunc
@@ -1347,8 +1356,16 @@ openRadioMenu = function(openSettings)
         populateList(stationListPanel, backButton, searchBox, false)
     end
 
-    -- At the end of the openRadioMenu function, add this line:
     _G.openRadioMenu = openRadioMenu
+
+    -- Add cleanup when frame closes
+    local oldOnRemove = frame.OnRemove
+    frame.OnRemove = function(self)
+        if oldOnRemove then oldOnRemove(self) end
+        UIPerformance:RemovePanel(self)
+    end
+
+    return frame
 end
 
 -- ------------------------------
@@ -1379,15 +1396,13 @@ hook.Add("Think", "OpenCarRadioMenu", function()
     end
 end)
 
--- Add near the top with other state variables
 -- ------------------------------
 --    Radio Source Management
 -- ------------------------------
 local RadioSourceManager = {
     activeSources = {},
-    sourceStatuses = {}, -- Add this to track statuses
-    
-    -- Add a new radio source to manage
+    sourceStatuses = {},
+
     addSource = function(self, entity, station, stationName)
         if not IsValid(entity) or not IsValid(station) then return end
         
@@ -1476,9 +1491,6 @@ local RadioSourceManager = {
                 continue
             end
             
-            -- Update last used time
-            MemoryManager:UpdateSoundUsage(sourceData.entity)
-            
             -- Update position
             sourceData.station:SetPos(sourceData.entity:GetPos())
             
@@ -1503,7 +1515,6 @@ local RadioSourceManager = {
     end
 }
 
--- Add the centralized Think hook
 hook.Add("Think", "UpdateRadioSources", function()
     RadioSourceManager:updateSources()
 end)
@@ -1521,7 +1532,6 @@ hook.Add("EntityRemoved", "CleanupRadioSource", function(ent)
     end
 end)
 
--- Modify the PlayCarRadioStation net message to properly handle tuning state
 net.Receive("PlayCarRadioStation", function()
     local entity = net.ReadEntity()
     entity = GetVehicleEntity(entity)
