@@ -6,7 +6,7 @@ return {
     groupName = "Simple Test",
     cases = {
         {
-            name = "Basic test",
+            name = "Should pass basic equality check",
             func = function()
                 expect(true).to.equal(true)
             end
