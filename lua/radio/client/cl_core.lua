@@ -18,6 +18,8 @@ local themes = include("radio/client/cl_themes.lua") or {}
 local keyCodeMapping = include("radio/client/cl_key_names.lua")
 local utils = include("radio/shared/sh_utils.lua")
 local CountryIndices = include("radio/client/cl_country_indices.lua")
+local ErrorHandler = include("radio/client/cl_error_handler.lua")
+local MemoryManager = include("radio/client/cl_memory_manager.lua")
 
 -- ------------------------------
 --      Global Variables
@@ -142,8 +144,6 @@ local lastStationSelectTime = 0
 local currentlyPlayingStations = {}
 local settingsMenuOpen = false
 
--- Caching formatted country names per language
-local formattedCountryNames = {}
 -- Flag to ensure station data is loaded only once
 local stationDataLoaded = false
 
@@ -209,32 +209,89 @@ local function getEntityConfig(entity)
     end
 end
 
---[[
-    Function: formatCountryName
-    Formats and translates a country name, with caching per language.
+-- ------------------------------
+--      Cache Systems
+-- ------------------------------
 
-    Parameters:
-    - name: The original country name.
+-- Improved caching system for country names
+local CountryNameCache = {
+    cache = {},
+    defaultLang = "en",
+    lastLang = GetConVar("radio_language"):GetString() or "en",
+    
+    -- Create cache key without string concatenation
+    makeKey = function(self, name, lang)
+        return {country = name, lang = lang or self.defaultLang}
+    end,
+    
+    -- Get cached value using table key
+    get = function(self, name, lang)
+        lang = lang or self.defaultLang
+        return self.cache[name] and self.cache[name][lang]
+    end,
+    
+    -- Set cached value using table key
+    set = function(self, name, lang, value)
+        lang = lang or self.defaultLang
+        if not self.cache[name] then
+            self.cache[name] = {}
+        end
+        self.cache[name][lang] = value
+    end,
+    
+    -- Clear specific cache entry
+    clear = function(self, name, lang)
+        if lang then
+            if self.cache[name] then
+                self.cache[name][lang] = nil
+            end
+        else
+            self.cache[name] = nil
+        end
+    end,
+    
+    -- Clear all entries for a specific language
+    clearLanguage = function(self, lang)
+        for country, translations in pairs(self.cache) do
+            translations[lang] = nil
+            -- Clean up empty country entries
+            if table.IsEmpty(translations) then
+                self.cache[country] = nil
+            end
+        end
+    end,
+    
+    -- Pre-cache commonly used translations
+    preCache = function(self, countries, lang)
+        lang = lang or self.defaultLang
+        for _, country in pairs(countries) do
+            if not self:get(country, lang) then
+                local translatedName = LanguageManager:GetCountryTranslation(lang, country)
+                if translatedName and translatedName ~= "" then
+                    self:set(country, lang, translatedName)
+                end
+            end
+        end
+    end
+}
 
-    Returns:
-    - The formatted and translated country name.
-]]
+-- Replace the existing formatCountryName function
 local function formatCountryName(name)
     local lang = GetConVar("radio_language"):GetString() or "en"
-    local cacheKey = name .. "_" .. lang
-
-    if formattedCountryNames[cacheKey] then
-        return formattedCountryNames[cacheKey]
+    
+    -- Check cache first
+    local cached = CountryNameCache:get(name, lang)
+    if cached then
+        return cached
     end
-
-    -- Use the LanguageManager to get the translated country name
+    
+    -- Get translation and cache it
     local translatedName = LanguageManager:GetCountryTranslation(lang, name)
-
     if not translatedName or translatedName == "" then
-        translatedName = name  -- Fallback to original name if translation is not found
+        translatedName = name
     end
-
-    formattedCountryNames[cacheKey] = translatedName
+    
+    CountryNameCache:set(name, lang, translatedName)
     return translatedName
 end
 
@@ -463,28 +520,33 @@ end
 -- Load station data
 local StationData = {}
 
---[[
-    Function: LoadStationData
-    Loads station data from files, ensuring it's loaded only once.
-]]
+-- Modify LoadStationData to include pre-caching
 local function LoadStationData()
     if stationDataLoaded then return end
+    
     local dataFiles = file.Find("radio/client/stations/data_*.lua", "LUA")
+    local countries = {}
+    
     for _, filename in ipairs(dataFiles) do
         local data = include("radio/client/stations/" .. filename)
         for country, stations in pairs(data) do
-            -- Extract base country name by removing any suffixes like '_number' at the end
+            -- Extract base country name by removing any suffixes
             local baseCountry = country:gsub("_(%d+)$", "")
             if not StationData[baseCountry] then
                 StationData[baseCountry] = {}
+                table.insert(countries, baseCountry)
             end
             for _, station in ipairs(stations) do
                 table.insert(StationData[baseCountry], { name = station.n, url = station.u })
             end
         end
     end
+    
+    -- Pre-cache translations for all countries in current language
+    CountryNameCache:preCache(countries)
+    
     stationDataLoaded = true
-    CountryIndices.initializeCountryIndices(StationData)  -- Pass StationData here
+    CountryIndices.initializeCountryIndices(StationData)
 end
 
 -- ------------------------------
@@ -502,9 +564,20 @@ end
     - resetSearch: Boolean indicating whether to reset the search box.
 ]]
 local function populateList(stationListPanel, backButton, searchBox, resetSearch)
-    -- Clear the formatted country names cache to force refresh
-    formattedCountryNames = {}
-
+    -- Only clear cache when language changes
+    local currentLang = GetConVar("radio_language"):GetString() or "en"
+    if currentLang ~= CountryNameCache.lastLang then
+        CountryNameCache:clearLanguage(CountryNameCache.lastLang)
+        CountryNameCache.lastLang = currentLang
+        
+        -- Pre-cache translations for new language
+        local countries = {}
+        for country, _ in pairs(StationData) do
+            table.insert(countries, country)
+        end
+        CountryNameCache:preCache(countries, currentLang)
+    end
+    
     if not stationListPanel then
         return
     end
@@ -1306,32 +1379,149 @@ hook.Add("Think", "OpenCarRadioMenu", function()
     end
 end)
 
-net.Receive("UpdateRadioStatus", function()
-    local entity = net.ReadEntity()
-    local stationName = net.ReadString()
-    local isPlaying = net.ReadBool()
-    local status = net.ReadString()
-
-    if IsValid(entity) then
-        BoomboxStatuses[entity:EntIndex()] = {
-            stationStatus = status,
+-- Add near the top with other state variables
+-- ------------------------------
+--    Radio Source Management
+-- ------------------------------
+local RadioSourceManager = {
+    activeSources = {},
+    sourceStatuses = {}, -- Add this to track statuses
+    
+    -- Add a new radio source to manage
+    addSource = function(self, entity, station, stationName)
+        if not IsValid(entity) or not IsValid(station) then return end
+        
+        local entIndex = entity:EntIndex()
+        self.activeSources[entIndex] = {
+            entity = entity,
+            station = station,
+            volume = entityVolumes[entity] or (getEntityConfig(entity) and getEntityConfig(entity).Volume) or 0.5
+        }
+        
+        -- Track the sound object and associated resources
+        MemoryManager:TrackSound(entity, station)
+        MemoryManager:TrackTimer("RadioTimeout_" .. entIndex, entity)
+        MemoryManager:TrackHook("Think", "UpdateRadioPosition_" .. entIndex, entity)
+        
+        -- Update status
+        self.sourceStatuses[entIndex] = {
+            stationStatus = "playing",
             stationName = stationName
         }
-
-        -- Immediately update the entity's networked variables
-        entity:SetNWString("Status", status)
-        entity:SetNWString("StationName", stationName)
-        entity:SetNWBool("IsPlaying", isPlaying)
-
-        -- If the status is "playing", update the currently playing stations
-        if status == "playing" then
-            currentlyPlayingStations[entity] = { name = stationName }
-        elseif status == "stopped" then
-            currentlyPlayingStations[entity] = nil
+        
+        -- Update global BoomboxStatuses for compatibility
+        if entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox" then
+            BoomboxStatuses[entIndex] = self.sourceStatuses[entIndex]
         end
+    end,
+    
+    -- Remove a radio source
+    removeSource = function(self, entity)
+        if not IsValid(entity) then return end
+        local entIndex = entity:EntIndex()
+        
+        -- Clean up resources through MemoryManager
+        MemoryManager:CleanupEntity(entity)
+        
+        self.activeSources[entIndex] = nil
+        self.sourceStatuses[entIndex] = {
+            stationStatus = "stopped",
+            stationName = ""
+        }
+        
+        -- Update global BoomboxStatuses
+        if entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox" then
+            BoomboxStatuses[entIndex] = self.sourceStatuses[entIndex]
+        end
+    end,
+    
+    -- Set source status
+    setStatus = function(self, entity, status, stationName)
+        if not IsValid(entity) then return end
+        local entIndex = entity:EntIndex()
+        
+        self.sourceStatuses[entIndex] = {
+            stationStatus = status,
+            stationName = stationName or ""
+        }
+        
+        -- Update networked variables for all entities
+        entity:SetNWString("Status", status)
+        entity:SetNWString("StationName", stationName or "")
+        entity:SetNWBool("IsPlaying", status == "playing" or status == "tuning")
+        
+        -- Update global BoomboxStatuses
+        if entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox" then
+            BoomboxStatuses[entIndex] = self.sourceStatuses[entIndex]
+            
+            -- Send status update to server for boomboxes
+            net.Start("UpdateRadioStatus")
+                net.WriteEntity(entity)
+                net.WriteString(stationName or "")
+                net.WriteBool(status == "playing" or status == "tuning")
+                net.WriteString(status)
+            net.SendToServer()
+        end
+    end,
+    
+    -- Update positions and volumes for all active sources
+    updateSources = function(self)
+        local player = LocalPlayer()
+        if not IsValid(player) then return end
+        local playerPos = player:GetPos()
+        
+        for entIndex, sourceData in pairs(self.activeSources) do
+            if not IsValid(sourceData.entity) or not IsValid(sourceData.station) then
+                self:removeSource(sourceData.entity)
+                continue
+            end
+            
+            -- Update last used time
+            MemoryManager:UpdateSoundUsage(sourceData.entity)
+            
+            -- Update position
+            sourceData.station:SetPos(sourceData.entity:GetPos())
+            
+            -- Update volume
+            local distanceSqr = playerPos:DistToSqr(sourceData.entity:GetPos())
+            local isPlayerInCar = player:GetVehicle() == sourceData.entity or 
+                                (IsValid(player:GetVehicle()) and 
+                                 player:GetVehicle():GetParent() == sourceData.entity)
+            
+            updateRadioVolume(sourceData.station, distanceSqr, isPlayerInCar, sourceData.entity)
+        end
+    end,
+    
+    -- Clean up all sources
+    cleanup = function(self)
+        for entIndex, sourceData in pairs(self.activeSources) do
+            if IsValid(sourceData.station) then
+                sourceData.station:Stop()
+            end
+        end
+        self.activeSources = {}
+    end
+}
+
+-- Add the centralized Think hook
+hook.Add("Think", "UpdateRadioSources", function()
+    RadioSourceManager:updateSources()
+end)
+
+-- Add cleanup hooks
+hook.Add("ShutDown", "CleanupRadioSources", function()
+    RadioSourceManager:cleanup()
+    RadioSourceManager.sourceStatuses = {}
+    BoomboxStatuses = {}
+end)
+
+hook.Add("EntityRemoved", "CleanupRadioSource", function(ent)
+    if IsValid(ent) then
+        RadioSourceManager:removeSource(ent)
     end
 end)
 
+-- Modify the PlayCarRadioStation net message to properly handle tuning state
 net.Receive("PlayCarRadioStation", function()
     local entity = net.ReadEntity()
     entity = GetVehicleEntity(entity)
@@ -1344,140 +1534,111 @@ net.Receive("PlayCarRadioStation", function()
         return
     end
 
-    -- Set the boombox status to "tuning" immediately
+    -- Track this connection attempt
+    ErrorHandler:TrackAttempt(entity, stationName, url)
+
+    -- Set initial tuning status
     if IsValid(entity) and (entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox") then
         entity:SetNWString("Status", "tuning")
         entity:SetNWString("StationName", stationName)
         entity:SetNWBool("IsPlaying", true)
         
-        -- Update the BoomboxStatuses table immediately
         BoomboxStatuses[entity:EntIndex()] = {
             stationStatus = "tuning",
             stationName = stationName
         }
     end
 
-    -- Stop the current station before playing a new one
+    -- Stop existing source
     if currentRadioSources[entity] and IsValid(currentRadioSources[entity]) then
         currentRadioSources[entity]:Stop()
         currentRadioSources[entity] = nil
     end
 
+    -- Start timeout monitoring
+    ErrorHandler:StartTimeout(entity, function()
+        -- Retry callback
+        net.Start("PlayCarRadioStation")
+            net.WriteEntity(entity)
+            net.WriteString(stationName)
+            net.WriteString(url)
+            net.WriteFloat(volume)
+        net.SendToServer()
+    end)
+
     sound.PlayURL(url, "3d mono", function(station, errorID, errorName)
+        -- Stop timeout monitoring since we got a response
+        ErrorHandler:StopTimeout(entity)
+
         if IsValid(station) then
             station:SetPos(entity:GetPos())
             station:SetVolume(volume)
             station:Play()
-            currentRadioSources[entity] = station
-            entity.RadioSource = station  -- Store the sound object on the entity
-
-            -- Set 3D fade distance according to the entity's configuration
+            
+            RadioSourceManager:addSource(entity, station, stationName)
+            
             local entityConfig = getEntityConfig(entity)
             if entityConfig then
                 station:Set3DFadeDistance(entityConfig.MinVolumeDistance, entityConfig.MaxHearingDistance)
             end
 
-            -- Modify the checkStationState function
-            local function checkStationState()
-                if not IsValid(entity) or not IsValid(station) then
-                    return
-                end
+            -- Clear error tracking on successful connection
+            ErrorHandler:ClearEntity(entity)
 
+            -- Monitor station state
+            local function checkStationState()
+                if not IsValid(entity) or not IsValid(station) then return end
+                
                 if station:GetState() == GMOD_CHANNEL_PLAYING then
-                    -- Station has started playing
-                    if IsValid(entity) and (entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox") then
+                    if entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox" then
+                        BoomboxStatuses[entity:EntIndex()] = {
+                            stationStatus = "playing",
+                            stationName = stationName
+                        }
                         entity:SetNWString("Status", "playing")
-                        net.Start("UpdateRadioStatus")
-                            net.WriteEntity(entity)
-                            net.WriteString(stationName)
-                            net.WriteBool(true)
-                            net.WriteString("playing")
-                        net.SendToServer()
                     end
                 elseif station:GetState() == GMOD_CHANNEL_STOPPED then
-                    -- Station has stopped
-                    if IsValid(entity) and (entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox") then
-                        entity:SetNWString("Status", "stopped")
-                        net.Start("UpdateRadioStatus")
+                    ErrorHandler:HandleError(entity, ErrorHandler.ErrorTypes.STREAM_ERROR, nil, nil, function()
+                        net.Start("PlayCarRadioStation")
                             net.WriteEntity(entity)
-                            net.WriteString("")
-                            net.WriteBool(false)
-                            net.WriteString("stopped")
+                            net.WriteString(stationName)
+                            net.WriteString(url)
+                            net.WriteFloat(volume)
                         net.SendToServer()
-                    end
+                    end)
                 else
-                    -- Continue checking
                     timer.Simple(0.1, checkStationState)
                 end
             end
-
-            -- Start checking the station state
+            
             checkStationState()
-
-            -- Update the station's position relative to the entity's movement
-            hook.Add("Think", "UpdateRadioPosition_" .. entity:EntIndex(), function()
-                if IsValid(entity) and IsValid(station) then
-                    station:SetPos(entity:GetPos())
-
-                    local playerPos = LocalPlayer():GetPos()
-                    local entityPos = entity:GetPos()
-                    local distanceSqr = playerPos:DistToSqr(entityPos)
-                    local isPlayerInCar = LocalPlayer():GetVehicle() == entity or 
-                                          (IsValid(LocalPlayer():GetVehicle()) and 
-                                           LocalPlayer():GetVehicle():GetParent() == entity)
-
-                    updateRadioVolume(station, distanceSqr, isPlayerInCar, entity)
-                else
-                    hook.Remove("Think", "UpdateRadioPosition_" .. entity:EntIndex())
-                end
-            end)
-
-            -- Stop the station if the entity is removed
-            hook.Add("EntityRemoved", "StopRadioOnEntityRemove_" .. entity:EntIndex(), function(ent)
-                if ent == entity then
-                    if IsValid(currentRadioSources[entity]) then
-                        currentRadioSources[entity]:Stop()
-                    end
-                    currentRadioSources[entity] = nil
-                    entity.RadioSource = nil  -- Clear the stored sound object
-                    hook.Remove("EntityRemoved", "StopRadioOnEntityRemove_" .. entity:EntIndex())
-                    hook.Remove("Think", "UpdateRadioPosition_" .. entity:EntIndex())
-                    BoomboxStatuses[entity:EntIndex()] = nil
-                end
-            end)
         else
-            print("[Radio Error] Failed to create station. Error ID:", errorID, "Error Name:", errorName)
-            if IsValid(entity) and (entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox") then
-                entity:SetNWString("Status", "stopped")
-                entity:SetNWString("StationName", "")
-                entity:SetNWBool("IsPlaying", false)
-            end
+            -- Handle connection error
+            local errorType = errorID == 1 and ErrorHandler.ErrorTypes.CONNECTION_FAILED
+                         or errorID == 2 and ErrorHandler.ErrorTypes.INVALID_URL
+                         or ErrorHandler.ErrorTypes.UNKNOWN
+
+            ErrorHandler:HandleError(entity, errorType, errorID, errorName, function()
+                net.Start("PlayCarRadioStation")
+                    net.WriteEntity(entity)
+                    net.WriteString(stationName)
+                    net.WriteString(url)
+                    net.WriteFloat(volume)
+                net.SendToServer()
+            end)
         end
     end)
 end)
 
+-- Modify StopCarRadioStation to use status tracking
 net.Receive("StopCarRadioStation", function()
     local entity = net.ReadEntity()
     entity = GetVehicleEntity(entity)
 
     if not IsValid(entity) then return end
 
-    if currentRadioSources[entity] and IsValid(currentRadioSources[entity]) then
-        currentRadioSources[entity]:Stop()
-    end
-    currentRadioSources[entity] = nil
-    entity.RadioSource = nil  -- Clear the stored sound object
+    RadioSourceManager:removeSource(entity)
     currentlyPlayingStations[entity] = nil
-    
-    -- Update boombox status to "stopped"
-    if entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox" then
-        entity:SetNWString("Status", "stopped")
-        entity:SetNWString("StationName", "")
-        entity:SetNWBool("IsPlaying", false)
-    end
-
-    hook.Remove("EntityRemoved", "StopRadioOnEntityRemove_" .. entity:EntIndex())
-    hook.Remove("Think", "UpdateRadioPosition_" .. entity:EntIndex())
 end)
 
 net.Receive("UpdateRadioVolume", function()
@@ -1535,3 +1696,14 @@ hook.Add("EntityRemoved", "BoomboxCleanup", function(ent)
     end
 end)
 
+-- Add language change hook to manage cache
+cvars.AddChangeCallback("radio_language", function(_, _, newValue)
+    -- Clear cache for old language when language changes
+    CountryNameCache:clearLanguage(CountryNameCache.lastLang)
+    CountryNameCache.lastLang = newValue
+end)
+
+-- Add cleanup hook for cache
+hook.Add("ShutDown", "CleanupCountryNameCache", function()
+    CountryNameCache.cache = {}
+end)
