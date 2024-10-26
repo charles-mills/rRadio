@@ -1,3 +1,5 @@
+local Validator = include("radio/server/sv_validator.lua")
+
 return {
     groupName = "rRadio Validator",
     cases = {

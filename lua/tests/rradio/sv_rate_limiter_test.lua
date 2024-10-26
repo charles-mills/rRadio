@@ -1,3 +1,8 @@
+local NetworkRateLimiter = include("radio/server/sv_rate_limiter.lua") or {
+    players = {},
+    check = function() return true end
+}
+
 return {
     groupName = "rRadio Rate Limiter",
     

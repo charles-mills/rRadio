@@ -26,6 +26,35 @@ local entityVolumes = {}
 local openRadioMenu
 StationData = StationData or {}
 
+RadioSourceManager = {
+    activeSources = {},
+    sourceStatuses = {},
+    addSource = function(self, entity, station, stationName)
+        if not IsValid(entity) or not IsValid(station) then return end
+        local entIndex = entity:EntIndex()
+        self.activeSources[entIndex] = {
+            entity = entity,
+            station = station,
+            volume = entityVolumes[entity] or 0.5
+        }
+        self:setStatus(entity, "playing", stationName)
+    end,
+    removeSource = function(self, entity)
+        if not IsValid(entity) then return end
+        local entIndex = entity:EntIndex()
+        self.activeSources[entIndex] = nil
+        self:setStatus(entity, "stopped", "")
+    end,
+    setStatus = function(self, entity, status, stationName)
+        if not IsValid(entity) then return end
+        local entIndex = entity:EntIndex()
+        self.sourceStatuses[entIndex] = {
+            stationStatus = status,
+            stationName = stationName or ""
+        }
+    end
+}
+
 if CLIENT then
     _G.BoomboxStatuses = BoomboxStatuses
     _G.favoriteCountries = favoriteCountries
@@ -36,7 +65,6 @@ if CLIENT then
     _G.LerpColor = LerpColor
     _G.calculateFontSizeForStopButton = calculateFontSizeForStopButton
 end
-
 
 local function LerpColor(t, col1, col2)
     return Color(Lerp(t, col1.r, col2.r), Lerp(t, col1.g, col2.g), Lerp(t, col1.b, col2.b), Lerp(t, col1.a or 255, col2.a or 255))
@@ -922,86 +950,6 @@ hook.Add("Think", "OpenCarRadioMenu", function()
         end
     end
 end)
-
-local RadioSourceManager = {
-    activeSources = {},
-    sourceStatuses = {},
-    addSource = function(self, entity, station, stationName)
-        if not IsValid(entity) or not IsValid(station) then return end
-        local entIndex = entity:EntIndex()
-        self.activeSources[entIndex] = {
-            entity = entity,
-            station = station,
-            volume = entityVolumes[entity] or (utils.getEntityConfig(entity) and utils.getEntityConfig(entity).Volume) or 0.5
-        }
-
-        MemoryManager:TrackSound(entity, station)
-        MemoryManager:TrackTimer("RadioTimeout_" .. entIndex, entity)
-        MemoryManager:TrackHook("Think", "UpdateRadioPosition_" .. entIndex, entity)
-        self.sourceStatuses[entIndex] = {
-            stationStatus = "playing",
-            stationName = stationName
-        }
-
-        if entity:GetClass() == "boombox" then BoomboxStatuses[entIndex] = self.sourceStatuses[entIndex] end
-    end,
-    removeSource = function(self, entity)
-        if not IsValid(entity) then return end
-        local entIndex = entity:EntIndex()
-        MemoryManager:CleanupEntity(entity)
-        self.activeSources[entIndex] = nil
-        self.sourceStatuses[entIndex] = {
-            stationStatus = "stopped",
-            stationName = ""
-        }
-
-        if entity:GetClass() == "boombox" then BoomboxStatuses[entIndex] = self.sourceStatuses[entIndex] end
-    end,
-    setStatus = function(self, entity, status, stationName)
-        if not IsValid(entity) then return end
-        local entIndex = entity:EntIndex()
-        self.sourceStatuses[entIndex] = {
-            stationStatus = status,
-            stationName = stationName or ""
-        }
-
-        entity:SetNWString("Status", status)
-        entity:SetNWString("StationName", stationName or "")
-        entity:SetNWBool("IsPlaying", status == "playing" or status == "tuning")
-        if entity:GetClass() == "boombox" then
-            BoomboxStatuses[entIndex] = self.sourceStatuses[entIndex]
-            net.Start("UpdateRadioStatus")
-            net.WriteEntity(entity)
-            net.WriteString(stationName or "")
-            net.WriteBool(status == "playing" or status == "tuning")
-            net.WriteString(status)
-            net.SendToServer()
-        end
-    end,
-    updateSources = function(self)
-        local player = LocalPlayer()
-        if not IsValid(player) then return end
-        local playerPos = player:GetPos()
-        for entIndex, sourceData in pairs(self.activeSources) do
-            if not IsValid(sourceData.entity) or not IsValid(sourceData.station) then
-                self:removeSource(sourceData.entity)
-                continue
-            end
-
-            sourceData.station:SetPos(sourceData.entity:GetPos())
-            local distanceSqr = playerPos:DistToSqr(sourceData.entity:GetPos())
-            local isPlayerInCar = player:GetVehicle() == sourceData.entity or (IsValid(player:GetVehicle()) and player:GetVehicle():GetParent() == sourceData.entity)
-            updateRadioVolume(sourceData.station, distanceSqr, isPlayerInCar, sourceData.entity)
-        end
-    end,
-    cleanup = function(self)
-        for entIndex, sourceData in pairs(self.activeSources) do
-            if IsValid(sourceData.station) then sourceData.station:Stop() end
-        end
-
-        self.activeSources = {}
-    end
-}
 
 hook.Add("Think", "UpdateRadioSources", function() RadioSourceManager:updateSources() end)
 hook.Add("ShutDown", "CleanupRadioSources", function()

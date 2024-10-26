@@ -1,5 +1,9 @@
 local function setupTestEnv()
     -- Mock required functions
+    _G.ScreenScale = function(size) return size * 2 end
+    _G.Lerp = function(t, a, b) return a + (b - a) * t end
+    _G.Color = function(r, g, b, a) return {r = r, g = g, b = b, a = a or 255} end
+    
     surface = surface or {
         CreateFont = function() end,
         SetFont = function() end,
@@ -12,6 +16,13 @@ local function setupTestEnv()
     draw = draw or {
         SimpleText = function() end,
         RoundedBox = function() end
+    }
+
+    -- Mock Misc.UIPerformance
+    Misc = Misc or {
+        UIPerformance = {
+            GetScale = function(value) return value end
+        }
     }
 end
 
