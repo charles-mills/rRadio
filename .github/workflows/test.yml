@@ -4,10 +4,6 @@ on:
   pull_request:
   workflow_dispatch:
     inputs:
-      test_group:
-        description: 'Test group to run (leave empty for all tests)'
-        required: false
-        default: ''
       gamemode:
         description: 'Gamemode to use'
         required: false
