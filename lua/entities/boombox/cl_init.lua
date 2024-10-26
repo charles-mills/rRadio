@@ -39,16 +39,16 @@ local HUD = {
 -- Create modern fonts
 surface.CreateFont("BoomboxHUD", {
     font = "Roboto",
-    size = 15,
-    weight = 400,
+    size = 24,
+    weight = 500,
     antialias = true,
     extended = true
 })
 
 surface.CreateFont("BoomboxHUDSmall", {
     font = "Roboto",
-    size = 12,
-    weight = 300,
+    size = 18,
+    weight = 400,
     antialias = true,
     extended = true
 })
@@ -128,8 +128,8 @@ function ENT:Draw()
     ang:RotateAroundAxis(ang:Forward(), 90)
     ang:RotateAroundAxis(ang:Right(), 180)
 
-    -- Use pcall to ensure cam.End3D2D is always called
-    cam.Start3D2D(pos, ang, 0.1)
+    -- Reduced scale from 0.1 to 0.06 for sharper text
+    cam.Start3D2D(pos, ang, 0.06)
     local success, err = pcall(function()
         self:DrawModernHUD(status, stationName, alpha)
     end)
@@ -196,10 +196,10 @@ function ENT:DrawModernHUD(status, stationName, alpha)
     surface.SetFont("BoomboxHUD")
     local textWidth = surface.GetTextSize(text)
     
-    local minWidth = 230
+    local minWidth = 380
     local widthMultiplier = 1.0
     local width = math.max(textWidth + HUD.DIMENSIONS.PADDING * 3 + HUD.DIMENSIONS.ICON_SIZE, minWidth) * widthMultiplier
-    local height = HUD.DIMENSIONS.HEIGHT
+    local height = HUD.DIMENSIONS.HEIGHT * 1.5
     
     -- Draw background
     self:DrawBackground(width, height, alpha)
@@ -351,4 +351,3 @@ function ENT:UpdateEqualizerHeights(volume, dt)
         )
     end
 end
-
