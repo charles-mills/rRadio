@@ -26,7 +26,7 @@ local entityVolumes = {}
 local openRadioMenu
 StationData = StationData or {}
 
-RadioSourceManager = {
+local RadioSourceManager = {
     activeSources = {},
     sourceStatuses = {},
     addSource = function(self, entity, station, stationName)
@@ -52,6 +52,36 @@ RadioSourceManager = {
             stationStatus = status,
             stationName = stationName or ""
         }
+    end,
+    updateSources = function(self)
+        local player = LocalPlayer()
+        if not IsValid(player) then return end
+        local playerPos = player:GetPos()
+        
+        for entIndex, sourceData in pairs(self.activeSources) do
+            if not IsValid(sourceData.entity) or not IsValid(sourceData.station) then
+                self:removeSource(sourceData.entity)
+                continue
+            end
+
+            sourceData.station:SetPos(sourceData.entity:GetPos())
+            local distanceSqr = playerPos:DistToSqr(sourceData.entity:GetPos())
+            local isPlayerInCar = player:GetVehicle() == sourceData.entity or 
+                                (IsValid(player:GetVehicle()) and player:GetVehicle():GetParent() == sourceData.entity)
+            
+            if utils.getEntityConfig(sourceData.entity) then
+                updateRadioVolume(sourceData.station, distanceSqr, isPlayerInCar, sourceData.entity)
+            end
+        end
+    end,
+    cleanup = function(self)
+        for entIndex, sourceData in pairs(self.activeSources) do
+            if IsValid(sourceData.station) then 
+                sourceData.station:Stop() 
+            end
+        end
+        self.activeSources = {}
+        self.sourceStatuses = {}
     end
 }
 
@@ -67,7 +97,12 @@ if CLIENT then
 end
 
 local function LerpColor(t, col1, col2)
-    return Color(Lerp(t, col1.r, col2.r), Lerp(t, col1.g, col2.g), Lerp(t, col1.b, col2.b), Lerp(t, col1.a or 255, col2.a or 255))
+    return Color(
+        Lerp(t, col1.r, col2.r),
+        Lerp(t, col1.g, col2.g), 
+        Lerp(t, col1.b, col2.b),
+        Lerp(t, col1.a or 255, col2.a or 255)
+    )
 end
 
 local function reopenRadioMenu(openSettingsMenuFlag)
@@ -951,14 +986,22 @@ hook.Add("Think", "OpenCarRadioMenu", function()
     end
 end)
 
-hook.Add("Think", "UpdateRadioSources", function() RadioSourceManager:updateSources() end)
+hook.Add("Think", "UpdateRadioSources", function() 
+    RadioSourceManager:updateSources() 
+end)
+
 hook.Add("ShutDown", "CleanupRadioSources", function()
     RadioSourceManager:cleanup()
     RadioSourceManager.sourceStatuses = {}
     BoomboxStatuses = {}
 end)
 
-hook.Add("EntityRemoved", "CleanupRadioSource", function(ent) if IsValid(ent) then RadioSourceManager:removeSource(ent) end end)
+hook.Add("EntityRemoved", "CleanupRadioSource", function(ent) 
+    if IsValid(ent) then 
+        RadioSourceManager:removeSource(ent) 
+    end 
+end)
+
 net.Receive("PlayCarRadioStation", function()
     local entity = utils.getVehicleEntity(net.ReadEntity())
     local stationName = net.ReadString()
@@ -1085,3 +1128,4 @@ cvars.AddChangeCallback("radio_language", function(_, _, newValue)
 end)
 
 hook.Add("ShutDown", "CleanupCountryNameCache", function() CountryNameCache.cache = {} end)
+
