@@ -46,4 +46,66 @@ function utils.canInteractWithBoombox(ply, boombox)
     return IsValid(owner) and owner == ply
 end
 
+--[[
+    Function: getVehicleEntity
+    Description: Gets the actual vehicle entity, handling parent relationships.
+    @param entity (Entity): The entity to check.
+    @return (Entity): The actual vehicle entity to use.
+]]
+function utils.getVehicleEntity(entity)
+    if not IsValid(entity) then return nil end
+    if entity:IsVehicle() then
+        local parent = entity:GetParent()
+        return IsValid(parent) and parent or entity
+    end
+    return entity
+end
+
+--[[
+    Function: isValidRadioEntity
+    Description: Checks if an entity is valid for radio operations.
+    @param entity (Entity): The entity to check.
+    @param player (Player): Optional player for permission check.
+    @return (boolean): True if the entity is valid for radio use.
+]]
+function utils.isValidRadioEntity(entity, player)
+    if not IsValid(entity) then return false end
+    
+    if entity:GetClass() == "boombox" then
+        return player and utils.canInteractWithBoombox(player, entity) or true
+    end
+    
+    return entity:IsVehicle() and not utils.isSitAnywhereSeat(entity)
+end
+
+--[[
+    Function: getEntityConfig
+    Description: Gets the configuration for a radio entity.
+    @param entity (Entity): The entity to get config for.
+    @return (table): The configuration table for the entity.
+]]
+function utils.getEntityConfig(entity)
+    if not IsValid(entity) then return nil end
+
+    if entity:GetClass() == "boombox" then
+        return Config.Boombox
+    end
+    return Config.VehicleRadio
+end
+
+--[[
+    Function: updateEntityStatus
+    Description: Updates the status of a radio entity.
+    @param entity (Entity): The entity to update.
+    @param status (string): The status to set.
+    @param stationName (string): Optional station name.
+]]
+function utils.updateEntityStatus(entity, status, stationName)
+    if not IsValid(entity) then return end
+    
+    entity:SetNWString("Status", status)
+    entity:SetNWString("StationName", stationName or "")
+    entity:SetNWBool("IsPlaying", status == "playing" or status == "tuning")
+end
+
 return utils

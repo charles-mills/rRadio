@@ -152,24 +152,6 @@ local stationDataLoaded = false
 -- ------------------------------
 
 --[[
-    Function: GetVehicleEntity
-    Retrieves the vehicle entity from a given entity.
-
-    Parameters:
-    - entity: The entity to check.
-
-    Returns:
-    - The vehicle entity or the original entity if not a vehicle.
-]]
-local function GetVehicleEntity(entity)
-    if IsValid(entity) and entity:IsVehicle() then
-        local parent = entity:GetParent()
-        return IsValid(parent) and parent or entity
-    end
-    return entity
-end
-
---[[
     Function: Scale
     Scales a value based on the screen width.
 
@@ -181,30 +163,6 @@ end
 ]]
 local function Scale(value)
     return UIPerformance:GetScale(value)
-end
-
---[[
-    Function: getEntityConfig
-    Retrieves the configuration for a given entity.
-
-    Parameters:
-    - entity: The entity to get the config for.
-
-    Returns:
-    - The configuration table for the entity.
-]]
-local function getEntityConfig(entity)
-    if not IsValid(entity) then return nil end
-
-    local entityClass = entity:GetClass()
-
-    if entityClass == "boombox" then
-        return Config.Boombox
-    elseif entity:IsVehicle() then
-        return Config.VehicleRadio
-    else
-        return Config.VehicleRadio
-    end
 end
 
 -- ------------------------------
@@ -304,7 +262,7 @@ end
     - entity: The radio entity.
 ]]
 local function updateRadioVolume(station, distanceSqr, isPlayerInCar, entity)
-    local entityConfig = getEntityConfig(entity)
+    local entityConfig = utils.getEntityConfig(entity)
     if not entityConfig then return end
 
     local volume = entityVolumes[entity] or entityConfig.Volume
@@ -346,9 +304,7 @@ local function PrintCarRadioMessage()
     if not GetConVar("car_radio_show_messages"):GetBool() then return end
 
     local vehicle = LocalPlayer():GetVehicle()
-    if not IsValid(vehicle) or utils.isSitAnywhereSeat(vehicle) then
-        return
-    end
+    if not utils.isValidRadioEntity(vehicle) then return end
 
     local currentTime = CurTime()
     if (currentTime - lastMessageTime) < Config.MessageCooldown and lastMessageTime ~= -math.huge then
@@ -709,7 +665,7 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                     net.SendToServer()
                 end
 
-                local volume = entityVolumes[entity] or (getEntityConfig(entity) and getEntityConfig(entity).Volume) or 0.5
+                local volume = entityVolumes[entity] or (utils.getEntityConfig(entity) and utils.getEntityConfig(entity).Volume) or 0.5
                 net.Start("PlayCarRadioStation")
                     net.WriteEntity(entity)
                     net.WriteString(station.name)
@@ -1120,6 +1076,7 @@ openRadioMenu = function(openSettings)
             surface.PlaySound("buttons/button6.wav")
             local entity = LocalPlayer().currentRadioEntity
             if IsValid(entity) then
+                entity = utils.getVehicleEntity(entity)
                 net.Start("StopCarRadioStation")
                     net.WriteEntity(entity)
                 net.SendToServer()
@@ -1175,7 +1132,7 @@ openRadioMenu = function(openSettings)
     local currentVolume = 0.5 -- Default volume
 
     if IsValid(entity) then
-        currentVolume = entityVolumes[entity] or (getEntityConfig(entity) and getEntityConfig(entity).Volume) or 0.5
+        currentVolume = entityVolumes[entity] or (utils.getEntityConfig(entity) and utils.getEntityConfig(entity).Volume) or 0.5
     end
 
     -- Set initial icon
@@ -1206,10 +1163,7 @@ openRadioMenu = function(openSettings)
         local currentTime = CurTime()
 
         if IsValid(entity) and entity:GetClass() == "prop_vehicle_prisoner_pod" and entity:GetParent():IsValid() then
-            local parent = entity:GetParent()
-            if string.find(parent:GetClass(), "lvs_") then
-                entity = parent -- Set the entity to the parent entity if it's an LVS vehicle
-            end
+            entity = utils.getVehicleEntity(entity)
         end
 
         -- Force mute for volumes less than 5%
@@ -1377,11 +1331,10 @@ hook.Add("Think", "OpenCarRadioMenu", function()
     local vehicle = ply:GetVehicle()
 
     if input.IsKeyDown(openKey) and not radioMenuOpen then
-        if IsValid(vehicle) and not utils.isSitAnywhereSeat(vehicle) then
+        if utils.isValidRadioEntity(vehicle) then
             ply.currentRadioEntity = vehicle
             openRadioMenu()
-        elseif IsValid(ply.currentRadioEntity) and (ply.currentRadioEntity:GetClass() == "boombox") then
-            -- Check permission for boomboxes
+        elseif IsValid(ply.currentRadioEntity) and ply.currentRadioEntity:GetClass() == "boombox" then
             if utils.canInteractWithBoombox(ply, ply.currentRadioEntity) then
                 openRadioMenu()
             else
@@ -1405,7 +1358,7 @@ local RadioSourceManager = {
         self.activeSources[entIndex] = {
             entity = entity,
             station = station,
-            volume = entityVolumes[entity] or (getEntityConfig(entity) and getEntityConfig(entity).Volume) or 0.5
+            volume = entityVolumes[entity] or (utils.getEntityConfig(entity) and utils.getEntityConfig(entity).Volume) or 0.5
         }
         
         -- Track the sound object and associated resources
@@ -1528,8 +1481,7 @@ hook.Add("EntityRemoved", "CleanupRadioSource", function(ent)
 end)
 
 net.Receive("PlayCarRadioStation", function()
-    local entity = net.ReadEntity()
-    entity = GetVehicleEntity(entity)
+    local entity = utils.getVehicleEntity(net.ReadEntity())
     local stationName = net.ReadString()
     local url = net.ReadString()
     local volume = net.ReadFloat()
@@ -1582,7 +1534,7 @@ net.Receive("PlayCarRadioStation", function()
             
             RadioSourceManager:addSource(entity, station, stationName)
             
-            local entityConfig = getEntityConfig(entity)
+            local entityConfig = utils.getEntityConfig(entity)
             if entityConfig then
                 station:Set3DFadeDistance(entityConfig.MinVolumeDistance, entityConfig.MaxHearingDistance)
             end
@@ -1637,9 +1589,7 @@ end)
 
 -- Modify StopCarRadioStation to use status tracking
 net.Receive("StopCarRadioStation", function()
-    local entity = net.ReadEntity()
-    entity = GetVehicleEntity(entity)
-
+    local entity = utils.getVehicleEntity(net.ReadEntity())
     if not IsValid(entity) then return end
 
     RadioSourceManager:removeSource(entity)
@@ -1647,8 +1597,7 @@ net.Receive("StopCarRadioStation", function()
 end)
 
 net.Receive("UpdateRadioVolume", function()
-    local entity = net.ReadEntity()
-    entity = GetVehicleEntity(entity)
+    local entity = utils.getVehicleEntity(net.ReadEntity())
     local volume = net.ReadFloat()
 
     if not IsValid(entity) then return end
