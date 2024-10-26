@@ -1,14 +1,19 @@
+-- This file is the product of several (now merged) files to reduce file count
+-- KeyNames, Themes, ErrorHandler, UiPerformance, MemoryManager, Settings
+
 local languageManager = include("radio/client/lang/cl_language_manager.lua")
-local Misc = {
+
+local misc = {
     KeyNames = {},
     Themes = {},
     ErrorHandler = {},
     UIPerformance = {},
     MemoryManager = {},
-    Settings = {},
+    Settings = {}
 }
 
-Misc.KeyNames = {
+-- KeyNames mapping for various keys
+misc.KeyNames = {
     mapping = {
         [KEY_A] = "A",
         [KEY_B] = "B",
@@ -93,12 +98,17 @@ Misc.KeyNames = {
         [KEY_F11] = "F11",
         [KEY_F12] = "F12"
     },
-    GetKeyName = function(self, keyCode) return self.mapping[keyCode] or "the Open Key" end
+
+    -- Retrieves the name of the key based on its code
+    GetKeyName = function(self, keyCode)
+        return self.mapping[keyCode] or "the Open Key"
+    end
 }
 
-Misc.Themes = {
+-- Themes configuration
+misc.Themes = {
     list = {
-        ["dark"] = {
+        dark = {
             FrameSize = {
                 width = 600,
                 height = 800
@@ -113,9 +123,9 @@ Misc.Themes = {
             CloseButtonHoverColor = Color(70, 70, 70),
             ScrollbarColor = Color(60, 60, 60),
             ScrollbarGripColor = Color(100, 100, 100),
-            SearchBoxColor = Color(50, 50, 50),
+            SearchBoxColor = Color(50, 50, 50)
         },
-        ["light"] = {
+        light = {
             FrameSize = {
                 width = 600,
                 height = 800
@@ -130,9 +140,9 @@ Misc.Themes = {
             CloseButtonHoverColor = Color(200, 200, 200),
             ScrollbarColor = Color(210, 210, 210),
             ScrollbarGripColor = Color(180, 180, 180),
-            SearchBoxColor = Color(230, 230, 230),
+            SearchBoxColor = Color(230, 230, 230)
         },
-        ["ocean"] = {
+        ocean = {
             FrameSize = {
                 width = 600,
                 height = 800
@@ -147,9 +157,9 @@ Misc.Themes = {
             CloseButtonHoverColor = Color(30, 90, 150),
             ScrollbarColor = Color(20, 60, 100),
             ScrollbarGripColor = Color(30, 90, 150),
-            SearchBoxColor = Color(15, 45, 75),
+            SearchBoxColor = Color(15, 45, 75)
         },
-        ["forest"] = {
+        forest = {
             FrameSize = {
                 width = 600,
                 height = 800
@@ -164,9 +174,9 @@ Misc.Themes = {
             CloseButtonHoverColor = Color(50, 110, 50),
             ScrollbarColor = Color(45, 100, 45),
             ScrollbarGripColor = Color(60, 120, 60),
-            SearchBoxColor = Color(40, 85, 40),
+            SearchBoxColor = Color(40, 85, 40)
         },
-        ["solarized"] = {
+        solarized = {
             FrameSize = {
                 width = 600,
                 height = 800
@@ -181,9 +191,9 @@ Misc.Themes = {
             CloseButtonHoverColor = Color(108, 113, 196),
             ScrollbarColor = Color(88, 110, 117),
             ScrollbarGripColor = Color(133, 153, 0),
-            SearchBoxColor = Color(7, 54, 66),
+            SearchBoxColor = Color(7, 54, 66)
         },
-        ["midnight"] = {
+        midnight = {
             FrameSize = {
                 width = 600,
                 height = 800
@@ -198,9 +208,9 @@ Misc.Themes = {
             CloseButtonHoverColor = Color(50, 50, 100),
             ScrollbarColor = Color(30, 30, 60),
             ScrollbarGripColor = Color(50, 50, 100),
-            SearchBoxColor = Color(20, 20, 50),
+            SearchBoxColor = Color(20, 20, 50)
         },
-        ["coral"] = {
+        coral = {
             FrameSize = {
                 width = 600,
                 height = 800
@@ -216,8 +226,9 @@ Misc.Themes = {
             ScrollbarColor = Color(255, 160, 122),
             ScrollbarGripColor = Color(255, 140, 105),
             SearchBoxColor = Color(255, 99, 71),
+            AccentColor = Color(228, 161, 15)
         },
-        ["main"] = {
+        main = {
             FrameSize = {
                 width = 600,
                 height = 800
@@ -233,10 +244,16 @@ Misc.Themes = {
             ScrollbarColor = Color(35, 35, 35),
             ScrollbarGripColor = Color(228, 161, 15),
             SearchBoxColor = Color(25, 25, 25),
-            AccentColor = Color(228, 161, 15),
+            AccentColor = Color(228, 161, 15)
         }
     },
-    GetTheme = function(self, name) return self.list[name] or self.list["main"] end,
+
+    -- Retrieves a theme by name, defaults to 'main' if not found
+    GetTheme = function(self, name)
+        return self.list[name] or self.list["main"]
+    end,
+
+    -- Retrieves a list of all available themes
     GetAllThemes = function(self)
         local themes = {}
         for name, _ in pairs(self.list) do
@@ -246,7 +263,8 @@ Misc.Themes = {
     end
 }
 
-Misc.ErrorHandler = {
+-- ErrorHandler for managing radio-related errors
+misc.ErrorHandler = {
     MAX_RETRIES = 3,
     RETRY_DELAY = 2,
     CONNECTION_TIMEOUT = 10,
@@ -271,8 +289,12 @@ Misc.ErrorHandler = {
         stream_error = "Stream error occurred",
         unknown = "Unknown error occurred"
     },
+
+    -- Initializes tracking for an entity
     InitEntity = function(self, entity)
-        if not IsValid(entity) then return end
+        if not IsValid(entity) then
+            return
+        end
         local entIndex = entity:EntIndex()
         self.retryAttempts[entIndex] = self.retryAttempts[entIndex] or {
             count = 0,
@@ -281,8 +303,12 @@ Misc.ErrorHandler = {
             currentStation = ""
         }
     end,
+
+    -- Clears tracking data for an entity
     ClearEntity = function(self, entity)
-        if not IsValid(entity) then return end
+        if not IsValid(entity) then
+            return
+        end
         local entIndex = entity:EntIndex()
         self.retryAttempts[entIndex] = nil
         if self.timeoutTimers[entIndex] then
@@ -290,11 +316,16 @@ Misc.ErrorHandler = {
             self.timeoutTimers[entIndex] = nil
         end
     end,
+
+    -- Handles errors and manages retries
     HandleError = function(self, entity, errorType, errorID, errorName, retryCallback)
-        if not IsValid(entity) then return end
+        if not IsValid(entity) then
+            return
+        end
         local entIndex = entity:EntIndex()
         self:InitEntity(entity)
         local attempts = self.retryAttempts[entIndex]
+
         if entity:GetClass() == "boombox" then
             entity:SetNWString("Status", "error")
             BoomboxStatuses[entIndex] = {
@@ -306,33 +337,56 @@ Misc.ErrorHandler = {
 
         local errorMsg = self.ErrorMessages[errorType] or self.ErrorMessages[errorID] or self.ErrorMessages.unknown
         chat.AddText(Color(255, 50, 50), "[Radio Error] ", Color(255, 255, 255), errorMsg, Color(200, 200, 200), " (Station: " .. attempts.currentStation .. ")")
+
         if attempts.count < self.MAX_RETRIES then
             attempts.count = attempts.count + 1
             attempts.lastAttempt = CurTime()
             chat.AddText(Color(255, 165, 0), "[Radio] ", Color(255, 255, 255), string.format("Retrying connection... (Attempt %d/%d)", attempts.count, self.MAX_RETRIES))
-            timer.Simple(self.RETRY_DELAY, function() if IsValid(entity) then retryCallback() end end)
+            timer.Simple(self.RETRY_DELAY, function()
+                if IsValid(entity) then
+                    retryCallback()
+                end
+            end)
         else
             chat.AddText(Color(255, 50, 50), "[Radio] ", Color(255, 255, 255), "Failed to connect after multiple attempts. Please try again later.")
             self:ClearEntity(entity)
         end
     end,
+
+    -- Starts a timeout timer for an entity
     StartTimeout = function(self, entity, timeoutCallback)
-        if not IsValid(entity) then return end
+        if not IsValid(entity) then
+            return
+        end
         local entIndex = entity:EntIndex()
-        if self.timeoutTimers[entIndex] then timer.Remove("RadioTimeout_" .. entIndex) end
+        if self.timeoutTimers[entIndex] then
+            timer.Remove("RadioTimeout_" .. entIndex)
+        end
         self.timeoutTimers[entIndex] = true
-        timer.Create("RadioTimeout_" .. entIndex, self.CONNECTION_TIMEOUT, 1, function() if IsValid(entity) then self:HandleError(entity, self.ErrorTypes.TIMEOUT, nil, nil, timeoutCallback) end end)
+        timer.Create("RadioTimeout_" .. entIndex, self.CONNECTION_TIMEOUT, 1, function()
+            if IsValid(entity) then
+                self:HandleError(entity, self.ErrorTypes.TIMEOUT, nil, nil, timeoutCallback)
+            end
+        end)
     end,
+
+    -- Stops the timeout timer for an entity
     StopTimeout = function(self, entity)
-        if not IsValid(entity) then return end
+        if not IsValid(entity) then
+            return
+        end
         local entIndex = entity:EntIndex()
         if self.timeoutTimers[entIndex] then
             timer.Remove("RadioTimeout_" .. entIndex)
             self.timeoutTimers[entIndex] = nil
         end
     end,
+
+    -- Tracks a connection attempt for an entity
     TrackAttempt = function(self, entity, stationName, url)
-        if not IsValid(entity) then return end
+        if not IsValid(entity) then
+            return
+        end
         self:InitEntity(entity)
         local entIndex = entity:EntIndex()
         self.retryAttempts[entIndex].currentStation = stationName
@@ -340,7 +394,8 @@ Misc.ErrorHandler = {
     end
 }
 
-Misc.UIPerformance = {
+-- UIPerformance handles UI scaling and optimization
+misc.UIPerformance = {
     cachedScales = {},
     cachedFonts = {},
     cachedMaterials = {},
@@ -353,16 +408,28 @@ Misc.UIPerformance = {
         skippedRedraws = 0,
         cachedDraws = 0
     },
+
+    -- Retrieves scaled value based on screen resolution
     GetScale = function(self, value)
-        if not self.cachedScales[value] then self.cachedScales[value] = value * (ScrW() / 2560) end
+        if not self.cachedScales[value] then
+            self.cachedScales[value] = value * (ScrW() / 2560)
+        end
         return self.cachedScales[value]
     end,
+
+    -- Retrieves or caches a material
     GetMaterial = function(self, path)
-        if not self.cachedMaterials[path] then self.cachedMaterials[path] = Material(path, "smooth") end
+        if not self.cachedMaterials[path] then
+            self.cachedMaterials[path] = Material(path, "smooth")
+        end
         return self.cachedMaterials[path]
     end,
+
+    -- Queues a panel update with throttling
     QueuePanelUpdate = function(self, panel, updateFn)
-        if not IsValid(panel) then return end
+        if not IsValid(panel) then
+            return
+        end
         local currentTime = RealTime()
         if not self.panelUpdateQueue[panel] then
             self.panelUpdateQueue[panel] = {
@@ -378,6 +445,8 @@ Misc.UIPerformance = {
             self.deferredUpdates[panel] = updateFn
         end
     end,
+
+    -- Processes deferred panel updates
     ProcessDeferredUpdates = function(self)
         local currentTime = RealTime()
         for panel, updateFn in pairs(self.deferredUpdates) do
@@ -388,28 +457,33 @@ Misc.UIPerformance = {
             end
         end
     end,
+
+    -- Removes a panel from the update queue
     RemovePanel = function(self, panel)
         self.panelUpdateQueue[panel] = nil
         self.deferredUpdates[panel] = nil
     end,
+
+    -- Optimizes the paint function of a panel to reduce redraws
     OptimizePaintFunction = function(self, panel, paintFn)
         local lastPaint = 0
         local cachedResult = nil
         return function(self, w, h)
             local currentTime = RealTime()
-            if not lastPaint or not cachedResult or (currentTime - lastPaint) >= Misc.UIPerformance.frameUpdateThreshold then
+            if not lastPaint or not cachedResult or (currentTime - lastPaint) >= misc.UIPerformance.frameUpdateThreshold then
                 cachedResult = paintFn(self, w, h)
                 lastPaint = currentTime
-                Misc.UIPerformance.stats.totalRedraws = Misc.UIPerformance.stats.totalRedraws + 1
+                misc.UIPerformance.stats.totalRedraws = misc.UIPerformance.stats.totalRedraws + 1
             else
-                Misc.UIPerformance.stats.skippedRedraws = Misc.UIPerformance.stats.skippedRedraws + 1
+                misc.UIPerformance.stats.skippedRedraws = misc.UIPerformance.stats.skippedRedraws + 1
             end
             return cachedResult
         end
     end
 }
 
-Misc.MemoryManager = {
+-- MemoryManager handles resource cleanup and memory optimization
+misc.MemoryManager = {
     CLEANUP_INTERVAL = 30,
     RESOURCE_TIMEOUT = 300,
     EMERGENCY_CLEANUP_THRESHOLD = 50,
@@ -430,7 +504,15 @@ Misc.MemoryManager = {
     },
     debugMode = CreateConVar("radio_memory_debug", "0", FCVAR_ARCHIVE, "Enable memory manager debug output"),
     emergencyMode = false,
-    DebugLog = function(self, ...) if self.debugMode:GetBool() then print("[Radio Memory Manager]", ...) end end,
+
+    -- Logs debug messages if debug mode is enabled
+    DebugLog = function(self, ...)
+        if self.debugMode:GetBool() then
+            print("[Radio Memory Manager]", ...)
+        end
+    end,
+
+    -- Checks if emergency cleanup is required based on sound object count
     CheckEmergencyCleanup = function(self)
         local currentCount = table.Count(self.soundObjects)
         if currentCount > self.EMERGENCY_CLEANUP_THRESHOLD then
@@ -444,8 +526,12 @@ Misc.MemoryManager = {
             end
         end
     end,
+
+    -- Tracks a new sound object associated with an entity
     TrackSound = function(self, entity, soundObj)
-        if not IsValid(entity) or not IsValid(soundObj) then return end
+        if not IsValid(entity) or not IsValid(soundObj) then
+            return
+        end
         local entIndex = entity:EntIndex()
         if self.soundObjects[entIndex] and IsValid(self.soundObjects[entIndex].sound) then
             self.soundObjects[entIndex].sound:Stop()
@@ -463,6 +549,8 @@ Misc.MemoryManager = {
         self.memoryStats.peakSoundObjects = math.max(self.memoryStats.peakSoundObjects, table.Count(self.soundObjects))
         self:CheckEmergencyCleanup()
     end,
+
+    -- Tracks a timer associated with an entity
     TrackTimer = function(self, name, entity)
         if self.activeTimers[name] then
             timer.Remove(name)
@@ -475,6 +563,8 @@ Misc.MemoryManager = {
             name = name
         }
     end,
+
+    -- Tracks a hook associated with an entity
     TrackHook = function(self, event, name, entity)
         local hookId = event .. "_" .. name
         if self.activeHooks[hookId] then
@@ -489,11 +579,19 @@ Misc.MemoryManager = {
             name = name
         }
     end,
+
+    -- Cleans up resources associated with an entity
     CleanupEntity = function(self, entity, emergency)
-        if not IsValid(entity) then return end
+        if not IsValid(entity) then
+            return
+        end
         local entIndex = entity:EntIndex()
         if self.soundObjects[entIndex] then
-            pcall(function() if IsValid(self.soundObjects[entIndex].sound) then self.soundObjects[entIndex].sound:Stop() end end)
+            pcall(function()
+                if IsValid(self.soundObjects[entIndex].sound) then
+                    self.soundObjects[entIndex].sound:Stop()
+                end
+            end)
             self.soundObjects[entIndex] = nil
             self.memoryStats.invalidSoundsRemoved = self.memoryStats.invalidSoundsRemoved + 1
         end
@@ -502,9 +600,7 @@ Misc.MemoryManager = {
             if data.entity == entity then
                 if timer.Exists(name) then
                     timer.Remove(name)
-                    self:DebugLog("Removed timer:", name)
                 end
-
                 self.activeTimers[name] = nil
                 self.memoryStats.orphanedTimersRemoved = self.memoryStats.orphanedTimersRemoved + 1
             end
@@ -516,20 +612,26 @@ Misc.MemoryManager = {
                     hook.Remove(data.event, data.name)
                     self:DebugLog("Removed hook:", hookId)
                 end)
-
                 self.activeHooks[hookId] = nil
                 self.memoryStats.orphanedHooksRemoved = self.memoryStats.orphanedHooksRemoved + 1
             end
         end
 
-        if emergency then collectgarbage("collect") end
+        if emergency then
+            collectgarbage("collect")
+        end
     end,
+
+    -- Performs cleanup of resources, optionally in emergency mode
     PerformCleanup = function(self, emergency)
         local currentTime = CurTime()
-        if not emergency and currentTime - self.lastCleanupTime < self.CLEANUP_INTERVAL then return end
+        if not emergency and currentTime - self.lastCleanupTime < self.CLEANUP_INTERVAL then
+            return
+        end
         self.lastCleanupTime = currentTime
         local initialMemory = collectgarbage("count")
         local cleanupCount = 0
+
         for entIndex, data in pairs(self.soundObjects) do
             if not IsValid(data.entity) or not IsValid(data.sound) or (currentTime - data.lastUsed > self.RESOURCE_TIMEOUT) or (emergency and currentTime - data.lastUsed > self.MIN_CLEANUP_INTERVAL) then
                 self:CleanupEntity(data.entity, emergency)
@@ -539,19 +641,28 @@ Misc.MemoryManager = {
 
         for name, data in pairs(self.activeTimers) do
             if not IsValid(data.entity) or (currentTime - data.createdAt > self.RESOURCE_TIMEOUT) or (emergency and currentTime - data.createdAt > self.MIN_CLEANUP_INTERVAL) then
-                if timer.Exists(name) then timer.Remove(name) end
+                if timer.Exists(name) then
+                    timer.Remove(name)
+                end
                 self.activeTimers[name] = nil
                 self.memoryStats.orphanedTimersRemoved = self.memoryStats.orphanedTimersRemoved + 1
                 cleanupCount = cleanupCount + 1
             end
         end
 
-        if emergency or cleanupCount > 10 then collectgarbage("collect") end
+        if emergency or cleanupCount > 10 then
+            collectgarbage("collect")
+        end
         self.memoryStats.totalCleanups = self.memoryStats.totalCleanups + 1
         self.memoryStats.lastMemoryUsage = collectgarbage("count") - initialMemory
-        if self.debugMode:GetBool() then self:DebugLog(string.format("Cleanup completed: Removed %d objects, Memory delta: %.2f KB, Emergency: %s", cleanupCount, self.memoryStats.lastMemoryUsage, emergency and "Yes" or "No")) end
+
+        if self.debugMode:GetBool() then
+            self:DebugLog(string.format("Cleanup completed: Removed %d objects, Memory delta: %.2f KB, Emergency: %s", cleanupCount, self.memoryStats.lastMemoryUsage, emergency and "Yes" or "No"))
+        end
         self.emergencyMode = false
     end,
+
+    -- Retrieves current memory statistics
     GetStats = function(self)
         return {
             activeSounds = table.Count(self.soundObjects),
@@ -564,21 +675,26 @@ Misc.MemoryManager = {
     end
 }
 
-Misc.Settings = {
+-- Settings management for the radio UI
+misc.Settings = {
     ConVars = {
         ShowMessages = CreateClientConVar("car_radio_show_messages", "1", true, false, "Enable or disable car radio messages."),
         Language = CreateClientConVar("radio_language", "en", true, false, "Select the language for the radio UI."),
         ShowBoomboxText = CreateClientConVar("boombox_show_text", "1", true, false, "Show or hide the text above the boombox."),
         OpenKey = CreateClientConVar("car_radio_open_key", "21", true, false, "Select the key to open the car radio menu.")
     },
+
+    -- Applies the selected theme
     ApplyTheme = function(self, themeName)
-        if Misc.Themes.list[themeName] then
-            Config.UI = Misc.Themes:GetTheme(themeName)
+        if misc.Themes.list[themeName] then
+            Config.UI = misc.Themes:GetTheme(themeName)
             hook.Run("ThemeChanged", themeName)
         else
             print("Invalid theme name: " .. themeName)
         end
     end,
+
+    -- Applies the selected language
     ApplyLanguage = function(self, languageCode)
         print("Applying language: " .. languageCode)
         if languageManager.languages[languageCode] then
@@ -591,24 +707,33 @@ Misc.Settings = {
             print("Invalid language code: " .. languageCode)
         end
     end,
+
+    -- Updates the country list based on the current language
     UpdateCountryList = function(self)
         if radioMenuOpen and IsValid(currentFrame) then
             local stationListPanel = currentFrame:GetChildren()[3]
-            if IsValid(stationListPanel) and stationListPanel:GetName() == "DScrollPanel" then populateList(stationListPanel, nil, currentFrame:GetChildren()[2], true) end
+            if IsValid(stationListPanel) and stationListPanel:GetName() == "DScrollPanel" then
+                populateList(stationListPanel, nil, currentFrame:GetChildren()[2], true)
+            end
         end
     end,
+
+    -- Loads saved theme and language settings
     LoadSavedSettings = function(self)
         local themeName = GetConVar("radio_theme"):GetString()
         self:ApplyTheme(themeName)
         local languageCode = GetConVar("radio_language"):GetString()
         self:ApplyLanguage(languageCode)
     end,
+
+    -- Sorts keys into single letters, numbers, and others
     SortKeys = function(self)
         local sortedKeys = {}
         local singleLetterKeys = {}
         local numericKeys = {}
         local otherKeys = {}
-        for keyCode, keyName in pairs(Misc.KeyNames.mapping) do
+
+        for keyCode, keyName in pairs(misc.KeyNames.mapping) do
             if #keyName == 1 and keyName:match("%a") then
                 table.insert(singleLetterKeys, {
                     name = keyName,
@@ -630,6 +755,7 @@ Misc.Settings = {
         table.sort(singleLetterKeys, function(a, b) return a.name < b.name end)
         table.sort(numericKeys, function(a, b) return tonumber(a.name) < tonumber(b.name) end)
         table.sort(otherKeys, function(a, b) return a.name < b.name end)
+
         for _, key in ipairs(singleLetterKeys) do
             table.insert(sortedKeys, key)
         end
@@ -641,11 +767,16 @@ Misc.Settings = {
         for _, key in ipairs(otherKeys) do
             table.insert(sortedKeys, key)
         end
+
         return sortedKeys
     end,
+
+    -- Creates the settings menu UI
     CreateSettingsMenu = function(self, panel)
         panel:ClearControls()
         panel:DockPadding(10, 0, 30, 10)
+
+        -- Theme Selection Section
         local themeHeader = vgui.Create("DLabel", panel)
         themeHeader:SetText("Theme Selection")
         themeHeader:SetFont("Trebuchet18")
@@ -653,33 +784,38 @@ Misc.Settings = {
         themeHeader:Dock(TOP)
         themeHeader:DockMargin(0, 0, 0, 5)
         panel:AddItem(themeHeader)
+
         local themeDropdown = vgui.Create("DComboBox", panel)
         themeDropdown:SetValue("Select Theme")
         themeDropdown:Dock(TOP)
         themeDropdown:SetTall(30)
         themeDropdown:SetTooltip("Select the theme for the radio UI.")
-        for themeName, _ in pairs(Misc.Themes.list) do
+        for themeName, _ in pairs(misc.Themes.list) do
             themeDropdown:AddChoice(themeName:gsub("^%l", string.upper))
         end
 
         local currentTheme = GetConVar("radio_theme"):GetString()
-        if currentTheme and Misc.Themes.list[currentTheme] then themeDropdown:SetValue(currentTheme:gsub("^%l", string.upper)) end
+        if currentTheme and misc.Themes.list[currentTheme] then
+            themeDropdown:SetValue(currentTheme:gsub("^%l", string.upper))
+        end
         themeDropdown.OnSelect = function(_, _, value)
             local lowerValue = value:lower()
-            if Misc.Themes.list[lowerValue] then
+            if misc.Themes.list[lowerValue] then
                 self:ApplyTheme(lowerValue)
                 RunConsoleCommand("radio_theme", lowerValue)
             end
         end
-
         panel:AddItem(themeDropdown)
-        local languageHeader = vgui.Create("DLabel", panel) -- Language Selection Section
+
+        -- Language Selection Section
+        local languageHeader = vgui.Create("DLabel", panel)
         languageHeader:SetText("Language Selection")
         languageHeader:SetFont("Trebuchet18")
         languageHeader:SetTextColor(Color(50, 50, 50))
         languageHeader:Dock(TOP)
         languageHeader:DockMargin(0, 20, 0, 5)
         panel:AddItem(languageHeader)
+
         local languageDropdown = vgui.Create("DComboBox", panel)
         languageDropdown:SetValue("Select Language")
         languageDropdown:Dock(TOP)
@@ -690,20 +826,24 @@ Misc.Settings = {
         end
 
         local currentLanguage = GetConVar("radio_language"):GetString()
-        if currentLanguage and languageManager.languages[currentLanguage] then languageDropdown:SetValue(languageManager.languages[currentLanguage]) end
+        if currentLanguage and languageManager.languages[currentLanguage] then
+            languageDropdown:SetValue(languageManager.languages[currentLanguage])
+        end
         languageDropdown.OnSelect = function(_, _, value, data)
             self:ApplyLanguage(data)
             RunConsoleCommand("radio_language", data)
         end
-
         panel:AddItem(languageDropdown)
-        local keySelectionHeader = vgui.Create("DLabel", panel) -- Key Selection Section
+
+        -- Key Selection Section
+        local keySelectionHeader = vgui.Create("DLabel", panel)
         keySelectionHeader:SetText("Select Key to Open Radio Menu")
         keySelectionHeader:SetFont("Trebuchet18")
         keySelectionHeader:SetTextColor(Color(50, 50, 50))
         keySelectionHeader:Dock(TOP)
         keySelectionHeader:DockMargin(0, 20, 0, 5)
         panel:AddItem(keySelectionHeader)
+
         local keyDropdown = vgui.Create("DComboBox", panel)
         keyDropdown:SetValue("Select Key")
         keyDropdown:Dock(TOP)
@@ -715,9 +855,15 @@ Misc.Settings = {
         end
 
         local currentKey = GetConVar("car_radio_open_key"):GetInt()
-        if Misc.KeyNames.mapping[currentKey] then keyDropdown:SetValue(Misc.KeyNames.mapping[currentKey]) end
-        keyDropdown.OnSelect = function(_, _, _, data) RunConsoleCommand("car_radio_open_key", data) end
+        if misc.KeyNames.mapping[currentKey] then
+            keyDropdown:SetValue(misc.KeyNames.mapping[currentKey])
+        end
+        keyDropdown.OnSelect = function(_, _, _, data)
+            RunConsoleCommand("car_radio_open_key", data)
+        end
         panel:AddItem(keyDropdown)
+
+        -- General Options Section
         local generalOptionsHeader = vgui.Create("DLabel", panel)
         generalOptionsHeader:SetText("General Options")
         generalOptionsHeader:SetFont("Trebuchet18")
@@ -725,6 +871,7 @@ Misc.Settings = {
         generalOptionsHeader:Dock(TOP)
         generalOptionsHeader:DockMargin(0, 20, 0, 5)
         panel:AddItem(generalOptionsHeader)
+
         local chatMessageCheckbox = vgui.Create("DCheckBoxLabel", panel)
         chatMessageCheckbox:SetText("Show Car Radio Messages")
         chatMessageCheckbox:SetConVar("car_radio_show_messages")
@@ -734,6 +881,7 @@ Misc.Settings = {
         chatMessageCheckbox:SetValue(GetConVar("car_radio_show_messages"):GetBool())
         chatMessageCheckbox:SetTooltip("Enable or disable the display of car radio messages.")
         panel:AddItem(chatMessageCheckbox)
+
         local showTextCheckbox = vgui.Create("DCheckBoxLabel", panel)
         showTextCheckbox:SetText("Show Boombox Hover Text")
         showTextCheckbox:SetConVar("boombox_show_text")
@@ -746,19 +894,38 @@ Misc.Settings = {
     end
 }
 
+-- Hook to perform periodic cleanup of memory
 hook.Add("Think", "RadioMemoryManagerCleanup", function()
-    Misc.MemoryManager:PerformCleanup(false)
+    misc.MemoryManager:PerformCleanup(false)
 end)
 
-hook.Add("ShutDown", "RadioMemoryManagerShutdown", function() Misc.MemoryManager:PerformCleanup(true) end)
+-- Hook to perform emergency cleanup on shutdown
+hook.Add("ShutDown", "RadioMemoryManagerShutdown", function()
+    misc.MemoryManager:PerformCleanup(true)
+end)
+
+-- Hook to process deferred UI updates
 hook.Add("Think", "ProcessDeferredUIUpdates", function()
-    Misc.UIPerformance:ProcessDeferredUpdates()
+    misc.UIPerformance:ProcessDeferredUpdates()
 end)
 
+-- Hook to apply saved theme and language settings after entities have initialized
 hook.Add("InitPostEntity", "ApplySavedThemeAndLanguageOnJoin", function()
-    Misc.Settings:LoadSavedSettings()
+    misc.Settings:LoadSavedSettings()
 end)
 
-hook.Add("LanguageUpdated", "UpdateCountryListOnLanguageChange", function() if radioMenuOpen then populateList(stationListPanel, backButton, searchBox, true) end end)
-hook.Add("PopulateToolMenu", "AddThemeAndVolumeSelectionMenu", function() spawnmenu.AddToolMenuOption("Utilities", "Rammel's Radio", "ThemeVolumeSelection", "Settings", "", "", function(panel) Misc.Settings:CreateSettingsMenu(panel) end) end)
-return Misc
+-- Hook to update the country list when the language is updated
+hook.Add("LanguageUpdated", "UpdateCountryListOnLanguageChange", function()
+    if radioMenuOpen then
+        populateList(stationListPanel, backButton, searchBox, true)
+    end
+end)
+
+-- Hook to add the settings menu to the spawn menu
+hook.Add("PopulateToolMenu", "AddThemeAndVolumeSelectionMenu", function()
+    spawnmenu.AddToolMenuOption("Utilities", "Rammel's Radio", "ThemeVolumeSelection", "Settings", "", "", function(panel)
+        misc.Settings:CreateSettingsMenu(panel)
+    end)
+end)
+
+return misc
