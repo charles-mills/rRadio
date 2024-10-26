@@ -8,6 +8,11 @@ on:
         description: 'Gamemode to use'
         required: false
         default: 'darkrp'
+      debug:
+        description: 'Enable debug output'
+        required: false
+        type: boolean
+        default: true
 
 jobs:
   run-tests:
