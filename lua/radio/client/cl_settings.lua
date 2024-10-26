@@ -8,8 +8,7 @@
     Date: October 17, 2024
 ]]--
 
-local keyCodeMapping = include("radio/client/cl_key_names.lua")
-local themes = include("radio/client/cl_themes.lua")
+local Misc = include("radio/client/cl_misc.lua")
 local languageManager = include("radio/client/lang/cl_language_manager.lua")
 
 local function updateCountryList()
@@ -21,18 +20,16 @@ local function updateCountryList()
     end
 end
 
--- Create the client convar to enable/disable chat messages
+-- Create the client convars to enable/disable chat messages
 CreateClientConVar("car_radio_show_messages", "1", true, false, "Enable or disable car radio messages.")
 CreateClientConVar("radio_language", "en", true, false, "Select the language for the radio UI.")
 CreateClientConVar("boombox_show_text", "1", true, false, "Show or hide the text above the boombox.")
-
--- Create a client convar to select the key for opening the radio menu
 CreateClientConVar("car_radio_open_key", "21", true, false, "Select the key to open the car radio menu.") -- Default is KEY_K
 
 -- Function to apply the selected theme
 local function applyTheme(themeName)
-    if themes[themeName] then
-        Config.UI = themes[themeName]
+    if Misc.Themes.list[themeName] then
+        Config.UI = Misc.Themes:GetTheme(themeName)
         hook.Run("ThemeChanged", themeName)
     else
         print("Invalid theme name: " .. themeName)
@@ -83,7 +80,7 @@ local function sortKeys()
     local numericKeys = {}
     local otherKeys = {}
 
-    for keyCode, keyName in pairs(keyCodeMapping) do
+    for keyCode, keyName in pairs(Misc.KeyNames.mapping) do
         if #keyName == 1 and keyName:match("%a") then
             table.insert(singleLetterKeys, {name = keyName, code = keyCode})
         elseif keyName:match("^%d$") then
@@ -134,18 +131,18 @@ hook.Add("PopulateToolMenu", "AddThemeAndVolumeSelectionMenu", function()
         themeDropdown:SetTooltip("Select the theme for the radio UI.")
 
         -- Dynamically add all available themes to the dropdown
-        for themeName, _ in pairs(themes) do
+        for themeName, _ in pairs(Misc.Themes.list) do
             themeDropdown:AddChoice(themeName:gsub("^%l", string.upper))
         end
 
         local currentTheme = GetConVar("radio_theme"):GetString()
-        if currentTheme and themes[currentTheme] then
+        if currentTheme and Misc.Themes.list[currentTheme] then
             themeDropdown:SetValue(currentTheme:gsub("^%l", string.upper))
         end
 
         themeDropdown.OnSelect = function(panel, index, value)
             local lowerValue = value:lower()
-            if themes[lowerValue] then
+            if Misc.Themes.list[lowerValue] then
                 applyTheme(lowerValue)
                 RunConsoleCommand("radio_theme", lowerValue)
             end
@@ -208,8 +205,8 @@ hook.Add("PopulateToolMenu", "AddThemeAndVolumeSelectionMenu", function()
 
         -- Set the current value based on the convar
         local currentKey = GetConVar("car_radio_open_key"):GetInt()
-        if keyCodeMapping[currentKey] then
-            keyDropdown:SetValue(keyCodeMapping[currentKey])
+        if Misc.KeyNames.mapping[currentKey] then
+            keyDropdown:SetValue(Misc.KeyNames.mapping[currentKey])
         end
 
         keyDropdown.OnSelect = function(panel, index, value, data)
@@ -233,7 +230,7 @@ hook.Add("PopulateToolMenu", "AddThemeAndVolumeSelectionMenu", function()
         chatMessageCheckbox:SetConVar("car_radio_show_messages")
         chatMessageCheckbox:Dock(TOP)
         chatMessageCheckbox:DockMargin(0, 0, 0, 5)
-        chatMessageCheckbox:SetTextColor(Color(0, 0, 0))  -- Set text color to black
+        chatMessageCheckbox:SetTextColor(Color(0, 0, 0))
         chatMessageCheckbox:SetValue(GetConVar("car_radio_show_messages"):GetBool())
         chatMessageCheckbox:SetTooltip("Enable or disable the display of car radio messages.")
         panel:AddItem(chatMessageCheckbox)

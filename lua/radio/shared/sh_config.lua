@@ -13,9 +13,11 @@ local Config = {}
 -- ------------------------------
 --          Imports
 -- ------------------------------
+local Misc
+if CLIENT then
+    Misc = include("radio/client/cl_misc.lua")
+end
 local LanguageManager = include("radio/client/lang/cl_language_manager.lua")
-local themes = include("radio/client/cl_themes.lua") or {}
-local keyCodeMapping = include("radio/client/cl_key_names.lua") or {}
 
 -- ------------------------------
 --      Configuration Tables
@@ -159,12 +161,20 @@ end
 --         Theme Setup
 -- ------------------------------
 
--- Default to a specific theme or fallback to the first available theme
-local defaultThemeName = "neon"
-local selectedTheme = themes[defaultThemeName] or themes[next(themes)] or {}
+-- Get theme from Misc module
+local selectedTheme = CLIENT and Misc and Misc.Themes:GetTheme(radioTheme:GetString()) or {}
 
 -- Apply Theme Settings to UI Configuration
 Config.UI = selectedTheme
+
+-- Listen for theme changes
+if CLIENT then
+    cvars.AddChangeCallback("radio_theme", function(_, _, newValue)
+        if Misc then
+            Config.UI = Misc.Themes:GetTheme(newValue)
+        end
+    end)
+end
 
 -- ------------------------------
 --    Utility and Helper Functions
@@ -178,6 +188,14 @@ end
 -- Function to get translated country name
 local function getTranslatedCountryName(country)
     return LanguageManager:GetCountryTranslation(LanguageManager.currentLanguage, country) or country
+end
+
+-- Function to get key name using Misc module
+function Config.GetKeyName(keyCode)
+    if CLIENT and Misc then
+        return Misc.KeyNames:GetKeyName(keyCode)
+    end
+    return "the Open Key"
 end
 
 -- ------------------------------

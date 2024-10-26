@@ -14,12 +14,12 @@
 -- ------------------------------
 include("radio/shared/sh_config.lua")
 local LanguageManager = include("radio/client/lang/cl_language_manager.lua")
-local themes = include("radio/client/cl_themes.lua") or {}
-local keyCodeMapping = include("radio/client/cl_key_names.lua")
+local Misc = include("radio/client/cl_misc.lua")
+local themes = Misc.Themes.list
+local ErrorHandler = Misc.ErrorHandler
+local UIPerformance = Misc.UIPerformance
+local MemoryManager = Misc.MemoryManager
 local utils = include("radio/shared/sh_utils.lua")
-local ErrorHandler = include("radio/client/cl_error_handler.lua")
-local MemoryManager = include("radio/client/cl_memory_manager.lua")
-local UIPerformance = include("radio/client/cl_ui_performance.lua")
 
 -- ------------------------------
 --      Global Variables
@@ -358,7 +358,7 @@ local function PrintCarRadioMessage()
     lastMessageTime = currentTime
 
     local openKey = GetConVar("car_radio_open_key"):GetInt()
-    local keyName = GetKeyName(openKey)
+    local keyName = Misc.KeyNames:GetKeyName(openKey)
     local message = Config.Lang["PressKeyToOpen"]:gsub("{key}", keyName)
 
     chat.AddText(
@@ -882,8 +882,8 @@ local function openSettingsMenu(parentFrame, backButton)
     -- Key Selection
     addHeader(Config.Lang["SelectKeyToOpenRadioMenu"] or "Select Key to Open Radio Menu")
     local keyChoices = {}
-    if keyCodeMapping then
-        for keyCode, keyName in pairs(keyCodeMapping) do
+    if Misc.KeyNames then
+        for keyCode, keyName in pairs(Misc.KeyNames.mapping) do
             table.insert(keyChoices, {name = keyName, data = keyCode})
         end
         table.sort(keyChoices, function(a, b) return a.name < b.name end)
@@ -892,7 +892,7 @@ local function openSettingsMenu(parentFrame, backButton)
     end
 
     local currentKey = GetConVar("car_radio_open_key"):GetInt()
-    local currentKeyName = (keyCodeMapping and keyCodeMapping[currentKey]) or "K"
+    local currentKeyName = (Misc.KeyNames and Misc.KeyNames.mapping[currentKey]) or "K"
 
     addDropdown(Config.Lang["SelectKey"] or "Select Key", keyChoices, currentKeyName, function(_, _, _, data)
         RunConsoleCommand("car_radio_open_key", data)
