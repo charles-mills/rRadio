@@ -3,7 +3,6 @@ print("[RADIO] Starting server-side initialization")
 AddCSLuaFile("radio/shared/sh_config.lua")
 AddCSLuaFile("radio/client/lang/cl_language_manager.lua")
 AddCSLuaFile("radio/client/cl_core.lua")
-AddCSLuaFile("radio/client/cl_settings.lua")
 AddCSLuaFile("radio/shared/sh_utils.lua")
 
 -- Dynamically include all radio station data files

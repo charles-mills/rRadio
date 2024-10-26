@@ -6,7 +6,6 @@
 include("shared.lua")
 include("radio/shared/sh_config.lua")
 
--- Constants for modern design
 local HUD = {
     FADE_DISTANCE = {
         START = 400,
@@ -36,7 +35,6 @@ local HUD = {
     }
 }
 
--- Create modern fonts
 surface.CreateFont("BoomboxHUD", {
     font = "Roboto",
     size = 24,
@@ -297,7 +295,6 @@ function ENT:GetStatusColor(status)
     end
 end
 
--- Modify the DrawEqualizer function to ensure animation state exists
 function ENT:DrawEqualizer(x, y, alpha, color)
     -- Ensure animation state exists
     if not self.anim then
@@ -329,7 +326,6 @@ function ENT:DrawEqualizer(x, y, alpha, color)
     end
 end
 
--- Also modify UpdateEqualizerHeights to include safety checks
 function ENT:UpdateEqualizerHeights(volume, dt)
     if not self.anim then
         self.anim = createAnimationState()
