@@ -39,7 +39,6 @@ resource.AddFile("materials/models/rammel/plastic_base.vmt")
 resource.AddFile("materials/models/rammel/plastic_base.vtf")
 resource.AddFile("materials/models/rammel/plastic_base_n.vtf")
 resource.AddFile("materials/entities/boombox.png")
-resource.AddFile("materials/entities/golden_boombox.png")
 resource.AddFile("materials/hud/close.png")
 resource.AddFile("materials/hud/github.png")
 resource.AddFile("materials/hud/radio.png.png")
@@ -53,11 +52,7 @@ resource.AddFile("materials/hud/vol_mute.png")
 resource.AddFile("materials/hud/volume.png")
 
 -- Add CSLuaFiles for boombox entities
-AddCSLuaFile("entities/base_boombox/init.lua")
-AddCSLuaFile("entities/base_boombox/cl_init.lua")
-AddCSLuaFile("entities/base_boombox/shared.lua")
 AddCSLuaFile("entities/boombox/shared.lua")
-AddCSLuaFile("entities/golden_boombox/shared.lua")
 
 -- Set up spawnable entities
 list.Set("SpawnableEntities", "boombox", {
@@ -66,16 +61,7 @@ list.Set("SpawnableEntities", "boombox", {
     Category = "Radio",
     AdminOnly = false,
     Model = "models/rammel/boombox.mdl",
-    Description = "A basic boombox, ready to play some music!"
-})
-
-list.Set("SpawnableEntities", "golden_boombox", {
-    PrintName = "Golden Boombox",
-    ClassName = "golden_boombox",
-    Category = "Radio",
-    AdminOnly = true,
-    Model = "models/rammel/boombox.mdl",
-    Description = "A boombox with an extreme audio range!"
+    Description = "A boombox that can play music."
 })
 
 print("[RADIO] Finished server-side initialization")

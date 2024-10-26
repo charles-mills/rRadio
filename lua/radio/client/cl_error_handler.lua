@@ -63,7 +63,7 @@ function ErrorHandler:HandleError(entity, errorType, errorID, errorName, retryCa
     local attempts = self.retryAttempts[entIndex]
     
     -- Update entity status
-    if entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox" then
+    if entity:GetClass() == "boombox" then
         entity:SetNWString("Status", "error")
         BoomboxStatuses[entIndex] = {
             stationStatus = "error",

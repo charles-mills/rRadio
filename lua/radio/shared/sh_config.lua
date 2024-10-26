@@ -39,15 +39,6 @@ Config.Boombox = {
     RetryDelay = 2 -- Delay in seconds between retry attempts
 }
 
--- Golden Boombox Settings
-Config.GoldenBoombox = {
-    Volume = 1.0,
-    MaxHearingDistance = 350000,
-    MinVolumeDistance = 250000,
-    RetryAttempts = 3,
-    RetryDelay = 2
-}
-
 -- Vehicle Radio Settings
 Config.VehicleRadio = {
     Volume = 1.0,

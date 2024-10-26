@@ -17,7 +17,6 @@ local LanguageManager = include("radio/client/lang/cl_language_manager.lua")
 local themes = include("radio/client/cl_themes.lua") or {}
 local keyCodeMapping = include("radio/client/cl_key_names.lua")
 local utils = include("radio/shared/sh_utils.lua")
-local CountryIndices = include("radio/client/cl_country_indices.lua")
 local ErrorHandler = include("radio/client/cl_error_handler.lua")
 local MemoryManager = include("radio/client/cl_memory_manager.lua")
 local UIPerformance = include("radio/client/cl_ui_performance.lua")
@@ -199,9 +198,7 @@ local function getEntityConfig(entity)
 
     local entityClass = entity:GetClass()
 
-    if entityClass == "golden_boombox" then
-        return Config.GoldenBoombox
-    elseif entityClass == "boombox" then
+    if entityClass == "boombox" then
         return Config.Boombox
     elseif entity:IsVehicle() then
         return Config.VehicleRadio
@@ -547,7 +544,6 @@ local function LoadStationData()
     CountryNameCache:preCache(countries)
     
     stationDataLoaded = true
-    CountryIndices.initializeCountryIndices(StationData)
 end
 
 -- ------------------------------
@@ -605,7 +601,6 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                     original = country, 
                     translated = translatedCountry,
                     isPrioritized = favoriteCountries[country],
-                    index = CountryIndices.countryIndices[country]
                 })
             end
         end
@@ -911,7 +906,7 @@ local function openSettingsMenu(parentFrame, backButton)
     -- Superadmin: Permanent Boombox Section
     if LocalPlayer():IsSuperAdmin() then
         local currentEntity = LocalPlayer().currentRadioEntity
-        local isBoombox = IsValid(currentEntity) and (currentEntity:GetClass() == "boombox" or currentEntity:GetClass() == "golden_boombox")
+        local isBoombox = IsValid(currentEntity) and (currentEntity:GetClass() == "boombox")
 
         if isBoombox then
             addHeader(Config.Lang["SuperadminSettings"] or "Superadmin Settings")
@@ -1005,7 +1000,7 @@ openRadioMenu = function(openSettings)
     
     if not IsValid(entity) then return end
     
-    if entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox" then
+    if entity:GetClass() == "boombox" then
         if not utils.canInteractWithBoombox(ply, entity) then
             chat.AddText(Color(255, 0, 0), "You don't have permission to interact with this boombox.")
             return
@@ -1385,7 +1380,7 @@ hook.Add("Think", "OpenCarRadioMenu", function()
         if IsValid(vehicle) and not utils.isSitAnywhereSeat(vehicle) then
             ply.currentRadioEntity = vehicle
             openRadioMenu()
-        elseif IsValid(ply.currentRadioEntity) and (ply.currentRadioEntity:GetClass() == "boombox" or ply.currentRadioEntity:GetClass() == "golden_boombox") then
+        elseif IsValid(ply.currentRadioEntity) and (ply.currentRadioEntity:GetClass() == "boombox") then
             -- Check permission for boomboxes
             if utils.canInteractWithBoombox(ply, ply.currentRadioEntity) then
                 openRadioMenu()
@@ -1425,7 +1420,7 @@ local RadioSourceManager = {
         }
         
         -- Update global BoomboxStatuses for compatibility
-        if entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox" then
+        if entity:GetClass() == "boombox" then
             BoomboxStatuses[entIndex] = self.sourceStatuses[entIndex]
         end
     end,
@@ -1445,7 +1440,7 @@ local RadioSourceManager = {
         }
         
         -- Update global BoomboxStatuses
-        if entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox" then
+        if entity:GetClass() == "boombox" then
             BoomboxStatuses[entIndex] = self.sourceStatuses[entIndex]
         end
     end,
@@ -1466,7 +1461,7 @@ local RadioSourceManager = {
         entity:SetNWBool("IsPlaying", status == "playing" or status == "tuning")
         
         -- Update global BoomboxStatuses
-        if entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox" then
+        if entity:GetClass() == "boombox" then
             BoomboxStatuses[entIndex] = self.sourceStatuses[entIndex]
             
             -- Send status update to server for boomboxes
@@ -1548,7 +1543,7 @@ net.Receive("PlayCarRadioStation", function()
     ErrorHandler:TrackAttempt(entity, stationName, url)
 
     -- Set initial tuning status
-    if IsValid(entity) and (entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox") then
+    if IsValid(entity) and (entity:GetClass() == "boombox") then
         entity:SetNWString("Status", "tuning")
         entity:SetNWString("StationName", stationName)
         entity:SetNWBool("IsPlaying", true)
@@ -1600,7 +1595,7 @@ net.Receive("PlayCarRadioStation", function()
                 if not IsValid(entity) or not IsValid(station) then return end
                 
                 if station:GetState() == GMOD_CHANNEL_PLAYING then
-                    if entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox" then
+                    if entity:GetClass() == "boombox" then
                         BoomboxStatuses[entity:EntIndex()] = {
                             stationStatus = "playing",
                             stationName = stationName
@@ -1701,7 +1696,7 @@ LoadStationData()
 
 -- Cleanup when the boombox entity is removed
 hook.Add("EntityRemoved", "BoomboxCleanup", function(ent)
-    if IsValid(ent) and (ent:GetClass() == "boombox" or ent:GetClass() == "golden_boombox") then
+    if IsValid(ent) and (ent:GetClass() == "boombox") then
         BoomboxStatuses[ent:EntIndex()] = nil
     end
 end)

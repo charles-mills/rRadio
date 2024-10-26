@@ -351,3 +351,4 @@ function ENT:UpdateEqualizerHeights(volume, dt)
         )
     end
 end
+

@@ -284,7 +284,7 @@ net.Receive("MakeBoomboxPermanent", function(len, ply)
     end
 
     local ent = net.ReadEntity()
-    if not IsValid(ent) or (ent:GetClass() ~= "boombox" and ent:GetClass() ~= "golden_boombox") then
+    if not IsValid(ent) or (ent:GetClass() ~= "boombox") then
         ply:ChatPrint("Invalid boombox entity.")
         return
     end
@@ -310,7 +310,7 @@ net.Receive("RemoveBoomboxPermanent", function(len, ply)
     end
 
     local ent = net.ReadEntity()
-    if not IsValid(ent) or (ent:GetClass() ~= "boombox" and ent:GetClass() ~= "golden_boombox") then
+    if not IsValid(ent) or (ent:GetClass() ~= "boombox") then
         ply:ChatPrint("Invalid boombox entity.")
         return
     end

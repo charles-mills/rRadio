@@ -559,7 +559,7 @@ net.Receive("StopCarRadioStation", function(len, ply)
     local entityClass = entity:GetClass()
     local lvsVehicle = IsLVSVehicle(entity)
 
-    if entityClass == "golden_boombox" or entityClass == "boombox" then
+    if entityClass == "boombox" then
         -- Check permissions for boomboxes
         if not utils.canInteractWithBoombox(ply, entity) then
             ply:ChatPrint("You do not have permission to control this boombox.")
@@ -643,7 +643,7 @@ net.Receive("UpdateRadioVolume", function(len, ply)
     local entIndex = radioEntity:EntIndex()
 
     -- Check permissions for boomboxes
-    if (entityClass == "boombox" or entityClass == "golden_boombox") and not utils.canInteractWithBoombox(ply, radioEntity) then
+    if (entityClass == "boombox") and not utils.canInteractWithBoombox(ply, radioEntity) then
         ply:ChatPrint("You do not have permission to control this boombox's volume.")
         return
     end
@@ -692,7 +692,7 @@ net.Receive("UpdateRadioVolume", function(len, ply)
 
                     -- Save to database if permanent (for boomboxes)
                     if updateEntity.IsPermanent and SavePermanentBoombox and 
-                       (updateData.entityClass == "boombox" or updateData.entityClass == "golden_boombox") then
+                       (updateData.entityClass == "boombox") then
                         SavePermanentBoombox(updateEntity)
                     end
                 end
@@ -757,7 +757,7 @@ hook.Add("InitPostEntity", "SetupBoomboxHooks", function()
     timer.Simple(1, function()
         if IsDarkRP() then
             hook.Add("playerBoughtCustomEntity", "AssignBoomboxOwnerInDarkRP", function(ply, entTable, ent, price)
-                if IsValid(ent) and (ent:GetClass() == "boombox" or ent:GetClass() == "golden_boombox") then
+                if IsValid(ent) and (ent:GetClass() == "boombox") then
                     AssignOwner(ply, ent)
                 end
             end)
@@ -768,13 +768,13 @@ end)
 -- Toolgun and Physgun Pickup for Boomboxes (remove CPPI dependency for Sandbox)
 hook.Add("CanTool", "AllowBoomboxToolgun", function(ply, tr, tool)
     local ent = tr.Entity
-    if IsValid(ent) and (ent:GetClass() == "boombox" or ent:GetClass() == "golden_boombox") then
+    if IsValid(ent) and (ent:GetClass() == "boombox") then
         return utils.canInteractWithBoombox(ply, ent)
     end
 end)
 
 hook.Add("PhysgunPickup", "AllowBoomboxPhysgun", function(ply, ent)
-    if IsValid(ent) and (ent:GetClass() == "boombox" or ent:GetClass() == "golden_boombox") then
+    if IsValid(ent) and (ent:GetClass() == "boombox") then
         return utils.canInteractWithBoombox(ply, ent)
     end
 end)
