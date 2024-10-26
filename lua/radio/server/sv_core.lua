@@ -26,21 +26,21 @@ local TimerManager = {
     volume = {},
     station = {},
     retry = {},
-    cleanup = function(entIndex)
+    cleanup = function(self, entIndex)
         if not entIndex then return end
         local timerNames = {"VolumeUpdate_" .. entIndex, "StationUpdate_" .. entIndex, "NetworkQueue_" .. entIndex}
         for _, name in ipairs(timerNames) do
             if timer.Exists(name) then timer.Remove(name) end
         end
 
-        TimerManager.volume[entIndex] = nil
-        TimerManager.station[entIndex] = nil
-        TimerManager.retry[entIndex] = nil
+        self.volume[entIndex] = nil
+        self.station[entIndex] = nil
+        self.retry[entIndex] = nil
     end
 }
 
 local function SafeCleanupTimers(entity)
-    if IsValid(entity) and TimerManager and TimerManager.cleanup then TimerManager.cleanup(entity:EntIndex()) end
+    if IsValid(entity) and TimerManager and TimerManager.cleanup then TimerManager:cleanup(entity:EntIndex()) end
 end
 
 local RadioManager = {
