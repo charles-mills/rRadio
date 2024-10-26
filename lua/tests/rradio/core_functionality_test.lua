@@ -1,8 +1,18 @@
+local function setupTestEnv()
+    -- Mock required functions
+    file = file or {
+        IsDir = function() return false end,
+        CreateDir = function() end
+    }
+end
+
 return {
     groupName = "rRadio Core Functionality",
     
     beforeEach = function(state)
-        -- Mock required globals and functions
+        setupTestEnv()
+        include("radio/client/cl_core.lua")
+        
         state.oldLocalPlayer = LocalPlayer
         state.player = {
             GetVehicle = function() return nil end,

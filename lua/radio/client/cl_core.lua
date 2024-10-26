@@ -25,6 +25,19 @@ local stationDataLoaded = false
 local entityVolumes = {}
 local openRadioMenu
 StationData = StationData or {}
+
+if CLIENT then
+    _G.BoomboxStatuses = BoomboxStatuses
+    _G.favoriteCountries = favoriteCountries
+    _G.favoriteStations = favoriteStations
+    _G.RadioSourceManager = RadioSourceManager
+    _G.loadFavorites = loadFavorites
+    _G.saveFavorites = saveFavorites
+    _G.LerpColor = LerpColor
+    _G.calculateFontSizeForStopButton = calculateFontSizeForStopButton
+end
+
+
 local function LerpColor(t, col1, col2)
     return Color(Lerp(t, col1.r, col2.r), Lerp(t, col1.g, col2.g), Lerp(t, col1.b, col2.b), Lerp(t, col1.a or 255, col2.a or 255))
 end

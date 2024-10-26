@@ -1,5 +1,28 @@
+local function setupTestEnv()
+    -- Mock required functions
+    surface = surface or {
+        CreateFont = function() end,
+        SetFont = function() end,
+        GetTextSize = function() return 50, 20 end,
+        SetDrawColor = function() end,
+        SetMaterial = function() end,
+        DrawTexturedRect = function() end
+    }
+    
+    draw = draw or {
+        SimpleText = function() end,
+        RoundedBox = function() end
+    }
+end
+
 return {
     groupName = "rRadio UI",
+    
+    beforeEach = function()
+        setupTestEnv()
+        include("radio/client/cl_core.lua")
+    end,
+
     cases = {
         {
             name = "Should lerp colors correctly",

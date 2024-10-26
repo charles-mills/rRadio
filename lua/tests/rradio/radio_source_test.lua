@@ -1,12 +1,27 @@
+local function setupTestEnv()
+    -- Mock required functions and objects
+    MemoryManager = {
+        TrackSound = function() end,
+        TrackTimer = function() end,
+        TrackHook = function() end,
+        CleanupEntity = function() end
+    }
+end
+
 return {
     groupName = "rRadio Source Management",
     
     beforeEach = function(state)
+        setupTestEnv()
+        include("radio/client/cl_core.lua")
+        
         state.entity = {
             EntIndex = function() return 1 end,
             IsValid = function() return true end,
             GetPos = function() return Vector(0, 0, 0) end,
-            GetClass = function() return "boombox" end
+            GetClass = function() return "boombox" end,
+            SetNWString = function() end,
+            SetNWBool = function() end
         }
         
         state.station = {
