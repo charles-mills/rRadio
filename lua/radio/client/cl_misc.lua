@@ -7,6 +7,8 @@
     Date: October 26, 2024
 ]]--
 
+local languageManager = include("radio/client/lang/cl_language_manager.lua")
+
 local Misc = {
     KeyNames = {},
     Themes = {},
