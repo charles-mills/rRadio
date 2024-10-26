@@ -1,5 +1,4 @@
 print("[RADIO] Starting client-side initialization")
-
 Config = include("radio/shared/sh_config.lua")
 include("radio/client/lang/cl_language_manager.lua")
 include("radio/client/cl_core.lua")

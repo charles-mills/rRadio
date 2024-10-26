@@ -1,27 +1,20 @@
 print("[RADIO] Starting server-side initialization")
-
 AddCSLuaFile("radio/shared/sh_config.lua")
 AddCSLuaFile("radio/client/lang/cl_language_manager.lua")
 AddCSLuaFile("radio/client/cl_core.lua")
 AddCSLuaFile("radio/shared/sh_utils.lua")
-
--- Dynamically include all radio station data files
-local dataFiles = file.Find("radio/client/stations/data_*.lua", "LUA")
+local dataFiles = file.Find("radio/client/stations/data_*.lua", "LUA") -- Dynamically include all radio station data files
 for _, filename in ipairs(dataFiles) do
     AddCSLuaFile("radio/client/stations/" .. filename)
 end
 
--- Dynamically include all language files
-local langFiles = file.Find("radio/client/lang/*.lua", "LUA")
+local langFiles = file.Find("radio/client/lang/*.lua", "LUA") -- Dynamically include all language files
 for _, filename in ipairs(langFiles) do
     AddCSLuaFile("radio/client/lang/" .. filename)
 end
 
--- Include the server-side radio logic
-include("radio/server/sv_core.lua")
-
--- Add resources
-resource.AddFile("models/rammel/boombox.mdl")
+include("radio/server/sv_core.lua") -- Include the server-side radio logic
+resource.AddFile("models/rammel/boombox.mdl") -- Add resources
 resource.AddFile("models/rammel/boombox.phy")
 resource.AddFile("models/rammel/boombox.vvd")
 resource.AddFile("models/rammel/boombox.dx80.vtx")
@@ -47,13 +40,9 @@ resource.AddFile("materials/hud/vol_down.png")
 resource.AddFile("materials/hud/vol_up.png")
 resource.AddFile("materials/hud/vol_mute.png")
 resource.AddFile("materials/hud/volume.png")
-
--- Add CSLuaFiles for boombox entities
-AddCSLuaFile("entities/boombox/shared.lua")
-
--- Set up spawnable entities
+AddCSLuaFile("entities/boombox/shared.lua") -- Add CSLuaFiles for boombox entities
 list.Set("SpawnableEntities", "boombox", {
-    PrintName = "Boombox",
+    PrintName = "Boombox", -- Set up spawnable entities
     ClassName = "boombox",
     Category = "Radio",
     AdminOnly = false,
