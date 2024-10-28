@@ -1,5 +1,7 @@
 # rRadio
 
+![Steam Subscriptions](https://img.shields.io/steam/subscriptions/3318060741) ![Steam Favorites](https://img.shields.io/steam/favorites/3318060741)
+
 rRadio is a feature-rich radio addon for Garry's Mod that allows players to listen to various online radio stations through in-game boomboxes and in their vehicles. The addon is intended for use by public servers, with a major focus on server-side optimisation, security, and multi-client synchronisation.
 
 ![](https://github.com/charles-mills/rRadio/blob/main/helpers/boombox_playing.gif)
