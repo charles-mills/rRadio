@@ -7,6 +7,9 @@
     "realism"
   ],
   "ignore": [
-    "helpers/*"
+    "helpers/*",
+    "*.db",
+    "lua/radio/tools/*",
+    "utils/*"
   ]
 }

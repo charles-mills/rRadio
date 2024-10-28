@@ -10,11 +10,12 @@ function ENT:Initialize()
     self:PhysicsInit(SOLID_VPHYSICS)
     self:SetMoveType(MOVETYPE_VPHYSICS)
     self:SetSolid(SOLID_VPHYSICS)
-    
+    self:SetColor(Color(255, 215, 0))
+
     local phys = self:GetPhysicsObject()
     if phys:IsValid() then
         phys:Wake()
     end
 
-    self.Config = Config.Boombox
+    self.Config = Config.GoldenBoombox
 end
