@@ -1,0 +1,5 @@
+"VertexlitGeneric"
+{
+	"$basetexture" "models/rammel/boombox_base"
+	"$normalmap" "models/rammel/boombox_base_n"
+}
