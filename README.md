@@ -2,9 +2,7 @@
 
 ![Downloads](https://img.shields.io/steam/downloads/3318060741?style=for-the-badge&color=00adb5) ![Views](https://img.shields.io/steam/views/3318060741?style=for-the-badge&color=ff5719) ![Size](https://img.shields.io/steam/size/3318060741?style=for-the-badge&color=2ea043) ![Update Date](https://img.shields.io/steam/update-date/3318060741?style=for-the-badge&color=515de9)
 
-rRadio is a feature-rich radio addon for Garry's Mod that allows players to listen to various online radio stations through in-game boomboxes and in their vehicles. The addon is intended for use by public servers, with a major focus on server-side optimisation, security, and multi-client synchronisation.
-
-![](https://github.com/charles-mills/rRadio/blob/main/helpers/boombox_playing.gif)
+rRadio is an internet radio addon for Garry's Mod that allows players to listen to thousands of live stations through in-game boomboxes, and in their vehicles. The addon is intended for use by public servers, with a major focus on server-side optimisation, security, and multi-client synchronisation, though remains fully compatible with singleplayer.
 
 ## Features
 
@@ -13,14 +11,14 @@ rRadio is a feature-rich radio addon for Garry's Mod that allows players to list
 - Favourites system for quick access to preferred stations
 - Search functionality to easily find stations
 - Volume control with 3D audio falloff
-- Server- and client-side configuration
+- Server and client-side configuration
 - Custom persistence system for boomboxes
 
 ## Installation
 
 1. Clone this repository or download the ZIP file.
-2. Place the `rradio` folder in your server's `addons` directory.
-3. Upload the `models` and `materials` directories to the workshop, or use your own model, to allow clients to download the boombox model (Optional - Multiplayer Only).
+2. Place the repository folder in your local, or server `garrysmod/addons` directory.
+3. Upload the `models` and `materials` directories to the workshop, or use your own model, to allow clients to download the boombox model (Multiplayer Only).
 4. Restart your server or change the map to load the addon.
 
 ## Vehicle Radio Usage
