@@ -14,8 +14,6 @@ rRadio is an internet radio addon for Garry's Mod that allows players to listen 
 - Server and client-side configuration
 - Custom persistence system for boomboxes
 
-![rRadio boombox preview](https://github.com/charles-mills/rRadio/blob/main/utils/preview.png)
-
 ## Installation
 
 1. Clone this repository or download the ZIP file.
@@ -89,3 +87,5 @@ This project is licensed under the GNU General Public License v3.0 (GPL-3.0). Se
 ## Support
 
 If you encounter any issues or have any questions, please open an issue on this GitHub repository.
+
+![rRadio boombox preview](https://github.com/charles-mills/rRadio/blob/main/utils/preview.png)
