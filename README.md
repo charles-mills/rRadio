@@ -84,8 +84,4 @@ This project is licensed under the GNU General Public License v3.0 (GPL-3.0). Se
 - UI Icons by [Flaticon](https://www.flaticon.com/uicons/)
 - Default stations list sourced from [Radio-Browser.info](https://www.radio-browser.info/)
 
-## Support
-
-If you encounter any issues or have any questions, please open an issue on this GitHub repository.
-
 ![rRadio boombox preview](https://github.com/charles-mills/rRadio/blob/main/utils/preview.png)
