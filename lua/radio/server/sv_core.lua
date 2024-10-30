@@ -161,11 +161,14 @@ hook.Add("PlayerInitialSpawn", "SendActiveRadiosOnJoin", function(ply)
     end)
 end)
 
-hook.Add("PlayerEnteredVehicle", "MarkSitAnywhereSeat", function(ply, vehicle)
-    if vehicle.playerdynseat then
-        vehicle:SetNWBool("IsSitAnywhereSeat", true)
-    else
-        vehicle:SetNWBool("IsSitAnywhereSeat", false)
+hook.Add("PlayerEnteredVehicle", "RadioVehicleHandling", function(ply, vehicle, role)
+    -- Set the sit anywhere status
+    vehicle:SetNWBool("IsSitAnywhereSeat", vehicle.playerdynseat or false)
+    
+    -- Only send radio message if not a sit anywhere seat
+    if not vehicle.playerdynseat then
+        net.Start("CarRadioMessage")
+        net.Send(ply)
     end
 end)
 
@@ -173,15 +176,6 @@ hook.Add("PlayerLeaveVehicle", "UnmarkSitAnywhereSeat", function(ply, vehicle)
     if IsValid(vehicle) then
         vehicle:SetNWBool("IsSitAnywhereSeat", false)
     end
-end)
-
-hook.Add("PlayerEnteredVehicle", "CarRadioMessageOnEnter", function(ply, vehicle, role)
-    if vehicle.playerdynseat then
-        return  -- Do not send the message if it's a sit anywhere seat
-    end
-
-    net.Start("CarRadioMessage")
-    net.Send(ply)
 end)
 
 --[[

@@ -368,15 +368,13 @@ end
 
 --[[
     Function: PrintCarRadioMessage
-    Displays a message to the player about how to open the car radio.
+    Displays an animated notification about how to open the car radio.
 ]]
 local function PrintCarRadioMessage()
     if not GetConVar("car_radio_show_messages"):GetBool() then return end
 
     local vehicle = LocalPlayer():GetVehicle()
-    if not IsValid(vehicle) or utils.isSitAnywhereSeat(vehicle) then
-        return
-    end
+    if not IsValid(vehicle) or utils.isSitAnywhereSeat(vehicle) then return end
 
     local currentTime = CurTime()
     if (currentTime - lastMessageTime) < Config.MessageCooldown and lastMessageTime ~= -math.huge then
@@ -387,12 +385,141 @@ local function PrintCarRadioMessage()
 
     local openKey = GetConVar("car_radio_open_key"):GetInt()
     local keyName = GetKeyName(openKey)
-    local message = Config.Lang["PressKeyToOpen"]:gsub("{key}", keyName)
 
-    chat.AddText(
-        Color(0, 255, 128), "[CAR RADIO] ",
-        Color(255, 255, 255), message
-    )
+    -- Create notification panel
+    local scrW, scrH = ScrW(), ScrH()
+    local panelWidth = Scale(300)
+    local panelHeight = Scale(70)
+    local panel = vgui.Create("DButton") -- Changed to DButton for clickability
+    panel:SetSize(panelWidth, panelHeight)
+    panel:SetPos(scrW, scrH * 0.2)
+    panel:SetText("")
+    panel:MoveToFront()
+
+    -- Animation variables
+    local animDuration = 0.3
+    local showDuration = 3
+    local startTime = CurTime()
+    local alpha = 0
+    local scale = 0.9
+    local bounce = 0
+    local hoverLerp = 0
+    local pulseValue = 0
+    local isDismissed = false
+
+    -- Close button
+    local closeButton = vgui.Create("DButton", panel)
+    closeButton:SetSize(Scale(16), Scale(16))
+    closeButton:SetPos(panelWidth - Scale(24), Scale(8))
+    closeButton:SetText("")
+    closeButton.Paint = function(self, w, h)
+        surface.SetDrawColor(ColorAlpha(Config.UI.TextColor, alpha * 255 * (self:IsHovered() and 1 or 0.7)))
+        surface.SetMaterial(Material("hud/close.png"))
+        surface.DrawTexturedRect(0, 0, w, h)
+    end
+    closeButton.DoClick = function()
+        isDismissed = true
+        surface.PlaySound("buttons/button15.wav")
+    end
+
+    -- Click handler for the main panel
+    panel.DoClick = function()
+        surface.PlaySound("buttons/button15.wav")
+        openRadioMenu()
+        isDismissed = true
+    end
+
+    -- Main panel paint function
+    panel.Paint = function(self, w, h)
+        -- Background with dynamic alpha and hover effect
+        local bgColor = Config.UI.HeaderColor
+        local hoverBrightness = self:IsHovered() and 1.2 or 1
+        bgColor = Color(
+            math.min(bgColor.r * hoverBrightness, 255),
+            math.min(bgColor.g * hoverBrightness, 255),
+            math.min(bgColor.b * hoverBrightness, 255),
+            alpha * 255
+        )
+        
+        -- Main background with theme-specific corner roundness
+        draw.RoundedBox(Config.UI.CornerRadius or 8, 0, 0, w, h, bgColor)
+        
+        -- Accent border
+        surface.SetDrawColor(ColorAlpha(Config.UI.AccentColor or Config.UI.TextColor, alpha * 50))
+        surface.DrawOutlinedRect(0, 0, w, h, Scale(1))
+
+        -- Key highlight box with pulse animation
+        local keyWidth = Scale(40)
+        local keyHeight = Scale(30)
+        local keyX = Scale(20)
+        local keyY = h/2 - keyHeight/2  -- Center the key box vertically
+        local pulseScale = 1 + math.sin(pulseValue * math.pi * 2) * 0.05
+        local adjustedKeyWidth = keyWidth * pulseScale
+        local adjustedKeyHeight = keyHeight * pulseScale
+        local adjustedKeyX = keyX - (adjustedKeyWidth - keyWidth) / 2
+        local adjustedKeyY = keyY - (adjustedKeyHeight - keyHeight) / 2
+        
+        draw.RoundedBox(6, adjustedKeyX, adjustedKeyY, adjustedKeyWidth, adjustedKeyHeight, 
+            ColorAlpha(Config.UI.ButtonColor, alpha * 255))
+
+        -- Separator line
+        surface.SetDrawColor(ColorAlpha(Config.UI.TextColor, alpha * 50))
+        surface.DrawLine(keyX + keyWidth + Scale(7), h * 0.3, 
+                        keyX + keyWidth + Scale(7), h * 0.7)
+
+        -- Draw key text
+        draw.SimpleText(keyName, "Roboto18", keyX + keyWidth/2, h/2, 
+            ColorAlpha(Config.UI.TextColor, alpha * 255), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+        
+        -- Draw message text
+        local messageX = keyX + keyWidth + Scale(15)
+        draw.SimpleText(Config.Lang["ToOpenRadio"] or "to open radio", "Roboto18", 
+            messageX, h/2, ColorAlpha(Config.UI.TextColor, alpha * 255), 
+            TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+
+        -- Progress bar
+        local progress = math.Clamp((CurTime() - startTime) / (animDuration + showDuration), 0, 1)
+        draw.RoundedBox(2, 0, h - Scale(2), w * (1 - progress), Scale(2), 
+            ColorAlpha(Config.UI.AccentColor or Config.UI.TextColor, alpha * 255))
+    end
+
+    -- Animation think
+    panel.Think = function(self)
+        local time = CurTime() - startTime
+        
+        -- Update pulse animation
+        pulseValue = (pulseValue + FrameTime() * 2) % 1
+        
+        -- Update hover lerp
+        if self:IsHovered() then
+            hoverLerp = math.Approach(hoverLerp, 1, FrameTime() * 5)
+        else
+            hoverLerp = math.Approach(hoverLerp, 0, FrameTime() * 5)
+        end
+
+        -- Slide in
+        if time < animDuration then
+            local progress = time / animDuration
+            local easedProgress = math.ease.OutBack(progress)
+            self:SetPos(Lerp(easedProgress, scrW, scrW - panelWidth - Scale(20)), scrH * 0.2)
+            alpha = progress
+            scale = Lerp(progress, 0.9, 1)
+        -- Show
+        elseif time < animDuration + showDuration and not isDismissed then
+            alpha = 1
+        -- Slide out
+        elseif not isDismissed or time >= animDuration + showDuration then
+            local progress = (time - (animDuration + showDuration)) / animDuration
+            local easedProgress = math.ease.InQuint(progress)
+            self:SetPos(Lerp(easedProgress, scrW - panelWidth - Scale(20), scrW), scrH * 0.2)
+            alpha = 1 - easedProgress
+            scale = Lerp(easedProgress, 1, 0.9)
+            
+            if progress >= 1 then
+                self:Remove()
+            end
+        end
+    end
 end
 
 -- ------------------------------
@@ -1036,20 +1163,25 @@ openRadioMenu = function(openSettings)
         draw.RoundedBox(8, 0, 0, w, h, Config.UI.BackgroundColor)
         draw.RoundedBoxEx(8, 0, 0, w, Scale(40), Config.UI.HeaderColor, true, true, false, false)
 
+        local headerHeight = Scale(40)  -- Height of the header area
         local iconSize = Scale(25)
         local iconOffsetX = Scale(10)
+        
+        -- Center the icon vertically in the header
+        local iconOffsetY = headerHeight/2 - iconSize/2
 
-        surface.SetFont("HeaderFont")
-        local textHeight = select(2, surface.GetTextSize("H"))
-
-        local iconOffsetY = Scale(2) + textHeight - iconSize
-
+        -- Draw the icon
         surface.SetMaterial(Material("hud/radio.png"))
         surface.SetDrawColor(Config.UI.TextColor)
         surface.DrawTexturedRect(iconOffsetX, iconOffsetY, iconSize, iconSize)
 
-        local headerText = settingsMenuOpen and (Config.Lang["Settings"] or "Settings") or (selectedCountry and formatCountryName(selectedCountry) or (Config.Lang["SelectCountry"] or "Select Country"))
-        draw.SimpleText(headerText, "HeaderFont", iconOffsetX + iconSize + Scale(5), iconOffsetY, Config.UI.TextColor, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
+        -- Draw the header text aligned with the icon
+        local headerText = settingsMenuOpen and (Config.Lang["Settings"] or "Settings") or 
+                          (selectedCountry and formatCountryName(selectedCountry) or 
+                          (Config.Lang["SelectCountry"] or "Select Country"))
+        draw.SimpleText(headerText, "HeaderFont", iconOffsetX + iconSize + Scale(5), 
+                       headerHeight/2, Config.UI.TextColor, 
+                       TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
     end
 
     local searchBox = vgui.Create("DTextEntry", frame)
@@ -1631,6 +1763,10 @@ net.Receive("OpenRadioMenu", function()
             chat.AddText(Color(255, 0, 0), "You don't have permission to interact with this boombox.")
         end
     end
+end)
+
+net.Receive("CarRadioMessage", function()
+    PrintCarRadioMessage()
 end)
 
 -- ------------------------------
