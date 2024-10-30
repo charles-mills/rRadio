@@ -294,6 +294,40 @@ net.Receive("PlayCarRadioStation", function(len, ply)
     end
     PlayerCooldowns[ply] = currentTime
 
+    -- Check max active radios limit
+    if table.Count(ActiveRadios) >= MAX_ACTIVE_RADIOS then
+        -- Find and remove oldest radio if needed
+        local oldestTime = math.huge
+        local oldestRadio = nil
+        for entIndex, radio in pairs(ActiveRadios) do
+            if radio.timestamp < oldestTime then
+                oldestTime = radio.timestamp
+                oldestRadio = entIndex
+            end
+        end
+        if oldestRadio then
+            local oldEntity = Entity(oldestRadio)
+            if IsValid(oldEntity) then
+                net.Start("StopCarRadioStation")
+                    net.WriteEntity(oldEntity)
+                net.Broadcast()
+            end
+            RemoveActiveRadio(oldEntity)
+        end
+    end
+
+    -- Check player's personal radio limit
+    local playerActiveRadios = 0
+    for _, radio in pairs(ActiveRadios) do
+        if IsValid(radio.entity) and utils.getOwner(radio.entity) == ply then
+            playerActiveRadios = playerActiveRadios + 1
+        end
+    end
+    if playerActiveRadios >= PLAYER_RADIO_LIMIT then
+        ply:ChatPrint("You have reached your maximum number of active radios.")
+        return
+    end
+
     local entity = net.ReadEntity()
     entity = utils.GetVehicle(entity) or entity
     local stationName = net.ReadString()
