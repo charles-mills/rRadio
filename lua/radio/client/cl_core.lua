@@ -1327,26 +1327,11 @@ hook.Add("Think", "OpenCarRadioMenu", function()
         return
     end
 
-    -- Get the current radio entity
-    local currentEntity = ply.currentRadioEntity
-    if not currentEntity then return end
-
-    -- Handle vehicles
+    -- Only allow key press to work for vehicles
     local vehicle = ply:GetVehicle()
-    if currentEntity:IsVehicle() then
-        -- Only open for valid vehicle seats (not Sit Anywhere)
-        if vehicle and not utils.isSitAnywhereSeat(vehicle) then
-            openRadioMenu()
-        end
-        return
-    end
-
-    -- Handle boomboxes
-    local entityClass = currentEntity:GetClass()
-    if entityClass == "boombox" or entityClass == "golden_boombox" then
-        if utils.canInteractWithBoombox(ply, currentEntity) then
-            openRadioMenu()
-        end
+    if IsValid(vehicle) and not utils.isSitAnywhereSeat(vehicle) then
+        ply.currentRadioEntity = vehicle
+        openRadioMenu()
     end
 end)
 
@@ -1571,9 +1556,13 @@ end)
 ]]
 net.Receive("OpenRadioMenu", function()
     local ent = net.ReadEntity()
-    if IsValid(ent) then
-        local ply = LocalPlayer()
-        if ent:IsVehicle() or utils.canInteractWithBoombox(ply, ent) then
+    if not IsValid(ent) then return end
+
+    local ply = LocalPlayer()
+    
+    -- Only handle boombox entities
+    if ent:GetClass() == "boombox" or ent:GetClass() == "golden_boombox" then
+        if utils.canInteractWithBoombox(ply, ent) then
             ply.currentRadioEntity = ent
             if not radioMenuOpen then
                 openRadioMenu()

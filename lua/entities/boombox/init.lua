@@ -18,3 +18,12 @@ function ENT:Initialize()
 
     self.Config = Config.Boombox
 end
+
+-- Add Use function to handle interaction
+function ENT:Use(activator, caller)
+    if not IsValid(activator) or not activator:IsPlayer() then return end
+    
+    net.Start("OpenRadioMenu")
+        net.WriteEntity(self)
+    net.Send(activator)
+end
