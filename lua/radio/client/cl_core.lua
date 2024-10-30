@@ -382,11 +382,18 @@ local function updateRadioVolume(station, distanceSqr, isPlayerInCar, entity)
         return
     end
 
-    -- If player is in the vehicle, use full user-set volume
+    -- If player is in the vehicle, use full user-set volume and disable 3D
     if isPlayerInCar then
+        station:Set3DEnabled(false)
         station:SetVolume(userVolume)
         return
     end
+
+    -- Enable 3D audio when outside
+    station:Set3DEnabled(true)
+    local minDist = entityConfig.MinVolumeDistance()
+    local maxDist = entityConfig.MaxHearingDistance()
+    station:Set3DFadeDistance(minDist, maxDist)
 
     -- Calculate distance-based volume
     local finalVolume = Config.CalculateVolume(entity, LocalPlayer(), distanceSqr)
@@ -1702,9 +1709,6 @@ net.Receive("PlayCarRadioStation", function()
     local url = net.ReadString()
     local volume = net.ReadFloat()
 
-    print(string.format("[RadioDebug] Client received PlayCarRadioStation - Entity: %d, Station: %s", 
-        IsValid(entity) and entity:EntIndex() or -1, stationName))
-
     local currentCount = updateStationCount()
 
     -- Check if we're already at the station limit
@@ -1729,7 +1733,7 @@ net.Receive("PlayCarRadioStation", function()
             currentRadioSources[entity] = station
             activeStationCount = updateStationCount()
 
-            -- Set up 3D audio
+            -- Initial 3D audio setup (will be toggled in Think hook)
             local entityConfig = getEntityConfig(entity)
             if entityConfig then
                 local minDist = entityConfig.MinVolumeDistance()
