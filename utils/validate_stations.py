@@ -8,6 +8,8 @@ from concurrent.futures import ThreadPoolExecutor
 import time
 from urllib.parse import urlparse
 import logging
+import sys
+import platform
 
 # Configure logging
 logging.basicConfig(
@@ -21,7 +23,7 @@ logging.basicConfig(
 
 # Constants
 MAX_CONCURRENT_REQUESTS = 50
-REQUEST_TIMEOUT = 10
+REQUEST_TIMEOUT = 5
 MAX_RETRIES = 2
 VALID_CONTENT_TYPES = {
     'audio/mpeg', 'audio/mp3', 'application/octet-stream',
@@ -37,6 +39,10 @@ class StationValidator:
         self.session = None
         self.semaphore = None
         self.start_time = None
+        
+        # Add regex patterns as class attributes
+        self.country_pattern = r"\['([^']+)'\]\s*=\s*{(.*?)(?=},\['|}\s*$)"
+        self.station_pattern = r"{n='((?:[^'\\]|\\.)*)',u='((?:[^'\\]|\\.)*)'}"
 
     async def init_session(self):
         """Initialize aiohttp session with custom headers and timeout"""
@@ -58,75 +64,87 @@ class StationValidator:
 
     async def validate_url(self, country: str, station_name: str, url: str) -> bool:
         """
-        Validate a single station URL with retries and proper error handling.
-        Returns True if valid, False if invalid.
+        Optimized URL validation with fail-fast approach
         """
-        for attempt in range(MAX_RETRIES):
-            try:
-                async with self.semaphore:
-                    async with self.session.head(url, allow_redirects=True) as response:
-                        if response.status == 200:
-                            content_type = response.headers.get('Content-Type', '').lower()
-                            
-                            # Check if it's a valid audio stream
-                            if any(valid_type in content_type for valid_type in VALID_CONTENT_TYPES):
-                                self.valid_stations.add(url)
-                                return True
-                            
-                            # If head request doesn't provide enough info, try a GET request
-                            async with self.session.get(url, timeout=5) as get_response:
+        try:
+            async with self.semaphore:
+                # Try HEAD request first - it's faster
+                async with self.session.head(url, allow_redirects=True, timeout=REQUEST_TIMEOUT) as response:
+                    if response.status == 200:
+                        content_type = response.headers.get('Content-Type', '').lower()
+                        if any(valid_type in content_type for valid_type in VALID_CONTENT_TYPES):
+                            self.valid_stations.add(url)
+                            return True
+
+                    # Only do GET request if HEAD doesn't give conclusive result
+                    # and status was 200 (to avoid wasting time on bad URLs)
+                    if response.status == 200:
+                        try:
+                            async with self.session.get(url, timeout=3) as get_response:  # Shorter timeout for GET
                                 if get_response.status == 200:
-                                    content = await get_response.content.read(1024)
+                                    content = await get_response.content.read(256)  # Read smaller chunk
                                     if content.startswith(b'ID3') or content.startswith(b'OggS'):
                                         self.valid_stations.add(url)
                                         return True
+                        except:
+                            pass  # Fail silently on GET request
 
-            except (asyncio.TimeoutError, aiohttp.ClientError, Exception) as e:
-                if attempt < MAX_RETRIES - 1:
-                    await asyncio.sleep(1)
-                    continue
+        except Exception as e:
+            # Fast fail - only retry connection errors
+            if isinstance(e, (aiohttp.ClientConnectorError, asyncio.TimeoutError)) and MAX_RETRIES > 0:
+                await asyncio.sleep(0.5)  # Shorter sleep between retries
+                try:
+                    async with self.session.head(url, timeout=REQUEST_TIMEOUT) as response:
+                        if response.status == 200:
+                            self.valid_stations.add(url)
+                            return True
+                except:
+                    pass
 
-            # Only print invalid station name
-            print(f"❌ Invalid station: {station_name}")
-            self.invalid_stations[url] = {"country": country, "name": station_name}
-            return False
+        self.invalid_stations[url] = {"country": country, "name": station_name}
+        return False
 
     async def process_station_file(self, file_path: str) -> Dict[str, List[Dict]]:
-        """Process a single station file and validate all URLs"""
+        """Process a single station file with optimized task creation"""
         with open(file_path, 'r', encoding='utf-8') as f:
             content = f.read()
 
-        # Parse Lua table
-        country_pattern = r"\['([^']+)'\]\s*=\s*{(.*?)(?=},\['|}\s*$)"
-        station_pattern = r"{n='((?:[^'\\]|\\.)*)',u='((?:[^'\\]|\\.)*)'}"
-        
+        # Create tasks in batches to avoid memory issues with huge files
         valid_stations = {}
-        tasks = []
-
-        # Find all country blocks
-        for country_match in re.finditer(country_pattern, content, re.DOTALL):
+        batch_size = 500
+        
+        for country_match in re.finditer(self.country_pattern, content, re.DOTALL):
             country = country_match.group(1)
             stations_block = country_match.group(2)
             
             valid_stations[country] = []
+            current_batch = []
             
-            # Find all stations in this country
-            for station_match in re.finditer(station_pattern, stations_block):
+            for station_match in re.finditer(self.station_pattern, stations_block):
                 name = station_match.group(1).replace('\\', '')
                 url = station_match.group(2).replace('\\', '')
                 
-                # Create task for URL validation
-                task = asyncio.create_task(self.validate_url(country, name, url))
-                tasks.append((country, name, url, task))
-
-        # Wait for all validation tasks to complete
-        for country, name, url, task in tasks:
-            is_valid = await task
-            if is_valid:
-                valid_stations[country].append({
-                    "name": name,
-                    "url": url
-                })
+                current_batch.append((country, name, url))
+                
+                if len(current_batch) >= batch_size:
+                    tasks = [self.validate_url(c, n, u) for c, n, u in current_batch]
+                    results = await asyncio.gather(*tasks)
+                    
+                    # Process batch results
+                    for (c, n, u), is_valid in zip(current_batch, results):
+                        if is_valid:
+                            valid_stations[c].append({"name": n, "url": u})
+                    
+                    current_batch = []
+            
+            # Process remaining stations in last batch
+            if current_batch:
+                tasks = [self.validate_url(c, n, u) for c, n, u in current_batch]
+                results = await asyncio.gather(*tasks)
+                
+                for (c, n, u), is_valid in zip(current_batch, results):
+                    if is_valid:
+                        valid_stations[c].append({"name": n, "url": u})
 
         return valid_stations
 
@@ -198,7 +216,7 @@ class StationValidator:
                 raise ValueError(f"Cannot write to output directory {output_dir}: {str(e)}")
 
             print("\nAll pre-validation checks passed successfully!")
-            pack_stations(input_files, output_dir, remove_duplicates=True)
+            pack_stations(input_files, output_dir, remove_duplicates=False)
 
         except Exception as e:
             print(f"\n❌ Error during validation process:")
@@ -244,4 +262,9 @@ async def main():
     await validator.validate_all_stations(input_dir, output_dir)
 
 if __name__ == "__main__":
+    # Set the event loop policy for Windows
+    if platform.system() == 'Windows':
+        # Use SelectEventLoop on Windows
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+    
     asyncio.run(main()) 

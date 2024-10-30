@@ -124,14 +124,14 @@ def remove_duplicates(stations_dict: Dict[str, List[Dict]], remove_duplicates: b
 
     return final_dict, stats
 
-def pack_stations(input_files: List[str], output_dir: str, remove_duplicates: bool = True):
+def pack_stations(input_files: List[str], output_dir: str, should_remove_duplicates: bool = True):
     """
     Pack stations optimally into files under MAX_FILE_SIZE.
     
     Args:
         input_files: List of input Lua files to process
         output_dir: Directory to write output files
-        remove_duplicates: If False, skips duplicate removal
+        should_remove_duplicates: If False, skips duplicate removal
     """
     
     print("\nDebug: Starting station packing process")
@@ -165,7 +165,7 @@ def pack_stations(input_files: List[str], output_dir: str, remove_duplicates: bo
     print(f"Stations: {initial_stations}")
 
     # Remove duplicates if enabled
-    if remove_duplicates:
+    if should_remove_duplicates:
         print("\nChecking for duplicates...")
         all_stations, duplicate_stats = remove_duplicates(all_stations, remove_duplicates=True)
         print("\nDuplicate removal statistics:")

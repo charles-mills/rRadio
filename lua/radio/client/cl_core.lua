@@ -22,10 +22,8 @@ local utils = include("radio/shared/sh_utils.lua")
 --      Global Variables
 -- ------------------------------
 
--- Global table to store boombox statuses
 BoomboxStatuses = BoomboxStatuses or {}
 
--- Favorite countries and stations stored as tables for JSON compatibility
 local favoriteCountries = {}
 local favoriteStations = {}
 
@@ -251,6 +249,7 @@ local currentlyPlayingStations = {}
 local settingsMenuOpen = false
 local formattedCountryNames = {}
 local stationDataLoaded = false
+local isSearching = false
 
 -- ------------------------------
 --      Helper Functions
@@ -1322,6 +1321,14 @@ openRadioMenu = function(openSettings)
     end
     searchBox:SetVisible(not settingsMenuOpen)
 
+    searchBox.OnGetFocus = function()
+        isSearching = true
+    end
+
+    searchBox.OnLoseFocus = function()
+        isSearching = false
+    end
+
     local stationListPanel = vgui.Create("DScrollPanel", frame)
     stationListPanel:SetPos(Scale(5), Scale(90))
     stationListPanel:SetSize(Scale(Config.UI.FrameSize.width) - Scale(20), Scale(Config.UI.FrameSize.height) - Scale(200))
@@ -1474,15 +1481,11 @@ openRadioMenu = function(openSettings)
     local lastServerUpdate = 0
     volumeSlider.OnValueChanged = function(_, value)
         local currentTime = CurTime()
+        local entity = LocalPlayer().currentRadioEntity
 
-        if IsValid(entity) and entity:GetClass() == "prop_vehicle_prisoner_pod" and entity:GetParent():IsValid() then
-            local parent = entity:GetParent()
-            if string.find(parent:GetClass(), "lvs_") then
-                entity = parent -- Set the entity to the parent entity if it's an LVS vehicle
-            elseif string.find(parent:GetClass(), "ses_") then
-                entity = parent -- Set the entity to the parent entity if it's an SES vehicle
-            end
-        end
+        if not IsValid(entity) then return end
+
+        entity = utils.GetVehicle(entity) or entity
 
         value = math.min(value, Config.MaxVolume())
         entityVolumes[entity] = value
@@ -1639,7 +1642,7 @@ hook.Add("Think", "OpenCarRadioMenu", function()
     end
     lastKeyPress = currentTime
 
-    if radioMenuOpen then
+    if radioMenuOpen and not isSearching then
         surface.PlaySound("buttons/lightswitch2.wav")
         currentFrame:Close()
         radioMenuOpen = false
@@ -1839,8 +1842,7 @@ end)
 
 net.Receive("UpdateRadioVolume", function()
     local entity = net.ReadEntity()
-    entity = GetVehicleEntity(entity)
-    local volume = ClampVolume(net.ReadFloat())
+    local volume = net.ReadFloat()
 
     if not IsValid(entity) then return end
 
