@@ -6,10 +6,9 @@
                  requests for playing and stopping stations, and coordinates with permanent
                  boombox functionality. It also includes utility functions for entity ownership
                  and permissions.
-    Date: October 17, 2024
+    Date: October 30, 2024
 ]]--
 
--- Network Strings
 util.AddNetworkString("PlayCarRadioStation")
 util.AddNetworkString("StopCarRadioStation")
 util.AddNetworkString("CarRadioMessage")
@@ -17,16 +16,9 @@ util.AddNetworkString("OpenRadioMenu")
 util.AddNetworkString("UpdateRadioStatus")
 util.AddNetworkString("UpdateRadioVolume")
 
--- Active radios and saved boombox states
 local ActiveRadios = {}
-
--- Table to track retry attempts per player
 local PlayerRetryAttempts = {}
-
--- Table to track player cooldowns for net messages
 local PlayerCooldowns = {}
-
--- Global table to store boombox statuses
 BoomboxStatuses = BoomboxStatuses or {}
 local SavePermanentBoombox, LoadPermanentBoomboxes
 
@@ -39,21 +31,20 @@ LoadPermanentBoomboxes = _G.LoadPermanentBoomboxes
 
 local LatestVolumeUpdates = {}
 local VolumeUpdateTimers = {}
-local DEBOUNCE_TIME = 10 -- 10 seconds debounce
+local DEBOUNCE_TIME = 10
 
 
-local MAX_ACTIVE_RADIOS = 100  -- Maximum number of active radios allowed
-local PLAYER_RADIO_LIMIT = 5   -- Maximum number of radios a single player can activate
-local GLOBAL_COOLDOWN = 1      -- Global cooldown in seconds between radio actions
-local lastGlobalAction = 0     -- Timestamp of the last global radio action
+local MAX_ACTIVE_RADIOS = 100
+local PLAYER_RADIO_LIMIT = 5
+local GLOBAL_COOLDOWN = 1
+local lastGlobalAction = 0
 
-local VOLUME_UPDATE_DEBOUNCE_TIME = 0.1  -- 100ms debounce time for volume updates
+local VOLUME_UPDATE_DEBOUNCE_TIME = 0.1
 local volumeUpdateQueue = {}
 
 local STATION_CHANGE_COOLDOWN = 0.5
 local lastStationChangeTimes = {}
 
--- Function to validate and clamp volume within server limits
 local function ClampVolume(volume)
     local maxVolume = GetConVar("radio_max_volume_limit"):GetFloat()
     return math.Clamp(volume, 0, maxVolume)
@@ -73,7 +64,6 @@ local function AddActiveRadio(entity, stationName, url, volume)
         return
     end
 
-    -- Remove the oldest radio if the limit is reached
     if table.Count(ActiveRadios) >= MAX_ACTIVE_RADIOS then
         local oldestTime = math.huge
         local oldestRadio = nil
@@ -118,7 +108,6 @@ local function SendActiveRadiosToPlayer(ply)
         return
     end
 
-    -- Initialize attempt count if not present
     if not PlayerRetryAttempts[ply] then
         PlayerRetryAttempts[ply] = 1
     end
@@ -127,18 +116,17 @@ local function SendActiveRadiosToPlayer(ply)
 
     if next(ActiveRadios) == nil then
         if attempt >= 3 then
-            PlayerRetryAttempts[ply] = nil  -- Reset attempt count
+            PlayerRetryAttempts[ply] = nil
             return
         end
 
-        -- Increment the attempt count
         PlayerRetryAttempts[ply] = attempt + 1
 
         timer.Simple(5, function()
             if IsValid(ply) then
                 SendActiveRadiosToPlayer(ply)
             else
-                PlayerRetryAttempts[ply] = nil  -- Reset attempt count
+                PlayerRetryAttempts[ply] = nil
             end
         end)
         return
@@ -155,7 +143,6 @@ local function SendActiveRadiosToPlayer(ply)
         end
     end
 
-    -- Reset attempt count after successful send
     PlayerRetryAttempts[ply] = nil
 end
 
@@ -175,12 +162,10 @@ end)
 ]]
 local function UpdateVehicleStatus(vehicle)
     if not IsValid(vehicle) then return end
-    
-    -- Get the actual vehicle entity
+
     local veh = utils.GetVehicle(vehicle)
     if not veh then return end
-    
-    -- Set the networked value
+
     local isSitAnywhere = vehicle.playerdynseat or false
     vehicle:SetNWBool("IsSitAnywhereSeat", isSitAnywhere)
     
@@ -188,11 +173,9 @@ local function UpdateVehicleStatus(vehicle)
 end
 
 hook.Add("PlayerEnteredVehicle", "RadioVehicleHandling", function(ply, vehicle)
-    -- Only process actual vehicles
     local veh = utils.GetVehicle(vehicle)
     if not veh then return end
     
-    -- Update and check status
     if not UpdateVehicleStatus(vehicle) then
         net.Start("CarRadioMessage")
         net.Send(ply)
@@ -249,19 +232,16 @@ end
 ]]
 local function GetEntityOwner(entity)
     if not IsValid(entity) then return nil end
-    
-    -- Try CPPI first
+
     if entity.CPPIGetOwner then
         return entity:CPPIGetOwner()
     end
-    
-    -- Fallback to NWEntity owner
+
     local nwOwner = entity:GetNWEntity("Owner")
     if IsValid(nwOwner) then
         return nwOwner
     end
-    
-    -- If all else fails, return nil
+
     return nil
 end
 
@@ -270,7 +250,6 @@ end
     Handles playing a radio station for vehicles, LVS vehicles, and boomboxes.
 ]]
 net.Receive("PlayCarRadioStation", function(len, ply)
-    -- Global cooldown check
     local currentTime = CurTime()
     if currentTime - lastGlobalAction < GLOBAL_COOLDOWN then
         ply:ChatPrint("The radio system is busy. Please try again in a moment.")
@@ -278,7 +257,6 @@ net.Receive("PlayCarRadioStation", function(len, ply)
     end
     lastGlobalAction = currentTime
 
-    -- Player-specific cooldown check
     local lastRequestTime = PlayerCooldowns[ply] or 0
     if currentTime - lastRequestTime < 0.25 then
         ply:ChatPrint("You are changing stations too quickly.")
@@ -296,17 +274,14 @@ net.Receive("PlayCarRadioStation", function(len, ply)
         return
     end
 
-    -- Entity-specific cooldown check
     local currentTime = CurTime()
     local lastChangeTime = lastStationChangeTimes[entity] or 0
     if currentTime - lastChangeTime < STATION_CHANGE_COOLDOWN then
-        -- Instead of returning, just update the time without sending a message
         lastStationChangeTimes[entity] = currentTime
     else
         lastStationChangeTimes[entity] = currentTime
     end
 
-    -- Stop the current station before playing a new one
     if ActiveRadios[entity:EntIndex()] then
         net.Start("StopCarRadioStation")
             net.WriteEntity(entity)
@@ -314,13 +289,11 @@ net.Receive("PlayCarRadioStation", function(len, ply)
         RemoveActiveRadio(entity)
     end
 
-    -- Check total number of active radios
     if table.Count(ActiveRadios) >= MAX_ACTIVE_RADIOS then
         ply:ChatPrint("The maximum number of active radios has been reached. Please try again later.")
         return
     end
 
-    -- Check player's personal radio limit
     local playerActiveRadios = 0
     for _, radio in pairs(ActiveRadios) do
         if IsValid(radio.entity) and GetEntityOwner(radio.entity) == ply then
@@ -336,12 +309,10 @@ net.Receive("PlayCarRadioStation", function(len, ply)
     local lvsVehicle = IsLVSVehicle(entity)
     local entIndex = entity:EntIndex()
 
-    -- Cancel any existing station update timer for this entity
     if timer.Exists("StationUpdate_" .. entIndex) then
         timer.Remove("StationUpdate_" .. entIndex)
     end
 
-    -- Function to update the station
     local function updateStation()
         if entityClass == "golden_boombox" or entityClass == "boombox" then
             if not utils.canInteractWithBoombox(ply, entity) then
@@ -349,7 +320,6 @@ net.Receive("PlayCarRadioStation", function(len, ply)
                 return
             end
 
-            -- Validate station name and URL
             if #stationName > 100 then
                 ply:ChatPrint("Station name is too long.")
                 return
@@ -360,15 +330,13 @@ net.Receive("PlayCarRadioStation", function(len, ply)
                 return
             end
 
-            -- Set the boombox status to "tuning" for all clients
             net.Start("UpdateRadioStatus")
                 net.WriteEntity(entity)
                 net.WriteString(stationName)
-                net.WriteBool(true)  -- isPlaying = true
-                net.WriteString("tuning")  -- Indicate tuning status
+                net.WriteBool(true)
+                net.WriteString("tuning")
             net.Broadcast()
 
-            -- Update the station immediately for client-side responsiveness
             entity:SetNWString("StationName", stationName)
             entity:SetNWString("StationURL", stationURL)
             entity:SetNWFloat("Volume", volume)
@@ -377,7 +345,6 @@ net.Receive("PlayCarRadioStation", function(len, ply)
 
             AddActiveRadio(entity, stationName, stationURL, volume)
 
-            -- Broadcast the play command to all clients
             net.Start("PlayCarRadioStation")
                 net.WriteEntity(entity)
                 net.WriteString(stationName)
@@ -385,7 +352,6 @@ net.Receive("PlayCarRadioStation", function(len, ply)
                 net.WriteFloat(volume)
             net.Broadcast()
 
-            -- Save to database if permanent
             if entity.IsPermanent and SavePermanentBoombox then
                 SavePermanentBoombox(entity)
             end
@@ -433,20 +399,15 @@ net.Receive("StopCarRadioStation", function(len, ply)
         return
     end
 
-    -- Remove the cooldown check for stopping a station
-    -- This allows players to stop a station without triggering the cooldown
-
     local entityClass = entity:GetClass()
     local lvsVehicle = IsLVSVehicle(entity)
 
     if entityClass == "golden_boombox" or entityClass == "boombox" then
-        -- Check permissions for boomboxes
         if not utils.canInteractWithBoombox(ply, entity) then
             ply:ChatPrint("You do not have permission to control this boombox.")
             return
         end
 
-        -- Update the station immediately for client-side responsiveness
         entity:SetNWString("StationName", "")
         entity:SetNWString("StationURL", "")
         entity:SetNWBool("IsPlaying", false)
@@ -454,12 +415,10 @@ net.Receive("StopCarRadioStation", function(len, ply)
 
         RemoveActiveRadio(entity)
 
-        -- Broadcast the stop command to all clients
         net.Start("StopCarRadioStation")
             net.WriteEntity(entity)
         net.Broadcast()
 
-        -- Update radio status for all clients
         net.Start("UpdateRadioStatus")
             net.WriteEntity(entity)
             net.WriteString("")
@@ -467,7 +426,6 @@ net.Receive("StopCarRadioStation", function(len, ply)
             net.WriteString("stopped")
         net.Broadcast()
 
-        -- Debounce the database update
         local entIndex = entity:EntIndex()
         if timer.Exists("StationUpdate_" .. entIndex) then
             timer.Remove("StationUpdate_" .. entIndex)
@@ -484,12 +442,10 @@ net.Receive("StopCarRadioStation", function(len, ply)
 
         RemoveActiveRadio(radioEntity)
 
-        -- Broadcast the stop command to all clients
         net.Start("StopCarRadioStation")
             net.WriteEntity(radioEntity)
         net.Broadcast()
 
-        -- Update radio status for all clients
         net.Start("UpdateRadioStatus")
             net.WriteEntity(radioEntity)
             net.WriteString("")
@@ -519,26 +475,24 @@ net.Receive("UpdateRadioVolume", function(len, ply)
     local radioEntity = lvsVehicle or entity
     local entIndex = radioEntity:EntIndex()
 
-    -- Check permissions for boomboxes
     if (entityClass == "boombox" or entityClass == "golden_boombox") and not utils.canInteractWithBoombox(ply, radioEntity) then
         ply:ChatPrint("You do not have permission to control this boombox's volume.")
         return
     end
 
-    -- For vehicles, check if the player is in the vehicle
-    if entity:IsVehicle() and entity:GetDriver() ~= ply then
+    -- This isn't restricting control to the actual driver, and just confirms that the person is in the vehicle
+    -- (Each seat is technically its own vehicle)
+    if entity:IsVehicle() and entity:GetDriver() ~= ply then 
         ply:ChatPrint("You must be in the vehicle to control its radio volume.")
         return
     end
 
-    -- Queue the volume update
     volumeUpdateQueue[entIndex] = {
         entity = radioEntity,
         volume = volume,
         player = ply
     }
 
-    -- If there's no timer running for this entity, create one
     if not timer.Exists("VolumeUpdate_" .. entIndex) then
         timer.Create("VolumeUpdate_" .. entIndex, VOLUME_UPDATE_DEBOUNCE_TIME, 1, function()
             local updateData = volumeUpdateQueue[entIndex]
@@ -547,28 +501,23 @@ net.Receive("UpdateRadioVolume", function(len, ply)
                 local updateVolume = updateData.volume
 
                 if IsValid(updateEntity) then
-                    -- Update the networked volume
                     updateEntity:SetNWFloat("Volume", updateVolume)
                     
-                    -- Update active radio volume if it exists
                     if ActiveRadios[entIndex] then
                         ActiveRadios[entIndex].volume = updateVolume
                     end
 
-                    -- Broadcast the volume update to ALL clients
                     net.Start("UpdateRadioVolume")
                         net.WriteEntity(updateEntity)
                         net.WriteFloat(updateVolume)
                     net.Broadcast()
 
-                    -- Save to database if permanent (for boomboxes)
                     if updateEntity.IsPermanent and SavePermanentBoombox and 
                        (entityClass == "boombox" or entityClass == "golden_boombox") then
                         SavePermanentBoombox(updateEntity)
                     end
                 end
 
-                -- Clear the queue for this entity
                 volumeUpdateQueue[entIndex] = nil
             end
         end)
@@ -583,7 +532,6 @@ hook.Add("EntityRemoved", "CleanupVolumeUpdateTimers", function(entity)
     volumeUpdateQueue[entIndex] = nil
 end)
 
--- Cleanup active radios when an entity is removed
 hook.Add("EntityRemoved", "CleanupActiveRadioOnEntityRemove", function(entity)
     local mainEntity = entity:GetParent() or entity
 
@@ -615,14 +563,12 @@ local function AssignOwner(ply, ent)
     end
 
     if ent.CPPISetOwner then
-        ent:CPPISetOwner(ply)  -- Assign the owner using CPPI if available
+        ent:CPPISetOwner(ply)
     end
 
-    -- Set the owner as a networked entity so the client can access it
     ent:SetNWEntity("Owner", ply)
 end
 
--- Hook into InitPostEntity to ensure everything is initialized
 hook.Add("InitPostEntity", "SetupBoomboxHooks", function()
     timer.Simple(1, function()
         if IsDarkRP() then
@@ -713,7 +659,6 @@ end
 
 timer.Create("CleanupInactiveRadios", 300, 0, CleanupInactiveRadios)  -- Run every 5 minutes
 
--- Add command to reload convars (SuperAdmin only)
 concommand.Add("radio_reload_config", function(ply)
     if IsValid(ply) and not ply:IsSuperAdmin() then return end
     
@@ -728,7 +673,6 @@ concommand.Add("radio_reload_config", function(ply)
     end
 end)
 
--- Add near the end of the file
 local function AddRadioCommand(name, helpText)
     concommand.Add("radio_set_" .. name, function(ply, cmd, args)
         if IsValid(ply) and not ply:IsSuperAdmin() then return end
@@ -757,7 +701,6 @@ local function AddRadioCommand(name, helpText)
     end)
 end
 
--- Register all radio commands
 local commands = {
     "max_volume_limit",
     "message_cooldown",
@@ -776,7 +719,6 @@ for _, cmd in ipairs(commands) do
     AddRadioCommand(cmd)
 end
 
--- Add this near the other command-related code
 local radioCommands = {
     max_volume_limit = {
         desc = "Sets the maximum volume limit for all radio entities (0.0-1.0)",
@@ -824,7 +766,6 @@ local radioCommands = {
     }
 }
 
--- Add help command
 concommand.Add("radio_help", function(ply)
     if IsValid(ply) and not ply:IsSuperAdmin() then 
         ply:ChatPrint("[Radio] You need to be a superadmin to use radio commands!")
@@ -870,7 +811,6 @@ concommand.Add("radio_help", function(ply)
     end
 end)
 
--- Modify the AddRadioCommand function to include help text
 local function AddRadioCommand(name)
     local cmdInfo = radioCommands[name]
     if not cmdInfo then return end
@@ -918,7 +858,6 @@ local function AddRadioCommand(name)
     end)
 end
 
--- Register all radio commands
 for cmd, _ in pairs(radioCommands) do
     AddRadioCommand(cmd)
 end
