@@ -93,6 +93,21 @@ local function reopenRadioMenu(openSettingsMenuFlag)
 end
 
 --[[
+    Function: ClampVolume
+    Clamps the volume to a maximum value (server-side convar).
+
+    Parameters:
+    - volume: The volume to clamp.
+
+    Returns:
+    - The clamped volume.
+]]
+local function ClampVolume(volume)
+    local maxVolume = Config.MaxVolume()
+    return math.Clamp(volume, 0, maxVolume)
+end
+
+--[[
     Function: loadFavorites
     Loads favorite countries and stations from JSON files.
     Includes error handling and data validation.
@@ -1984,13 +1999,6 @@ hook.Add("EntityRemoved", "ClearRadioEntity", function(ent)
     end
 end)
 
--- Add this helper function near the top with other utility functions
-local function ClampVolume(volume)
-    local maxVolume = Config.MaxVolume()
-    return math.Clamp(volume, 0, maxVolume)
-end
-
--- Modify the updateRadioVolume function to use the clamped volume
 local function updateRadioVolume(station, distanceSqr, isPlayerInCar, entity)
     local entityConfig = getEntityConfig(entity)
     if not entityConfig then return end
