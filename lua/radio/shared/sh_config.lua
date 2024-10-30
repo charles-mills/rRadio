@@ -331,7 +331,6 @@ if CLIENT then
     end)
 end
 
--- Add these helper functions near the other utility functions
 -- ------------------------------
 --    Sound Physics Helpers
 -- ------------------------------
@@ -367,8 +366,7 @@ end
 -- Main volume calculation function that combines all factors
 function Config.CalculateVolume(source, listener, baseVolume, maxDist, minDist)
     local distance = source:GetPos():Distance(listener:GetPos())
-    
-    -- Distance attenuation (percentage based)
+
     local distanceFactor = 1.0
     if distance > minDist then
         if distance >= maxDist then
@@ -377,17 +375,15 @@ function Config.CalculateVolume(source, listener, baseVolume, maxDist, minDist)
         distanceFactor = 1 - ((distance - minDist) / (maxDist - minDist))
         distanceFactor = math.Clamp(distanceFactor ^ Config.VolumeAttenuationExponent, 0, 1)
     end
-    
-    -- Get environmental factor (already percentage based)
+
     local envFactor = Config.GetEnvironmentalFactor(source, listener)
-    
-    -- Apply all factors to the base volume
+
     return baseVolume * distanceFactor * envFactor
 end
 
 local envFactorCache = {}
 local lastCacheClean = 0
-local CACHE_LIFETIME = 0.25
+local CACHE_LIFETIME = 0.5
 local CACHE_CLEAN_INTERVAL = 5
 
 function Config.GetEnvironmentalFactor(ent1, ent2)
@@ -463,7 +459,6 @@ function Config.GetEnvironmentalFactor(ent1, ent2)
     return factor
 end
 
--- Clean up cache when map changes
 hook.Add("PostCleanupMap", "CleanEnvironmentalFactorCache", function()
     table.Empty(envFactorCache)
     lastCacheClean = CurTime()

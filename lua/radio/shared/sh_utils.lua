@@ -104,4 +104,25 @@ function utils.canInteractWithBoombox(ply, boombox)
     return IsValid(owner) and owner == ply
 end
 
+--[[
+    Function: GetEntityConfig
+    Description: Returns the configuration for an entity based on its class
+    @param entity (Entity): The entity to check
+    @return (table): The configuration for the entity, or nil if no configuration exists
+]]
+function utils.GetEntityConfig(entity)
+    if not IsValid(entity) then return nil end
+
+    local entityClass = entity:GetClass()
+    if entityClass == "golden_boombox" then
+        return Config.GoldenBoombox
+    elseif entityClass == "boombox" then
+        return Config.Boombox
+    elseif utils.GetVehicle(entity) then
+        return Config.VehicleRadio
+    end
+    
+    return nil
+end
+
 return utils

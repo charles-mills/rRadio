@@ -1690,17 +1690,10 @@ net.Receive("PlayCarRadioStation", function()
     local url = net.ReadString()
     local volume = net.ReadFloat()
 
-    if not IsValid(entity) or type(url) ~= "string" or type(volume) ~= "number" then
-        print("[Radio Error] Invalid data received")
-        return
-    end
+    if not IsValid(entity) then return end
 
     -- Set initial status for boomboxes
-    if IsValid(entity) and (entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox") then
-        entity:SetNWString("Status", "tuning")
-        entity:SetNWString("StationName", stationName)
-        entity:SetNWBool("IsPlaying", true)
-
+    if entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox" then
         BoomboxStatuses[entity:EntIndex()] = {
             stationStatus = "tuning",
             stationName = stationName
@@ -1721,6 +1714,11 @@ net.Receive("PlayCarRadioStation", function()
             station:Play()
             currentRadioSources[entity] = station
             entity.RadioSource = station
+
+            -- Update status to playing once sound is loaded
+            if entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox" then
+                BoomboxStatuses[entity:EntIndex()].stationStatus = "playing"
+            end
 
             local entityConfig = getEntityConfig(entity)
             if entityConfig then
@@ -1749,6 +1747,12 @@ net.Receive("PlayCarRadioStation", function()
             end)
 
             -- Rest of the existing station setup code...
+        else
+            -- Handle error case
+            if entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox" then
+                BoomboxStatuses[entity:EntIndex()].stationStatus = "stopped"
+            end
+            print("Error creating sound: ", errorID, errorName)
         end
     end)
 end)
