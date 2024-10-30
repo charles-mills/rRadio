@@ -12,7 +12,7 @@ function ENT:SetupDataTables()
 end
 
 function ENT:GetVolumeAtPosition(listenerPos)
-    local listener = Entity(1) -- or whatever entity is listening
+    local listener = Entity(1)
     return Config.CalculateVolume(
         self,
         listener,
