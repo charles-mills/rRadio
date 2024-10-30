@@ -400,20 +400,8 @@ local function updateRadioVolume(station, distanceSqr, isPlayerInCar, entity)
         return
     end
 
-    -- Calculate final volume with environmental factors
-    local distance = math.sqrt(distanceSqr)
-    local minDist = entityConfig.MinVolumeDistance()
-    local maxDist = entityConfig.MaxHearingDistance()
-    
-    -- Calculate final volume using Config helper functions, maintaining user's volume setting
-    local finalVolume = Config.CalculateVolume(
-        entity,
-        LocalPlayer(),
-        userVolume, -- Pass the user-set volume as base volume
-        maxDist,
-        minDist
-    )
-
+    -- Calculate distance-based volume
+    local finalVolume = Config.CalculateVolume(entity, LocalPlayer(), distanceSqr)
     station:SetVolume(finalVolume)
 end
 

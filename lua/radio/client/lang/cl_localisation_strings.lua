@@ -297,4 +297,5 @@ LANG.zh_cn["Enabled"] = "启用"
 LANG.zh_cn["Disabled"] = "禁用"
 LANG.zh_cn["FavoriteStations"] = "收藏电台"
 LANG.zh_cn["TuningIn"] = "调谐中"
+
 return LANG
