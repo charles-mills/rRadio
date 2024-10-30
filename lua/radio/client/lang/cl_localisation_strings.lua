@@ -36,6 +36,7 @@ LANG.de["MakeBoomboxPermanent"] = "Tragbares Radio als permanent markieren"
 LANG.de["Enabled"] = "Aktiviert"
 LANG.de["Disabled"] = "Deaktiviert"
 LANG.de["FavoriteStations"] = "Favorit-Stationen"
+LANG.de["TuningIn"] = "Einstellen"
 
 -- English
 LANG.en["SelectCountry"] = "Select a Country"
@@ -61,6 +62,7 @@ LANG.en["MakeBoomboxPermanent"] = "Make Boombox Permanent"
 LANG.en["Enabled"] = "Enabled"
 LANG.en["Disabled"] = "Disabled"
 LANG.en["FavoriteStations"] = "Favorite Stations"
+LANG.en["TuningIn"] = "Tuning in"
 
 -- Spanish
 LANG.es["SelectCountry"] = "Seleccionar país"
@@ -86,6 +88,7 @@ LANG.es["MakeBoomboxPermanent"] = "Marcar radio portátil como permanente"
 LANG.es["Enabled"] = "Activado"
 LANG.es["Disabled"] = "Desactivado"
 LANG.es["FavoriteStations"] = "Estaciones favoritas"
+LANG.es["TuningIn"] = "Sintonizando"
 
 -- French
 LANG.fr["SelectCountry"] = "Sélectionnez un pays"
@@ -111,6 +114,7 @@ LANG.fr["MakeBoomboxPermanent"] = "Marquer la radio portable comme permanente"
 LANG.fr["Enabled"] = "Activé"
 LANG.fr["Disabled"] = "Désactivé"
 LANG.fr["FavoriteStations"] = "Stations favorites"
+LANG.fr["TuningIn"] = "Sintonisation"
 
 -- Italian
 LANG.it["SelectCountry"] = "Seleziona paese"
@@ -136,6 +140,7 @@ LANG.it["MakeBoomboxPermanent"] = "Rendi la radio portatile permanente"
 LANG.it["Enabled"] = "Attivo"
 LANG.it["Disabled"] = "Disattivato"
 LANG.it["FavoriteStations"] = "Stazioni favorite"
+LANG.it["TuningIn"] = "Sintonizzazione"
 
 -- Japanese
 LANG.ja["SelectCountry"] = "国を選択"
@@ -161,6 +166,7 @@ LANG.ja["MakeBoomboxPermanent"] = "ポータブルラジオを永久にする"
 LANG.ja["Enabled"] = "有効"
 LANG.ja["Disabled"] = "無効"
 LANG.ja["FavoriteStations"] = "お気に入りの局"
+LANG.ja["TuningIn"] = "調整中"
 
 -- Korean
 LANG.ko["SelectCountry"] = "국가 선택"
@@ -186,6 +192,7 @@ LANG.ko["MakeBoomboxPermanent"] = "휴대용 라디오를 영구적으로 만들
 LANG.ko["Enabled"] = "활성화"
 LANG.ko["Disabled"] = "비활성화"
 LANG.ko["FavoriteStations"] = "즐겨찾기 방송국"
+LANG.ko["TuningIn"] = "Sintonizzazione"
 
 -- Portuguese (Brazil)
 LANG.pt_br["SelectCountry"] = "Selecionar país"
@@ -211,6 +218,7 @@ LANG.pt_br["MakeBoomboxPermanent"] = "Marcar rádio portátil como permanente"
 LANG.pt_br["Enabled"] = "Ativado"
 LANG.pt_br["Disabled"] = "Desativado"
 LANG.pt_br["FavoriteStations"] = "Estações favoritas"
+LANG.pt_br["TuningIn"] = "Sintonização"
 
 -- Russian
 LANG.ru["SelectCountry"] = "Выберите страну"
@@ -236,6 +244,8 @@ LANG.ru["MakeBoomboxPermanent"] = "Сделать портативное рад�
 LANG.ru["Enabled"] = "Включено"
 LANG.ru["Disabled"] = "Выключено"
 LANG.ru["FavoriteStations"] = "Избранные станции"
+LANG.ru["TuningIn"] = "Настройка"
+
 -- Turkish
 LANG.tr["SelectCountry"] = "Ülke seç"
 LANG.tr["StopRadio"] = "DURDUR"
@@ -260,6 +270,7 @@ LANG.tr["MakeBoomboxPermanent"] = "Taşınabilir radyoyu sabit yap"
 LANG.tr["Enabled"] = "Aktif"
 LANG.tr["Disabled"] = "Pasif"
 LANG.tr["FavoriteStations"] = "Favori Radyo Kanalları"
+LANG.tr["TuningIn"] = "Ayarlıyor"
 
 -- Chinese (Simplified)
 LANG.zh_cn["SelectCountry"] = "选择国家"
@@ -285,5 +296,5 @@ LANG.zh_cn["MakeBoomboxPermanent"] = "将便携式收音机设为永久"
 LANG.zh_cn["Enabled"] = "启用"
 LANG.zh_cn["Disabled"] = "禁用"
 LANG.zh_cn["FavoriteStations"] = "收藏电台"
-
+LANG.zh_cn["TuningIn"] = "调谐中"
 return LANG
