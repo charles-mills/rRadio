@@ -2,15 +2,21 @@ name: GLuaLint
 
 on:
   push:
+    branches:
+      - main
     paths:
       - '**.lua'
   pull_request:
+    types: [closed]
+    branches:
+      - main
     paths:
       - '**.lua'
-  workflow_dispatch:
 
 jobs:
   lint:
+    # Only run if PR was merged or direct push to main
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
     runs-on: ubuntu-latest
     
     steps:

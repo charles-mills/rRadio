@@ -5,22 +5,18 @@
                  It manages user preferences, ConVars, and provides functions
                  for saving and loading user-specific settings such as favorite
                  stations, volume levels, and UI preferences.
-    Date: October 17, 2024
+    Date: October 30, 2024
 ]]--
 
 local keyCodeMapping = include("radio/client/cl_key_names.lua")
 local themes = include("radio/client/cl_themes.lua")
 local languageManager = include("radio/client/lang/cl_language_manager.lua")
 
--- Create the client convar to enable/disable chat messages
 CreateClientConVar("car_radio_show_messages", "1", true, false, "Enable or disable car radio messages.")
 CreateClientConVar("radio_language", "en", true, false, "Select the language for the radio UI.")
 CreateClientConVar("boombox_show_text", "1", true, false, "Show or hide the text above the boombox.")
+CreateClientConVar("car_radio_open_key", "21", true, false, "Select the key to open the car radio menu.")
 
--- Create a client convar to select the key for opening the radio menu
-CreateClientConVar("car_radio_open_key", "21", true, false, "Select the key to open the car radio menu.") -- Default is KEY_K
-
--- Function to apply the selected theme
 local function applyTheme(themeName)
     if themes[themeName] then
         Config.UI = themes[themeName]
@@ -30,18 +26,16 @@ local function applyTheme(themeName)
     end
 end
 
--- Function to apply the selected language
 local function applyLanguage(languageCode)
     if languageManager.languages[languageCode] then
-        Config.Lang = languageManager.translations[languageCode]  -- Get the translations from the language manager
+        Config.Lang = languageManager.translations[languageCode]
         hook.Run("LanguageChanged", languageCode)
-        hook.Run("LanguageUpdated")  -- Custom hook to trigger list update
+        hook.Run("LanguageUpdated")
     else
         print("Invalid language code: " .. languageCode)
     end
 end
 
--- Load the saved theme and language from convars and apply them
 local function loadSavedSettings()
     local themeName = GetConVar("radio_theme"):GetString()
     applyTheme(themeName)
@@ -50,23 +44,18 @@ local function loadSavedSettings()
     applyLanguage(languageCode)
 end
 
--- Call loadSavedSettings when the client finishes loading all entities
 hook.Add("InitPostEntity", "ApplySavedThemeAndLanguageOnJoin", function()
     loadSavedSettings()
 end)
 
--- Hook to update the UI when the language is changed
 hook.Add("LanguageUpdated", "UpdateCountryListOnLanguageChange", function()
     if radioMenuOpen then
-        populateList(stationListPanel, backButton, searchBox, true)  -- Repopulate the list
+        populateList(stationListPanel, backButton, searchBox, true)
     end
 end)
 
--- Function to sort keys based on single-letter, numeric, and multi-letter names
 local function sortKeys()
     local sortedKeys = {}
-
-    -- Separate keys into different categories
     local singleLetterKeys = {}
     local numericKeys = {}
     local otherKeys = {}
@@ -100,13 +89,11 @@ local function sortKeys()
     return sortedKeys
 end
 
--- Create a new tool menu in the "Utilities" section
 hook.Add("PopulateToolMenu", "AddThemeAndVolumeSelectionMenu", function()
     spawnmenu.AddToolMenuOption("Utilities", "rlib", "ThemeVolumeSelection", "rRadio Settings", "", "", function(panel)
         panel:ClearControls()
         panel:DockPadding(10, 0, 30, 10)
 
-        -- Theme Selection Section
         local themeHeader = vgui.Create("DLabel", panel)
         themeHeader:SetText("Theme Selection")
         themeHeader:SetFont("Trebuchet18")
@@ -141,7 +128,6 @@ hook.Add("PopulateToolMenu", "AddThemeAndVolumeSelectionMenu", function()
 
         panel:AddItem(themeDropdown)
 
-        -- Language Selection Section
         local languageHeader = vgui.Create("DLabel", panel)
         languageHeader:SetText("Language Selection")
         languageHeader:SetFont("Trebuchet18")
@@ -156,7 +142,6 @@ hook.Add("PopulateToolMenu", "AddThemeAndVolumeSelectionMenu", function()
         languageDropdown:SetTall(30)
         languageDropdown:SetTooltip("Select the language for the radio UI.")
 
-        -- Dynamically add all available languages to the dropdown
         for code, name in pairs(languageManager.languages) do
             languageDropdown:AddChoice(name, code)
         end
@@ -173,7 +158,6 @@ hook.Add("PopulateToolMenu", "AddThemeAndVolumeSelectionMenu", function()
 
         panel:AddItem(languageDropdown)
 
-        -- Key Selection Section
         local keySelectionHeader = vgui.Create("DLabel", panel)
         keySelectionHeader:SetText("Select Key to Open Radio Menu")
         keySelectionHeader:SetFont("Trebuchet18")
@@ -194,7 +178,6 @@ hook.Add("PopulateToolMenu", "AddThemeAndVolumeSelectionMenu", function()
             keyDropdown:AddChoice(key.name, key.code)
         end
 
-        -- Set the current value based on the convar
         local currentKey = GetConVar("car_radio_open_key"):GetInt()
         if keyCodeMapping[currentKey] then
             keyDropdown:SetValue(keyCodeMapping[currentKey])
@@ -206,7 +189,6 @@ hook.Add("PopulateToolMenu", "AddThemeAndVolumeSelectionMenu", function()
 
         panel:AddItem(keyDropdown)
 
-        -- General Options Section
         local generalOptionsHeader = vgui.Create("DLabel", panel)
         generalOptionsHeader:SetText("General Options")
         generalOptionsHeader:SetFont("Trebuchet18")
@@ -215,7 +197,6 @@ hook.Add("PopulateToolMenu", "AddThemeAndVolumeSelectionMenu", function()
         generalOptionsHeader:DockMargin(0, 20, 0, 5)
         panel:AddItem(generalOptionsHeader)
 
-        -- Show Car Radio Messages Toggle
         local chatMessageCheckbox = vgui.Create("DCheckBoxLabel", panel)
         chatMessageCheckbox:SetText("Show Car Radio Messages")
         chatMessageCheckbox:SetConVar("car_radio_show_messages")
@@ -226,7 +207,6 @@ hook.Add("PopulateToolMenu", "AddThemeAndVolumeSelectionMenu", function()
         chatMessageCheckbox:SetTooltip("Enable or disable the display of car radio messages.")
         panel:AddItem(chatMessageCheckbox)
 
-        -- Show Boombox Hover Text Toggle
         local showTextCheckbox = vgui.Create("DCheckBoxLabel", panel)
         showTextCheckbox:SetText("Show Boombox Hover Text")
         showTextCheckbox:SetConVar("boombox_show_text")
