@@ -1758,7 +1758,62 @@ net.Receive("PlayCarRadioStation", function()
                 end)
             end
 
-            -- Rest of the existing sound setup code...
+            -- Set up 3D audio
+            local entityConfig = getEntityConfig(entity)
+            if entityConfig then
+                local minDist = entityConfig.MinVolumeDistance()
+                local maxDist = entityConfig.MaxHearingDistance()
+                station:Set3DFadeDistance(minDist, maxDist)
+            end
+
+            -- Add position update hook
+            local hookName = "UpdateRadioPosition_" .. entity:EntIndex()
+            hook.Add("Think", hookName, function()
+                if not IsValid(entity) or not IsValid(station) then
+                    hook.Remove("Think", hookName)
+                    if IsValid(station) then
+                        station:Stop()
+                    end
+                    currentRadioSources[entity] = nil
+                    activeStationCount = updateStationCount()
+                    return
+                end
+
+                -- Get the actual position (handle vehicles and their seats)
+                local actualEntity = entity
+                if entity:IsVehicle() then
+                    -- If it's a vehicle seat, get its parent
+                    local parent = entity:GetParent()
+                    if IsValid(parent) then
+                        actualEntity = parent
+                    end
+                end
+
+                -- Update position and volume
+                station:SetPos(actualEntity:GetPos())
+
+                local playerPos = LocalPlayer():GetPos()
+                local entityPos = actualEntity:GetPos()
+                local distanceSqr = playerPos:DistToSqr(entityPos)
+                
+                -- Check if player is in any seat of the vehicle
+                local isPlayerInCar = false
+                if actualEntity:IsVehicle() then
+                    if LocalPlayer():GetVehicle() == entity then
+                        isPlayerInCar = true
+                    else
+                        -- Check all seats
+                        for _, seat in pairs(ents.FindByClass("prop_vehicle_prisoner_pod")) do
+                            if IsValid(seat) and seat:GetParent() == actualEntity and seat:GetDriver() == LocalPlayer() then
+                                isPlayerInCar = true
+                                break
+                            end
+                        end
+                    end
+                end
+
+                updateRadioVolume(station, distanceSqr, isPlayerInCar, actualEntity)
+            end)
         else
             -- Handle error case
             if IsValid(entity) and (entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox") then
