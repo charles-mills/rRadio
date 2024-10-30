@@ -219,7 +219,6 @@ local function getTranslatedCountryName(country)
     return LanguageManager:GetCountryTranslation(LanguageManager.currentLanguage, country) or country
 end
 
--- Add near the other ConVar callbacks
 local function AddConVarCallback(name)
     cvars.AddChangeCallback(name, function(_, _, _)
         -- Notify clients of config update
@@ -230,7 +229,6 @@ local function AddConVarCallback(name)
     end)
 end
 
--- Add these after all ConVars are created
 if SERVER then
     util.AddNetworkString("RadioConfigUpdate")
     
