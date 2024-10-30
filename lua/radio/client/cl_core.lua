@@ -334,19 +334,7 @@ end
     - The configuration table for the entity.
 ]]
 local function getEntityConfig(entity)
-    if not IsValid(entity) then return nil end
-
-    local entityClass = entity:GetClass()
-
-    if entityClass == "golden_boombox" then
-        return Config.GoldenBoombox
-    elseif entityClass == "boombox" then
-        return Config.Boombox
-    elseif entity:IsVehicle() then
-        return Config.VehicleRadio
-    else
-        return Config.VehicleRadio
-    end
+    return utils.GetEntityConfig(entity)
 end
 
 --[[

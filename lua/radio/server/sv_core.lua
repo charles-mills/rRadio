@@ -979,3 +979,7 @@ hook.Add("PlayerDisconnected", "CleanupPlayerRadioData", function(ply)
     end
 end)
 
+local function GetEntityConfig(entity)
+    return utils.GetEntityConfig(entity)
+end
+

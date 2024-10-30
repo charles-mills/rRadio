@@ -247,11 +247,9 @@ local function LoadPermanentBoomboxes(isReload)
     end
 end
 
--- Remove the existing hooks
 hook.Remove("InitPostEntity", "LoadPermanentBoomboxes")
 hook.Remove("PostCleanupMap", "ReloadPermanentBoomboxes")
 
--- Add a single hook for both initial load and map changes
 hook.Add("PostCleanupMap", "LoadPermanentBoomboxes", function()
     timer.Simple(5, function()
         if not initialLoadComplete then
