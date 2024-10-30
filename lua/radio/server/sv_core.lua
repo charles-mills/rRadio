@@ -161,21 +161,46 @@ hook.Add("PlayerInitialSpawn", "SendActiveRadiosOnJoin", function(ply)
     end)
 end)
 
-hook.Add("PlayerEnteredVehicle", "RadioVehicleHandling", function(ply, vehicle, role)
-    -- Set the sit anywhere status
-    vehicle:SetNWBool("IsSitAnywhereSeat", vehicle.playerdynseat or false)
+--[[
+    Function: UpdateVehicleStatus
+    Description: Returns the actual vehicle entity, handling parent relationships
+    @param vehicle (Entity): The vehicle to check
+    @return (Entity): The actual vehicle entity or nil
+]]
+local function UpdateVehicleStatus(vehicle)
+    if not IsValid(vehicle) then return end
     
-    -- Only send radio message if not a sit anywhere seat
-    if not vehicle.playerdynseat then
+    -- Get the actual vehicle entity
+    local veh = utils.GetVehicle(vehicle)
+    if not veh then return end
+    
+    -- Set the networked value
+    local isSitAnywhere = vehicle.playerdynseat or false
+    vehicle:SetNWBool("IsSitAnywhereSeat", isSitAnywhere)
+    
+    return isSitAnywhere
+end
+
+-- Modify the PlayerEnteredVehicle hook
+hook.Add("PlayerEnteredVehicle", "RadioVehicleHandling", function(ply, vehicle)
+    -- Only process actual vehicles
+    local veh = utils.GetVehicle(vehicle)
+    if not veh then return end
+    
+    -- Update and check status
+    if not UpdateVehicleStatus(vehicle) then
         net.Start("CarRadioMessage")
         net.Send(ply)
     end
 end)
 
-hook.Add("PlayerLeaveVehicle", "UnmarkSitAnywhereSeat", function(ply, vehicle)
-    if IsValid(vehicle) then
-        vehicle:SetNWBool("IsSitAnywhereSeat", false)
-    end
+-- Add hook for new vehicles
+hook.Add("OnEntityCreated", "InitializeVehicleStatus", function(ent)
+    timer.Simple(0, function()
+        if IsValid(ent) and utils.GetVehicle(ent) then
+            UpdateVehicleStatus(ent)
+        end
+    end)
 end)
 
 --[[
