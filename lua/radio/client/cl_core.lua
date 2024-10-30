@@ -25,13 +25,13 @@ local utils = include("radio/shared/sh_utils.lua")
 -- Global table to store boombox statuses
 BoomboxStatuses = BoomboxStatuses or {}
 
--- Favorite countries and stations stored as sets for O(1) lookups
+-- Favorite countries and stations stored as tables for JSON compatibility
 local favoriteCountries = {}
 local favoriteStations = {}
 
 local dataDir = "rradio"
-local favoriteCountriesFile = dataDir .. "/favorite_countries.txt"
-local favoriteStationsFile = dataDir .. "/favorite_stations.txt"
+local favoriteCountriesFile = dataDir .. "/favorite_countries.json"
+local favoriteStationsFile = dataDir .. "/favorite_stations.json"
 
 -- Ensure the data directory exists
 if not file.IsDir(dataDir, "DATA") then
@@ -85,54 +85,114 @@ end
 
 --[[
     Function: loadFavorites
-    Loads favorite countries and stations from files into sets.
+    Loads favorite countries and stations from JSON files.
+    Includes error handling and data validation.
 ]]
 local function loadFavorites()
+    -- Load favorite countries
     if file.Exists(favoriteCountriesFile, "DATA") then
-        local favList = util.JSONToTable(file.Read(favoriteCountriesFile, "DATA")) or {}
-        favoriteCountries = {}
-        for _, country in ipairs(favList) do
-            favoriteCountries[country] = true
+        local success, data = pcall(function()
+            return util.JSONToTable(file.Read(favoriteCountriesFile, "DATA"))
+        end)
+        
+        if success and data then
+            favoriteCountries = {}
+            -- Validate each country entry
+            for _, country in ipairs(data) do
+                if type(country) == "string" then
+                    favoriteCountries[country] = true
+                end
+            end
+        else
+            print("[Radio] Error loading favorite countries, resetting file")
+            favoriteCountries = {}
+            saveFavorites() -- Reset the file with empty data
         end
     end
 
+    -- Load favorite stations
     if file.Exists(favoriteStationsFile, "DATA") then
-        local favStations = util.JSONToTable(file.Read(favoriteStationsFile, "DATA")) or {}
-        favoriteStations = {}
-        for country, stations in pairs(favStations) do
-            favoriteStations[country] = {}
-            for _, station in ipairs(stations) do
-                favoriteStations[country][station] = true
+        local success, data = pcall(function()
+            return util.JSONToTable(file.Read(favoriteStationsFile, "DATA"))
+        end)
+        
+        if success and data then
+            favoriteStations = {}
+            -- Validate each station entry
+            for country, stations in pairs(data) do
+                if type(country) == "string" and type(stations) == "table" then
+                    favoriteStations[country] = {}
+                    for stationName, isFavorite in pairs(stations) do
+                        if type(stationName) == "string" and type(isFavorite) == "boolean" then
+                            favoriteStations[country][stationName] = isFavorite
+                        end
+                    end
+                    -- Clean up empty country entries
+                    if next(favoriteStations[country]) == nil then
+                        favoriteStations[country] = nil
+                    end
+                end
             end
-            if next(favoriteStations[country]) == nil then
-                favoriteStations[country] = nil
-            end
+        else
+            print("[Radio] Error loading favorite stations, resetting file")
+            favoriteStations = {}
+            saveFavorites() -- Reset the file with empty data
         end
     end
 end
 
 --[[
     Function: saveFavorites
-    Saves favorite countries and stations from sets into files.
+    Saves favorite countries and stations to JSON files.
+    Includes error handling and backup system.
 ]]
 local function saveFavorites()
+    -- Save favorite countries
     local favCountriesList = {}
     for country, _ in pairs(favoriteCountries) do
-        table.insert(favCountriesList, country)
+        if type(country) == "string" then
+            table.insert(favCountriesList, country)
+        end
     end
-    file.Write(favoriteCountriesFile, util.TableToJSON(favCountriesList))
+    
+    local countriesJson = util.TableToJSON(favCountriesList, true) -- Pretty print for readability
+    if countriesJson then
+        -- Create backup of existing file if it exists
+        if file.Exists(favoriteCountriesFile, "DATA") then
+            file.Write(favoriteCountriesFile .. ".bak", file.Read(favoriteCountriesFile, "DATA"))
+        end
+        file.Write(favoriteCountriesFile, countriesJson)
+    else
+        print("[Radio] Error converting favorite countries to JSON")
+    end
 
+    -- Save favorite stations
     local favStationsTable = {}
     for country, stations in pairs(favoriteStations) do
-        favStationsTable[country] = {}
-        for station, _ in pairs(stations) do
-            table.insert(favStationsTable[country], station)
-        end
-        if next(favStationsTable[country]) == nil then
-            favStationsTable[country] = nil
+        if type(country) == "string" and type(stations) == "table" then
+            favStationsTable[country] = {}
+            for stationName, isFavorite in pairs(stations) do
+                if type(stationName) == "string" and type(isFavorite) == "boolean" then
+                    favStationsTable[country][stationName] = isFavorite
+                end
+            end
+            -- Clean up empty country entries
+            if next(favStationsTable[country]) == nil then
+                favStationsTable[country] = nil
+            end
         end
     end
-    file.Write(favoriteStationsFile, util.TableToJSON(favStationsTable))
+    
+    local stationsJson = util.TableToJSON(favStationsTable, true) -- Pretty print for readability
+    if stationsJson then
+        -- Create backup of existing file if it exists
+        if file.Exists(favoriteStationsFile, "DATA") then
+            file.Write(favoriteStationsFile .. ".bak", file.Read(favoriteStationsFile, "DATA"))
+        end
+        file.Write(favoriteStationsFile, stationsJson)
+    else
+        print("[Radio] Error converting favorite stations to JSON")
+    end
 end
 
 -- ------------------------------
