@@ -1,4 +1,4 @@
-/*
+--[[
 Adding a new Language?
 
 1) Add your language code to the languages table below. The key should be the language code (e.g., "fr" for French), and the value should be the display name of the language (e.g., "Français").
@@ -6,7 +6,7 @@ Adding a new Language?
 3) Add translations for each key in the 'radio/client/lang/en.lua' file to your new language file.
 4) Complete country translations by accessing country_translations.lua and adding translations for each country name (optional).
 4) Submit a pull request and your language will be added to the official addon :)
-*/
+--]]
 
 
 local LanguageManager = {}
@@ -25,11 +25,12 @@ LanguageManager.languages = {
     tr = "Türkçe",
 }
 
+LanguageManager.currentLanguage = "en"
+
 LanguageManager.translations = include("cl_localisation_strings.lua")
 LanguageManager.countryTranslationsA = include("cl_country_translations_a.lua")
 LanguageManager.countryTranslationsB = include("cl_country_translations_b.lua")
 
--- Merge country translations
 LanguageManager.countryTranslations = {}
 for lang, translations in pairs(LanguageManager.countryTranslationsA) do
     if type(translations) == "table" then
@@ -49,30 +50,16 @@ for lang, translations in pairs(LanguageManager.countryTranslationsB) do
     end
 end
 
--- Function to get a country translation
 function LanguageManager:GetCountryTranslation(lang, country_key)
-    -- Debug prints
-    print("=== Translation Debug ===")
-    print("Looking up:", country_key)
-    print("Language:", lang)
-    
     -- Check if we have translations for this language
     if self.countryTranslations[lang] then
         local translation = self.countryTranslations[lang][country_key]
         if translation then
-            print("Found translation:", translation)
             return translation
         end
     end
-    
-    print("No translation found, returning original")
-    print("=====================")
-    
     return country_key
 end
-
--- Function to set the current language (default to English)
-LanguageManager.currentLanguage = "en"
 
 function LanguageManager:SetLanguage(code)
     if self.translations[code] then
@@ -83,27 +70,23 @@ function LanguageManager:SetLanguage(code)
     end
 end
 
--- Function to get the current language's translation
 function LanguageManager:Translate(key)
     return self:GetTranslation(self.currentLanguage, key)
 end
 
--- Function to get the display name of a language
 function LanguageManager:GetLanguageName(code)
     return self.languages[code] or code
 end
 
--- Function to get all available languages
 function LanguageManager:GetAvailableLanguages()
     return self.languages
 end
 
--- Function to get a translation for a specific language
 function LanguageManager:GetTranslation(lang, key)
     if self.translations[lang] and self.translations[lang][key] then
         return self.translations[lang][key]
     end
-    return key -- Return the key if translation is not found
+    return key
 end
 
 return LanguageManager

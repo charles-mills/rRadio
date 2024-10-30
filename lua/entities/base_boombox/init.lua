@@ -18,7 +18,7 @@ SavedBoomboxStates = SavedBoomboxStates or {}
 -- Table to track the last time a player received a "no permission" message
 local lastPermissionMessageTime = {}
 -- Cooldown period for permission messages in seconds
-local permissionMessageCooldown = 5
+local PERMISSION_MESSAGE_COOLDOWN = 3 -- 3 seconds cooldown
 
 function ENT:Initialize()
     self:SetModel(self.Model or "models/rammel/boombox.mdl")
@@ -91,14 +91,21 @@ function ENT:Use(activator, caller)
                 net.Send(activator)
         else
             local currentTime = CurTime()
-
-            if not lastPermissionMessageTime[activator] or (currentTime - lastPermissionMessageTime[activator] > permissionMessageCooldown) then
+            
+            -- Check cooldown for this specific player
+            if not lastPermissionMessageTime[activator] or 
+               (currentTime - lastPermissionMessageTime[activator] >= PERMISSION_MESSAGE_COOLDOWN) then
                 activator:ChatPrint("You do not have permission to use this boombox.")
                 lastPermissionMessageTime[activator] = currentTime
             end
         end
     end
 end
+
+-- Clean up the cooldown table when players leave
+hook.Add("PlayerDisconnected", "CleanupBoomboxPermissionCooldowns", function(ply)
+    lastPermissionMessageTime[ply] = nil
+end)
 
 -- Function to make the boombox permanent (called by the server)
 function ENT:MakePermanent()

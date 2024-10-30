@@ -901,17 +901,14 @@ CountryTranslations["zh_cn"] = {
 }
 
 function CountryTranslations:GetCountryName(lang, country_key)
-    -- Format the country name from snake_case to Title Case
     local formattedName = country_key:gsub("_", " "):gsub("(%a)([%w_']*)", function(a, b) 
         return string.upper(a) .. string.lower(b) 
     end)
     
-    -- Look up the translation
     if self[lang] and self[lang][formattedName] then
         return self[lang][formattedName]
     end
-    
-    -- Return formatted name if no translation found
+
     return formattedName
 end
 
