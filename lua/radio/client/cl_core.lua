@@ -47,18 +47,20 @@ local lastIconUpdate = 0
 local iconUpdateDelay = 0.1
 local pendingIconUpdate = nil
 local isUpdatingIcon = false
+local isMessageAnimating = false
 
 local lastKeyPress = 0
-local keyPressDelay = 0.2  -- Delay between key presses to prevent spamming
-
+local keyPressDelay = 0.2
 local favoritesMenuOpen = false
 
--- Add near the top with other local variables
 local VOLUME_ICONS = {
     MUTE = Material("hud/vol_mute.png", "smooth"),
     LOW = Material("hud/vol_down.png", "smooth"),
     HIGH = Material("hud/vol_up.png", "smooth")
 }
+
+local lastPermissionMessage = 0
+local PERMISSION_MESSAGE_COOLDOWN = 3 -- 3 seconds cooldown
 
 -- ------------------------------
 --      Utility Functions
@@ -399,14 +401,15 @@ local function PrintCarRadioMessage()
     if not GetConVar("car_radio_show_messages"):GetBool() then return end
     
     local currentTime = CurTime()
-    -- Call the function to get the actual cooldown value
     local cooldownTime = Config.MessageCooldown()
     
-    if lastMessageTime and currentTime - lastMessageTime < cooldownTime then
+    -- Check if animation is already playing or cooldown hasn't passed
+    if isMessageAnimating or (lastMessageTime and currentTime - lastMessageTime < cooldownTime) then
         return
     end
 
     lastMessageTime = currentTime
+    isMessageAnimating = true
 
     local openKey = GetConVar("car_radio_open_key"):GetInt()
     local keyName = GetKeyName(openKey)
@@ -421,9 +424,8 @@ local function PrintCarRadioMessage()
     panel:SetText("")
     panel:MoveToFront()
 
-    -- Animation variables
-    local animDuration = 0.3
-    local showDuration = 3
+    local animDuration = 1
+    local showDuration = 2
     local startTime = CurTime()
     local alpha = 0
     local pulseValue = 0
@@ -481,34 +483,39 @@ local function PrintCarRadioMessage()
             TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
     end
 
-    -- Animation think
+    -- Modified animation think with cleanup
     panel.Think = function(self)
         local time = CurTime() - startTime
         
-        -- Update pulse animation
-        pulseValue = (pulseValue + FrameTime() * 2) % 1
+        pulseValue = (pulseValue + FrameTime() * 1.5) % 1
 
         -- Slide in
         if time < animDuration then
             local progress = time / animDuration
-            local easedProgress = math.ease.OutBack(progress)
+            local easedProgress = math.ease.OutQuint(progress)
             self:SetPos(Lerp(easedProgress, scrW, scrW - panelWidth), scrH * 0.2)
-            alpha = progress
+            alpha = math.ease.InOutQuad(progress)
         -- Show
         elseif time < animDuration + showDuration and not isDismissed then
             alpha = 1
-            self:SetPos(scrW - panelWidth, scrH * 0.2)  -- Keep it at the edge
+            self:SetPos(scrW - panelWidth, scrH * 0.2)
         -- Slide out
         elseif not isDismissed or time >= animDuration + showDuration then
             local progress = (time - (animDuration + showDuration)) / animDuration
-            local easedProgress = math.ease.InQuint(progress)
+            local easedProgress = math.ease.InOutQuint(progress)
             self:SetPos(Lerp(easedProgress, scrW - panelWidth, scrW), scrH * 0.2)
-            alpha = 1 - easedProgress
+            alpha = 1 - math.ease.InOutQuad(progress)
             
             if progress >= 1 then
+                isMessageAnimating = false  -- Reset the animation flag
                 self:Remove()
             end
         end
+    end
+
+    -- Cleanup when panel is removed
+    panel.OnRemove = function()
+        isMessageAnimating = false
     end
 end
 
@@ -1924,6 +1931,7 @@ net.Receive("StopCarRadioStation", function()
     hook.Remove("Think", "UpdateRadioPosition_" .. entity:EntIndex())
 end)
 
+-- Update the volume update net receiver
 net.Receive("UpdateRadioVolume", function()
     local entity = net.ReadEntity()
     entity = GetVehicleEntity(entity)
@@ -1931,16 +1939,22 @@ net.Receive("UpdateRadioVolume", function()
 
     if not IsValid(entity) then return end
 
+    -- Store the volume locally
     entityVolumes[entity] = volume
 
+    -- Update the current sound if it exists
     if currentRadioSources[entity] and IsValid(currentRadioSources[entity]) then
         currentRadioSources[entity]:SetVolume(volume)
     end
 
-    if radioMenuOpen and IsValid(currentFrame) then
-        local volumeSlider = currentFrame:GetChildren()[6]:GetChildren()[2]
-        if IsValid(volumeSlider) and volumeSlider:GetName() == "DNumSlider" then
-            volumeSlider:SetValue(volume)
+    -- Update the volume slider if the radio menu is open and this is the current entity
+    if radioMenuOpen and IsValid(currentFrame) and LocalPlayer().currentRadioEntity == entity then
+        local volumePanel = currentFrame:GetChildren()[6]
+        if IsValid(volumePanel) then
+            local volumeSlider = volumePanel:GetChildren()[2]
+            if IsValid(volumeSlider) and volumeSlider:GetName() == "DNumSlider" then
+                volumeSlider:SetValue(volume)
+            end
         end
     end
 end)
@@ -1963,7 +1977,11 @@ net.Receive("OpenRadioMenu", function()
                 openRadioMenu()
             end
         else
-            chat.AddText(Color(255, 0, 0), "You don't have permission to interact with this boombox.")
+            local currentTime = CurTime()
+            if currentTime - lastPermissionMessage >= PERMISSION_MESSAGE_COOLDOWN then
+                chat.AddText(Color(255, 0, 0), "You don't have permission to interact with this boombox.")
+                lastPermissionMessage = currentTime
+            end
         end
     end
 end)
@@ -2010,63 +2028,5 @@ hook.Add("EntityRemoved", "ClearRadioEntity", function(ent)
     local ply = LocalPlayer()
     if ent == ply.currentRadioEntity then
         ply.currentRadioEntity = nil
-    end
-end)
-
-local function updateRadioVolume(station, distanceSqr, isPlayerInCar, entity)
-    local entityConfig = getEntityConfig(entity)
-    if not entityConfig then return end
-
-    local volume = ClampVolume(entityVolumes[entity] or entityConfig.Volume())
-    if volume <= 0.02 then
-        station:SetVolume(0)
-        return
-    end
-
-    -- Apply global volume limit
-    local maxVolume = Config.MaxVolume()
-    local effectiveVolume = math.min(volume, maxVolume)
-
-    local minVolumeDistance = entityConfig.MinVolumeDistance()
-    local maxHearingDistance = entityConfig.MaxHearingDistance()
-
-    local distance = math.sqrt(distanceSqr)
-
-    if isPlayerInCar then
-        station:SetVolume(effectiveVolume)
-    else
-        if distance <= minVolumeDistance then
-            station:SetVolume(effectiveVolume)
-        elseif distance <= maxHearingDistance then
-            local exponent = Config.VolumeAttenuationExponent
-            local attenuationFactor = ((maxHearingDistance - distance) / (maxHearingDistance - minVolumeDistance)) ^ exponent
-            attenuationFactor = math.Clamp(attenuationFactor, 0, 1)
-            local adjustedVolume = effectiveVolume * attenuationFactor
-            station:SetVolume(adjustedVolume)
-        else
-            station:SetVolume(0)
-        end
-    end
-end
-
--- In the net receiver for volume updates
-net.Receive("UpdateRadioVolume", function()
-    local entity = net.ReadEntity()
-    entity = GetVehicleEntity(entity)
-    local volume = ClampVolume(net.ReadFloat())
-
-    if not IsValid(entity) then return end
-
-    entityVolumes[entity] = volume
-
-    if currentRadioSources[entity] and IsValid(currentRadioSources[entity]) then
-        currentRadioSources[entity]:SetVolume(volume)
-    end
-
-    if radioMenuOpen and IsValid(currentFrame) then
-        local volumeSlider = currentFrame:GetChildren()[6]:GetChildren()[2]
-        if IsValid(volumeSlider) and volumeSlider:GetName() == "DNumSlider" then
-            volumeSlider:SetValue(volume)
-        end
     end
 end)

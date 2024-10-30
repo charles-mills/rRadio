@@ -98,8 +98,8 @@ local maxVolumeCvar = CreateServerConVar(
 -- Message cooldown
 local messageCooldownCvar = CreateServerConVar(
     "radio_message_cooldown",
-    "1",
-    "Cooldown time in seconds before chat messages can be sent again"
+    "5",
+    "Cooldown time in seconds before the animation can be played again"
 )
 
 -- Boombox Settings
