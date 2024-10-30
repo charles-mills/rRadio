@@ -89,24 +89,14 @@ end
     - volume: The volume level.
 ]]
 local function AddActiveRadio(entity, stationName, url, volume)
-    if not IsValid(entity) then 
-        print("[RadioDebug] AddActiveRadio failed - Invalid entity")
-        return 
-    end
-    
-    print(string.format("[RadioDebug] AddActiveRadio called - Entity: %d, Station: %s, URL: %s", 
-        entity:EntIndex(), stationName, url))
-    
     local entIndex = entity:EntIndex()
     
     -- Initialize volume if not set
     if not EntityVolumes[entIndex] then
-        print("[RadioDebug] Initializing volume for entity", entIndex)
         EntityVolumes[entIndex] = volume or GetDefaultVolume(entity)
     end
 
     -- Set networked variables
-    print("[RadioDebug] Setting network variables for entity", entIndex)
     entity:SetNWString("StationName", stationName)
     entity:SetNWString("StationURL", url)  -- Make sure we set the URL
     entity:SetNWFloat("Volume", EntityVolumes[entIndex])
@@ -120,7 +110,6 @@ local function AddActiveRadio(entity, stationName, url, volume)
 
     -- Update boombox status table
     if utils.IsBoombox(entity) then
-        print("[RadioDebug] Updating BoomboxStatuses for entity", entIndex)
         BoomboxStatuses[entIndex] = {
             stationStatus = "playing",
             stationName = stationName,
@@ -147,7 +136,6 @@ end
 ]]
 local function SendActiveRadiosToPlayer(ply)
     if not IsValid(ply) then
-        print("[RadioDebug] SendActiveRadiosToPlayer: Invalid player")
         return
     end
 
@@ -156,10 +144,7 @@ local function SendActiveRadiosToPlayer(ply)
     end
 
     local attempt = PlayerRetryAttempts[ply]
-    print("[RadioDebug] SendActiveRadiosToPlayer attempt", attempt, "for player", ply:Nick())
-
     if next(ActiveRadios) == nil then
-        print("[RadioDebug] No active radios to send")
         if attempt >= 3 then
             PlayerRetryAttempts[ply] = nil
             return
@@ -177,33 +162,24 @@ local function SendActiveRadiosToPlayer(ply)
         return
     end
 
-    print("[RadioDebug] Sending active radios to player", ply:Nick())
     for entIndex, radio in pairs(ActiveRadios) do
         local entity = Entity(entIndex)
-        if IsValid(entity) then
-            print(string.format("[RadioDebug] Sending radio - Entity: %d, Station: %s, URL: %s", 
-                entIndex, radio.stationName, radio.url))
-            
-            net.Start("PlayCarRadioStation")
-                net.WriteEntity(entity)
-                net.WriteString(radio.stationName)
-                net.WriteString(radio.url)
-                net.WriteFloat(radio.volume)
-            net.Send(ply)
-        else
-            print("[RadioDebug] Invalid entity for index", entIndex)
-            ActiveRadios[entIndex] = nil
-        end
+        net.Start("PlayCarRadioStation")
+            net.WriteEntity(entity)
+            net.WriteString(radio.stationName)
+            net.WriteString(radio.url)
+            net.WriteFloat(radio.volume)
+        net.Send(ply)
+
+        ActiveRadios[entIndex] = nil
     end
 
     PlayerRetryAttempts[ply] = nil
 end
 
 hook.Add("PlayerInitialSpawn", "SendActiveRadiosOnJoin", function(ply)
-    print("[RadioDebug] Player joined:", ply:Nick())
     timer.Simple(5, function()
         if IsValid(ply) then
-            print("[RadioDebug] Sending active radios to newly joined player:", ply:Nick())
             SendActiveRadiosToPlayer(ply)
         end
     end)
@@ -317,11 +293,6 @@ net.Receive("PlayCarRadioStation", function(len, ply)
     local stationURL = net.ReadString()
     local volume = net.ReadFloat()
 
-    print(string.format("[RadioDebug] PlayCarRadioStation received - Entity: %d, Station: %s, URL: %s",
-        IsValid(entity) and entity:EntIndex() or -1,
-        stationName,
-        stationURL))
-
     -- Basic validation
     if not IsValid(entity) then return end
     
@@ -335,8 +306,6 @@ net.Receive("PlayCarRadioStation", function(len, ply)
             BoomboxStatuses[entIndex] = {}
         end
         BoomboxStatuses[entIndex].url = stationURL
-        print(string.format("[RadioDebug] Stored URL in BoomboxStatuses - Entity: %d, URL: %s",
-            entIndex, stationURL))
     end
 
     local lastRequestTime = PlayerCooldowns[ply] or 0
