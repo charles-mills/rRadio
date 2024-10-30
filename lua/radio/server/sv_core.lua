@@ -329,37 +329,41 @@ net.Receive("PlayCarRadioStation", function(len, ply)
     end
 
     local entity = net.ReadEntity()
-    entity = utils.GetVehicle(entity) or entity
     local stationName = net.ReadString()
     local stationURL = net.ReadString()
+    local volume = net.ReadFloat()
     
-    -- Ignore client-sent volume, use server-side volume
-    local entIndex = entity:EntIndex()
-    local volume = EntityVolumes[entIndex] or GetDefaultVolume(entity)
-
+    -- Basic validation
     if not IsValid(entity) then return end
-
-    -- Check permissions
+    
+    -- Get the actual vehicle entity if needed
+    entity = GetVehicleEntity(entity)
+    local entIndex = entity:EntIndex()
+    
+    -- Permission checks for boomboxes
     if entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox" then
         if not utils.canInteractWithBoombox(ply, entity) then
             ply:ChatPrint("You do not have permission to control this boombox.")
             return
         end
-    elseif utils.GetVehicle(entity) then
-        local vehicle = utils.GetVehicle(entity)
+    elseif entity:IsVehicle() or IsLVSVehicle(entity) then
+        -- Vehicle permission checks
+        local vehicle = IsLVSVehicle(entity) or entity
         if utils.isSitAnywhereSeat(vehicle) then return end
         
-        -- Check if player is in the vehicle
-        local isInVehicle = false
-        for _, seat in pairs(ents.FindByClass("prop_vehicle_prisoner_pod")) do
-            if IsValid(seat) and seat:GetParent() == vehicle and seat:GetDriver() == ply then
-                isInVehicle = true
-                break
+        if not IsValid(vehicle:GetDriver()) or vehicle:GetDriver() ~= ply then
+            local isPassenger = false
+            for _, seat in pairs(ents.FindByClass("prop_vehicle_prisoner_pod")) do
+                if IsValid(seat) and seat:GetParent() == vehicle and seat:GetDriver() == ply then
+                    isPassenger = true
+                    break
+                end
             end
-        end
-        if not isInVehicle and vehicle:GetDriver() ~= ply then
-            ply:ChatPrint("You must be in the vehicle to control its radio.")
-            return
+            
+            if not isPassenger then
+                ply:ChatPrint("You must be in the vehicle to control its radio.")
+                return
+            end
         end
     end
 
@@ -371,16 +375,9 @@ net.Receive("PlayCarRadioStation", function(len, ply)
         RemoveActiveRadio(entity)
     end
 
-    -- Set initial status
+    -- Set initial status for boomboxes
     if entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox" then
-        entity:SetNWString("Status", "tuning")
-        entity:SetNWString("StationName", stationName)
-        entity:SetNWBool("IsPlaying", true)
-        
-        BoomboxStatuses[entIndex] = {
-            stationStatus = "tuning",
-            stationName = stationName
-        }
+        utils.setRadioStatus(entity, "tuning", stationName)
     end
 
     -- Add to active radios and broadcast
@@ -401,10 +398,7 @@ net.Receive("PlayCarRadioStation", function(len, ply)
     -- Set a timer to update status to "playing"
     timer.Create("StationUpdate_" .. entIndex, 2, 1, function()
         if IsValid(entity) then
-            entity:SetNWString("Status", "playing")
-            if BoomboxStatuses[entIndex] then
-                BoomboxStatuses[entIndex].stationStatus = "playing"
-            end
+            utils.setRadioStatus(entity, "playing", stationName)
         end
     end)
 end)
@@ -430,11 +424,7 @@ net.Receive("StopCarRadioStation", function(len, ply)
             return
         end
 
-        entity:SetNWString("StationName", "")
-        entity:SetNWString("StationURL", "")
-        entity:SetNWBool("IsPlaying", false)
-        entity:SetNWString("Status", "stopped")
-
+        utils.setRadioStatus(entity, "stopped")
         RemoveActiveRadio(entity)
 
         net.Start("StopCarRadioStation")

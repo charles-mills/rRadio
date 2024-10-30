@@ -151,13 +151,15 @@ end
 
 function ENT:GetDisplayText(status, stationName)
     if status == "stopped" then
-        if LocalPlayer() == self:GetNWEntity("Owner") or LocalPlayer():IsSuperAdmin() then -- Check if the current player is the owner
+        if LocalPlayer() == self:GetNWEntity("Owner") or LocalPlayer():IsSuperAdmin() then
             return Config.Lang["Interact"] or "Press E to Interact"
         else
             return Config.Lang["Paused"] or "PAUSED"
         end
     elseif status == "tuning" then
-        return "Tuning in..."
+        local baseText = Config.Lang["TuningIn"] or "Tuning in"
+        local dots = string.rep(".", math.floor(CurTime() * 2) % 4)
+        return baseText .. dots .. string.rep(" ", 3 - #dots) -- Keep consistent width with spaces
     else
         return stationName ~= "" and stationName or "Radio"
     end
