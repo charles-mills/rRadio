@@ -390,7 +390,7 @@ local function PrintCarRadioMessage()
     local scrW, scrH = ScrW(), ScrH()
     local panelWidth = Scale(300)
     local panelHeight = Scale(70)
-    local panel = vgui.Create("DButton") -- Changed to DButton for clickability
+    local panel = vgui.Create("DButton")
     panel:SetSize(panelWidth, panelHeight)
     panel:SetPos(scrW, scrH * 0.2)
     panel:SetText("")
@@ -401,26 +401,8 @@ local function PrintCarRadioMessage()
     local showDuration = 3
     local startTime = CurTime()
     local alpha = 0
-    local scale = 0.9
-    local bounce = 0
-    local hoverLerp = 0
     local pulseValue = 0
     local isDismissed = false
-
-    -- Close button
-    local closeButton = vgui.Create("DButton", panel)
-    closeButton:SetSize(Scale(16), Scale(16))
-    closeButton:SetPos(panelWidth - Scale(24), Scale(8))
-    closeButton:SetText("")
-    closeButton.Paint = function(self, w, h)
-        surface.SetDrawColor(ColorAlpha(Config.UI.TextColor, alpha * 255 * (self:IsHovered() and 1 or 0.7)))
-        surface.SetMaterial(Material("hud/close.png"))
-        surface.DrawTexturedRect(0, 0, w, h)
-    end
-    closeButton.DoClick = function()
-        isDismissed = true
-        surface.PlaySound("buttons/button15.wav")
-    end
 
     -- Click handler for the main panel
     panel.DoClick = function()
@@ -441,18 +423,14 @@ local function PrintCarRadioMessage()
             alpha * 255
         )
         
-        -- Main background with theme-specific corner roundness
-        draw.RoundedBox(Config.UI.CornerRadius or 8, 0, 0, w, h, bgColor)
-        
-        -- Accent border
-        surface.SetDrawColor(ColorAlpha(Config.UI.AccentColor or Config.UI.TextColor, alpha * 50))
-        surface.DrawOutlinedRect(0, 0, w, h, Scale(1))
+        -- Main background with rounded corners only on the left side
+        draw.RoundedBoxEx(12, 0, 0, w, h, bgColor, true, false, true, false)
 
         -- Key highlight box with pulse animation
         local keyWidth = Scale(40)
         local keyHeight = Scale(30)
         local keyX = Scale(20)
-        local keyY = h/2 - keyHeight/2  -- Center the key box vertically
+        local keyY = h/2 - keyHeight/2
         local pulseScale = 1 + math.sin(pulseValue * math.pi * 2) * 0.05
         local adjustedKeyWidth = keyWidth * pulseScale
         local adjustedKeyHeight = keyHeight * pulseScale
@@ -476,11 +454,6 @@ local function PrintCarRadioMessage()
         draw.SimpleText(Config.Lang["ToOpenRadio"] or "to open radio", "Roboto18", 
             messageX, h/2, ColorAlpha(Config.UI.TextColor, alpha * 255), 
             TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
-
-        -- Progress bar
-        local progress = math.Clamp((CurTime() - startTime) / (animDuration + showDuration), 0, 1)
-        draw.RoundedBox(2, 0, h - Scale(2), w * (1 - progress), Scale(2), 
-            ColorAlpha(Config.UI.AccentColor or Config.UI.TextColor, alpha * 255))
     end
 
     -- Animation think
@@ -489,31 +462,23 @@ local function PrintCarRadioMessage()
         
         -- Update pulse animation
         pulseValue = (pulseValue + FrameTime() * 2) % 1
-        
-        -- Update hover lerp
-        if self:IsHovered() then
-            hoverLerp = math.Approach(hoverLerp, 1, FrameTime() * 5)
-        else
-            hoverLerp = math.Approach(hoverLerp, 0, FrameTime() * 5)
-        end
 
         -- Slide in
         if time < animDuration then
             local progress = time / animDuration
             local easedProgress = math.ease.OutBack(progress)
-            self:SetPos(Lerp(easedProgress, scrW, scrW - panelWidth - Scale(20)), scrH * 0.2)
+            self:SetPos(Lerp(easedProgress, scrW, scrW - panelWidth), scrH * 0.2)
             alpha = progress
-            scale = Lerp(progress, 0.9, 1)
         -- Show
         elseif time < animDuration + showDuration and not isDismissed then
             alpha = 1
+            self:SetPos(scrW - panelWidth, scrH * 0.2)  -- Keep it at the edge
         -- Slide out
         elseif not isDismissed or time >= animDuration + showDuration then
             local progress = (time - (animDuration + showDuration)) / animDuration
             local easedProgress = math.ease.InQuint(progress)
-            self:SetPos(Lerp(easedProgress, scrW - panelWidth - Scale(20), scrW), scrH * 0.2)
+            self:SetPos(Lerp(easedProgress, scrW - panelWidth, scrW), scrH * 0.2)
             alpha = 1 - easedProgress
-            scale = Lerp(easedProgress, 1, 0.9)
             
             if progress >= 1 then
                 self:Remove()
