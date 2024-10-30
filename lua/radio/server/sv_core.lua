@@ -181,7 +181,6 @@ local function UpdateVehicleStatus(vehicle)
     return isSitAnywhere
 end
 
--- Modify the PlayerEnteredVehicle hook
 hook.Add("PlayerEnteredVehicle", "RadioVehicleHandling", function(ply, vehicle)
     -- Only process actual vehicles
     local veh = utils.GetVehicle(vehicle)
