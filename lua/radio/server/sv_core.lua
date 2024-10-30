@@ -547,21 +547,23 @@ net.Receive("UpdateRadioVolume", function(len, ply)
                 local updateVolume = updateData.volume
 
                 if IsValid(updateEntity) then
+                    -- Update the networked volume
                     updateEntity:SetNWFloat("Volume", updateVolume)
                     
-                    -- Broadcast the volume update to all clients
+                    -- Update active radio volume if it exists
+                    if ActiveRadios[entIndex] then
+                        ActiveRadios[entIndex].volume = updateVolume
+                    end
+
+                    -- Broadcast the volume update to ALL clients
                     net.Start("UpdateRadioVolume")
                         net.WriteEntity(updateEntity)
                         net.WriteFloat(updateVolume)
                     net.Broadcast()
 
-                    -- Update the ActiveRadios table if it exists for this entity
-                    if ActiveRadios[entIndex] then
-                        ActiveRadios[entIndex].volume = updateVolume
-                    end
-
                     -- Save to database if permanent (for boomboxes)
-                    if updateEntity.IsPermanent and SavePermanentBoombox and (entityClass == "boombox" or entityClass == "golden_boombox") then
+                    if updateEntity.IsPermanent and SavePermanentBoombox and 
+                       (entityClass == "boombox" or entityClass == "golden_boombox") then
                         SavePermanentBoombox(updateEntity)
                     end
                 end
@@ -781,7 +783,7 @@ local radioCommands = {
         example = "0.8"
     },
     message_cooldown = {
-        desc = "Sets the cooldown time in seconds for radio messages",
+        desc = "Sets the cooldown time in seconds for radio messages (the animation when entering a vehicle)",
         example = "2"
     },
     boombox_volume = {
