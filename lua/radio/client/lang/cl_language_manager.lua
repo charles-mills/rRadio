@@ -51,23 +51,13 @@ end
 
 -- Function to get a country translation
 function LanguageManager:GetCountryTranslation(lang, country_key)
-    -- Debug prints
-    print("=== Translation Debug ===")
-    print("Looking up:", country_key)
-    print("Language:", lang)
-    
     -- Check if we have translations for this language
     if self.countryTranslations[lang] then
         local translation = self.countryTranslations[lang][country_key]
         if translation then
-            print("Found translation:", translation)
             return translation
         end
     end
-    
-    print("No translation found, returning original")
-    print("=====================")
-    
     return country_key
 end
 

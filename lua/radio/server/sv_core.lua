@@ -53,6 +53,12 @@ local volumeUpdateQueue = {}
 local STATION_CHANGE_COOLDOWN = 0.5
 local lastStationChangeTimes = {}
 
+-- Function to validate and clamp volume within server limits
+local function ClampVolume(volume)
+    local maxVolume = GetConVar("radio_max_volume_limit"):GetFloat()
+    return math.Clamp(volume, 0, maxVolume)
+end
+
 --[[
     Function: AddActiveRadio
     Adds a radio to the active radios list.
@@ -284,7 +290,7 @@ net.Receive("PlayCarRadioStation", function(len, ply)
     entity = GetVehicleEntity(entity)
     local stationName = net.ReadString()
     local stationURL = net.ReadString()
-    local volume = net.ReadFloat()
+    local volume = ClampVolume(net.ReadFloat())
 
     if not IsValid(entity) then
         return
@@ -504,7 +510,7 @@ end)
 net.Receive("UpdateRadioVolume", function(len, ply)
     local entity = net.ReadEntity()
     entity = GetVehicleEntity(entity)
-    local volume = net.ReadFloat()
+    local volume = ClampVolume(net.ReadFloat())
 
     if not IsValid(entity) then return end
 
@@ -704,4 +710,67 @@ local function CleanupInactiveRadios()
 end
 
 timer.Create("CleanupInactiveRadios", 300, 0, CleanupInactiveRadios)  -- Run every 5 minutes
+
+-- Add command to reload convars (SuperAdmin only)
+concommand.Add("radio_reload_config", function(ply)
+    if IsValid(ply) and not ply:IsSuperAdmin() then return end
+    
+    -- Force ConVar updates
+    game.ReloadConVars()
+    
+    -- Notify admins
+    if IsValid(ply) then
+        ply:ChatPrint("[Radio] Configuration reloaded!")
+    else
+        print("[Radio] Configuration reloaded!")
+    end
+end)
+
+-- Add near the end of the file
+local function AddRadioCommand(name, helpText)
+    concommand.Add("radio_set_" .. name, function(ply, cmd, args)
+        if IsValid(ply) and not ply:IsSuperAdmin() then return end
+        
+        local value = tonumber(args[1])
+        if not value then
+            if IsValid(ply) then
+                ply:ChatPrint("[Radio] Invalid value provided!")
+            else
+                print("[Radio] Invalid value provided!")
+            end
+            return
+        end
+        
+        local cvar = GetConVar("radio_" .. name)
+        if cvar then
+            cvar:SetFloat(value)
+            
+            local message = string.format("[Radio] %s set to %.2f", name:gsub("_", " "), value)
+            if IsValid(ply) then
+                ply:ChatPrint(message)
+            else
+                print(message)
+            end
+        end
+    end)
+end
+
+-- Register all radio commands
+local commands = {
+    "max_volume_limit",
+    "message_cooldown",
+    "boombox_volume",
+    "boombox_max_distance",
+    "boombox_min_distance",
+    "golden_boombox_volume",
+    "golden_boombox_max_distance",
+    "golden_boombox_min_distance",
+    "vehicle_volume",
+    "vehicle_max_distance",
+    "vehicle_min_distance"
+}
+
+for _, cmd in ipairs(commands) do
+    AddRadioCommand(cmd)
+end
 

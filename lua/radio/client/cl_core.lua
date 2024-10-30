@@ -53,6 +53,13 @@ local keyPressDelay = 0.2  -- Delay between key presses to prevent spamming
 
 local favoritesMenuOpen = false
 
+-- Add near the top with other local variables
+local VOLUME_ICONS = {
+    MUTE = Material("hud/vol_mute.png", "smooth"),
+    LOW = Material("hud/vol_down.png", "smooth"),
+    HIGH = Material("hud/vol_up.png", "smooth")
+}
+
 -- ------------------------------
 --      Utility Functions
 -- ------------------------------
@@ -337,17 +344,18 @@ local function updateRadioVolume(station, distanceSqr, isPlayerInCar, entity)
     local entityConfig = getEntityConfig(entity)
     if not entityConfig then return end
 
-    local volume = entityVolumes[entity] or entityConfig.Volume
+    local volume = ClampVolume(entityVolumes[entity] or entityConfig.Volume())
     if volume <= 0.02 then
         station:SetVolume(0)
         return
     end
 
-    local maxVolume = GetConVar("radio_max_volume"):GetFloat()
+    -- Apply global volume limit
+    local maxVolume = Config.MaxVolume()
     local effectiveVolume = math.min(volume, maxVolume)
 
-    local minVolumeDistance = entityConfig.MinVolumeDistance or 0
-    local maxHearingDistance = entityConfig.MaxHearingDistance or 1000
+    local minVolumeDistance = entityConfig.MinVolumeDistance()
+    local maxHearingDistance = entityConfig.MaxHearingDistance()
 
     local distance = math.sqrt(distanceSqr)
 
@@ -357,7 +365,7 @@ local function updateRadioVolume(station, distanceSqr, isPlayerInCar, entity)
         if distance <= minVolumeDistance then
             station:SetVolume(effectiveVolume)
         elseif distance <= maxHearingDistance then
-            local exponent = Config.VolumeAttenuationExponent or 1
+            local exponent = Config.VolumeAttenuationExponent
             local attenuationFactor = ((maxHearingDistance - distance) / (maxHearingDistance - minVolumeDistance)) ^ exponent
             attenuationFactor = math.Clamp(attenuationFactor, 0, 1)
             local adjustedVolume = effectiveVolume * attenuationFactor
@@ -735,14 +743,7 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                 return first:upper() .. rest:lower()
             end)
             
-            -- Debug print
-            print("Raw country name:", country)
-            print("Formatted for translation:", formattedCountry)
-            
             local translatedCountry = LanguageManager:GetCountryTranslation(lang, formattedCountry) or formattedCountry
-
-            -- Debug print
-            print("Translated to:", translatedCountry, "for language:", lang)
 
             if filterText == "" or translatedCountry:lower():find(filterText, 1, true) then
                 table.insert(countries, { 
@@ -864,23 +865,32 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                     return
                 end
 
+                -- Stop any existing station first
                 if currentlyPlayingStations[entity] then
                     net.Start("StopCarRadioStation")
                         net.WriteEntity(entity)
                     net.SendToServer()
                 end
 
-                local volume = entityVolumes[entity] or (getEntityConfig(entity) and getEntityConfig(entity).Volume) or 0.5
-                net.Start("PlayCarRadioStation")
-                    net.WriteEntity(entity)
-                    net.WriteString(favorite.station.name)
-                    net.WriteString(favorite.station.url)
-                    net.WriteFloat(volume)
-                net.SendToServer()
+                -- Get the current entity config and volume
+                local entityConfig = getEntityConfig(entity)
+                local volume = entityVolumes[entity] or (entityConfig and entityConfig.Volume()) or 0.5
 
-                currentlyPlayingStations[entity] = favorite.station
-                lastStationSelectTime = currentTime
-                populateList(stationListPanel, backButton, searchBox, false)
+                -- Start a new net message after the stop message is complete
+                timer.Simple(0, function()
+                    if not IsValid(entity) then return end
+                    
+                    net.Start("PlayCarRadioStation")
+                        net.WriteEntity(entity)
+                        net.WriteString(favorite.station.name)
+                        net.WriteString(favorite.station.url)
+                        net.WriteFloat(volume) -- Write the actual float value, not the function
+                    net.SendToServer()
+
+                    currentlyPlayingStations[entity] = favorite.station
+                    lastStationSelectTime = currentTime
+                    populateList(stationListPanel, backButton, searchBox, false)
+                end)
             end
         end
     else
@@ -940,23 +950,32 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                     return
                 end
 
+                -- Stop any existing station first
                 if currentlyPlayingStations[entity] then
                     net.Start("StopCarRadioStation")
                         net.WriteEntity(entity)
                     net.SendToServer()
                 end
 
-                local volume = entityVolumes[entity] or (getEntityConfig(entity) and getEntityConfig(entity).Volume) or 0.5
-                net.Start("PlayCarRadioStation")
-                    net.WriteEntity(entity)
-                    net.WriteString(station.name)
-                    net.WriteString(station.url)
-                    net.WriteFloat(volume)
-                net.SendToServer()
+                -- Get the current entity config and volume
+                local entityConfig = getEntityConfig(entity)
+                local volume = entityVolumes[entity] or (entityConfig and entityConfig.Volume()) or 0.5
 
-                currentlyPlayingStations[entity] = station
-                lastStationSelectTime = currentTime  -- Update the last station select time
-                populateList(stationListPanel, backButton, searchBox, false)
+                -- Start a new net message after the stop message is complete
+                timer.Simple(0, function()
+                    if not IsValid(entity) then return end
+                    
+                    net.Start("PlayCarRadioStation")
+                        net.WriteEntity(entity)
+                        net.WriteString(station.name)
+                        net.WriteString(station.url)
+                        net.WriteFloat(volume) -- Write the actual float value, not the function
+                    net.SendToServer()
+
+                    currentlyPlayingStations[entity] = station
+                    lastStationSelectTime = currentTime
+                    populateList(stationListPanel, backButton, searchBox, false)
+                end)
             end
         end
 
@@ -1416,27 +1435,38 @@ openRadioMenu = function(openSettings)
     local volumeIcon = vgui.Create("DImage", volumePanel)
     volumeIcon:SetPos(Scale(10), (volumePanel:GetTall() - volumeIconSize) / 2)
     volumeIcon:SetSize(volumeIconSize, volumeIconSize)
+    volumeIcon:SetMaterial(VOLUME_ICONS.HIGH) -- Set default icon
 
     -- Function to update the volume icon based on the current volume
-    local function updateVolumeIcon(value)
-        local iconName
-        if value < 0.01 then
-            iconName = "vol_mute"
-        elseif value <= 0.65 then
-            iconName = "vol_down"
-        else
-            iconName = "vol_up"
+    local function updateVolumeIcon(volumeIcon, value)
+        if not IsValid(volumeIcon) then return end
+        
+        local iconMat
+        if type(value) == "function" then
+            value = value()
         end
         
-        local mat = Material("hud/" .. iconName .. ".png")
-        volumeIcon:SetMaterial(mat)
+        if value < 0.01 then
+            iconMat = VOLUME_ICONS.MUTE
+        elseif value <= 0.65 then
+            iconMat = VOLUME_ICONS.LOW
+        else
+            iconMat = VOLUME_ICONS.HIGH
+        end
+        
+        if iconMat then
+            volumeIcon:SetMaterial(iconMat)
+        end
     end
 
     -- Override the Paint function of volumeIcon to apply the text color
     volumeIcon.Paint = function(self, w, h)
         surface.SetDrawColor(Config.UI.TextColor)
-        surface.SetMaterial(self:GetMaterial())
-        surface.DrawTexturedRect(0, 0, w, h)
+        local mat = self:GetMaterial()
+        if mat then
+            surface.SetMaterial(mat)
+            surface.DrawTexturedRect(0, 0, w, h)
+        end
     end
 
     -- Get the current entity and its volume
@@ -1448,7 +1478,7 @@ openRadioMenu = function(openSettings)
     end
 
     -- Set initial icon
-    updateVolumeIcon(currentVolume)
+    updateVolumeIcon(volumeIcon, currentVolume)
 
     local volumeSlider = vgui.Create("DNumSlider", volumePanel)
     volumeSlider:SetPos(-Scale(170), Scale(5))
@@ -1483,10 +1513,8 @@ openRadioMenu = function(openSettings)
             end
         end
 
-        -- Force mute for volumes less than 5%
-        if value < 0.05 then
-            value = 0
-        end
+        -- Apply global volume limit
+        value = math.min(value, Config.MaxVolume())
 
         -- Immediately update client-side volume
         entityVolumes[entity] = value
@@ -1495,7 +1523,7 @@ openRadioMenu = function(openSettings)
         end
 
         -- Update the icon
-        updateVolumeIcon(value)
+        updateVolumeIcon(volumeIcon, value)
 
         -- Debounce server communication
         if currentTime - lastServerUpdate >= 0.1 then
@@ -1738,7 +1766,10 @@ net.Receive("PlayCarRadioStation", function()
             -- Set 3D fade distance according to the entity's configuration
             local entityConfig = getEntityConfig(entity)
             if entityConfig then
-                station:Set3DFadeDistance(entityConfig.MinVolumeDistance, entityConfig.MaxHearingDistance)
+                -- Get the actual values from the functions
+                local minDist = entityConfig.MinVolumeDistance()
+                local maxDist = entityConfig.MaxHearingDistance()
+                station:Set3DFadeDistance(minDist, maxDist)
             end
 
             -- Create a timer to check when the station actually starts playing
@@ -1867,7 +1898,7 @@ end)
 net.Receive("UpdateRadioVolume", function()
     local entity = net.ReadEntity()
     entity = GetVehicleEntity(entity)
-    local volume = net.ReadFloat()
+    local volume = ClampVolume(net.ReadFloat())
 
     if not IsValid(entity) then return end
 
@@ -1912,6 +1943,17 @@ net.Receive("CarRadioMessage", function()
     PrintCarRadioMessage()
 end)
 
+-- Add with other net receivers
+net.Receive("RadioConfigUpdate", function()
+    -- Update all active radio volumes to comply with new settings
+    for entity, source in pairs(currentRadioSources) do
+        if IsValid(entity) and IsValid(source) then
+            local volume = ClampVolume(entityVolumes[entity] or getEntityConfig(entity).Volume())
+            source:SetVolume(volume)
+        end
+    end
+end)
+
 -- ------------------------------
 --      Initialization
 -- ------------------------------
@@ -1939,5 +1981,70 @@ hook.Add("EntityRemoved", "ClearRadioEntity", function(ent)
     local ply = LocalPlayer()
     if ent == ply.currentRadioEntity then
         ply.currentRadioEntity = nil
+    end
+end)
+
+-- Add this helper function near the top with other utility functions
+local function ClampVolume(volume)
+    local maxVolume = Config.MaxVolume()
+    return math.Clamp(volume, 0, maxVolume)
+end
+
+-- Modify the updateRadioVolume function to use the clamped volume
+local function updateRadioVolume(station, distanceSqr, isPlayerInCar, entity)
+    local entityConfig = getEntityConfig(entity)
+    if not entityConfig then return end
+
+    local volume = ClampVolume(entityVolumes[entity] or entityConfig.Volume())
+    if volume <= 0.02 then
+        station:SetVolume(0)
+        return
+    end
+
+    -- Apply global volume limit
+    local maxVolume = Config.MaxVolume()
+    local effectiveVolume = math.min(volume, maxVolume)
+
+    local minVolumeDistance = entityConfig.MinVolumeDistance()
+    local maxHearingDistance = entityConfig.MaxHearingDistance()
+
+    local distance = math.sqrt(distanceSqr)
+
+    if isPlayerInCar then
+        station:SetVolume(effectiveVolume)
+    else
+        if distance <= minVolumeDistance then
+            station:SetVolume(effectiveVolume)
+        elseif distance <= maxHearingDistance then
+            local exponent = Config.VolumeAttenuationExponent
+            local attenuationFactor = ((maxHearingDistance - distance) / (maxHearingDistance - minVolumeDistance)) ^ exponent
+            attenuationFactor = math.Clamp(attenuationFactor, 0, 1)
+            local adjustedVolume = effectiveVolume * attenuationFactor
+            station:SetVolume(adjustedVolume)
+        else
+            station:SetVolume(0)
+        end
+    end
+end
+
+-- In the net receiver for volume updates
+net.Receive("UpdateRadioVolume", function()
+    local entity = net.ReadEntity()
+    entity = GetVehicleEntity(entity)
+    local volume = ClampVolume(net.ReadFloat())
+
+    if not IsValid(entity) then return end
+
+    entityVolumes[entity] = volume
+
+    if currentRadioSources[entity] and IsValid(currentRadioSources[entity]) then
+        currentRadioSources[entity]:SetVolume(volume)
+    end
+
+    if radioMenuOpen and IsValid(currentFrame) then
+        local volumeSlider = currentFrame:GetChildren()[6]:GetChildren()[2]
+        if IsValid(volumeSlider) and volumeSlider:GetName() == "DNumSlider" then
+            volumeSlider:SetValue(volume)
+        end
     end
 end)
