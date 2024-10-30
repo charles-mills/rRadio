@@ -397,12 +397,12 @@ end
 ]]
 local function PrintCarRadioMessage()
     if not GetConVar("car_radio_show_messages"):GetBool() then return end
-
-    local vehicle = LocalPlayer():GetVehicle()
-    if not IsValid(vehicle) or utils.isSitAnywhereSeat(vehicle) then return end
-
+    
     local currentTime = CurTime()
-    if (currentTime - lastMessageTime) < Config.MessageCooldown and lastMessageTime ~= -math.huge then
+    -- Call the function to get the actual cooldown value
+    local cooldownTime = Config.MessageCooldown()
+    
+    if lastMessageTime and currentTime - lastMessageTime < cooldownTime then
         return
     end
 
@@ -1489,7 +1489,22 @@ openRadioMenu = function(openSettings)
     local currentVolume = 0.5 -- Default volume
 
     if IsValid(entity) then
-        currentVolume = entityVolumes[entity] or (getEntityConfig(entity) and getEntityConfig(entity).Volume) or 0.5
+        -- First check if we have a stored volume
+        if entityVolumes[entity] then
+            currentVolume = entityVolumes[entity]
+        else
+            -- If no stored volume, get from entity config
+            local entityConfig = getEntityConfig(entity)
+            if entityConfig and entityConfig.Volume then
+                -- Make sure to call the function if it's a function
+                currentVolume = type(entityConfig.Volume) == "function" 
+                    and entityConfig.Volume() 
+                    or entityConfig.Volume
+            end
+        end
+        
+        -- Ensure volume respects the global maximum
+        currentVolume = math.min(currentVolume, Config.MaxVolume())
     end
 
     -- Set initial icon
@@ -1500,10 +1515,9 @@ openRadioMenu = function(openSettings)
     volumeSlider:SetSize(Scale(Config.UI.FrameSize.width) + Scale(120) - stopButtonWidth, volumePanel:GetTall() - Scale(20))
     volumeSlider:SetText("")
     volumeSlider:SetMin(0)
-    volumeSlider:SetMax(1)
+    volumeSlider:SetMax(Config.MaxVolume()) -- Set max to the global maximum
     volumeSlider:SetDecimals(2)
-
-    volumeSlider:SetValue(currentVolume)
+    volumeSlider:SetValue(currentVolume) -- Set the initial value
 
     volumeSlider.Slider.Paint = function(self, w, h)
         draw.RoundedBox(8, 0, h / 2 - 4, w, 16, Config.UI.TextColor)
