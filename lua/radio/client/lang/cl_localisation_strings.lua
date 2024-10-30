@@ -35,6 +35,7 @@ LANG.de["SuperadminSettings"] = "Hauptadministrator-Einstellungen"
 LANG.de["MakeBoomboxPermanent"] = "Tragbares Radio als permanent markieren"
 LANG.de["Enabled"] = "Aktiviert"
 LANG.de["Disabled"] = "Deaktiviert"
+LANG.de["FavoriteStations"] = "Favorit-Stationen"
 
 -- English
 LANG.en["SelectCountry"] = "Select a Country"
@@ -59,7 +60,7 @@ LANG.en["SuperadminSettings"] = "Superadmin Settings"
 LANG.en["MakeBoomboxPermanent"] = "Make Boombox Permanent"
 LANG.en["Enabled"] = "Enabled"
 LANG.en["Disabled"] = "Disabled"
-
+LANG.en["FavoriteStations"] = "Favorite Stations"
 
 -- Spanish
 LANG.es["SelectCountry"] = "Seleccionar país"
@@ -84,6 +85,7 @@ LANG.es["SuperadminSettings"] = "Configuraciones de Administrador Principal"
 LANG.es["MakeBoomboxPermanent"] = "Marcar radio portátil como permanente"
 LANG.es["Enabled"] = "Activado"
 LANG.es["Disabled"] = "Desactivado"
+LANG.es["FavoriteStations"] = "Estaciones favoritas"
 
 -- French
 LANG.fr["SelectCountry"] = "Sélectionnez un pays"
@@ -108,7 +110,7 @@ LANG.fr["SuperadminSettings"] = "Paramètres d'Administrateur Principal"
 LANG.fr["MakeBoomboxPermanent"] = "Marquer la radio portable comme permanente"
 LANG.fr["Enabled"] = "Activé"
 LANG.fr["Disabled"] = "Désactivé"
-
+LANG.fr["FavoriteStations"] = "Stations favorites"
 
 -- Italian
 LANG.it["SelectCountry"] = "Seleziona paese"
@@ -133,7 +135,7 @@ LANG.it["SuperadminSettings"] = "Configurazioni dell'Amministratore Principale"
 LANG.it["MakeBoomboxPermanent"] = "Rendi la radio portatile permanente"
 LANG.it["Enabled"] = "Attivo"
 LANG.it["Disabled"] = "Disattivato"
-
+LANG.it["FavoriteStations"] = "Stazioni favorite"
 
 -- Japanese
 LANG.ja["SelectCountry"] = "国を選択"
@@ -158,7 +160,7 @@ LANG.ja["SuperadminSettings"] = "最高管理者の設定"
 LANG.ja["MakeBoomboxPermanent"] = "ポータブルラジオを永久にする"
 LANG.ja["Enabled"] = "有効"
 LANG.ja["Disabled"] = "無効"
-
+LANG.ja["FavoriteStations"] = "お気に入りの局"
 
 -- Korean
 LANG.ko["SelectCountry"] = "국가 선택"
@@ -183,7 +185,7 @@ LANG.ko["SuperadminSettings"] = "최고 관리자 설정"
 LANG.ko["MakeBoomboxPermanent"] = "휴대용 라디오를 영구적으로 만들기"
 LANG.ko["Enabled"] = "활성화"
 LANG.ko["Disabled"] = "비활성화"
-
+LANG.ko["FavoriteStations"] = "즐겨찾기 방송국"
 
 -- Portuguese (Brazil)
 LANG.pt_br["SelectCountry"] = "Selecionar país"
@@ -208,7 +210,7 @@ LANG.pt_br["SuperadminSettings"] = "Configurações de Administrador Principal"
 LANG.pt_br["MakeBoomboxPermanent"] = "Marcar rádio portátil como permanente"
 LANG.pt_br["Enabled"] = "Ativado"
 LANG.pt_br["Disabled"] = "Desativado"
-
+LANG.pt_br["FavoriteStations"] = "Estações favoritas"
 
 -- Russian
 LANG.ru["SelectCountry"] = "Выберите страну"
@@ -233,7 +235,7 @@ LANG.ru["SuperadminSettings"] = "Настройки Главного Админ�
 LANG.ru["MakeBoomboxPermanent"] = "Сделать портативное радио постоянным"
 LANG.ru["Enabled"] = "Включено"
 LANG.ru["Disabled"] = "Выключено"
-
+LANG.ru["FavoriteStations"] = "Избранные станции"
 -- Turkish
 LANG.tr["SelectCountry"] = "Ülke seç"
 LANG.tr["StopRadio"] = "DURDUR"
@@ -257,7 +259,7 @@ LANG.tr["SuperadminSettings"] = "Baş Yönetici ayarları"
 LANG.tr["MakeBoomboxPermanent"] = "Taşınabilir radyoyu sabit yap"
 LANG.tr["Enabled"] = "Aktif"
 LANG.tr["Disabled"] = "Pasif"
-
+LANG.tr["FavoriteStations"] = "Favori Radyo Kanalları"
 
 -- Chinese (Simplified)
 LANG.zh_cn["SelectCountry"] = "选择国家"
@@ -282,5 +284,6 @@ LANG.zh_cn["SuperadminSettings"] = "超级管理员设置"
 LANG.zh_cn["MakeBoomboxPermanent"] = "将便携式收音机设为永久"
 LANG.zh_cn["Enabled"] = "启用"
 LANG.zh_cn["Disabled"] = "禁用"
+LANG.zh_cn["FavoriteStations"] = "收藏电台"
 
 return LANG
