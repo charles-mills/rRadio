@@ -280,11 +280,8 @@ local function LoadPermanentBoomboxes(isReload)
                 net.WriteFloat(row.volume)
             net.Broadcast()
 
-            -- Add to active radios
             if AddActiveRadio then
                 AddActiveRadio(ent, row.station_name or "", row.station_url, row.volume)
-            else
-                print("[RadioDebug] WARNING: AddActiveRadio function not found!")
             end
         end
 

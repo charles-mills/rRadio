@@ -1702,9 +1702,6 @@ net.Receive("PlayCarRadioStation", function()
     local url = net.ReadString()
     local volume = net.ReadFloat()
 
-    print(string.format("[RadioDebug] Client received PlayCarRadioStation - Entity: %d, Station: %s", 
-        IsValid(entity) and entity:EntIndex() or -1, stationName))
-
     local currentCount = updateStationCount()
 
     -- Check if we're already at the station limit
