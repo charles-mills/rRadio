@@ -31,19 +31,44 @@ LanguageManager.countryTranslationsB = include("cl_country_translations_b.lua")
 
 -- Merge country translations
 LanguageManager.countryTranslations = {}
-for k, v in pairs(LanguageManager.countryTranslationsA) do
-    LanguageManager.countryTranslations[k] = v
-end
-for k, v in pairs(LanguageManager.countryTranslationsB) do
-    LanguageManager.countryTranslations[k] = v
+for lang, translations in pairs(LanguageManager.countryTranslationsA) do
+    if type(translations) == "table" then
+        LanguageManager.countryTranslations[lang] = LanguageManager.countryTranslations[lang] or {}
+        for k, v in pairs(translations) do
+            LanguageManager.countryTranslations[lang][k] = v
+        end
+    end
 end
 
--- Use the GetCountryName function from countryTranslationsB
-LanguageManager.GetCountryName = LanguageManager.countryTranslationsB.GetCountryName
+for lang, translations in pairs(LanguageManager.countryTranslationsB) do
+    if type(translations) == "table" then
+        LanguageManager.countryTranslations[lang] = LanguageManager.countryTranslations[lang] or {}
+        for k, v in pairs(translations) do
+            LanguageManager.countryTranslations[lang][k] = v
+        end
+    end
+end
 
 -- Function to get a country translation
 function LanguageManager:GetCountryTranslation(lang, country_key)
-    return self:GetCountryName(lang, country_key)
+    -- Debug prints
+    print("=== Translation Debug ===")
+    print("Looking up:", country_key)
+    print("Language:", lang)
+    
+    -- Check if we have translations for this language
+    if self.countryTranslations[lang] then
+        local translation = self.countryTranslations[lang][country_key]
+        if translation then
+            print("Found translation:", translation)
+            return translation
+        end
+    end
+    
+    print("No translation found, returning original")
+    print("=====================")
+    
+    return country_key
 end
 
 -- Function to set the current language (default to English)

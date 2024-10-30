@@ -191,7 +191,7 @@ CountryTranslations["ko"] = {
     ["The Faroe Islands"] = "페로 제도",
     ["The French Southern Territories"] = "프랑스령 남방 및 남극",
     ["The Holy See"] = "바티칸",
-    ["The Lao Peoples Democratic Republic"] = "��오스 인민 민주 공화국",
+    ["The Lao Peoples Democratic Republic"] = "오스 인민 민주 공화국",
     ["The Netherlands"] = "네덜란드",
     ["The Niger"] = "니제르",
     ["The Philippines"] = "필리핀",
@@ -389,7 +389,7 @@ CountryTranslations["pt_br"] = {
     ["Sierra Leone"] = "Serra Leoa",
     ["Singapore"] = "Cingapura",
     ["Slovakia"] = "Eslováquia",
-    ["Slovenia"] = "Eslovênia",
+    ["Slovenia"] = "Slovênia",
     ["Somalia"] = "Somália",
     ["South Africa"] = "África do Sul",
     ["South Sudan"] = "Sudão do Sul",
@@ -429,7 +429,7 @@ CountryTranslations["pt_br"] = {
     ["The United Kingdom"] = "Reino Unido",
     ["The United Kingdom Of Great Britain And Northern Ireland"] = "Reino Unido da Grã-Bretanha e Irlanda do Norte",
     ["The United States Minor Outlying Islands"] = "Ilhas Menores Distantes dos Estados Unidos",
-    ["The United States Of America"] = "Estados Unidos da América",
+    ["The United States Of America"] = "Mliidnios da América",
     ["Timor Leste"] = "Timor-Leste",
     ["Togo"] = "Togo",
     ["Trinidad And Tobago"] = "Trindade e Tobago",
@@ -482,7 +482,7 @@ CountryTranslations["ru"] = {
     ["Bosnia And Herzegovina"] = "Босния и Герцеговина",
     ["Botswana"] = "Ботсвана",
     ["Brazil"] = "Бразилия",
-    ["British Indian Ocean Territory"] = "Бр��танская территория Индийского океана",
+    ["British Indian Ocean Territory"] = "Бранская территория Индийского океана",
     ["British Virgin Islands"] = "Британские Виргинские острова",
     ["Brunei Darussalam"] = "Бруней-Даруссалам",
     ["Bulgaria"] = "Болгария",
@@ -589,7 +589,7 @@ CountryTranslations["ru"] = {
     ["Other"] = "Другие",
     ["Pakistan"] = "Пакистан",
     ["Palau"] = "Палау",
-    ["Panama"] = "Панама",
+    ["Panama"] = "Бнама",
     ["Papua New Guinea"] = "Папуа-Новая Гвинея",
     ["Paraguay"] = "Парагвай",
     ["Peru"] = "Перу",
@@ -637,7 +637,7 @@ CountryTranslations["ru"] = {
     ["The Cook Islands"] = "Острова Кука",
     ["The Democratic Republic Of The Congo"] = "Демократическая Республика Конго",
     ["The Dominican Republic"] = "Доминиканская Республика",
-    ["The Falkland Islands Malvinas"] = "Фолклендские острова",
+    ["The Falkland Islands Malvinas"] = "Марвнасы острова",
     ["The Faroe Islands"] = "Фарерские острова",
     ["The French Southern Territories"] = "Французские Южные и Антарктические Территории",
     ["The Holy See"] = "Святой Престол",
@@ -649,12 +649,12 @@ CountryTranslations["ru"] = {
     ["The Republic Of Moldova"] = "Республика Молдова",
     ["The Russian Federation"] = "Российская Федерация",
     ["The Sudan"] = "Судан",
-    ["The Turks And Caicos Islands"] = "Острова ��еркс и Кайкос",
+    ["The Turks And Caicos Islands"] = "Острова еркс и Кайкос",
     ["The United Arab Emirates"] = "Объединенные Арабские Эмираты",
     ["The United Kingdom"] = "Великобритания",
     ["The United Kingdom Of Great Britain And Northern Ireland"] = "Соединенное Королевство Великобритании и Северной Ирландии",
     ["The United States Minor Outlying Islands"] = "Малые отдаленные острова США",
-    ["The United States Of America"] = "Соединенные Штаты Америки",
+    ["The United States Of America"] = "Млиидные Штаты Америки",
     ["Timor Leste"] = "Восточный Тимор",
     ["Togo"] = "Того",
     ["Trinidad And Tobago"] = "Тринидад и Тобаго",
@@ -901,16 +901,18 @@ CountryTranslations["zh_cn"] = {
 }
 
 function CountryTranslations:GetCountryName(lang, country_key)
-    -- Reformat the country name (e.g., "the_united_kingdom" -> "The United Kingdom")
-    local formattedName = country_key:gsub("_", " "):gsub("(%a)([%w_']*)", function(a, b) return string.upper(a) .. string.lower(b) end)
+    -- Format the country name from snake_case to Title Case
+    local formattedName = country_key:gsub("_", " "):gsub("(%a)([%w_']*)", function(a, b) 
+        return string.upper(a) .. string.lower(b) 
+    end)
     
-    -- Get the translated name if it exists and is not empty; otherwise, use the formatted name
-    local translatedName = self[lang] and self[lang][formattedName]
-    if translatedName == nil or translatedName == "" then
-        translatedName = formattedName
+    -- Look up the translation
+    if self[lang] and self[lang][formattedName] then
+        return self[lang][formattedName]
     end
     
-    return translatedName
+    -- Return formatted name if no translation found
+    return formattedName
 end
 
 return CountryTranslations

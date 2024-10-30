@@ -611,6 +611,10 @@ local StationData = {}
 ]]
 local function LoadStationData()
     if stationDataLoaded then return end
+    
+    -- Clear existing station data
+    StationData = {}
+    
     local dataFiles = file.Find("radio/client/stations/data_*.lua", "LUA")
     for _, filename in ipairs(dataFiles) do
         local data = include("radio/client/stations/" .. filename)
@@ -677,12 +681,21 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
         end
 
         if hasFavorites then
+            -- Add a top separator
+            local topSeparator = vgui.Create("DPanel", stationListPanel)
+            topSeparator:Dock(TOP)
+            topSeparator:DockMargin(Scale(5), Scale(5), Scale(5), Scale(5))
+            topSeparator:SetTall(Scale(2))
+            topSeparator.Paint = function(self, w, h)
+                draw.RoundedBox(0, 0, 0, w, h, Config.UI.ButtonColor)
+            end
+
             local favoritesButton = vgui.Create("DButton", stationListPanel)
             favoritesButton:Dock(TOP)
-            favoritesButton:DockMargin(Scale(5), Scale(5), Scale(5), Scale(5))  -- Normal margin like other buttons
-            favoritesButton:SetTall(Scale(40))  -- Same height as other buttons
+            favoritesButton:DockMargin(Scale(5), Scale(5), Scale(5), Scale(5))
+            favoritesButton:SetTall(Scale(40))
             favoritesButton:SetText(Config.Lang["FavoriteStations"] or "Favorite Stations")
-            favoritesButton:SetFont("Roboto18")  -- Same font as other buttons
+            favoritesButton:SetFont("Roboto18")
             favoritesButton:SetTextColor(Config.UI.TextColor)
 
             favoritesButton.Paint = function(self, w, h)
@@ -706,27 +719,29 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                 populateList(stationListPanel, backButton, searchBox, true)
             end
 
-            -- Add a subtle separator line
-            local separator = vgui.Create("DPanel", stationListPanel)
-            separator:Dock(TOP)
-            separator:DockMargin(Scale(5), 0, Scale(5), Scale(5))
-            separator:SetTall(1)
-            separator.Paint = function(self, w, h)
-                draw.RoundedBox(0, 0, 0, w, h, ColorAlpha(Config.UI.TextColor, 100))
+            local bottomSeparator = vgui.Create("DPanel", stationListPanel)
+            bottomSeparator:Dock(TOP)
+            bottomSeparator:DockMargin(Scale(5), Scale(5), Scale(5), Scale(5))
+            bottomSeparator:SetTall(Scale(2))
+            bottomSeparator.Paint = function(self, w, h)
+                draw.RoundedBox(0, 0, 0, w, h, Config.UI.ButtonColor)
             end
         end
 
         local countries = {}
         for country, _ in pairs(StationData) do
-            -- Debug print to see the raw country name
-            print("Raw country name:", country)
+            -- Convert from lowercase_with_underscores to Title Case With Spaces
+            local formattedCountry = country:gsub("_", " "):gsub("(%a)([%w_']*)", function(first, rest)
+                return first:upper() .. rest:lower()
+            end)
             
-            -- Try both direct and formatted versions
-            local translatedCountry = LanguageManager:GetCountryTranslation(lang, country) or
-                                     LanguageManager:GetCountryTranslation(lang, country:gsub("^%l", string.upper)) or
-                                     country
+            -- Debug print
+            print("Raw country name:", country)
+            print("Formatted for translation:", formattedCountry)
+            
+            local translatedCountry = LanguageManager:GetCountryTranslation(lang, formattedCountry) or formattedCountry
 
-            -- Debug print to see what translation was found
+            -- Debug print
             print("Translated to:", translatedCountry, "for language:", lang)
 
             if filterText == "" or translatedCountry:lower():find(filterText, 1, true) then
@@ -785,12 +800,12 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
             if StationData[country] then
                 for _, station in ipairs(StationData[country]) do
                     if stations[station.name] and (filterText == "" or station.name:lower():find(filterText, 1, true)) then
-                        -- Debug print for favorites translation
-                        print("Favorite country name:", country)
-                        local translatedName = LanguageManager:GetCountryTranslation(lang, country) or
-                                             LanguageManager:GetCountryTranslation(lang, country:gsub("^%l", string.upper)) or
-                                             country
-                        print("Translated favorite to:", translatedName)
+                        -- Format country name the same way
+                        local formattedCountry = country:gsub("_", " "):gsub("(%a)([%w_']*)", function(first, rest)
+                            return first:upper() .. rest:lower()
+                        end)
+                        
+                        local translatedName = LanguageManager:GetCountryTranslation(lang, formattedCountry) or formattedCountry
 
                         table.insert(favoritesList, {
                             station = station,
@@ -1098,29 +1113,27 @@ local function openSettingsMenu(parentFrame, backButton)
         LanguageManager:SetLanguage(data)
         Config.Lang = LanguageManager.translations[data]
         
-        -- Clear the formatted country names cache when language changes
+        -- Clear the formatted country names cache
         formattedCountryNames = {}
         
-        -- If we're not reopening the menu, refresh the current list
-        if not settingsMenuOpen then
-            populateList(stationListPanel, backButton, searchBox, true)
-        else
-            -- Store that we need to refresh when returning to main menu
-            local needsRefresh = true
-            
-            -- Override the back button's click handler temporarily
-            local oldDoClick = backButton.DoClick
-            backButton.DoClick = function()
-                if needsRefresh then
-                    needsRefresh = false
-                    oldDoClick()
-                    timer.Simple(0, function()
-                        populateList(stationListPanel, backButton, searchBox, true)
-                    end)
-                else
-                    oldDoClick()
+        -- Reset station data loaded flag to force reload
+        stationDataLoaded = false
+        LoadStationData()
+        
+        -- Close and reopen the menu to apply changes
+        if IsValid(currentFrame) then
+            currentFrame:Close()
+            timer.Simple(0.1, function()
+                if openRadioMenu then
+                    -- Force a full menu reset
+                    radioMenuOpen = false
+                    selectedCountry = nil
+                    settingsMenuOpen = false
+                    favoritesMenuOpen = false
+                    
+                    openRadioMenu(true)  -- Reopen with settings menu
                 end
-            end
+            end)
         end
     end)
 
@@ -1272,11 +1285,9 @@ openRadioMenu = function(openSettings)
         draw.RoundedBox(8, 0, 0, w, h, Config.UI.BackgroundColor)
         draw.RoundedBoxEx(8, 0, 0, w, Scale(40), Config.UI.HeaderColor, true, true, false, false)
 
-        local headerHeight = Scale(40)  -- Height of the header area
+        local headerHeight = Scale(40)
         local iconSize = Scale(25)
         local iconOffsetX = Scale(10)
-        
-        -- Center the icon vertically in the header
         local iconOffsetY = headerHeight/2 - iconSize/2
 
         -- Draw the icon
@@ -1284,10 +1295,26 @@ openRadioMenu = function(openSettings)
         surface.SetDrawColor(Config.UI.TextColor)
         surface.DrawTexturedRect(iconOffsetX, iconOffsetY, iconSize, iconSize)
 
-        -- Draw the header text aligned with the icon
-        local headerText = settingsMenuOpen and (Config.Lang["Settings"] or "Settings") or 
-                          (selectedCountry and formatCountryName(selectedCountry) or 
-                          (Config.Lang["SelectCountry"] or "Select Country"))
+        -- Get header text based on menu state
+        local headerText
+        if settingsMenuOpen then
+            headerText = Config.Lang["Settings"] or "Settings"
+        elseif selectedCountry then
+            if selectedCountry == "favorites" then
+                headerText = Config.Lang["FavoriteStations"] or "Favorite Stations"
+            else
+                -- Format and translate the country name
+                local formattedCountry = selectedCountry:gsub("_", " "):gsub("(%a)([%w_']*)", function(a, b) 
+                    return string.upper(a) .. string.lower(b) 
+                end)
+                local lang = GetConVar("radio_language"):GetString() or "en"
+                headerText = LanguageManager:GetCountryTranslation(lang, formattedCountry)
+            end
+        else
+            headerText = Config.Lang["SelectCountry"] or "Select Country"
+        end
+
+        -- Draw the header text
         draw.SimpleText(headerText, "HeaderFont", iconOffsetX + iconSize + Scale(5), 
                        headerHeight/2, Config.UI.TextColor, 
                        TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
@@ -1561,6 +1588,14 @@ openRadioMenu = function(openSettings)
                 end
                 searchBox:SetVisible(true)
                 stationListPanel:SetVisible(true)
+                
+                -- Force reload station data and repopulate list
+                stationDataLoaded = false
+                LoadStationData()
+                timer.Simple(0, function()
+                    populateList(stationListPanel, backButton, searchBox, true)
+                end)
+                
                 backButton:SetVisible(selectedCountry ~= nil or favoritesMenuOpen)
                 backButton:SetEnabled(selectedCountry ~= nil or favoritesMenuOpen)
             elseif selectedCountry or favoritesMenuOpen then
