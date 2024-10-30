@@ -48,6 +48,9 @@ local iconUpdateDelay = 0.1
 local pendingIconUpdate = nil
 local isUpdatingIcon = false
 
+local lastKeyPress = 0
+local keyPressDelay = 0.2  -- Delay between key presses to prevent spamming
+
 -- ------------------------------
 --      Utility Functions
 -- ------------------------------
@@ -1016,7 +1019,6 @@ openRadioMenu = function(openSettings)
     local stopButtonText = Config.Lang["StopRadio"] or "STOP"
     local stopButtonFont = calculateFontSizeForStopButton(stopButtonText, stopButtonWidth, stopButtonHeight)
 
-    -- Modify the buttons to include hover animations
     local function createAnimatedButton(parent, x, y, w, h, text, textColor, bgColor, hoverColor, clickFunc)
         local button = vgui.Create("DButton", parent)
         button:SetPos(x, y)
@@ -1293,7 +1295,6 @@ openRadioMenu = function(openSettings)
         populateList(stationListPanel, backButton, searchBox, false)
     end
 
-    -- At the end of the openRadioMenu function, add this line:
     _G.openRadioMenu = openRadioMenu
 end
 
@@ -1308,11 +1309,44 @@ end
 hook.Add("Think", "OpenCarRadioMenu", function()
     local openKey = GetConVar("car_radio_open_key"):GetInt()
     local ply = LocalPlayer()
-    local vehicle = ply:GetVehicle()
+    local currentTime = CurTime()
 
-    if input.IsKeyDown(openKey) and not radioMenuOpen and not ply:IsTyping() and IsValid(vehicle) and not utils.isSitAnywhereSeat(vehicle) then
-        ply.currentRadioEntity = vehicle
-        openRadioMenu()
+    -- Only process key press with proper delay and when not typing
+    if not (input.IsKeyDown(openKey) and not ply:IsTyping() and currentTime - lastKeyPress > keyPressDelay) then
+        return
+    end
+    lastKeyPress = currentTime
+
+    -- Handle menu closing if it's open
+    if radioMenuOpen then
+        surface.PlaySound("buttons/lightswitch2.wav")
+        currentFrame:Close()
+        radioMenuOpen = false
+        selectedCountry = nil
+        settingsMenuOpen = false
+        return
+    end
+
+    -- Get the current radio entity
+    local currentEntity = ply.currentRadioEntity
+    if not currentEntity then return end
+
+    -- Handle vehicles
+    local vehicle = ply:GetVehicle()
+    if currentEntity:IsVehicle() then
+        -- Only open for valid vehicle seats (not Sit Anywhere)
+        if vehicle and not utils.isSitAnywhereSeat(vehicle) then
+            openRadioMenu()
+        end
+        return
+    end
+
+    -- Handle boomboxes
+    local entityClass = currentEntity:GetClass()
+    if entityClass == "boombox" or entityClass == "golden_boombox" then
+        if utils.canInteractWithBoombox(ply, currentEntity) then
+            openRadioMenu()
+        end
     end
 end)
 
@@ -1561,5 +1595,21 @@ loadFavorites()
 hook.Add("EntityRemoved", "BoomboxCleanup", function(ent)
     if IsValid(ent) and (ent:GetClass() == "boombox" or ent:GetClass() == "golden_boombox") then
         BoomboxStatuses[ent:EntIndex()] = nil
+    end
+end)
+
+-- Clear currentRadioEntity when leaving vehicle
+hook.Add("VehicleChanged", "ClearRadioEntity", function(ply, old, new)
+    if ply ~= LocalPlayer() then return end
+    if not new then
+        ply.currentRadioEntity = nil
+    end
+end)
+
+-- Clear currentRadioEntity when boombox is removed
+hook.Add("EntityRemoved", "ClearRadioEntity", function(ent)
+    local ply = LocalPlayer()
+    if ent == ply.currentRadioEntity then
+        ply.currentRadioEntity = nil
     end
 end)
