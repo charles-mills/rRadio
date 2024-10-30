@@ -465,32 +465,47 @@ end)
 ]]
 net.Receive("UpdateRadioVolume", function(len, ply)
     local entity = net.ReadEntity()
-    entity = GetVehicleEntity(entity)
     local volume = ClampVolume(net.ReadFloat())
 
     if not IsValid(entity) then return end
 
-    local entityClass = entity:GetClass()
-    local lvsVehicle = IsLVSVehicle(entity)
-    local radioEntity = lvsVehicle or entity
-    local entIndex = radioEntity:EntIndex()
+    entity = utils.GetVehicle(entity) or entity
 
-    if (entityClass == "boombox" or entityClass == "golden_boombox") and not utils.canInteractWithBoombox(ply, radioEntity) then
-        ply:ChatPrint("You do not have permission to control this boombox's volume.")
+    local entityClass = entity:GetClass()
+    local entIndex = entity:EntIndex()
+
+    -- Check permissions for boomboxes
+    if (entityClass == "boombox" or entityClass == "golden_boombox") and not utils.canInteractWithBoombox(ply, entity) then
+        ply:ChatPrint("You don't have permission to control this boombox's volume.")
         return
     end
 
-    -- This isn't restricting control to the actual driver, and just confirms that the person is in the vehicle
-    -- (Each seat is technically its own vehicle)
-    if entity:IsVehicle() and entity:GetDriver() ~= ply then 
-        ply:ChatPrint("You must be in the vehicle to control its radio volume.")
-        return
+    -- For vehicles, check if it's a valid vehicle and the player is in it
+    if utils.GetVehicle(entity) then
+        local vehicle = utils.GetVehicle(entity)
+        -- Skip volume control for SitAnywhere seats
+        if utils.isSitAnywhereSeat(vehicle) then
+            return
+        end
+        -- Check if player is in any seat of the vehicle
+        local isInVehicle = false
+        for _, seat in pairs(ents.FindByClass("prop_vehicle_prisoner_pod")) do
+            if IsValid(seat) and seat:GetParent() == vehicle and seat:GetDriver() == ply then
+                isInVehicle = true
+                break
+            end
+        end
+        if not isInVehicle and vehicle:GetDriver() ~= ply then
+            ply:ChatPrint("You must be in the vehicle to control its radio volume.")
+            return
+        end
     end
 
     volumeUpdateQueue[entIndex] = {
-        entity = radioEntity,
+        entity = entity,
         volume = volume,
-        player = ply
+        player = ply,
+        time = CurTime()
     }
 
     if not timer.Exists("VolumeUpdate_" .. entIndex) then
@@ -530,6 +545,17 @@ hook.Add("EntityRemoved", "CleanupVolumeUpdateTimers", function(entity)
         timer.Remove("VolumeUpdate_" .. entIndex)
     end
     volumeUpdateQueue[entIndex] = nil
+end)
+
+hook.Add("PlayerDisconnected", "CleanupPlayerVolumeUpdateData", function(ply)
+    for entIndex, updateData in pairs(volumeUpdateQueue) do
+        if updateData.player == ply then
+            if timer.Exists("VolumeUpdate_" .. entIndex) then
+                timer.Remove("VolumeUpdate_" .. entIndex)
+            end
+            volumeUpdateQueue[entIndex] = nil
+        end
+    end
 end)
 
 hook.Add("EntityRemoved", "CleanupActiveRadioOnEntityRemove", function(entity)
