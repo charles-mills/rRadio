@@ -4,7 +4,7 @@
     Description: This file initializes the base boombox entity, setting up its physical properties,
                  network variables, and core functionality. It handles entity spawning, permissions,
                  and interaction logic for the boombox entities in the Radio Addon.
-    Date: October 17, 2024
+    Date: October 30, 2024
 ]]--
 
 AddCSLuaFile("cl_init.lua")
@@ -35,32 +35,58 @@ function ENT:Initialize()
         phys:Wake()
     end
 
-    -- Ensure the collision group allows interaction with the Physgun
-    self:SetCollisionGroup(COLLISION_GROUP_NONE)
-
-    -- Initialize boombox properties
-    self.StationName = self.StationName or ""
-    self.StationURL = self.StationURL or ""
-    self.Volume = self.Volume or 1.0
-
-    -- Initialize permanence
-    self.IsPermanent = false
+    -- Initialize networked variables with default values
+    self:SetNWString("StationName", "")
+    self:SetNWString("StationURL", "")
+    self:SetNWString("Status", "stopped")
+    self:SetNWBool("IsPlaying", false)
     self:SetNWBool("IsPermanent", false)
+    
+    -- Set initial volume from config
+    if self.Config and self.Config.Volume then
+        self:SetNWFloat("Volume", self.Config.Volume())
+    end
+
+    -- Initialize permanence state
+    self.IsPermanent = false
 end
 
--- Spawn function called when the entity is created via the Spawn Menu or other means
+-- Add Use function to handle interaction
+function ENT:Use(activator, caller)
+    if not IsValid(activator) or not activator:IsPlayer() then return end
+    
+    local owner = self:GetNWEntity("Owner")
+    
+    -- Check if the player is the owner or a superadmin
+    if activator == owner or activator:IsSuperAdmin() then
+        net.Start("OpenRadioMenu")
+            net.WriteEntity(self)
+        net.Send(activator)
+    else
+        local currentTime = CurTime()
+        if not lastPermissionMessageTime[activator] or 
+           (currentTime - lastPermissionMessageTime[activator] >= PERMISSION_MESSAGE_COOLDOWN) then
+            activator:ChatPrint("You do not have permission to use this boombox.")
+            lastPermissionMessageTime[activator] = currentTime
+        end
+    end
+end
+
+-- Spawn function called when the entity is created
 function ENT:SpawnFunction(ply, tr, className)
     if not tr.Hit then return end
 
     local spawnPos = tr.HitPos + tr.HitNormal * 16
-
     local ent = ents.Create(className)
+    
+    if not IsValid(ent) then return end
+    
     ent:SetPos(spawnPos)
     ent:SetAngles(Angle(0, ply:EyeAngles().y - 90, 0))
     ent:Spawn()
     ent:Activate()
 
-    -- Set the owner of the entity using NWEntity if a valid player is available
+    -- Set the owner
     if IsValid(ply) then
         ent:SetNWEntity("Owner", ply)
     end
@@ -68,38 +94,11 @@ function ENT:SpawnFunction(ply, tr, className)
     return ent
 end
 
-function ENT:PhysgunPickup(ply)
-    local owner = self:GetNWEntity("Owner")
-
-    -- Always allow superadmins to pick up the boombox
-    if ply:IsSuperAdmin() then
-        return true
-    end
-
-    return ply == owner or not IsValid(owner)
-end
-
--- Only allow the owner or a superadmin to use the boombox
-function ENT:Use(activator, caller)
-    if activator:IsPlayer() then
-        local owner = self:GetNWEntity("Owner")
-
-        -- Check if the player is the owner or a superadmin
-        if activator == owner or activator:IsSuperAdmin() then
-            net.Start("OpenRadioMenu")
-                net.WriteEntity(self)
-                net.Send(activator)
-        else
-            local currentTime = CurTime()
-            
-            -- Check cooldown for this specific player
-            if not lastPermissionMessageTime[activator] or 
-               (currentTime - lastPermissionMessageTime[activator] >= PERMISSION_MESSAGE_COOLDOWN) then
-                activator:ChatPrint("You do not have permission to use this boombox.")
-                lastPermissionMessageTime[activator] = currentTime
-            end
-        end
-    end
+-- Function to stop the radio
+function ENT:StopRadio()
+    net.Start("StopCarRadioStation")
+        net.WriteEntity(self)
+    net.Broadcast()
 end
 
 -- Clean up the cooldown table when players leave
@@ -107,34 +106,15 @@ hook.Add("PlayerDisconnected", "CleanupBoomboxPermissionCooldowns", function(ply
     lastPermissionMessageTime[ply] = nil
 end)
 
--- Function to make the boombox permanent (called by the server)
-function ENT:MakePermanent()
-    if self.IsPermanent then return end
-    self.IsPermanent = true
-    self:SetNWBool("IsPermanent", true)
-end
-
--- Function to remove permanence from the boombox (called by the server)
-function ENT:RemovePermanent()
-    if not self.IsPermanent then return end
-    self.IsPermanent = false
-    self:SetNWBool("IsPermanent", false)
-
-    -- Optionally stop the radio if it's playing
-    if self.StopRadio then
-        self:StopRadio()
-    end
-end
-
--- Prevent non-superadmins from using tools or physgun on boomboxes
-function ENT:CanTool(ply, tool)
+-- Prevent non-owners from using tools or physgun
+function ENT:CanTool(ply, trace, tool)
     if not IsValid(ply) then return false end
     if ply:IsSuperAdmin() then return true end
-    return false
+    return ply == self:GetNWEntity("Owner")
 end
 
-function ENT:CanPhysgun(ply)
+function ENT:PhysgunPickup(ply)
     if not IsValid(ply) then return false end
     if ply:IsSuperAdmin() then return true end
-    return false
+    return ply == self:GetNWEntity("Owner")
 end

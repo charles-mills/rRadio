@@ -302,8 +302,6 @@ function Config.ReloadConVars()
 end
 
 if SERVER then
-    util.AddNetworkString("RadioConfigUpdate")
-    
     -- Handle the reload command
     concommand.Add("radio_reload_config", function(ply)
         -- Only allow admins to reload the config
@@ -364,104 +362,31 @@ function Config.CalculateVolumeAtDistance(distance, maxDist, minDist, baseVolume
 end
 
 -- Main volume calculation function that combines all factors
-function Config.CalculateVolume(source, listener, baseVolume, maxDist, minDist)
-    local distance = source:GetPos():Distance(listener:GetPos())
+function Config.CalculateVolume(entity, player, distanceSqr)
+    if not IsValid(entity) or not IsValid(player) then return 0 end
+    
+    local entityConfig = utils.GetEntityConfig(entity)
+    if not entityConfig then return 0 end
 
-    local distanceFactor = 1.0
-    if distance > minDist then
-        if distance >= maxDist then
-            return 0
-        end
-        distanceFactor = 1 - ((distance - minDist) / (maxDist - minDist))
-        distanceFactor = math.Clamp(distanceFactor ^ Config.VolumeAttenuationExponent, 0, 1)
+    -- Get base volume from entity config
+    local baseVolume = entity:GetNWFloat("Volume", entityConfig.Volume())
+    
+    -- If player is in vehicle or very close, return full volume
+    if player:GetVehicle() == entity or distanceSqr <= entityConfig.MinVolumeDistance()^2 then
+        return baseVolume
     end
 
-    local envFactor = Config.GetEnvironmentalFactor(source, listener)
-
-    return baseVolume * distanceFactor * envFactor
+    -- Calculate distance-based falloff
+    local maxDist = entityConfig.MaxHearingDistance()
+    local distance = math.sqrt(distanceSqr)
+    
+    if distance >= maxDist then return 0 end
+    
+    -- Linear falloff between min and max distance
+    local falloff = 1 - math.Clamp((distance - entityConfig.MinVolumeDistance()) / 
+                                  (maxDist - entityConfig.MinVolumeDistance()), 0, 1)
+    
+    return baseVolume * falloff
 end
-
-local envFactorCache = {}
-local lastCacheClean = 0
-local CACHE_LIFETIME = 0.5
-local CACHE_CLEAN_INTERVAL = 5
-
-function Config.GetEnvironmentalFactor(ent1, ent2)
-    if not IsValid(ent1) or not IsValid(ent2) then return 1 end
-    
-    local currentTime = CurTime()
-    local ent1Pos = ent1:GetPos()
-    local ent2Pos = ent2:GetPos()
-    
-    -- Clean cache periodically
-    if currentTime - lastCacheClean > CACHE_CLEAN_INTERVAL then
-        for k, v in pairs(envFactorCache) do
-            if currentTime - v.time > CACHE_LIFETIME then
-                envFactorCache[k] = nil
-            end
-        end
-        lastCacheClean = currentTime
-    end
-    
-    local cacheKey = string.format("%d,%d,%d_%d,%d,%d",
-        math.Round(ent1Pos.x),
-        math.Round(ent1Pos.y),
-        math.Round(ent1Pos.z),
-        math.Round(ent2Pos.x),
-        math.Round(ent2Pos.y),
-        math.Round(ent2Pos.z)
-    )
-    
-    -- Check cache
-    local cached = envFactorCache[cacheKey]
-    if cached and currentTime - cached.time < CACHE_LIFETIME then
-        return cached.factor
-    end
-    
-    -- Quick distance check
-    local distSqr = ent1Pos:DistToSqr(ent2Pos)
-    if distSqr > 2250000 then -- 1500^2, if entities are very far apart, skip detailed checks
-        envFactorCache[cacheKey] = {factor = 0, time = currentTime}
-        return 0
-    end
-    
-    local factor = 1.0
-    
-    local ent1InWater = ent1:WaterLevel() > 0
-    local ent2InWater = ent2:WaterLevel() > 0
-    
-    if ent1InWater and ent2InWater then
-        factor = factor * 0.5
-    elseif ent1InWater ~= ent2InWater then
-        factor = factor * 0.3
-    end
-    
-    -- Only do trace if we haven't already significantly reduced the factor
-    if factor > 0.5 then
-        local trace = {
-            start = ent1Pos,
-            endpos = ent2Pos,
-            mask = MASK_SOLID_BRUSHONLY,
-            filter = {ent1, ent2}
-        }
-        
-        local tr = util.TraceLine(trace)
-        if tr.Hit and tr.HitPos ~= tr.EndPos then
-            factor = factor * 0.7
-        end
-    end
-    
-    envFactorCache[cacheKey] = {
-        factor = factor,
-        time = currentTime
-    }
-    
-    return factor
-end
-
-hook.Add("PostCleanupMap", "CleanEnvironmentalFactorCache", function()
-    table.Empty(envFactorCache)
-    lastCacheClean = CurTime()
-end)
 
 return Config

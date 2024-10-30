@@ -125,4 +125,88 @@ function utils.GetEntityConfig(entity)
     return nil
 end
 
+--[[
+    Function: setRadioStatus
+    Description: Sets the status of a radio entity and updates all relevant states
+    @param entity (Entity): The radio entity
+    @param status (string): The status to set ("playing", "tuning", "stopped")
+    @param stationName (string): The name of the station (optional, defaults to "")
+    @param isPlaying (boolean): Whether the radio is playing (optional, defaults based on status)
+    @param updateNameOnly (boolean): Only update the station name, keep current status (optional)
+]]
+function utils.setRadioStatus(entity, status, stationName, isPlaying, updateNameOnly)
+    if not IsValid(entity) then return end
+    
+    local entIndex = entity:EntIndex()
+
+    -- Clear any existing status update timers
+    if timer.Exists("UpdateBoomboxStatus_" .. entIndex) then
+        timer.Remove("UpdateBoomboxStatus_" .. entIndex)
+    end
+
+    stationName = stationName or ""
+    
+    -- Determine isPlaying if not provided
+    if isPlaying == nil then
+        isPlaying = (status == "playing" or status == "tuning")
+    end
+
+    -- Initialize or update BoomboxStatuses
+    if not BoomboxStatuses[entIndex] then
+        BoomboxStatuses[entIndex] = {}
+    end
+
+    -- Update networked variables and status table atomically
+    if not updateNameOnly then
+        entity:SetNWString("Status", status)
+        entity:SetNWBool("IsPlaying", isPlaying)
+        BoomboxStatuses[entIndex].stationStatus = status
+    end
+
+    -- Always update station name
+    entity:SetNWString("StationName", stationName)
+    BoomboxStatuses[entIndex].stationName = stationName
+
+    -- If we're on the server, broadcast the status update
+    if SERVER then
+        net.Start("UpdateRadioStatus")
+            net.WriteEntity(entity)
+            net.WriteString(stationName)
+            net.WriteBool(isPlaying)
+            net.WriteString(updateNameOnly and BoomboxStatuses[entIndex].stationStatus or status)
+        net.Broadcast()
+    end
+end
+
+--[[
+    Function: clearRadioStatus
+    Description: Cleans up all radio status for an entity
+    @param entity (Entity): The radio entity
+]]
+function utils.clearRadioStatus(entity)
+    if not IsValid(entity) then return end
+    
+    local entIndex = entity:EntIndex()
+
+    -- Clear any existing timers
+    if timer.Exists("UpdateBoomboxStatus_" .. entIndex) then
+        timer.Remove("UpdateBoomboxStatus_" .. entIndex)
+    end
+
+    -- Reset all status
+    utils.setRadioStatus(entity, "stopped", "", false)
+end
+
+--[[
+    Function: IsBoombox
+    Description: Checks if an entity is a boombox (regular or golden)
+    @param entity (Entity): The entity to check
+    @return (boolean): True if the entity is a boombox, false otherwise
+]]
+function utils.IsBoombox(entity)
+    if not IsValid(entity) then return false end
+    local class = entity:GetClass()
+    return class == "boombox" or class == "golden_boombox"
+end
+
 return utils
