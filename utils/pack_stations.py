@@ -81,11 +81,70 @@ def find_best_fit_combination(remaining_countries: List[Tuple[str, List[Dict], i
 
     return dp[n][max_size]
 
+def remove_duplicates(stations_dict: Dict[str, List[Dict]]) -> Tuple[Dict[str, List[Dict]], Dict[str, int]]:
+    """
+    Remove duplicate stations based on name (per country) and URL (globally).
+    Returns cleaned dictionary and statistics about removed duplicates.
+    """
+    # Track duplicates for reporting
+    stats = {
+        "duplicate_names": 0,
+        "duplicate_urls": 0
+    }
+
+    # Track all URLs globally to prevent duplicates across countries
+    used_urls = {}  # url -> (country, station_name)
+
+    cleaned_dict = {}
+    
+    # First pass: Remove duplicate names within countries and track URLs
+    for country, stations in stations_dict.items():
+        seen_names = {}  # name -> station (case insensitive)
+        cleaned_stations = []
+        
+        for station in stations:
+            name_lower = station['name'].lower()
+            
+            if name_lower in seen_names:
+                stats["duplicate_names"] += 1
+                print(f"Duplicate station name in {country}: {station['name']}")
+                continue
+                
+            seen_names[name_lower] = station
+            cleaned_stations.append(station)
+        
+        if cleaned_stations:
+            cleaned_dict[country] = cleaned_stations
+
+    # Second pass: Remove duplicate URLs across all countries
+    final_dict = {}
+    
+    for country, stations in cleaned_dict.items():
+        final_stations = []
+        
+        for station in stations:
+            url = station['url'].lower()  # Case-insensitive URL comparison
+            
+            if url in used_urls:
+                existing_country, existing_name = used_urls[url]
+                stats["duplicate_urls"] += 1
+                print(f"Duplicate URL found:")
+                print(f"  First instance: {existing_country} - {existing_name}")
+                print(f"  Duplicate: {country} - {station['name']}")
+                continue
+                
+            used_urls[url] = (country, station['name'])
+            final_stations.append(station)
+        
+        if final_stations:
+            final_dict[country] = final_stations
+
+    return final_dict, stats
+
 def pack_stations(input_files: List[str], output_dir: str):
     """Pack stations optimally into files under MAX_FILE_SIZE."""
     
     print("\nDebug: Starting station packing process")
-    print(f"Debug: Looking for files in {input_dir}")
     print(f"Debug: Found {len(input_files)} input files:")
     for f in input_files:
         print(f"  - {f}")
@@ -113,9 +172,23 @@ def pack_stations(input_files: List[str], output_dir: str):
     initial_countries, initial_stations = count_stations(all_stations)
     print(f"\nInitial count:")
     print(f"Countries: {initial_countries}")
-    print(f"Stations: {initial_stations}\n")
+    print(f"Stations: {initial_stations}")
 
-    if initial_countries == 0:
+    # Remove duplicates
+    print("\nChecking for duplicates...")
+    all_stations, duplicate_stats = remove_duplicates(all_stations)
+    print("\nDuplicate removal statistics:")
+    print(f"Duplicate names removed: {duplicate_stats['duplicate_names']}")
+    print(f"Duplicate URLs removed: {duplicate_stats['duplicate_urls']}")
+    
+    # Count post-duplicate-removal statistics
+    cleaned_countries, cleaned_stations = count_stations(all_stations)
+    print(f"\nAfter duplicate removal:")
+    print(f"Countries: {cleaned_countries}")
+    print(f"Stations: {cleaned_stations}")
+    print(f"Total stations removed: {initial_stations - cleaned_stations}")
+
+    if cleaned_countries == 0:
         print("\nERROR: No stations were parsed from the input files!")
         return
 
@@ -217,11 +290,12 @@ def pack_stations(input_files: List[str], output_dir: str):
     print(f"\nAverage space utilization: {avg_utilization:.1f}%")
     
     # Verify no data was lost
-    if initial_countries != final_countries or initial_stations != final_stations:
-        print("\nWARNING: Data loss detected!")
-        print("Some stations or countries were not properly packed")
+    if final_countries == cleaned_countries and final_stations == cleaned_stations:
+        print("\nVerification: All unique stations and countries preserved successfully")
     else:
-        print("\nVerification: All stations and countries preserved successfully")
+        print("\nWARNING: Data loss detected!")
+        print(f"Expected {cleaned_countries} countries and {cleaned_stations} stations")
+        print(f"Got {final_countries} countries and {final_stations} stations")
 
 if __name__ == "__main__":
     # Get the absolute path to the script's directory
