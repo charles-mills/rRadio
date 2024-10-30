@@ -198,7 +198,7 @@ class StationValidator:
                 raise ValueError(f"Cannot write to output directory {output_dir}: {str(e)}")
 
             print("\nAll pre-validation checks passed successfully!")
-            pack_stations(input_files, output_dir)
+            pack_stations(input_files, output_dir, remove_duplicates=True)
 
         except Exception as e:
             print(f"\n❌ Error during validation process:")
