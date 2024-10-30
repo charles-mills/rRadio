@@ -15,6 +15,10 @@ util.AddNetworkString("CarRadioMessage")
 util.AddNetworkString("OpenRadioMenu")
 util.AddNetworkString("UpdateRadioStatus")
 util.AddNetworkString("UpdateRadioVolume")
+util.AddNetworkString("MakeBoomboxPermanent")
+util.AddNetworkString("RemoveBoomboxPermanent")
+util.AddNetworkString("BoomboxPermanentConfirmation")
+util.AddNetworkString("RadioConfigUpdate")
 
 local ActiveRadios = {}
 local PlayerRetryAttempts = {}
@@ -918,5 +922,60 @@ end)
 hook.Add("EntityRemoved", "CleanupRadioVolume", function(entity)
     local entIndex = entity:EntIndex()
     EntityVolumes[entIndex] = nil
+end)
+
+local RadioTimers = {
+    "VolumeUpdate_",
+    "StationUpdate_"
+}
+
+local RadioDataTables = {
+    LatestVolumeUpdates = true,
+    VolumeUpdateTimers = true,
+    volumeUpdateQueue = true
+}
+
+--[[
+    Function: CleanupEntityData
+    Cleans up all timers and data associated with an entity
+    Parameters:
+    - entIndex: The entity index to cleanup
+]]
+local function CleanupEntityData(entIndex)
+    -- Clean up all timer types
+    for _, timerPrefix in ipairs(RadioTimers) do
+        local timerName = timerPrefix .. entIndex
+        if timer.Exists(timerName) then
+            timer.Remove(timerName)
+        end
+    end
+
+    -- Clean up all data tables
+    for tableName in pairs(RadioDataTables) do
+        if _G[tableName] and _G[tableName][entIndex] then
+            _G[tableName][entIndex] = nil
+        end
+    end
+end
+
+-- Single EntityRemoved hook to handle all cleanup
+hook.Add("EntityRemoved", "CleanupRadioData", function(entity)
+    if IsValid(entity) then
+        CleanupEntityData(entity:EntIndex())
+    end
+end)
+
+-- Single PlayerDisconnected hook to handle all cleanup
+hook.Add("PlayerDisconnected", "CleanupPlayerRadioData", function(ply)
+    -- Clean up player-specific data from all tracked tables
+    for tableName in pairs(RadioDataTables) do
+        if _G[tableName] then
+            for entIndex, data in pairs(_G[tableName]) do
+                if data.ply == ply or data.pendingPlayer == ply then
+                    CleanupEntityData(entIndex)
+                end
+            end
+        end
+    end
 end)
 

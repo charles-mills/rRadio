@@ -9,11 +9,6 @@
     Date: October 17, 2024
 ]]--
 
--- Network Strings
-util.AddNetworkString("MakeBoomboxPermanent")
-util.AddNetworkString("RemoveBoomboxPermanent")
-util.AddNetworkString("BoomboxPermanentConfirmation")
-
 -- Create the ConVar for boombox permanence
 CreateConVar("boombox_permanent", "0", FCVAR_ARCHIVE + FCVAR_REPLICATED, "Toggle boombox permanence")
 
