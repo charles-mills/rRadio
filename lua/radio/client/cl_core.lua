@@ -60,6 +60,42 @@ local VOLUME_ICONS = {
 local lastPermissionMessage = 0
 local PERMISSION_MESSAGE_COOLDOWN = 3
 
+local MAX_CLIENT_STATIONS = 10
+local activeStationCount = 0
+
+-- ------------------------------
+--      Station Management
+-- ------------------------------
+
+--[[
+    Function: updateStationCount
+    Updates and validates the count of active radio stations.
+    Cleans up invalid entries and returns the current count.
+    
+    Returns:
+    - number: The current number of active stations
+]]
+local function updateStationCount()
+    local count = 0
+    for ent, source in pairs(currentRadioSources or {}) do
+        if IsValid(ent) and IsValid(source) then
+            count = count + 1
+        else
+            -- Cleanup invalid entries
+            if IsValid(source) then
+                source:Stop()
+            end
+            if currentRadioSources then
+                currentRadioSources[ent] = nil
+            end
+        end
+    end
+    activeStationCount = count
+    return count
+end
+
+currentRadioSources = currentRadioSources or {}
+
 -- ------------------------------
 --      Utility Functions
 -- ------------------------------
@@ -298,19 +334,7 @@ end
     - The configuration table for the entity.
 ]]
 local function getEntityConfig(entity)
-    if not IsValid(entity) then return nil end
-
-    local entityClass = entity:GetClass()
-
-    if entityClass == "golden_boombox" then
-        return Config.GoldenBoombox
-    elseif entityClass == "boombox" then
-        return Config.Boombox
-    elseif entity:IsVehicle() then
-        return Config.VehicleRadio
-    else
-        return Config.VehicleRadio
-    end
+    return utils.GetEntityConfig(entity)
 end
 
 --[[
@@ -364,20 +388,8 @@ local function updateRadioVolume(station, distanceSqr, isPlayerInCar, entity)
         return
     end
 
-    -- Calculate final volume with environmental factors
-    local distance = math.sqrt(distanceSqr)
-    local minDist = entityConfig.MinVolumeDistance()
-    local maxDist = entityConfig.MaxHearingDistance()
-    
-    -- Calculate final volume using Config helper functions, maintaining user's volume setting
-    local finalVolume = Config.CalculateVolume(
-        entity,
-        LocalPlayer(),
-        userVolume, -- Pass the user-set volume as base volume
-        maxDist,
-        minDist
-    )
-
+    -- Calculate distance-based volume
+    local finalVolume = Config.CalculateVolume(entity, LocalPlayer(), distanceSqr)
     station:SetVolume(finalVolume)
 end
 
@@ -1690,36 +1702,34 @@ net.Receive("PlayCarRadioStation", function()
     local url = net.ReadString()
     local volume = net.ReadFloat()
 
-    if not IsValid(entity) then return end
+    print(string.format("[RadioDebug] Client received PlayCarRadioStation - Entity: %d, Station: %s", 
+        IsValid(entity) and entity:EntIndex() or -1, stationName))
 
-    -- Set initial status for boomboxes
-    if entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox" then
-        BoomboxStatuses[entity:EntIndex()] = {
-            stationStatus = "tuning",
-            stationName = stationName
-        }
+    local currentCount = updateStationCount()
+
+    -- Check if we're already at the station limit
+    if not currentRadioSources[entity] and currentCount >= MAX_CLIENT_STATIONS then
+        return
     end
 
-    -- Stop existing sound
+    -- Stop existing sound if any
     if currentRadioSources[entity] and IsValid(currentRadioSources[entity]) then
         currentRadioSources[entity]:Stop()
         currentRadioSources[entity] = nil
+        activeStationCount = math.max(0, activeStationCount - 1)
     end
 
-    -- Create new sound
     sound.PlayURL(url, "3d mono", function(station, errorID, errorName)
-        if IsValid(station) then
+        if IsValid(station) and IsValid(entity) then
             station:SetPos(entity:GetPos())
             station:SetVolume(volume)
             station:Play()
+            
+            -- Store the sound source
             currentRadioSources[entity] = station
-            entity.RadioSource = station
+            activeStationCount = updateStationCount()
 
-            -- Update status to playing once sound is loaded
-            if entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox" then
-                BoomboxStatuses[entity:EntIndex()].stationStatus = "playing"
-            end
-
+            -- Set up 3D audio
             local entityConfig = getEntityConfig(entity)
             if entityConfig then
                 local minDist = entityConfig.MinVolumeDistance()
@@ -1727,85 +1737,99 @@ net.Receive("PlayCarRadioStation", function()
                 station:Set3DFadeDistance(minDist, maxDist)
             end
 
-            -- Update Think hook to handle volume changes with environmental factors
-            hook.Add("Think", "UpdateRadioPosition_" .. entity:EntIndex(), function()
-                if IsValid(entity) and IsValid(station) then
-                    station:SetPos(entity:GetPos())
-
-                    local playerPos = LocalPlayer():GetPos()
-                    local entityPos = entity:GetPos()
-                    local distanceSqr = playerPos:DistToSqr(entityPos)
-                    
-                    local isPlayerInCar = LocalPlayer():GetVehicle() == entity or 
-                                        (IsValid(LocalPlayer():GetVehicle()) and 
-                                         LocalPlayer():GetVehicle():GetParent() == entity)
-
-                    updateRadioVolume(station, distanceSqr, isPlayerInCar, entity)
-                else
-                    hook.Remove("Think", "UpdateRadioPosition_" .. entity:EntIndex())
+            local hookName = "UpdateRadioPosition_" .. entity:EntIndex()
+            hook.Add("Think", hookName, function()
+                if not IsValid(entity) or not IsValid(station) then
+                    hook.Remove("Think", hookName)
+                    if IsValid(station) then
+                        station:Stop()
+                    end
+                    currentRadioSources[entity] = nil
+                    activeStationCount = updateStationCount()
+                    return
                 end
-            end)
 
-            -- Rest of the existing station setup code...
+                -- Get the actual position (handle vehicles and their seats)
+                local actualEntity = entity
+                if entity:IsVehicle() then
+                    -- If it's a vehicle seat, get its parent
+                    local parent = entity:GetParent()
+                    if IsValid(parent) then
+                        actualEntity = parent
+                    end
+                end
+
+                -- Update position and volume
+                station:SetPos(actualEntity:GetPos())
+
+                local playerPos = LocalPlayer():GetPos()
+                local entityPos = actualEntity:GetPos()
+                local distanceSqr = playerPos:DistToSqr(entityPos)
+                
+                -- Check if player is in any seat of the vehicle
+                local isPlayerInCar = false
+                if actualEntity:IsVehicle() then
+                    if LocalPlayer():GetVehicle() == entity then
+                        isPlayerInCar = true
+                    else
+                        -- Check all seats
+                        for _, seat in pairs(ents.FindByClass("prop_vehicle_prisoner_pod")) do
+                            if IsValid(seat) and seat:GetParent() == actualEntity and seat:GetDriver() == LocalPlayer() then
+                                isPlayerInCar = true
+                                break
+                            end
+                        end
+                    end
+                end
+
+                updateRadioVolume(station, distanceSqr, isPlayerInCar, actualEntity)
+            end)
         else
-            -- Handle error case
-            if entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox" then
-                BoomboxStatuses[entity:EntIndex()].stationStatus = "stopped"
+            if IsValid(entity) and (entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox") then
+                utils.clearRadioStatus(entity)
             end
-            print("Error creating sound: ", errorID, errorName)
         end
     end)
 end)
 
 net.Receive("StopCarRadioStation", function()
     local entity = net.ReadEntity()
-    entity = GetVehicleEntity(entity)
-
     if not IsValid(entity) then return end
-
-    if currentRadioSources[entity] and IsValid(currentRadioSources[entity]) then
-        currentRadioSources[entity]:Stop()
-    end
-    currentRadioSources[entity] = nil
-    entity.RadioSource = nil
-    currentlyPlayingStations[entity] = nil
-
-    if entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox" then
-        entity:SetNWString("Status", "stopped")
-        entity:SetNWString("StationName", "")
-        entity:SetNWBool("IsPlaying", false)
+    
+    entity = GetVehicleEntity(entity)
+    
+    -- Stop and clean up the sound
+    if currentRadioSources[entity] then
+        if IsValid(currentRadioSources[entity]) then
+            currentRadioSources[entity]:Stop()
+        end
+        currentRadioSources[entity] = nil
+        activeStationCount = updateStationCount()
     end
 
-    hook.Remove("EntityRemoved", "StopRadioOnEntityRemove_" .. entity:EntIndex())
+    -- Clean up entity status
+    if IsValid(entity) and (entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox") then
+        utils.clearRadioStatus(entity)
+    end
+
+    -- Remove associated hooks
     hook.Remove("Think", "UpdateRadioPosition_" .. entity:EntIndex())
 end)
 
-net.Receive("UpdateRadioVolume", function()
-    local entity = net.ReadEntity()
-    local volume = net.ReadFloat()
-
-    if not IsValid(entity) then return end
-    
-    -- Update sound if playing
-    if currentRadioSources[entity] and IsValid(currentRadioSources[entity]) then
-        currentRadioSources[entity]:SetVolume(volume)
-    end
-
-    -- Update UI if needed
-    if radioMenuOpen and IsValid(currentFrame) and LocalPlayer().currentRadioEntity == entity then
-        local volumePanel = currentFrame:GetChildren()[6]
-        if IsValid(volumePanel) then
-            local volumeSlider = volumePanel:GetChildren()[2]
-            if IsValid(volumeSlider) and volumeSlider:GetName() == "DNumSlider" then
-                volumeSlider:SetValue(volume)
-                
-                local volumeIcon = volumePanel:GetChildren()[1]
-                if IsValid(volumeIcon) then
-                    updateVolumeIcon(volumeIcon, volume)
-                end
-            end
+-- Add cleanup hooks
+hook.Add("EntityRemoved", "CleanupRadioStationCount", function(entity)
+    if currentRadioSources[entity] then
+        if IsValid(currentRadioSources[entity]) then
+            currentRadioSources[entity]:Stop()
         end
+        currentRadioSources[entity] = nil
+        activeStationCount = updateStationCount()
     end
+end)
+
+-- Add periodic validation
+timer.Create("ValidateStationCount", 30, 0, function()
+    updateStationCount()
 end)
 
 --[[
@@ -1845,6 +1869,30 @@ net.Receive("RadioConfigUpdate", function()
             source:SetVolume(volume)
         end
     end
+end)
+
+hook.Add("EntityRemoved", "CleanupRadioStationCount", function(entity)
+    if currentRadioSources[entity] then
+        if IsValid(currentRadioSources[entity]) then
+            currentRadioSources[entity]:Stop()
+        end
+        currentRadioSources[entity] = nil
+        activeStationCount = updateStationCount()
+    end
+end)
+
+-- Add periodic validation of station count
+timer.Create("ValidateStationCount", 30, 0, function()
+    local actualCount = 0
+    for ent, source in pairs(currentRadioSources) do
+        if IsValid(ent) and IsValid(source) then
+            actualCount = actualCount + 1
+        else
+            -- Clean up invalid entries
+            currentRadioSources[ent] = nil
+        end
+    end
+    activeStationCount = actualCount
 end)
 
 -- ------------------------------
