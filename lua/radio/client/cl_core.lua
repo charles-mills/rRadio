@@ -532,96 +532,60 @@ end
 
 --[[
     Function: createStarIcon
-    Creates a star icon for favorite countries.
+    Creates a star icon for favorites (both countries and stations).
 
     Parameters:
     - parent: The parent UI element.
     - country: The country code.
+    - station: (Optional) The station data. If nil, treats as country favorite.
     - updateList: The function to update the list.
 
     Returns:
     - The created star icon UI element.
 ]]
-local function createStarIcon(parent, country, updateList)
+local function createStarIcon(parent, country, station, updateList)
     local starIcon = vgui.Create("DImageButton", parent)
     starIcon:SetSize(Scale(24), Scale(24))
     starIcon:SetPos(Scale(8), (Scale(40) - Scale(24)) / 2)
-    if favoriteCountries[country] then
-        starIcon:SetImage("hud/star_full.png")
-    else
-        starIcon:SetImage("hud/star.png")
-    end
+
+    -- Check if it's a station or country favorite
+    local isFavorite = station and 
+        (favoriteStations[country] and favoriteStations[country][station.name]) or 
+        (not station and favoriteCountries[country])
+
+    starIcon:SetImage(isFavorite and "hud/star_full.png" or "hud/star.png")
 
     starIcon.DoClick = function()
-        if favoriteCountries[country] then
-            favoriteCountries[country] = nil
-        else
-            favoriteCountries[country] = true
-        end
+        if station then
+            -- Handle station favorite
+            if not favoriteStations[country] then
+                favoriteStations[country] = {}
+            end
 
-        saveFavorites()
-
-        -- Update the star icon
-        if favoriteCountries[country] then
-            starIcon:SetImage("hud/star_full.png")
-        else
-            starIcon:SetImage("hud/star.png")
-        end
-
-        -- Call the updateList function to refresh the list
-        if updateList then
-            updateList()
-        end
-    end
-
-    return starIcon
-end
-
---[[
-    Function: createStationStarIcon
-    Creates a star icon for favorite stations.
-
-    Parameters:
-    - parent: The parent UI element.
-    - country: The country code.
-    - station: The station data.
-    - updateList: The function to update the list.
-
-    Returns:
-    - The created star icon UI element.
-]]
-local function createStationStarIcon(parent, country, station, updateList)
-    local starIcon = vgui.Create("DImageButton", parent)
-    starIcon:SetSize(Scale(24), Scale(24))
-    starIcon:SetPos(Scale(8), (Scale(40) - Scale(24)) / 2)
-    if favoriteStations[country] and favoriteStations[country][station.name] then
-        starIcon:SetImage("hud/star_full.png")
-    else
-        starIcon:SetImage("hud/star.png")
-    end
-
-    starIcon.DoClick = function()
-        if not favoriteStations[country] then
-            favoriteStations[country] = {}
-        end
-
-        if favoriteStations[country][station.name] then
-            favoriteStations[country][station.name] = nil
-            if next(favoriteStations[country]) == nil then
-                favoriteStations[country] = nil
+            if favoriteStations[country][station.name] then
+                favoriteStations[country][station.name] = nil
+                if next(favoriteStations[country]) == nil then
+                    favoriteStations[country] = nil
+                end
+            else
+                favoriteStations[country][station.name] = true
             end
         else
-            favoriteStations[country][station.name] = true
+            -- Handle country favorite
+            if favoriteCountries[country] then
+                favoriteCountries[country] = nil
+            else
+                favoriteCountries[country] = true
+            end
         end
 
         saveFavorites()
 
         -- Update the star icon
-        if favoriteStations[country] and favoriteStations[country][station.name] then
-            starIcon:SetImage("hud/star_full.png")
-        else
-            starIcon:SetImage("hud/star.png")
-        end
+        local newIsFavorite = station and 
+            (favoriteStations[country] and favoriteStations[country][station.name]) or 
+            (not station and favoriteCountries[country])
+        starIcon:SetImage(newIsFavorite and "hud/star_full.png" or "hud/star.png")
 
         -- Call the updateList function to refresh the list
         if updateList then
@@ -698,6 +662,54 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
     end
 
     if selectedCountry == nil then
+        -- Add Favorite Stations button at the top
+        local hasFavorites = false
+        for country, stations in pairs(favoriteStations) do
+            for stationName, isFavorite in pairs(stations) do
+                if isFavorite then
+                    hasFavorites = true
+                    break
+                end
+            end
+            if hasFavorites then break end
+        end
+
+        if hasFavorites then
+            local favoritesButton = vgui.Create("DButton", stationListPanel)
+            favoritesButton:Dock(TOP)
+            favoritesButton:DockMargin(Scale(5), Scale(5), Scale(5), Scale(5))  -- Normal margin like other buttons
+            favoritesButton:SetTall(Scale(40))  -- Same height as other buttons
+            favoritesButton:SetText(Config.Lang["FavoriteStations"] or "Favorite Stations")
+            favoritesButton:SetFont("Roboto18")  -- Same font as other buttons
+            favoritesButton:SetTextColor(Config.UI.TextColor)
+
+            favoritesButton.Paint = function(self, w, h)
+                local bgColor = self:IsHovered() and Config.UI.ButtonHoverColor or Config.UI.ButtonColor
+                draw.RoundedBox(8, 0, 0, w, h, bgColor)
+                
+                -- Add a star icon
+                surface.SetMaterial(Material("hud/star_full.png"))
+                surface.SetDrawColor(Config.UI.TextColor)
+                surface.DrawTexturedRect(Scale(10), h/2 - Scale(12), Scale(24), Scale(24))
+            end
+
+            favoritesButton.DoClick = function()
+                surface.PlaySound("buttons/button3.wav")
+                selectedCountry = "favorites"
+                if backButton then backButton:SetVisible(true) end
+                populateList(stationListPanel, backButton, searchBox, true)
+            end
+
+            -- Add a subtle separator line
+            local separator = vgui.Create("DPanel", stationListPanel)
+            separator:Dock(TOP)
+            separator:DockMargin(Scale(5), 0, Scale(5), Scale(5))
+            separator:SetTall(1)
+            separator.Paint = function(self, w, h)
+                draw.RoundedBox(0, 0, 0, w, h, ColorAlpha(Config.UI.TextColor, 100))
+            end
+        end
+
         local countries = {}
         for country, _ in pairs(StationData) do
             local translatedCountry = formatCountryName(country)
@@ -731,7 +743,7 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
             end
 
             -- Add the star icon with the updateList function
-            createStarIcon(countryButton, country.original, updateList)
+            createStarIcon(countryButton, country.original, nil, updateList)
 
             countryButton.DoClick = function()
                 surface.PlaySound("buttons/button3.wav")
@@ -745,6 +757,90 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
         if backButton then
             backButton:SetVisible(false)
             backButton:SetEnabled(false)
+        end
+    elseif selectedCountry == "favorites" then
+        -- Display all favorite stations
+        local favoritesList = {}
+        
+        for country, stations in pairs(favoriteStations) do
+            if StationData[country] then
+                for _, station in ipairs(StationData[country]) do
+                    if stations[station.name] and (filterText == "" or station.name:lower():find(filterText, 1, true)) then
+                        table.insert(favoritesList, {
+                            station = station,
+                            country = country,
+                            countryName = formatCountryName(country)
+                        })
+                    end
+                end
+            end
+        end
+
+        -- Sort favorites by country name then station name
+        table.sort(favoritesList, function(a, b)
+            if a.countryName == b.countryName then
+                return a.station.name < b.station.name
+            end
+            return a.countryName < b.countryName
+        end)
+
+        for _, favorite in ipairs(favoritesList) do
+            local stationButton = vgui.Create("DButton", stationListPanel)
+            stationButton:Dock(TOP)
+            stationButton:DockMargin(Scale(5), Scale(5), Scale(5), 0)
+            stationButton:SetTall(Scale(40))
+            stationButton:SetText(favorite.countryName .. " - " .. favorite.station.name)
+            stationButton:SetFont("Roboto18")
+            stationButton:SetTextColor(Config.UI.TextColor)
+
+            stationButton.Paint = function(self, w, h)
+                local entity = LocalPlayer().currentRadioEntity
+                if IsValid(entity) and currentlyPlayingStations[entity] and 
+                   currentlyPlayingStations[entity].name == favorite.station.name then
+                    draw.RoundedBox(8, 0, 0, w, h, Config.UI.PlayingButtonColor)
+                else
+                    draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonColor)
+                    if self:IsHovered() then
+                        draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonHoverColor)
+                    end
+                end
+            end
+
+            createStarIcon(stationButton, favorite.country, favorite.station, updateList)
+
+            stationButton.DoClick = function()
+                local currentTime = CurTime()
+
+                -- Check if the cooldown has passed
+                if currentTime - lastStationSelectTime < 2 then
+                    return  -- Exit the function if the cooldown hasn't passed
+                end
+
+                surface.PlaySound("buttons/button17.wav")
+                local entity = LocalPlayer().currentRadioEntity
+
+                if not IsValid(entity) then
+                    return
+                end
+
+                if currentlyPlayingStations[entity] then
+                    net.Start("StopCarRadioStation")
+                        net.WriteEntity(entity)
+                    net.SendToServer()
+                end
+
+                local volume = entityVolumes[entity] or (getEntityConfig(entity) and getEntityConfig(entity).Volume) or 0.5
+                net.Start("PlayCarRadioStation")
+                    net.WriteEntity(entity)
+                    net.WriteString(favorite.station.name)
+                    net.WriteString(favorite.station.url)
+                    net.WriteFloat(volume)
+                net.SendToServer()
+
+                currentlyPlayingStations[entity] = favorite.station
+                lastStationSelectTime = currentTime  -- Update the last station select time
+                populateList(stationListPanel, backButton, searchBox, false)
+            end
         end
     else
         local stations = StationData[selectedCountry] or {}
@@ -787,7 +883,7 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                 end
             end
 
-            createStationStarIcon(stationButton, selectedCountry, station, updateList)
+            createStarIcon(stationButton, selectedCountry, station, updateList)
 
             stationButton.DoClick = function()
                 local currentTime = CurTime()
