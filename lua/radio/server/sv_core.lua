@@ -89,34 +89,42 @@ end
     - volume: The volume level.
 ]]
 local function AddActiveRadio(entity, stationName, url, volume)
-    if not IsValid(entity) then return end
+    if not IsValid(entity) then 
+        print("[RadioDebug] AddActiveRadio failed - Invalid entity")
+        return 
+    end
+    
+    print(string.format("[RadioDebug] AddActiveRadio called - Entity: %d, Station: %s, URL: %s", 
+        entity:EntIndex(), stationName, url))
     
     local entIndex = entity:EntIndex()
     
-    -- Initialize volume if needed
+    -- Initialize volume if not set
     if not EntityVolumes[entIndex] then
-        InitializeEntityVolume(entity)
+        print("[RadioDebug] Initializing volume for entity", entIndex)
+        EntityVolumes[entIndex] = volume or GetDefaultVolume(entity)
     end
-    
-    ActiveRadios[entIndex] = {
-        entity = entity,
-        stationName = stationName,
-        url = url,
-        volume = EntityVolumes[entIndex],
-        timestamp = CurTime()
-    }
 
-    -- Set the entity's network variables
+    -- Set networked variables
+    print("[RadioDebug] Setting network variables for entity", entIndex)
     entity:SetNWString("StationName", stationName)
-    entity:SetNWString("Status", "playing")
-    entity:SetNWBool("IsPlaying", true)
+    entity:SetNWString("StationURL", url)  -- Make sure we set the URL
     entity:SetNWFloat("Volume", EntityVolumes[entIndex])
 
+    -- Update ActiveRadios table
+    ActiveRadios[entIndex] = {
+        stationName = stationName,
+        url = url,  -- Store the URL here
+        volume = EntityVolumes[entIndex]
+    }
+
     -- Update boombox status table
-    if entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox" then
+    if utils.IsBoombox(entity) then
+        print("[RadioDebug] Updating BoomboxStatuses for entity", entIndex)
         BoomboxStatuses[entIndex] = {
             stationStatus = "playing",
-            stationName = stationName
+            stationName = stationName,
+            url = url
         }
     end
 end
@@ -139,6 +147,7 @@ end
 ]]
 local function SendActiveRadiosToPlayer(ply)
     if not IsValid(ply) then
+        print("[RadioDebug] SendActiveRadiosToPlayer: Invalid player")
         return
     end
 
@@ -147,8 +156,10 @@ local function SendActiveRadiosToPlayer(ply)
     end
 
     local attempt = PlayerRetryAttempts[ply]
+    print("[RadioDebug] SendActiveRadiosToPlayer attempt", attempt, "for player", ply:Nick())
 
     if next(ActiveRadios) == nil then
+        print("[RadioDebug] No active radios to send")
         if attempt >= 3 then
             PlayerRetryAttempts[ply] = nil
             return
@@ -166,14 +177,22 @@ local function SendActiveRadiosToPlayer(ply)
         return
     end
 
-    for _, radio in pairs(ActiveRadios) do
-        if IsValid(radio.entity) then
+    print("[RadioDebug] Sending active radios to player", ply:Nick())
+    for entIndex, radio in pairs(ActiveRadios) do
+        local entity = Entity(entIndex)
+        if IsValid(entity) then
+            print(string.format("[RadioDebug] Sending radio - Entity: %d, Station: %s, URL: %s", 
+                entIndex, radio.stationName, radio.url))
+            
             net.Start("PlayCarRadioStation")
-                net.WriteEntity(radio.entity)
+                net.WriteEntity(entity)
                 net.WriteString(radio.stationName)
                 net.WriteString(radio.url)
                 net.WriteFloat(radio.volume)
             net.Send(ply)
+        else
+            print("[RadioDebug] Invalid entity for index", entIndex)
+            ActiveRadios[entIndex] = nil
         end
     end
 
@@ -181,8 +200,10 @@ local function SendActiveRadiosToPlayer(ply)
 end
 
 hook.Add("PlayerInitialSpawn", "SendActiveRadiosOnJoin", function(ply)
-    timer.Simple(3, function()
+    print("[RadioDebug] Player joined:", ply:Nick())
+    timer.Simple(5, function()
         if IsValid(ply) then
+            print("[RadioDebug] Sending active radios to newly joined player:", ply:Nick())
             SendActiveRadiosToPlayer(ply)
         end
     end)
@@ -291,6 +312,33 @@ net.Receive("PlayCarRadioStation", function(len, ply)
     end
     lastGlobalAction = currentTime
 
+    local entity = net.ReadEntity()
+    local stationName = net.ReadString()
+    local stationURL = net.ReadString()
+    local volume = net.ReadFloat()
+
+    print(string.format("[RadioDebug] PlayCarRadioStation received - Entity: %d, Station: %s, URL: %s",
+        IsValid(entity) and entity:EntIndex() or -1,
+        stationName,
+        stationURL))
+
+    -- Basic validation
+    if not IsValid(entity) then return end
+    
+    -- Get the actual vehicle entity if needed
+    entity = GetVehicleEntity(entity)
+    local entIndex = entity:EntIndex()
+
+    -- Store URL in BoomboxStatuses for permanent boomboxes
+    if utils.IsBoombox(entity) then
+        if not BoomboxStatuses[entIndex] then
+            BoomboxStatuses[entIndex] = {}
+        end
+        BoomboxStatuses[entIndex].url = stationURL
+        print(string.format("[RadioDebug] Stored URL in BoomboxStatuses - Entity: %d, URL: %s",
+            entIndex, stationURL))
+    end
+
     local lastRequestTime = PlayerCooldowns[ply] or 0
     if currentTime - lastRequestTime < 0.25 then
         ply:ChatPrint("You are changing stations too quickly.")
@@ -332,45 +380,6 @@ net.Receive("PlayCarRadioStation", function(len, ply)
         return
     end
 
-    local entity = net.ReadEntity()
-    local stationName = net.ReadString()
-    local stationURL = net.ReadString()
-    local volume = net.ReadFloat()
-    
-    -- Basic validation
-    if not IsValid(entity) then return end
-    
-    -- Get the actual vehicle entity if needed
-    entity = GetVehicleEntity(entity)
-    local entIndex = entity:EntIndex()
-    
-    -- Permission checks for boomboxes
-    if entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox" then
-        if not utils.canInteractWithBoombox(ply, entity) then
-            ply:ChatPrint("You do not have permission to control this boombox.")
-            return
-        end
-    elseif entity:IsVehicle() or IsLVSVehicle(entity) then
-        -- Vehicle permission checks
-        local vehicle = IsLVSVehicle(entity) or entity
-        if utils.isSitAnywhereSeat(vehicle) then return end
-        
-        if not IsValid(vehicle:GetDriver()) or vehicle:GetDriver() ~= ply then
-            local isPassenger = false
-            for _, seat in pairs(ents.FindByClass("prop_vehicle_prisoner_pod")) do
-                if IsValid(seat) and seat:GetParent() == vehicle and seat:GetDriver() == ply then
-                    isPassenger = true
-                    break
-                end
-            end
-            
-            if not isPassenger then
-                ply:ChatPrint("You must be in the vehicle to control its radio.")
-                return
-            end
-        end
-    end
-
     -- Stop existing radio if playing
     if ActiveRadios[entIndex] then
         net.Start("StopCarRadioStation")
@@ -380,7 +389,7 @@ net.Receive("PlayCarRadioStation", function(len, ply)
     end
 
     -- Set initial status for boomboxes
-    if entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox" then
+    if utils.IsBoombox(entity) then
         utils.setRadioStatus(entity, "tuning", stationName)
     end
 
@@ -472,8 +481,6 @@ net.Receive("StopCarRadioStation", function(len, ply)
     end
 end)
 
--- Update the volume update handling with better debouncing and validation
-
 local function ProcessVolumeUpdate(entity, volume, ply)
     if not IsValid(entity) then return end
     
@@ -482,7 +489,7 @@ local function ProcessVolumeUpdate(entity, volume, ply)
     local entIndex = entity:EntIndex()
     
     -- Validate permissions
-    if entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox" then
+    if utils.IsBoombox(entity) then
         if not utils.canInteractWithBoombox(ply, entity) then
             return
         end
@@ -621,7 +628,7 @@ hook.Add("InitPostEntity", "SetupBoomboxHooks", function()
     timer.Simple(1, function()
         if IsDarkRP() then
             hook.Add("playerBoughtCustomEntity", "AssignBoomboxOwnerInDarkRP", function(ply, entTable, ent, price)
-                if IsValid(ent) and (ent:GetClass() == "boombox" or ent:GetClass() == "golden_boombox") then
+                if IsValid(ent) and utils.IsBoombox(ent) then
                     AssignOwner(ply, ent)
                 end
             end)
@@ -632,13 +639,13 @@ end)
 -- Toolgun and Physgun Pickup for Boomboxes (remove CPPI dependency for Sandbox)
 hook.Add("CanTool", "AllowBoomboxToolgun", function(ply, tr, tool)
     local ent = tr.Entity
-    if IsValid(ent) and (ent:GetClass() == "boombox" or ent:GetClass() == "golden_boombox") then
+    if IsValid(ent) and utils.IsBoombox(ent) then
         return utils.canInteractWithBoombox(ply, ent)
     end
 end)
 
 hook.Add("PhysgunPickup", "AllowBoomboxPhysgun", function(ply, ent)
-    if IsValid(ent) and (ent:GetClass() == "boombox" or ent:GetClass() == "golden_boombox") then
+    if IsValid(ent) and utils.IsBoombox(ent) then
         return utils.canInteractWithBoombox(ply, ent)
     end
 end)
@@ -912,8 +919,7 @@ end
 
 hook.Add("OnEntityCreated", "InitializeRadioVolume", function(entity)
     timer.Simple(0, function()
-        if IsValid(entity) and (entity:GetClass() == "boombox" or 
-           entity:GetClass() == "golden_boombox" or utils.GetVehicle(entity)) then
+        if IsValid(entity) and (utils.IsBoombox(entity) or utils.GetVehicle(entity)) then
             InitializeEntityVolume(entity)
         end
     end)
@@ -978,8 +984,4 @@ hook.Add("PlayerDisconnected", "CleanupPlayerRadioData", function(ply)
         end
     end
 end)
-
-local function GetEntityConfig(entity)
-    return utils.GetEntityConfig(entity)
-end
 

@@ -197,4 +197,16 @@ function utils.clearRadioStatus(entity)
     utils.setRadioStatus(entity, "stopped", "", false)
 end
 
+--[[
+    Function: IsBoombox
+    Description: Checks if an entity is a boombox (regular or golden)
+    @param entity (Entity): The entity to check
+    @return (boolean): True if the entity is a boombox, false otherwise
+]]
+function utils.IsBoombox(entity)
+    if not IsValid(entity) then return false end
+    local class = entity:GetClass()
+    return class == "boombox" or class == "golden_boombox"
+end
+
 return utils

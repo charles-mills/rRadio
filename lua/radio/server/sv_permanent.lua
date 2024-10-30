@@ -6,7 +6,7 @@
                  a SQLite database. The file also manages network communications for permanent
                  boombox actions and provides console commands for administrators to manage the
                  permanent boombox system.
-    Date: October 17, 2024
+    Date: October 30, 2024
 ]]--
 
 -- Create the ConVar for boombox permanence
@@ -91,9 +91,38 @@ local function SavePermanentBoombox(ent)
     local model = sanitize(ent:GetModel())
     local pos = ent:GetPos()
     local ang = ent:GetAngles()
-    local stationName = sanitize(ent:GetNWString("StationName", ""))
-    local stationURL = sanitize(ent:GetNWString("StationURL", ""))
+    
+    -- Get the current station info from ActiveRadios if available
+    local entIndex = ent:EntIndex()
+    local stationName = ""
+    local stationURL = ""
     local volume = ent:GetNWFloat("Volume", 1.0)
+
+    -- Check ActiveRadios table first
+    if ActiveRadios and ActiveRadios[entIndex] then
+        stationName = sanitize(ActiveRadios[entIndex].stationName or "")
+        stationURL = sanitize(ActiveRadios[entIndex].url or "")
+    end
+
+    -- If no URL found in ActiveRadios, check BoomboxStatuses
+    if (stationURL == "" or stationName == "") and BoomboxStatuses and BoomboxStatuses[entIndex] then
+        if stationURL == "" then
+            stationURL = sanitize(BoomboxStatuses[entIndex].url or "")
+        end
+        if stationName == "" then
+            stationName = sanitize(BoomboxStatuses[entIndex].stationName or "")
+        end
+    end
+
+    -- Fallback to networked values if still no info
+    if stationURL == "" or stationName == "" then
+        if stationName == "" then
+            stationName = sanitize(ent:GetNWString("StationName", ""))
+        end
+        if stationURL == "" then
+            stationURL = sanitize(ent:GetNWString("StationURL", ""))
+        end
+    end
 
     local permanentID = ent:GetNWString("PermanentID", "")
     if permanentID == "" then
@@ -183,10 +212,10 @@ local function LoadPermanentBoomboxes(isReload)
     local loadQuery = string.format("SELECT * FROM permanent_boomboxes WHERE map = '%s';", currentMap)
     local result = sql.Query(loadQuery)
     
-    if not result or #result == 0 then
+    if not result then
         return
     end
-
+    
     for i, row in ipairs(result) do
         -- Check if this boombox has already been spawned by ID
         if spawnedBoomboxes[row.permanent_id] then
@@ -228,16 +257,34 @@ local function LoadPermanentBoomboxes(isReload)
 
         -- Start playing the radio
         if row.station_url ~= "" then
+            -- Store the URL and station name in BoomboxStatuses
+            local entIndex = ent:EntIndex()
+            if not BoomboxStatuses[entIndex] then
+                BoomboxStatuses[entIndex] = {}
+            end
+            BoomboxStatuses[entIndex].url = row.station_url
+            BoomboxStatuses[entIndex].stationName = row.station_name
+            BoomboxStatuses[entIndex].stationStatus = "playing"
+            
+            -- Set networked variables
+            ent:SetNWString("StationName", row.station_name)
+            ent:SetNWString("StationURL", row.station_url)
+            ent:SetNWString("Status", "playing")
+            ent:SetNWBool("IsPlaying", true)
+            
+            -- Broadcast to clients
             net.Start("PlayCarRadioStation")
                 net.WriteEntity(ent)
-                net.WriteString(row.station_name)
+                net.WriteString(row.station_name or "")
                 net.WriteString(row.station_url)
                 net.WriteFloat(row.volume)
             net.Broadcast()
 
             -- Add to active radios
             if AddActiveRadio then
-                AddActiveRadio(ent, row.station_name, row.station_url, row.volume)
+                AddActiveRadio(ent, row.station_name or "", row.station_url, row.volume)
+            else
+                print("[RadioDebug] WARNING: AddActiveRadio function not found!")
             end
         end
 
