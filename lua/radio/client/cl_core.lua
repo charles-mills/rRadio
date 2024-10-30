@@ -1702,12 +1702,12 @@ net.Receive("PlayCarRadioStation", function()
     local url = net.ReadString()
     local volume = net.ReadFloat()
 
-    if not IsValid(entity) then return end
+    print(string.format("[RadioDebug] Client received PlayCarRadioStation - Entity: %d, Station: %s", 
+        IsValid(entity) and entity:EntIndex() or -1, stationName))
 
-    -- Update station count before checking limit
     local currentCount = updateStationCount()
 
-    -- Check if we're already at the station limit (excluding this entity if it's already playing)
+    -- Check if we're already at the station limit
     if not currentRadioSources[entity] and currentCount >= MAX_CLIENT_STATIONS then
         return
     end
@@ -1719,32 +1719,15 @@ net.Receive("PlayCarRadioStation", function()
         activeStationCount = math.max(0, activeStationCount - 1)
     end
 
-    -- Clear any existing status and set initial tuning state
-    if entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox" then
-        utils.clearRadioStatus(entity)
-        utils.setRadioStatus(entity, "tuning", stationName)
-    end
-
-    -- Create new sound
     sound.PlayURL(url, "3d mono", function(station, errorID, errorName)
         if IsValid(station) and IsValid(entity) then
             station:SetPos(entity:GetPos())
             station:SetVolume(volume)
             station:Play()
             
-            -- Update counts and sources
+            -- Store the sound source
             currentRadioSources[entity] = station
             activeStationCount = updateStationCount()
-
-            -- Update status to playing after successful connection
-            if entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox" then
-                local entIndex = entity:EntIndex()
-                timer.Create("UpdateBoomboxStatus_" .. entIndex, 2, 1, function()
-                    if IsValid(entity) then
-                        utils.setRadioStatus(entity, "playing", stationName)
-                    end
-                end)
-            end
 
             -- Set up 3D audio
             local entityConfig = getEntityConfig(entity)
@@ -1754,7 +1737,6 @@ net.Receive("PlayCarRadioStation", function()
                 station:Set3DFadeDistance(minDist, maxDist)
             end
 
-            -- Add position update hook
             local hookName = "UpdateRadioPosition_" .. entity:EntIndex()
             hook.Add("Think", hookName, function()
                 if not IsValid(entity) or not IsValid(station) then
@@ -1803,11 +1785,9 @@ net.Receive("PlayCarRadioStation", function()
                 updateRadioVolume(station, distanceSqr, isPlayerInCar, actualEntity)
             end)
         else
-            -- Handle error case
             if IsValid(entity) and (entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox") then
                 utils.clearRadioStatus(entity)
             end
-            print("[Radio] Error creating sound:", errorID, errorName)
         end
     end)
 end)
