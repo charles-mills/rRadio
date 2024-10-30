@@ -456,32 +456,20 @@ net.Receive("StopCarRadioStation", function(len, ply)
     end
 end)
 
---[[
-    Network Receiver: UpdateRadioVolume
-    Updates the volume of a boombox or vehicle radio with a debounce system.
-    Parameters:
-    - entity: The boombox or vehicle entity.
-    - volume: The new volume level.
-]]
-net.Receive("UpdateRadioVolume", function(len, ply)
-    local entity = net.ReadEntity()
-    local volume = ClampVolume(net.ReadFloat())
+-- Update the volume update handling with better debouncing and validation
 
+local function ProcessVolumeUpdate(entity, volume, ply)
     if not IsValid(entity) then return end
-
+    
+    -- Get the actual vehicle entity if needed
     entity = utils.GetVehicle(entity) or entity
-
-    local entityClass = entity:GetClass()
-    local entIndex = entity:EntIndex()
-
-    -- Check permissions for boomboxes
-    if (entityClass == "boombox" or entityClass == "golden_boombox") and not utils.canInteractWithBoombox(ply, entity) then
-        ply:ChatPrint("You don't have permission to control this boombox's volume.")
-        return
-    end
-
-    -- For vehicles, check if it's a valid vehicle and the player is in it
-    if utils.GetVehicle(entity) then
+    
+    -- Validate permissions
+    if entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox" then
+        if not utils.canInteractWithBoombox(ply, entity) then
+            return
+        end
+    elseif utils.GetVehicle(entity) then
         local vehicle = utils.GetVehicle(entity)
         -- Skip volume control for SitAnywhere seats
         if utils.isSitAnywhereSeat(vehicle) then
@@ -496,46 +484,65 @@ net.Receive("UpdateRadioVolume", function(len, ply)
             end
         end
         if not isInVehicle and vehicle:GetDriver() ~= ply then
-            ply:ChatPrint("You must be in the vehicle to control its radio volume.")
             return
         end
+    else
+        return
     end
 
-    volumeUpdateQueue[entIndex] = {
-        entity = entity,
-        volume = volume,
-        player = ply,
-        time = CurTime()
-    }
+    -- Clamp volume and update entity
+    volume = ClampVolume(volume)
+    entity:SetNWFloat("Volume", volume)
 
-    if not timer.Exists("VolumeUpdate_" .. entIndex) then
-        timer.Create("VolumeUpdate_" .. entIndex, VOLUME_UPDATE_DEBOUNCE_TIME, 1, function()
-            local updateData = volumeUpdateQueue[entIndex]
-            if updateData then
-                local updateEntity = updateData.entity
-                local updateVolume = updateData.volume
+    -- Broadcast to all clients
+    net.Start("UpdateRadioVolume")
+        net.WriteEntity(entity)
+        net.WriteFloat(volume)
+    net.Broadcast()
+end
 
-                if IsValid(updateEntity) then
-                    updateEntity:SetNWFloat("Volume", updateVolume)
-                    
-                    if ActiveRadios[entIndex] then
-                        ActiveRadios[entIndex].volume = updateVolume
-                    end
+-- Update the volume update receiver
+net.Receive("UpdateRadioVolume", function(len, ply)
+    local entity = net.ReadEntity()
+    local volume = net.ReadFloat()
+    local entIndex = IsValid(entity) and entity:EntIndex() or nil
 
-                    net.Start("UpdateRadioVolume")
-                        net.WriteEntity(updateEntity)
-                        net.WriteFloat(updateVolume)
-                    net.Broadcast()
+    if not entIndex then return end
 
-                    if updateEntity.IsPermanent and SavePermanentBoombox and 
-                       (entityClass == "boombox" or entityClass == "golden_boombox") then
-                        SavePermanentBoombox(updateEntity)
-                    end
+    -- Get or create the update data for this entity
+    if not volumeUpdateQueue[entIndex] then
+        volumeUpdateQueue[entIndex] = {
+            lastUpdate = 0,
+            pendingVolume = nil,
+            pendingPlayer = nil
+        }
+    end
+
+    local updateData = volumeUpdateQueue[entIndex]
+    local currentTime = CurTime()
+
+    -- Update the pending data
+    updateData.pendingVolume = volume
+    updateData.pendingPlayer = ply
+
+    -- If we're not currently debouncing, process immediately
+    if currentTime - updateData.lastUpdate >= VOLUME_UPDATE_DEBOUNCE_TIME then
+        ProcessVolumeUpdate(entity, volume, ply)
+        updateData.lastUpdate = currentTime
+        updateData.pendingVolume = nil
+        updateData.pendingPlayer = nil
+    else
+        -- Otherwise, schedule an update
+        if not timer.Exists("VolumeUpdate_" .. entIndex) then
+            timer.Create("VolumeUpdate_" .. entIndex, VOLUME_UPDATE_DEBOUNCE_TIME, 1, function()
+                if updateData.pendingVolume and IsValid(updateData.pendingPlayer) then
+                    ProcessVolumeUpdate(entity, updateData.pendingVolume, updateData.pendingPlayer)
+                    updateData.lastUpdate = CurTime()
+                    updateData.pendingVolume = nil
+                    updateData.pendingPlayer = nil
                 end
-
-                volumeUpdateQueue[entIndex] = nil
-            end
-        end)
+            end)
+        end
     end
 end)
 
