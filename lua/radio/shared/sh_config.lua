@@ -302,8 +302,6 @@ function Config.ReloadConVars()
 end
 
 if SERVER then
-    util.AddNetworkString("RadioConfigUpdate")
-    
     -- Handle the reload command
     concommand.Add("radio_reload_config", function(ply)
         -- Only allow admins to reload the config
