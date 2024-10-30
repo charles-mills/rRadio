@@ -13,7 +13,7 @@ local LANG = {
 }
 
 -- German
-LANG.de["SelectCountry"] = "rRadio | Land auswählen"
+LANG.de["SelectCountry"] = "Land auswählen"
 LANG.de["StopRadio"] = "STOP"
 LANG.de["SearchPlaceholder"] = "Suche..."
 LANG.de["PressKeyToOpen"] = "Drücken Sie {key}, um eine Station auszuwählen"
@@ -38,7 +38,7 @@ LANG.de["Disabled"] = "Deaktiviert"
 LANG.de["FavoriteStations"] = "Favorit-Stationen"
 
 -- English
-LANG.en["SelectCountry"] = "rRadio | Select a Country"
+LANG.en["SelectCountry"] = "Select a Country"
 LANG.en["StopRadio"] = "STOP"
 LANG.en["SearchPlaceholder"] = "Search..."
 LANG.en["PressKeyToOpen"] = "Press {key} to pick a station"
@@ -63,7 +63,7 @@ LANG.en["Disabled"] = "Disabled"
 LANG.en["FavoriteStations"] = "Favorite Stations"
 
 -- Spanish
-LANG.es["SelectCountry"] = "rRadio | Seleccionar país"
+LANG.es["SelectCountry"] = "Seleccionar país"
 LANG.es["StopRadio"] = "PARAR"
 LANG.es["SearchPlaceholder"] = "Buscar..."
 LANG.es["PressKeyToOpen"] = "Presione {key} para elegir una estación"
@@ -88,7 +88,7 @@ LANG.es["Disabled"] = "Desactivado"
 LANG.es["FavoriteStations"] = "Estaciones favoritas"
 
 -- French
-LANG.fr["SelectCountry"] = "rRadio | Sélectionnez un pays"
+LANG.fr["SelectCountry"] = "Sélectionnez un pays"
 LANG.fr["StopRadio"] = "ARRÊT"
 LANG.fr["SearchPlaceholder"] = "Recherche..."
 LANG.fr["PressKeyToOpen"] = "Appuyez sur {key} pour choisir une station"
@@ -113,7 +113,7 @@ LANG.fr["Disabled"] = "Désactivé"
 LANG.fr["FavoriteStations"] = "Stations favorites"
 
 -- Italian
-LANG.it["SelectCountry"] = "rRadio | Seleziona paese"
+LANG.it["SelectCountry"] = "Seleziona paese"
 LANG.it["StopRadio"] = "FERMARE"
 LANG.it["SearchPlaceholder"] = "Cerca..."
 LANG.it["PressKeyToOpen"] = "Premi {key} per scegliere una stazione"
@@ -138,7 +138,7 @@ LANG.it["Disabled"] = "Disattivato"
 LANG.it["FavoriteStations"] = "Stazioni favorite"
 
 -- Japanese
-LANG.ja["SelectCountry"] = "rRadio | 国を選択"
+LANG.ja["SelectCountry"] = "国を選択"
 LANG.ja["StopRadio"] = "停止"
 LANG.ja["SearchPlaceholder"] = "検索..."
 LANG.ja["PressKeyToOpen"] = "{key}を押して局を選択"
@@ -163,7 +163,7 @@ LANG.ja["Disabled"] = "無効"
 LANG.ja["FavoriteStations"] = "お気に入りの局"
 
 -- Korean
-LANG.ko["SelectCountry"] = "rRadio | 국가 선택"
+LANG.ko["SelectCountry"] = "국가 선택"
 LANG.ko["StopRadio"] = "정지"
 LANG.ko["SearchPlaceholder"] = "검색..."
 LANG.ko["PressKeyToOpen"] = "{key}을 눌러 방송국을 선택하십시오"
@@ -188,7 +188,7 @@ LANG.ko["Disabled"] = "비활성화"
 LANG.ko["FavoriteStations"] = "즐겨찾기 방송국"
 
 -- Portuguese (Brazil)
-LANG.pt_br["SelectCountry"] = "rRadio | Selecionar país"
+LANG.pt_br["SelectCountry"] = "Selecionar país"
 LANG.pt_br["StopRadio"] = "PARAR"
 LANG.pt_br["SearchPlaceholder"] = "Buscar..."
 LANG.pt_br["PressKeyToOpen"] = "Pressione {key} para escolher uma estação"
@@ -213,7 +213,7 @@ LANG.pt_br["Disabled"] = "Desativado"
 LANG.pt_br["FavoriteStations"] = "Estações favoritas"
 
 -- Russian
-LANG.ru["SelectCountry"] = "rRadio | Выберите страну"
+LANG.ru["SelectCountry"] = "Выберите страну"
 LANG.ru["StopRadio"] = "СТОП"
 LANG.ru["SearchPlaceholder"] = "Поиск..."
 LANG.ru["PressKeyToOpen"] = "Нажмите {key}, чтобы выбрать станцию"
@@ -237,7 +237,7 @@ LANG.ru["Enabled"] = "Включено"
 LANG.ru["Disabled"] = "Выключено"
 LANG.ru["FavoriteStations"] = "Избранные станции"
 -- Turkish
-LANG.tr["SelectCountry"] = "rRadio | Ülke seç"
+LANG.tr["SelectCountry"] = "Ülke seç"
 LANG.tr["StopRadio"] = "DURDUR"
 LANG.tr["SearchPlaceholder"] = "Ara..."
 LANG.tr["PressKeyToOpen"] = "Radyo kanalı seçmek için {key} tuşuna bas"
@@ -262,7 +262,7 @@ LANG.tr["Disabled"] = "Pasif"
 LANG.tr["FavoriteStations"] = "Favori Radyo Kanalları"
 
 -- Chinese (Simplified)
-LANG.zh_cn["SelectCountry"] = "rRadio | 选择国家"
+LANG.zh_cn["SelectCountry"] = "选择国家"
 LANG.zh_cn["StopRadio"] = "停止"
 LANG.zh_cn["SearchPlaceholder"] = "搜索..."
 LANG.zh_cn["PressKeyToOpen"] = "按 {key} 选择电台"

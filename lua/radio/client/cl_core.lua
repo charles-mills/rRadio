@@ -6,7 +6,7 @@
                  radio stations, manages favorites, and processes network messages from
                  the server. It also includes various utility functions for UI elements,
                  sound management, and entity interactions.
-    Date: October 17, 2024
+    Date: October 30, 2024
 ]]--
 
 -- ------------------------------
@@ -50,6 +50,8 @@ local isUpdatingIcon = false
 
 local lastKeyPress = 0
 local keyPressDelay = 0.2  -- Delay between key presses to prevent spamming
+
+local favoritesMenuOpen = false
 
 -- ------------------------------
 --      Utility Functions
@@ -696,7 +698,11 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
             favoritesButton.DoClick = function()
                 surface.PlaySound("buttons/button3.wav")
                 selectedCountry = "favorites"
-                if backButton then backButton:SetVisible(true) end
+                favoritesMenuOpen = true
+                if backButton then 
+                    backButton:SetVisible(true)
+                    backButton:SetEnabled(true)
+                end
                 populateList(stationListPanel, backButton, searchBox, true)
             end
 
@@ -712,13 +718,26 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
 
         local countries = {}
         for country, _ in pairs(StationData) do
-            local translatedCountry = formatCountryName(country)
+            -- Debug print to see the raw country name
+            print("Raw country name:", country)
+            
+            -- Try both direct and formatted versions
+            local translatedCountry = LanguageManager:GetCountryTranslation(lang, country) or
+                                     LanguageManager:GetCountryTranslation(lang, country:gsub("^%l", string.upper)) or
+                                     country
+
+            -- Debug print to see what translation was found
+            print("Translated to:", translatedCountry, "for language:", lang)
+
             if filterText == "" or translatedCountry:lower():find(filterText, 1, true) then
-                table.insert(countries, { original = country, translated = translatedCountry, isPrioritized = favoriteCountries[country] })
+                table.insert(countries, { 
+                    original = country, 
+                    translated = translatedCountry, 
+                    isPrioritized = favoriteCountries[country] 
+                })
             end
         end
 
-        -- Optimized sorting
         table.sort(countries, function(a, b)
             if a.isPrioritized ~= b.isPrioritized then
                 return a.isPrioritized
@@ -766,10 +785,17 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
             if StationData[country] then
                 for _, station in ipairs(StationData[country]) do
                     if stations[station.name] and (filterText == "" or station.name:lower():find(filterText, 1, true)) then
+                        -- Debug print for favorites translation
+                        print("Favorite country name:", country)
+                        local translatedName = LanguageManager:GetCountryTranslation(lang, country) or
+                                             LanguageManager:GetCountryTranslation(lang, country:gsub("^%l", string.upper)) or
+                                             country
+                        print("Translated favorite to:", translatedName)
+
                         table.insert(favoritesList, {
                             station = station,
                             country = country,
-                            countryName = formatCountryName(country)
+                            countryName = translatedName
                         })
                     end
                 end
@@ -838,7 +864,7 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                 net.SendToServer()
 
                 currentlyPlayingStations[entity] = favorite.station
-                lastStationSelectTime = currentTime  -- Update the last station select time
+                lastStationSelectTime = currentTime
                 populateList(stationListPanel, backButton, searchBox, false)
             end
         end
@@ -853,7 +879,6 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
             end
         end
 
-        -- Optimized sorting
         table.sort(favoriteStationsList, function(a, b)
             if a.favorite ~= b.favorite then
                 return a.favorite
@@ -955,9 +980,9 @@ local function openSettingsMenu(parentFrame, backButton)
         header:SetTextColor(Config.UI.TextColor)
         header:Dock(TOP)
         if isFirst then
-            header:DockMargin(0, Scale(5), 0, Scale(0))  -- Reduced top margin for the first header
+            header:DockMargin(0, Scale(5), 0, Scale(0))
         else
-            header:DockMargin(0, Scale(10), 0, Scale(5))  -- Original margin for subsequent headers
+            header:DockMargin(0, Scale(10), 0, Scale(5))
         end
         header:SetContentAlignment(4)
     end
@@ -1072,8 +1097,31 @@ local function openSettingsMenu(parentFrame, backButton)
         RunConsoleCommand("radio_language", data)
         LanguageManager:SetLanguage(data)
         Config.Lang = LanguageManager.translations[data]
-        parentFrame:Close()
-        reopenRadioMenu(true)  -- Reopen and open settings menu
+        
+        -- Clear the formatted country names cache when language changes
+        formattedCountryNames = {}
+        
+        -- If we're not reopening the menu, refresh the current list
+        if not settingsMenuOpen then
+            populateList(stationListPanel, backButton, searchBox, true)
+        else
+            -- Store that we need to refresh when returning to main menu
+            local needsRefresh = true
+            
+            -- Override the back button's click handler temporarily
+            local oldDoClick = backButton.DoClick
+            backButton.DoClick = function()
+                if needsRefresh then
+                    needsRefresh = false
+                    oldDoClick()
+                    timer.Simple(0, function()
+                        populateList(stationListPanel, backButton, searchBox, true)
+                    end)
+                else
+                    oldDoClick()
+                end
+            end
+        end
     end)
 
     -- Key Selection
@@ -1513,17 +1561,15 @@ openRadioMenu = function(openSettings)
                 end
                 searchBox:SetVisible(true)
                 stationListPanel:SetVisible(true)
-                backButton:SetVisible(selectedCountry ~= nil)
-                backButton:SetEnabled(selectedCountry ~= nil)
-            elseif selectedCountry ~= nil then
+                backButton:SetVisible(selectedCountry ~= nil or favoritesMenuOpen)
+                backButton:SetEnabled(selectedCountry ~= nil or favoritesMenuOpen)
+            elseif selectedCountry or favoritesMenuOpen then
                 selectedCountry = nil
+                favoritesMenuOpen = false
                 backButton:SetVisible(false)
                 backButton:SetEnabled(false)
-            else
-                backButton:SetVisible(false)
-                backButton:SetEnabled(false)
+                populateList(stationListPanel, backButton, searchBox, true)
             end
-            populateList(stationListPanel, backButton, searchBox, true)
         end
     )
     backButton.Paint = function(self, w, h)
@@ -1535,8 +1581,8 @@ openRadioMenu = function(openSettings)
     end
 
     -- Set the visibility and interactivity of the back button
-    backButton:SetVisible(selectedCountry ~= nil or settingsMenuOpen)
-    backButton:SetEnabled(selectedCountry ~= nil or settingsMenuOpen)
+    backButton:SetVisible((selectedCountry ~= nil and selectedCountry ~= "") or settingsMenuOpen)
+    backButton:SetEnabled((selectedCountry ~= nil and selectedCountry ~= "") or settingsMenuOpen)
 
     if not settingsMenuOpen then
         populateList(stationListPanel, backButton, searchBox, true)
@@ -1577,6 +1623,7 @@ hook.Add("Think", "OpenCarRadioMenu", function()
         radioMenuOpen = false
         selectedCountry = nil
         settingsMenuOpen = false
+        favoritesMenuOpen = false  -- Reset favorites menu state
         return
     end
 
