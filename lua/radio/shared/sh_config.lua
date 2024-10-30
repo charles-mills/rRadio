@@ -11,6 +11,30 @@
 local Config = {}
 
 -- ------------------------------
+--    ConVar Management
+-- ------------------------------
+
+-- Table to store all registered ConVars
+Config.RegisteredConVars = {
+    server = {},
+    client = {}
+}
+
+-- Function declarations that use RegisteredConVars
+local function CreateServerConVar(name, default, helpText)
+    Config.RegisteredConVars.server[name] = default
+    return CreateConVar(name, default, {FCVAR_ARCHIVE, FCVAR_REPLICATED, FCVAR_NOTIFY}, helpText)
+end
+
+local function EnsureConVar(name, default, flags, helpText)
+    Config.RegisteredConVars.client[name] = default
+    if not ConVarExists(name) then
+        CreateClientConVar(name, default, flags or FCVAR_ARCHIVE, false, helpText)
+    end
+    return GetConVar(name)
+end
+
+-- ------------------------------
 --          Imports
 -- ------------------------------
 local LanguageManager = include("radio/client/lang/cl_language_manager.lua")
@@ -33,14 +57,6 @@ Config.UI = {}
 -- ------------------------------
 --         ConVars Setup
 -- ------------------------------
-
--- Function to ensure a ConVar exists, else create it
-local function EnsureConVar(name, default, flags, helpText)
-    if not ConVarExists(name) then
-        CreateClientConVar(name, default, flags or FCVAR_ARCHIVE, false, helpText)
-    end
-    return GetConVar(name)
-end
 
 -- Language Selection ConVar
 local languageConVar = EnsureConVar(
@@ -71,15 +87,6 @@ local carRadioShowMessages = EnsureConVar(
     true,
     "Enable or disable car radio messages."
 )
-
--- ------------------------------
---      Server ConVars Setup
--- ------------------------------
-
--- Function to create server ConVar with proper flags
-local function CreateServerConVar(name, default, helpText)
-    return CreateConVar(name, default, {FCVAR_ARCHIVE, FCVAR_REPLICATED, FCVAR_NOTIFY}, helpText)
-end
 
 -- Global volume limit
 local maxVolumeCvar = CreateServerConVar(
@@ -219,36 +226,181 @@ local function getTranslatedCountryName(country)
     return LanguageManager:GetCountryTranslation(LanguageManager.currentLanguage, country) or country
 end
 
-local function AddConVarCallback(name)
-    cvars.AddChangeCallback(name, function(_, _, _)
-        -- Notify clients of config update
-        if SERVER then
-            net.Start("RadioConfigUpdate")
-            net.Broadcast()
+-- ------------------------------
+--    ConVar Management
+-- ------------------------------
+
+-- Table to store all registered ConVars
+Config.RegisteredConVars = {
+    server = {},
+    client = {}
+}
+
+function Config.ReloadConVars()
+    -- Reload server ConVars
+    for name, defaultValue in pairs(Config.RegisteredConVars.server) do
+        local cvar = GetConVar(name)
+        if cvar then
+            local value = cvar:GetFloat()
+            
+            -- Boombox settings
+            if name == "radio_boombox_volume" then
+                Config.Boombox.Volume = function() return value end
+            elseif name == "radio_boombox_max_distance" then
+                Config.Boombox.MaxHearingDistance = function() return value end
+            elseif name == "radio_boombox_min_distance" then
+                Config.Boombox.MinVolumeDistance = function() return value end
+            
+            -- Golden Boombox settings
+            elseif name == "radio_golden_boombox_volume" then
+                Config.GoldenBoombox.Volume = function() return value end
+            elseif name == "radio_golden_boombox_max_distance" then
+                Config.GoldenBoombox.MaxHearingDistance = function() return value end
+            elseif name == "radio_golden_boombox_min_distance" then
+                Config.GoldenBoombox.MinVolumeDistance = function() return value end
+            
+            -- Vehicle Radio settings
+            elseif name == "radio_vehicle_volume" then
+                Config.VehicleRadio.Volume = function() return value end
+            elseif name == "radio_vehicle_max_distance" then
+                Config.VehicleRadio.MaxHearingDistance = function() return value end
+            elseif name == "radio_vehicle_min_distance" then
+                Config.VehicleRadio.MinVolumeDistance = function() return value end
+            
+            -- Global settings
+            elseif name == "radio_max_volume_limit" then
+                Config.MaxVolume = function() return value end
+            elseif name == "radio_message_cooldown" then
+                Config.MessageCooldown = function() return value end
+            end
         end
-    end)
+    end
+
+    -- Reload client ConVars
+    if CLIENT then
+        for name, defaultValue in pairs(Config.RegisteredConVars.client) do
+            local cvar = GetConVar(name)
+            if cvar then
+                if name == "radio_language" then
+                    loadLanguage()
+                elseif name == "radio_theme" then
+                    local themeName = cvar:GetString()
+                    Config.UI = themes[themeName] or themes[defaultThemeName] or themes[next(themes)] or {}
+                end
+            end
+        end
+    end
+
+    -- Notify clients of the update if we're on the server
+    if SERVER then
+        net.Start("RadioConfigUpdate")
+        net.Broadcast()
+    end
+
+    -- Call any registered callbacks
+    hook.Run("RadioConfig_Updated")
 end
 
 if SERVER then
     util.AddNetworkString("RadioConfigUpdate")
     
-    local convars = {
-        "radio_max_volume_limit",
-        "radio_message_cooldown",
-        "radio_boombox_volume",
-        "radio_boombox_max_distance",
-        "radio_boombox_min_distance",
-        "radio_golden_boombox_volume",
-        "radio_golden_boombox_max_distance",
-        "radio_golden_boombox_min_distance",
-        "radio_vehicle_volume",
-        "radio_vehicle_max_distance",
-        "radio_vehicle_min_distance"
-    }
+    -- Handle the reload command
+    concommand.Add("radio_reload_config", function(ply)
+        -- Only allow admins to reload the config
+        if IsValid(ply) and not ply:IsAdmin() then return end
+        Config.ReloadConVars()
+    end)
 
-    for _, cvar in ipairs(convars) do
-        AddConVarCallback(cvar)
+    -- Modified callback registration
+    local function AddConVarCallback(name)
+        cvars.AddChangeCallback(name, function(_, _, _)
+            Config.ReloadConVars()
+        end)
     end
+
+    -- Register callbacks for all server ConVars
+    for cvarName, _ in pairs(Config.RegisteredConVars.server) do
+        AddConVarCallback(cvarName)
+    end
+end
+
+if CLIENT then
+    -- Handle config updates from server
+    net.Receive("RadioConfigUpdate", function()
+        Config.ReloadConVars()
+    end)
+end
+
+-- Add these helper functions near the other utility functions
+-- ------------------------------
+--    Sound Physics Helpers
+-- ------------------------------
+
+-- Convert linear distance to decibel reduction (inverse square law)
+function Config.DistanceToDb(distance, referenceDistance)
+    if distance <= referenceDistance then return 0 end
+    return -20 * math.log10(distance / referenceDistance)
+end
+
+-- Convert decibels to volume multiplier (0-1)
+function Config.DbToVolume(db)
+    return math.Clamp(10^(db/20), 0, 1)
+end
+
+-- Calculate volume based on distance with realistic falloff
+function Config.CalculateVolumeAtDistance(distance, maxDist, minDist, baseVolume)
+    if distance >= maxDist then return 0 end
+    if distance <= minDist then return baseVolume end
+    
+    -- Calculate attenuation in decibels
+    local db = Config.DistanceToDb(distance, minDist)
+    
+    -- Apply atmospheric absorption (air absorbs high frequencies more)
+    local atmosphericLoss = (distance - minDist) * 0.0005 -- Approximate atmospheric absorption
+    db = db - atmosphericLoss
+    
+    -- Convert back to volume multiplier and apply base volume
+    local volumeMultiplier = Config.DbToVolume(db)
+    return math.Clamp(volumeMultiplier * baseVolume, 0, baseVolume)
+end
+
+-- Optional: Add environmental factors
+function Config.GetEnvironmentalFactor(ent1, ent2)
+    local trace = {
+        start = ent1:GetPos(),
+        endpos = ent2:GetPos(),
+        mask = MASK_SOLID
+    }
+    
+    local tr = util.TraceLine(trace)
+    
+    -- Reduce volume if there are obstacles
+    if tr.Hit and tr.HitPos != tr.EndPos then
+        return 0.7 -- 30% reduction through walls
+    end
+    
+    -- Check if entities are in water
+    local ent1InWater = ent1:WaterLevel() > 0
+    local ent2InWater = ent2:WaterLevel() > 0
+    
+    if ent1InWater and ent2InWater then
+        return 0.5 -- Sound travels differently in water
+    elseif ent1InWater != ent2InWater then
+        return 0.3 -- Significant reduction when crossing water boundary
+    end
+    
+    return 1
+end
+
+-- Main volume calculation function that combines all factors
+function Config.CalculateVolume(source, listener, baseVolume, maxDist, minDist)
+    local distance = source:GetPos():Distance(listener:GetPos())
+    local baseVol = Config.CalculateVolumeAtDistance(distance, maxDist, minDist, baseVolume)
+    
+    -- Apply environmental factors
+    local envFactor = Config.GetEnvironmentalFactor(source, listener)
+    
+    return baseVol * envFactor
 end
 
 return Config
