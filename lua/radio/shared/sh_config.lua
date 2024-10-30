@@ -365,7 +365,7 @@ end
 function Config.CalculateVolume(entity, player, distanceSqr)
     if not IsValid(entity) or not IsValid(player) then return 0 end
     
-    local entityConfig = Config.GetEntityConfig(entity)
+    local entityConfig = utils.GetEntityConfig(entity)
     if not entityConfig then return 0 end
 
     -- Get base volume from entity config
