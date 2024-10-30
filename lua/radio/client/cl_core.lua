@@ -1480,21 +1480,22 @@ openRadioMenu = function(openSettings)
 
     local lastServerUpdate = 0
     volumeSlider.OnValueChanged = function(_, value)
-        local currentTime = CurTime()
         local entity = LocalPlayer().currentRadioEntity
-
         if not IsValid(entity) then return end
 
         entity = utils.GetVehicle(entity) or entity
-
         value = math.min(value, Config.MaxVolume())
+        
+        -- Update local volume immediately for responsive UI
         entityVolumes[entity] = value
         if currentRadioSources[entity] and IsValid(currentRadioSources[entity]) then
             currentRadioSources[entity]:SetVolume(value)
         end
-
+        
         updateVolumeIcon(volumeIcon, value)
 
+        -- Send to server with debounce
+        local currentTime = CurTime()
         if currentTime - lastServerUpdate >= 0.1 then
             lastServerUpdate = currentTime
             net.Start("UpdateRadioVolume")
@@ -1845,19 +1846,28 @@ net.Receive("UpdateRadioVolume", function()
     local volume = net.ReadFloat()
 
     if not IsValid(entity) then return end
-
+    
+    -- Store the volume
     entityVolumes[entity] = volume
 
+    -- Update sound if playing
     if currentRadioSources[entity] and IsValid(currentRadioSources[entity]) then
         currentRadioSources[entity]:SetVolume(volume)
     end
 
+    -- Update UI if the radio menu is open and this is the current entity
     if radioMenuOpen and IsValid(currentFrame) and LocalPlayer().currentRadioEntity == entity then
         local volumePanel = currentFrame:GetChildren()[6]
         if IsValid(volumePanel) then
             local volumeSlider = volumePanel:GetChildren()[2]
             if IsValid(volumeSlider) and volumeSlider:GetName() == "DNumSlider" then
                 volumeSlider:SetValue(volume)
+                
+                -- Update volume icon
+                local volumeIcon = volumePanel:GetChildren()[1]
+                if IsValid(volumeIcon) then
+                    updateVolumeIcon(volumeIcon, volume)
+                end
             end
         end
     end
