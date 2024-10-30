@@ -81,59 +81,42 @@ def find_best_fit_combination(remaining_countries: List[Tuple[str, List[Dict], i
 
     return dp[n][max_size]
 
-def remove_duplicates(stations_dict: Dict[str, List[Dict]]) -> Tuple[Dict[str, List[Dict]], Dict[str, int]]:
+def remove_duplicates(stations_dict: Dict[str, List[Dict]], remove_duplicates: bool = True) -> Tuple[Dict[str, List[Dict]], Dict[str, int]]:
     """
-    Remove duplicate stations based on name (per country) and URL (globally).
+    Remove duplicate stations based on URL (within each country only).
     Returns cleaned dictionary and statistics about removed duplicates.
+    
+    Args:
+        stations_dict: Dictionary of stations by country
+        remove_duplicates: If False, skips duplicate removal entirely
     """
     # Track duplicates for reporting
     stats = {
-        "duplicate_names": 0,
         "duplicate_urls": 0
     }
 
-    # Track all URLs globally to prevent duplicates across countries
-    used_urls = {}  # url -> (country, station_name)
+    if not remove_duplicates:
+        return stations_dict, stats
 
-    cleaned_dict = {}
-    
-    # First pass: Remove duplicate names within countries and track URLs
-    for country, stations in stations_dict.items():
-        seen_names = {}  # name -> station (case insensitive)
-        cleaned_stations = []
-        
-        for station in stations:
-            name_lower = station['name'].lower()
-            
-            if name_lower in seen_names:
-                stats["duplicate_names"] += 1
-                print(f"Duplicate station name in {country}: {station['name']}")
-                continue
-                
-            seen_names[name_lower] = station
-            cleaned_stations.append(station)
-        
-        if cleaned_stations:
-            cleaned_dict[country] = cleaned_stations
-
-    # Second pass: Remove duplicate URLs across all countries
     final_dict = {}
     
-    for country, stations in cleaned_dict.items():
+    # Check duplicates within each country only
+    for country, stations in stations_dict.items():
+        used_urls = {}  # url -> station_name (reset for each country)
         final_stations = []
         
         for station in stations:
             url = station['url'].lower()  # Case-insensitive URL comparison
             
             if url in used_urls:
-                existing_country, existing_name = used_urls[url]
+                existing_name = used_urls[url]
                 stats["duplicate_urls"] += 1
-                print(f"Duplicate URL found:")
-                print(f"  First instance: {existing_country} - {existing_name}")
-                print(f"  Duplicate: {country} - {station['name']}")
+                print(f"Duplicate URL found in {country}:")
+                print(f"  First instance: {existing_name}")
+                print(f"  Duplicate: {station['name']}")
                 continue
                 
-            used_urls[url] = (country, station['name'])
+            used_urls[url] = station['name']
             final_stations.append(station)
         
         if final_stations:
@@ -141,8 +124,15 @@ def remove_duplicates(stations_dict: Dict[str, List[Dict]]) -> Tuple[Dict[str, L
 
     return final_dict, stats
 
-def pack_stations(input_files: List[str], output_dir: str):
-    """Pack stations optimally into files under MAX_FILE_SIZE."""
+def pack_stations(input_files: List[str], output_dir: str, remove_duplicates: bool = True):
+    """
+    Pack stations optimally into files under MAX_FILE_SIZE.
+    
+    Args:
+        input_files: List of input Lua files to process
+        output_dir: Directory to write output files
+        remove_duplicates: If False, skips duplicate removal
+    """
     
     print("\nDebug: Starting station packing process")
     print(f"Debug: Found {len(input_files)} input files:")
@@ -174,13 +164,16 @@ def pack_stations(input_files: List[str], output_dir: str):
     print(f"Countries: {initial_countries}")
     print(f"Stations: {initial_stations}")
 
-    # Remove duplicates
-    print("\nChecking for duplicates...")
-    all_stations, duplicate_stats = remove_duplicates(all_stations)
-    print("\nDuplicate removal statistics:")
-    print(f"Duplicate names removed: {duplicate_stats['duplicate_names']}")
-    print(f"Duplicate URLs removed: {duplicate_stats['duplicate_urls']}")
-    
+    # Remove duplicates if enabled
+    if remove_duplicates:
+        print("\nChecking for duplicates...")
+        all_stations, duplicate_stats = remove_duplicates(all_stations, remove_duplicates=True)
+        print("\nDuplicate removal statistics:")
+        print(f"Duplicate URLs removed: {duplicate_stats['duplicate_urls']}")
+    else:
+        print("\nSkipping duplicate removal as requested")
+        all_stations, duplicate_stats = remove_duplicates(all_stations, remove_duplicates=False)
+
     # Count post-duplicate-removal statistics
     cleaned_countries, cleaned_stations = count_stations(all_stations)
     print(f"\nAfter duplicate removal:")
