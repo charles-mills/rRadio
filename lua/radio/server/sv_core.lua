@@ -33,7 +33,6 @@ local LatestVolumeUpdates = {}
 local VolumeUpdateTimers = {}
 local DEBOUNCE_TIME = 10
 
-
 local MAX_ACTIVE_RADIOS = 100
 local PLAYER_RADIO_LIMIT = 5
 local GLOBAL_COOLDOWN = 1
@@ -45,9 +44,35 @@ local volumeUpdateQueue = {}
 local STATION_CHANGE_COOLDOWN = 0.5
 local lastStationChangeTimes = {}
 
+local EntityVolumes = {}
+
 local function ClampVolume(volume)
+    if type(volume) ~= "number" then return 0.5 end
     local maxVolume = GetConVar("radio_max_volume_limit"):GetFloat()
     return math.Clamp(volume, 0, maxVolume)
+end
+
+local function GetDefaultVolume(entity)
+    if not IsValid(entity) then return 0.5 end
+    
+    local entityClass = entity:GetClass()
+    if entityClass == "golden_boombox" then
+        return GetConVar("radio_golden_boombox_volume"):GetFloat()
+    elseif entityClass == "boombox" then
+        return GetConVar("radio_boombox_volume"):GetFloat()
+    else
+        return GetConVar("radio_vehicle_volume"):GetFloat()
+    end
+end
+
+local function InitializeEntityVolume(entity)
+    if not IsValid(entity) then return end
+    local entIndex = entity:EntIndex()
+    
+    if not EntityVolumes[entIndex] then
+        EntityVolumes[entIndex] = GetDefaultVolume(entity)
+        entity:SetNWFloat("Volume", EntityVolumes[entIndex])
+    end
 end
 
 --[[
@@ -78,11 +103,19 @@ local function AddActiveRadio(entity, stationName, url, volume)
         end
     end
 
-    ActiveRadios[entity:EntIndex()] = {
+    local entIndex = entity:EntIndex()
+    
+    -- Use stored volume if available, otherwise initialize it
+    if not EntityVolumes[entIndex] then
+        InitializeEntityVolume(entity)
+    end
+    
+    -- Use the stored volume instead of the passed volume
+    ActiveRadios[entIndex] = {
         entity = entity,
         stationName = stationName,
         url = url,
-        volume = volume,
+        volume = EntityVolumes[entIndex],
         timestamp = CurTime()
     }
 end
@@ -268,7 +301,10 @@ net.Receive("PlayCarRadioStation", function(len, ply)
     entity = GetVehicleEntity(entity)
     local stationName = net.ReadString()
     local stationURL = net.ReadString()
-    local volume = ClampVolume(net.ReadFloat())
+    
+    -- Ignore client-sent volume, use server-side volume
+    local entIndex = entity:EntIndex()
+    local volume = EntityVolumes[entIndex] or GetDefaultVolume(entity)
 
     if not IsValid(entity) then
         return
@@ -463,6 +499,7 @@ local function ProcessVolumeUpdate(entity, volume, ply)
     
     -- Get the actual vehicle entity if needed
     entity = utils.GetVehicle(entity) or entity
+    local entIndex = entity:EntIndex()
     
     -- Validate permissions
     if entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox" then
@@ -471,10 +508,8 @@ local function ProcessVolumeUpdate(entity, volume, ply)
         end
     elseif utils.GetVehicle(entity) then
         local vehicle = utils.GetVehicle(entity)
-        -- Skip volume control for SitAnywhere seats
-        if utils.isSitAnywhereSeat(vehicle) then
-            return
-        end
+        if utils.isSitAnywhereSeat(vehicle) then return end
+        
         -- Check if player is in any seat of the vehicle
         local isInVehicle = false
         for _, seat in pairs(ents.FindByClass("prop_vehicle_prisoner_pod")) do
@@ -490,8 +525,9 @@ local function ProcessVolumeUpdate(entity, volume, ply)
         return
     end
 
-    -- Clamp volume and update entity
+    -- Update server-side state
     volume = ClampVolume(volume)
+    EntityVolumes[entIndex] = volume
     entity:SetNWFloat("Volume", volume)
 
     -- Broadcast to all clients
@@ -521,7 +557,6 @@ net.Receive("UpdateRadioVolume", function(len, ply)
     local updateData = volumeUpdateQueue[entIndex]
     local currentTime = CurTime()
 
-    -- Update the pending data
     updateData.pendingVolume = volume
     updateData.pendingPlayer = ply
 
@@ -894,4 +929,18 @@ end
 for cmd, _ in pairs(radioCommands) do
     AddRadioCommand(cmd)
 end
+
+hook.Add("OnEntityCreated", "InitializeRadioVolume", function(entity)
+    timer.Simple(0, function()
+        if IsValid(entity) and (entity:GetClass() == "boombox" or 
+           entity:GetClass() == "golden_boombox" or utils.GetVehicle(entity)) then
+            InitializeEntityVolume(entity)
+        end
+    end)
+end)
+
+hook.Add("EntityRemoved", "CleanupRadioVolume", function(entity)
+    local entIndex = entity:EntIndex()
+    EntityVolumes[entIndex] = nil
+end)
 
