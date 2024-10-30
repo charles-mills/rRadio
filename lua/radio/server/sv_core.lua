@@ -774,3 +774,150 @@ for _, cmd in ipairs(commands) do
     AddRadioCommand(cmd)
 end
 
+-- Add this near the other command-related code
+local radioCommands = {
+    max_volume_limit = {
+        desc = "Sets the maximum volume limit for all radio entities (0.0-1.0)",
+        example = "0.8"
+    },
+    message_cooldown = {
+        desc = "Sets the cooldown time in seconds for radio messages",
+        example = "2"
+    },
+    boombox_volume = {
+        desc = "Sets the default volume for regular boomboxes",
+        example = "0.7"
+    },
+    boombox_max_distance = {
+        desc = "Sets the maximum hearing distance for boomboxes",
+        example = "1000"
+    },
+    boombox_min_distance = {
+        desc = "Sets the distance at which boombox volume starts to drop off",
+        example = "500"
+    },
+    golden_boombox_volume = {
+        desc = "Sets the default volume for golden boomboxes",
+        example = "1.0"
+    },
+    golden_boombox_max_distance = {
+        desc = "Sets the maximum hearing distance for golden boomboxes",
+        example = "350000"
+    },
+    golden_boombox_min_distance = {
+        desc = "Sets the distance at which golden boombox volume starts to drop off",
+        example = "250000"
+    },
+    vehicle_volume = {
+        desc = "Sets the default volume for vehicle radios",
+        example = "0.8"
+    },
+    vehicle_max_distance = {
+        desc = "Sets the maximum hearing distance for vehicle radios",
+        example = "800"
+    },
+    vehicle_min_distance = {
+        desc = "Sets the distance at which vehicle radio volume starts to drop off",
+        example = "500"
+    }
+}
+
+-- Add help command
+concommand.Add("radio_help", function(ply)
+    if IsValid(ply) and not ply:IsSuperAdmin() then 
+        ply:ChatPrint("[Radio] You need to be a superadmin to use radio commands!")
+        return 
+    end
+    
+    local function printMessage(msg)
+        if IsValid(ply) then
+            ply:PrintMessage(HUD_PRINTCONSOLE, msg)
+        else
+            print(msg)
+        end
+    end
+    
+    printMessage("\n=== Radio Configuration Commands ===\n")
+    
+    -- Print general commands first
+    printMessage("General Commands:")
+    printMessage("  radio_help - Shows this help message")
+    printMessage("  radio_reload_config - Reloads all radio configuration values")
+    printMessage("\nConfiguration Commands:")
+    
+    -- Print all available commands with descriptions
+    for cmd, info in pairs(radioCommands) do
+        printMessage(string.format("  radio_set_%s <value>", cmd))
+        printMessage(string.format("    Description: %s", info.desc))
+        printMessage(string.format("    Example: radio_set_%s %s\n", cmd, info.example))
+    end
+    
+    -- Print current values
+    printMessage("Current Values:")
+    for cmd, _ in pairs(radioCommands) do
+        local cvar = GetConVar("radio_" .. cmd)
+        if cvar then
+            printMessage(string.format("  %s: %.2f", cmd, cvar:GetFloat()))
+        end
+    end
+    
+    printMessage("\nNote: All commands require superadmin privileges.")
+    
+    if IsValid(ply) then
+        ply:ChatPrint("[Radio] Help information printed to console!")
+    end
+end)
+
+-- Modify the AddRadioCommand function to include help text
+local function AddRadioCommand(name)
+    local cmdInfo = radioCommands[name]
+    if not cmdInfo then return end
+    
+    concommand.Add("radio_set_" .. name, function(ply, cmd, args)
+        if IsValid(ply) and not ply:IsSuperAdmin() then 
+            ply:ChatPrint("[Radio] You need to be a superadmin to use this command!")
+            return 
+        end
+        
+        if not args[1] or args[1] == "help" then
+            local msg = string.format("[Radio] %s\nUsage: %s <value>\nExample: %s %s", 
+                cmdInfo.desc, cmd, cmd, cmdInfo.example)
+            
+            if IsValid(ply) then
+                ply:PrintMessage(HUD_PRINTCONSOLE, msg)
+                ply:ChatPrint("[Radio] Command help printed to console!")
+            else
+                print(msg)
+            end
+            return
+        end
+        
+        local value = tonumber(args[1])
+        if not value then
+            if IsValid(ply) then
+                ply:ChatPrint("[Radio] Invalid value provided! Use 'help' for usage information.")
+            else
+                print("[Radio] Invalid value provided! Use 'help' for usage information.")
+            end
+            return
+        end
+        
+        local cvar = GetConVar("radio_" .. name)
+        if cvar then
+            cvar:SetFloat(value)
+            
+            local message = string.format("[Radio] %s set to %.2f", name:gsub("_", " "), value)
+            if IsValid(ply) then
+                ply:ChatPrint(message)
+            else
+                print(message)
+            end
+        end
+    end)
+end
+
+-- Register all radio commands
+for cmd, _ in pairs(radioCommands) do
+    AddRadioCommand(cmd)
+end
+
