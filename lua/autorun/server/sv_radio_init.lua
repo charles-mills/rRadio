@@ -6,6 +6,7 @@ AddCSLuaFile("radio/client/cl_core.lua")
 AddCSLuaFile("radio/client/cl_settings.lua")
 AddCSLuaFile("radio/client/cl_themes.lua")
 AddCSLuaFile("radio/client/cl_key_names.lua")
+AddCSLuaFile("radio/client/cl_state_manager.lua")
 AddCSLuaFile("radio/shared/sh_utils.lua")
 
 -- Dynamically include all radio station data files
