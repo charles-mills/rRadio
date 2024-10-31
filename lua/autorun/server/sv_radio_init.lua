@@ -1,4 +1,4 @@
-print("[RADIO] Starting server-side initialization")
+print("[rRadio] Starting server-side initialization")
 
 AddCSLuaFile("radio/shared/sh_config.lua")
 AddCSLuaFile("radio/client/lang/cl_language_manager.lua")
@@ -79,4 +79,4 @@ list.Set("SpawnableEntities", "golden_boombox", {
     Description = "A boombox with an extreme audio range!"
 })
 
-print("[RADIO] Finished server-side initialization")
+print("[rRadio] Finished server-side initialization")

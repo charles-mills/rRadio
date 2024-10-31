@@ -8,6 +8,12 @@
     Date: October 30, 2024
 ]]--
 
+--[[
+
+Resource management configuration is available in sv_resource_manager.lua
+
+]]--
+
 local Config = {}
 
 -- ------------------------------

@@ -18,24 +18,24 @@ local keyCodeMapping = include("radio/client/cl_key_names.lua")
 local utils = include("radio/shared/sh_utils.lua")
 
 if not StateManager then
-    error("[Radio] Failed to load StateManager")
+    error("[rRadio] Failed to load StateManager")
 end
 
 StateManager:Initialize()
 
 local function getSafeState(key, default)
     if not StateManager then
-        print("[Radio] Warning: StateManager not initialized when getting state:", key)
+        print("[rRadio] Warning: StateManager not initialized when getting state:", key)
         return default
     end
     
     if not StateManager.initialized then
-        print("[Radio] Warning: StateManager not yet initialized when getting state:", key)
+        print("[rRadio] Warning: StateManager not yet initialized when getting state:", key)
         return default
     end
     
     if not StateManager.GetState then
-        print("[Radio] Warning: StateManager.GetState not available when getting state:", key)
+        print("[rRadio] Warning: StateManager.GetState not available when getting state:", key)
         return default
     end
     
@@ -44,17 +44,17 @@ end
 
 local function setSafeState(key, value)
     if not StateManager then
-        print("[Radio] Warning: StateManager not initialized when setting state:", key)
+        print("[rRadio] Warning: StateManager not initialized when setting state:", key)
         return
     end
     
     if not StateManager.initialized then
-        print("[Radio] Warning: StateManager not yet initialized when setting state:", key)
+        print("[rRadio] Warning: StateManager not yet initialized when setting state:", key)
         return
     end
     
     if not StateManager.SetState then
-        print("[Radio] Warning: StateManager.SetState not available when setting state:", key)
+        print("[rRadio] Warning: StateManager.SetState not available when setting state:", key)
         return
     end
     
@@ -118,7 +118,7 @@ local function LoadStationData()
                 end
             end
         else
-            print("[Radio] Error loading station data from: " .. filename)
+            print("[rRadio] Error loading station data from: " .. filename)
         end
     end
     
@@ -131,7 +131,7 @@ end
 LoadStationData()
 
 -- ------------------------------
---      Station Management
+--      Stream Management
 -- ------------------------------
 
 --[[
@@ -149,6 +149,62 @@ local function updateStationCount()
 end
 
 currentRadioSources = currentRadioSources or {}
+
+-- Replace the current StreamManager with this simpler version
+local StreamManager = {
+    activeStreams = {},
+    
+    -- Simple cleanup function
+    CleanupStream = function(self, entIndex)
+        local streamData = self.activeStreams[entIndex]
+        if not streamData then return end
+        
+        -- Stop sound
+        if IsValid(streamData.stream) then
+            streamData.stream:Stop()
+        end
+        
+        -- Clear states
+        self.activeStreams[entIndex] = nil
+        currentRadioSources[streamData.entity] = nil
+        
+        -- Clear UI state
+        if IsValid(streamData.entity) then
+            utils.clearRadioStatus(streamData.entity)
+        end
+    end,
+    
+    -- Register new stream
+    RegisterStream = function(self, entity, stream, data)
+        if not IsValid(entity) or not IsValid(stream) then return false end
+        
+        -- Cleanup any existing stream first
+        self:CleanupStream(entity:EntIndex())
+        
+        -- Register new stream
+        self.activeStreams[entity:EntIndex()] = {
+            stream = stream,
+            entity = entity,
+            data = data,
+            startTime = CurTime()
+        }
+        
+        return true
+    end
+}
+
+-- Essential cleanup hooks
+hook.Add("EntityRemoved", "RadioStreamCleanup", function(entity)
+    if IsValid(entity) then
+        StreamManager:CleanupStream(entity:EntIndex())
+    end
+end)
+
+hook.Add("ShutDown", "RadioStreamCleanup", function()
+    for entIndex, _ in pairs(StreamManager.activeStreams) do
+        StreamManager:CleanupStream(entIndex)
+    end
+end)
 
 -- ------------------------------
 --      Utility Functions
@@ -354,17 +410,27 @@ end
 local function playStation(entity, station, volume)
     if not IsValid(entity) then return end
     if not station or not station.name or not station.url then 
-        print("[Radio] Invalid station data")
+        print("[rRadio] Invalid station data")
         return 
     end
 
-    -- Stop current playback first and wait for it to complete
+    -- Stop current playback first
     if currentlyPlayingStations[entity] then
+        -- Stop on server
         net.Start("StopCarRadioStation")
             net.WriteEntity(entity)
         net.SendToServer()
 
-        -- Wait for stop to complete before starting new playback
+        -- Stop locally
+        if currentRadioSources[entity] and IsValid(currentRadioSources[entity]) then
+            currentRadioSources[entity]:Stop()
+            currentRadioSources[entity] = nil
+        end
+
+        -- Clean up through StreamManager
+        StreamManager:QueueCleanup(entity:EntIndex(), "station_change")
+
+        -- Wait for cleanup to complete
         timer.Simple(0.2, function()
             if not IsValid(entity) then return end
 
@@ -407,7 +473,7 @@ end
 local function updateRadioVolume(station, distanceSqr, isPlayerInCar, entity)
     local entityConfig = getEntityConfig(entity)
     if not entityConfig then 
-        print("[Radio] Warning: No entity config found for", entity)
+        print("[rRadio] Warning: No entity config found for", entity)
         return 
     end
 
@@ -447,6 +513,12 @@ local function updateRadioVolume(station, distanceSqr, isPlayerInCar, entity)
     end
 
     station:SetVolume(finalVolume)
+
+    -- Update stream activity timestamp
+    local streamData = StreamManager.activeStreams[entity:EntIndex()]
+    if streamData then
+        streamData.lastActivity = CurTime()
+    end
 end
 
 --[[
@@ -942,15 +1014,21 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
             -- Add playing indicator
             stationButton.Paint = function(self, w, h)
                 local entity = LocalPlayer().currentRadioEntity
-                if IsValid(entity) and currentlyPlayingStations[entity] and 
-                   currentlyPlayingStations[entity].name == station.name then
-                    draw.RoundedBox(8, 0, 0, w, h, Config.UI.PlayingButtonColor)
-                else
-                    draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonColor)
-                    if self:IsHovered() then
-                        draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonHoverColor)
+                if IsValid(entity) then
+                    local streamData = StreamManager.activeStreams[entity:EntIndex()]
+                    if streamData then
+                        -- Add visual indicators for stream health
+                        if streamData.bufferUnderruns > 0 then
+                            surface.SetDrawColor(255, 255, 0, 50) -- Yellow warning
+                            surface.DrawRect(0, 0, w * 0.1, h)
+                        end
+                        if streamData.retryAttempts > 0 then
+                            surface.SetDrawColor(255, 0, 0, 50) -- Red warning
+                            surface.DrawRect(w * 0.9, 0, w * 0.1, h)
+                        end
                     end
                 end
+                -- Rest of existing paint code...
             end
 
             -- Always use raw country code when creating star icons
@@ -1070,7 +1148,7 @@ local function openSettingsMenu(parentFrame, backButton)
         -- Add state management and validation
         checkbox.OnChange = function(self, value)
             if not ConVarExists(convar) then
-                print("[Radio] Warning: ConVar " .. convar .. " does not exist")
+                print("[rRadio] Warning: ConVar " .. convar .. " does not exist")
                 return
             end
 
@@ -1102,7 +1180,7 @@ local function openSettingsMenu(parentFrame, backButton)
             end
         end
     else
-        print("[Radio] Warning: Themes table is invalid")
+        print("[rRadio] Warning: Themes table is invalid")
         themes = {}
     end
 
@@ -1126,7 +1204,7 @@ local function openSettingsMenu(parentFrame, backButton)
                 end)
             end
         else
-            print("[Radio] Warning: Invalid theme selected:", value)
+            print("[rRadio] Warning: Invalid theme selected:", value)
         end
     end)
 
@@ -1142,7 +1220,7 @@ local function openSettingsMenu(parentFrame, backButton)
             end
         end
     else
-        print("[Radio] Warning: Available languages table is invalid")
+        print("[rRadio] Warning: Available languages table is invalid")
     end
 
     local currentLanguage = GetConVar("radio_language"):GetString()
@@ -1153,7 +1231,7 @@ local function openSettingsMenu(parentFrame, backButton)
         
         -- Validate language selection
         if not LanguageManager:IsValidLanguage(data) then
-            print("[Radio] Warning: Invalid language selected:", data)
+            print("[rRadio] Warning: Invalid language selected:", data)
             return
         end
 
@@ -1304,7 +1382,6 @@ openRadioMenu = function(openSettings)
     
     -- Check if entity can use radio
     if not utils.canUseRadio(entity) then
-        chat.AddText(Color(255, 0, 0), "[Radio] This seat cannot use the radio.")
         return
     end
     
@@ -1335,8 +1412,8 @@ openRadioMenu = function(openSettings)
     frame:SetDraggable(false)
     frame:ShowCloseButton(false)
     frame:MakePopup()
-    frame.OnClose = function() 
-        radioMenuOpen = false 
+    frame.OnClose = function()
+        radioMenuOpen = false
         -- Reset all menu states when closing
         StateManager:SetState("selectedCountry", nil)
         StateManager:SetState("favoritesMenuOpen", false)
@@ -1344,6 +1421,13 @@ openRadioMenu = function(openSettings)
         selectedCountry = nil
         settingsMenuOpen = false
         favoritesMenuOpen = false
+        
+        -- Clean up any abandoned streams
+        for entIndex, streamData in pairs(StreamManager.activeStreams) do
+            if not IsValid(streamData.entity) then
+                StreamManager:QueueCleanup(entIndex, "menu_closed")
+            end
+        end
     end
 
     frame.Paint = function(self, w, h)
@@ -1499,7 +1583,7 @@ openRadioMenu = function(openSettings)
             value = value()
         end
         
-        if value < 0.01 then
+        if value < 0.05 then
             iconMat = VOLUME_ICONS.MUTE
         elseif value <= 0.65 then
             iconMat = VOLUME_ICONS.LOW
@@ -1719,16 +1803,29 @@ end
 hook.Add("Think", "OpenCarRadioMenu", function()
     local openKey = GetConVar("car_radio_open_key"):GetInt()
     local ply = LocalPlayer()
+    
+    -- Validate player and key state
+    if not IsValid(ply) or not openKey then return end
+    if ply:IsTyping() then return end
+    
+    -- Get current time and last press time with proper default
     local currentTime = CurTime()
+    local keyPressDelay = 0.2 -- Define delay constant
+    local lastPress = getSafeState("lastKeyPress", 0)
 
-    if not (input.IsKeyDown(openKey) and not ply:IsTyping() and currentTime - lastKeyPress > keyPressDelay) then
-        return
-    end
-    lastKeyPress = currentTime
+    -- Check if key is pressed and enough time has passed
+    if not input.IsKeyDown(openKey) then return end
+    if (currentTime - lastPress) <= keyPressDelay then return end
+    
+    -- Update last key press time
+    setSafeState("lastKeyPress", currentTime)
 
+    -- Handle menu close if already open
     if radioMenuOpen and not isSearching then
         surface.PlaySound("buttons/lightswitch2.wav")
-        currentFrame:Close()
+        if IsValid(currentFrame) then
+            currentFrame:Close()
+        end
         radioMenuOpen = false
         selectedCountry = nil
         settingsMenuOpen = false
@@ -1736,11 +1833,18 @@ hook.Add("Think", "OpenCarRadioMenu", function()
         return
     end
 
+    -- Check vehicle state
     local vehicle = ply:GetVehicle()
-    if IsValid(vehicle) and not utils.isSitAnywhereSeat(vehicle) then
-        ply.currentRadioEntity = vehicle
-        openRadioMenu()
+    if not IsValid(vehicle) then return end
+    
+    -- Validate that it's not a sit anywhere seat
+    if utils.isSitAnywhereSeat(vehicle) then
+        return
     end
+
+    -- Open menu if all checks pass
+    ply.currentRadioEntity = vehicle
+    openRadioMenu()
 end)
 
 --[[
@@ -1784,105 +1888,84 @@ end)
 
 --[[
     Network Receiver: PlayCarRadioStation
-    Plays a radio station on the boombox.
+    Handles playing a radio station on the client.
 ]]
 net.Receive("PlayCarRadioStation", function()
     local entity = net.ReadEntity()
-    print("[Radio] Received PlayCarRadioStation for entity:", entity)
-    
-    if not IsValid(entity) then 
-        print("[Radio] Invalid entity")
-        return 
-    end
+    if not IsValid(entity) then return end
 
-    -- Store the entity index for validation
     local entIndex = entity:EntIndex()
-    entity = utils.GetVehicle(entity)
     local stationName = net.ReadString()
     local url = net.ReadString()
     local volume = net.ReadFloat()
 
-    print("[Radio] Playing station:", stationName)
-    print("[Radio] URL:", url)
-    print("[Radio] Initial volume:", volume)
-
-    -- Stop any existing station first
-    StateManager:StopEntityStation(entity)
-
     -- Create new sound stream with error handling
     sound.PlayURL(url, "3d noblock", function(station, errorID, errorName)
-        -- Re-acquire entity by index to ensure we have the latest reference
-        entity = Entity(entIndex)
-        
         if not IsValid(station) then
             print("[Radio] Error creating sound stream:", errorName)
             utils.playErrorSound("connection")
             if IsValid(entity) then
                 utils.clearRadioStatus(entity)
-                -- Update UI to show connection failed
-                if BoomboxStatuses[entity:EntIndex()] then
-                    BoomboxStatuses[entity:EntIndex()].stationStatus = "error"
-                    BoomboxStatuses[entity:EntIndex()].errorMessage = "Connection failed"
-                end
             end
             return
         end
         
         if not IsValid(entity) then
-            print("[Radio] Entity became invalid")
             station:Stop()
             utils.playErrorSound("connection")
             return
         end
 
-        print("[Radio] Sound stream created successfully")
-        
-        -- Configure sound
-        station:SetPos(entity:GetPos())
-        station:SetVolume(1) -- Set initial volume to full
-        station:Play()
-        
-        -- Register station with StateManager
-        local stationData = {
+        -- Register with StreamManager
+        if not StreamManager:RegisterStream(entity, station, {
             name = stationName,
             url = url,
-            volume = volume
-        }
-        
-        if not StateManager:StartEntityStation(entity, stationData, station) then
-            print("[Radio] Failed to register station")
+            volume = volume,
+            timestamp = CurTime()
+        }) then
             station:Stop()
             return
         end
+
+        -- Configure sound
+        station:SetPos(entity:GetPos())
+        station:SetVolume(1)
+        station:Play()
         
-        -- Set up 3D audio with more lenient distances
+        -- Update state
+        currentRadioSources[entity] = station
+        activeStationCount = updateStationCount()
+        
+        -- Set up 3D audio
         local entityConfig = getEntityConfig(entity)
         if entityConfig then
             local minDist = entityConfig.MinVolumeDistance() or 200
             local maxDist = entityConfig.MaxHearingDistance() or 2000
             station:Set3DFadeDistance(minDist, maxDist)
-            print("[Radio] Set 3D fade distances:", minDist, maxDist)
         end
 
         -- Create position update hook
         local hookName = "UpdateRadioPosition_" .. entIndex
         hook.Add("Think", hookName, function()
-            local currentStation = StateManager:GetEntityStation(entity)
-            if not currentStation or not IsValid(currentStation.source) or not IsValid(currentStation.entity) then
+            if not IsValid(entity) or not IsValid(station) then
                 hook.Remove("Think", hookName)
-                StateManager:StopEntityStation(entity)
+                if IsValid(station) then
+                    station:Stop()
+                end
+                currentRadioSources[entity] = nil
+                activeStationCount = updateStationCount()
                 return
             end
 
             -- Update position and volume
-            currentStation.source:SetPos(currentStation.entity:GetPos())
+            station:SetPos(entity:GetPos())
 
             local playerPos = LocalPlayer():GetPos()
-            local entityPos = currentStation.entity:GetPos()
+            local entityPos = entity:GetPos()
             local distanceSqr = playerPos:DistToSqr(entityPos)
             
-            local isPlayerInCar = utils.isPlayerInVehicle(LocalPlayer(), currentStation.entity)
-            updateRadioVolume(currentStation.source, distanceSqr, isPlayerInCar, currentStation.entity)
+            local isPlayerInCar = utils.isPlayerInVehicle(LocalPlayer(), entity)
+            updateRadioVolume(station, distanceSqr, isPlayerInCar, entity)
         end)
     end)
 end)
@@ -1894,14 +1977,9 @@ net.Receive("StopCarRadioStation", function()
     
     entity = utils.GetVehicle(entity)
     if not IsValid(entity) then return end
-    
-    -- Use StateManager to stop the station
-    if StateManager:StopEntityStation(entity) then
-        -- Clear radio status if it's a boombox
-        if entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox" then
-            utils.clearRadioStatus(entity)
-        end
-    end
+
+    -- Queue cleanup through StreamManager
+    StreamManager:QueueCleanup(entity:EntIndex(), "user_stopped")
 end)
 
 --[[
