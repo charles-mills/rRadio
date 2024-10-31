@@ -1318,11 +1318,11 @@ local function openSettingsMenu(parentFrame, backButton)
     local currentLanguage = GetConVar("radio_language"):GetString()
     local currentLanguageName = LanguageManager:GetLanguageName(currentLanguage)
 
-    addDropdown(Config.Lang["SelectLanguage"] or "Select Language", languageChoices, currentLanguageName, function(_, _, _, data)
+    addDropdown(Config.Lang["SelectLanguage"] or "Select Language", languageChoices, currentLanguageName, function(_, _, name, data)
         if not data then return end
         
-        -- Validate language selection
-        if not LanguageManager:IsValidLanguage(data) then
+        -- Simple validation by checking if the language exists in available languages
+        if not availableLanguages[data] then
             print("[rRadio] Warning: Invalid language selected:", data)
             return
         end
@@ -1745,8 +1745,11 @@ openRadioMenu = function(openSettings)
         
         -- Update local volume immediately for responsive UI
         entityVolumes[entity] = value
-        if currentRadioSources[entity] and IsValid(currentRadioSources[entity]) then
-            currentRadioSources[entity]:SetVolume(value)
+        
+        -- Update stream volume if exists
+        local streamData = StreamManager.activeStreams[entity:EntIndex()]
+        if streamData and IsValid(streamData.stream) then
+            streamData.stream:SetVolume(value)
         end
         
         updateVolumeIcon(volumeIcon, value)
@@ -2158,3 +2161,34 @@ local function initializeTheme()
 end
 
 hook.Add("Initialize", "InitializeRadioTheme", initializeTheme)
+
+-- Add near the top with other hooks
+hook.Add("Think", "UpdateStreamPositions", function()
+    for entIndex, streamData in pairs(StreamManager.activeStreams) do
+        local entity = streamData.entity
+        local stream = streamData.stream
+        
+        if IsValid(entity) and IsValid(stream) then
+            stream:SetPos(entity:GetPos())
+            
+            -- Update volume based on distance
+            local ply = LocalPlayer()
+            if IsValid(ply) then
+                local distanceSqr = ply:GetPos():DistToSqr(entity:GetPos())
+                local isPlayerInCar = false
+                
+                if entity:IsVehicle() then
+                    local vehicle = utils.GetVehicle(entity)
+                    if IsValid(vehicle) then
+                        isPlayerInCar = (vehicle:GetDriver() == ply)
+                    end
+                end
+                
+                updateRadioVolume(stream, distanceSqr, isPlayerInCar, entity)
+            end
+        else
+            -- Cleanup invalid streams
+            StreamManager:QueueCleanup(entIndex, "invalid_entity")
+        end
+    end
+end)
