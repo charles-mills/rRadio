@@ -270,4 +270,21 @@ function utils.isPlayerInVehicle(player, vehicle)
     return false
 end
 
+--[[
+    Function: playErrorSound
+    Description: Plays an error sound for the client
+    @param type (string): The type of error ("connection", "permission", etc.)
+]]
+function utils.playErrorSound(type)
+    if CLIENT then
+        if type == "connection" then
+            surface.PlaySound("buttons/button10.wav") -- Error/failure sound
+        elseif type == "permission" then
+            surface.PlaySound("buttons/button11.wav") -- Denied sound
+        else
+            surface.PlaySound("buttons/button8.wav") -- Generic error sound
+        end
+    end
+end
+
 return utils
