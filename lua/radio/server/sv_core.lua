@@ -28,6 +28,7 @@ local SavePermanentBoombox, LoadPermanentBoomboxes
 
 include("radio/server/sv_permanent.lua")
 local utils = include("radio/shared/sh_utils.lua")
+local ResourceManager = include("radio/server/sv_resource_manager.lua")
 
 SavePermanentBoombox = _G.SavePermanentBoombox
 RemovePermanentBoombox = _G.RemovePermanentBoombox
@@ -135,16 +136,16 @@ end
     - ply: The player to send active radios to.
 ]]
 local function SendActiveRadiosToPlayer(ply)
-    if not IsValid(ply) then
-        return
-    end
+    if not IsValid(ply) then return end
 
     if not PlayerRetryAttempts[ply] then
         PlayerRetryAttempts[ply] = 1
     end
 
+    print("[rRadio Debug] Sending active radios to player:", ply)
+
     local attempt = PlayerRetryAttempts[ply]
-    if next(ActiveRadios) == nil then
+    if table.IsEmpty(ActiveRadios) then
         if attempt >= 3 then
             PlayerRetryAttempts[ply] = nil
             return
@@ -164,14 +165,14 @@ local function SendActiveRadiosToPlayer(ply)
 
     for entIndex, radio in pairs(ActiveRadios) do
         local entity = Entity(entIndex)
-        net.Start("PlayCarRadioStation")
-            net.WriteEntity(entity)
-            net.WriteString(radio.stationName)
-            net.WriteString(radio.url)
-            net.WriteFloat(radio.volume)
-        net.Send(ply)
-
-        ActiveRadios[entIndex] = nil
+        if IsValid(entity) then
+            net.Start("PlayCarRadioStation")
+                net.WriteEntity(entity)
+                net.WriteString(radio.stationName)
+                net.WriteString(radio.url)
+                net.WriteFloat(radio.volume)
+            net.Send(ply)
+        end
     end
 
     PlayerRetryAttempts[ply] = nil
@@ -297,101 +298,85 @@ net.Receive("PlayCarRadioStation", function(len, ply)
     local stationURL = net.ReadString()
     local volume = net.ReadFloat()
 
+    -- Enhanced validation chain with debug logging
+    print("[rRadio Debug] Initial entity:", entity, "IsValid:", IsValid(entity))
+
     -- Basic validation
-    if not IsValid(entity) then return end
-
-    if not utils.canUseRadio(entity) then
-        ply:ChatPrint("[Radio] This seat cannot use the radio.")
-        return
+    if not IsValid(entity) then 
+        print("[rRadio Debug] Initial entity validation failed")
+        return 
     end
-    
+
     -- Get the actual vehicle entity if needed
-    entity = GetVehicleEntity(entity)
-    local entIndex = entity:EntIndex()
-
-    -- Store URL in BoomboxStatuses for permanent boomboxes
-    if utils.IsBoombox(entity) then
-        if not BoomboxStatuses[entIndex] then
-            BoomboxStatuses[entIndex] = {}
-        end
-        BoomboxStatuses[entIndex].url = stationURL
-    end
-
-    local lastRequestTime = PlayerCooldowns[ply] or 0
-    if currentTime - lastRequestTime < 0.25 then
-        ply:ChatPrint("You are changing stations too quickly.")
-        return
-    end
-    PlayerCooldowns[ply] = currentTime
-
-    -- Check max active radios limit
-    if table.Count(ActiveRadios) >= MAX_ACTIVE_RADIOS then
-        -- Find and remove oldest radio if needed
-        local oldestTime = math.huge
-        local oldestRadio = nil
-        for entIndex, radio in pairs(ActiveRadios) do
-            if radio.timestamp < oldestTime then
-                oldestTime = radio.timestamp
-                oldestRadio = entIndex
-            end
-        end
-        if oldestRadio then
-            local oldEntity = Entity(oldestRadio)
-            if IsValid(oldEntity) then
-                net.Start("StopCarRadioStation")
-                    net.WriteEntity(oldEntity)
-                net.Broadcast()
-            end
-            RemoveActiveRadio(oldEntity)
-        end
-    end
-
-    -- Check player's personal radio limit
-    local playerActiveRadios = 0
-    for _, radio in pairs(ActiveRadios) do
-        if IsValid(radio.entity) and utils.getOwner(radio.entity) == ply then
-            playerActiveRadios = playerActiveRadios + 1
-        end
-    end
-    if playerActiveRadios >= PLAYER_RADIO_LIMIT then
-        ply:ChatPrint("You have reached your maximum number of active radios.")
+    local actualEntity = GetVehicleEntity(entity)
+    print("[rRadio Debug] After GetVehicleEntity:", actualEntity, "IsValid:", IsValid(actualEntity))
+    
+    if not IsValid(actualEntity) then
+        print("[rRadio Debug] Actual entity validation failed")
         return
     end
 
-    -- Stop existing radio if playing
-    if ActiveRadios[entIndex] then
-        net.Start("StopCarRadioStation")
-            net.WriteEntity(entity)
+    if not utils.canUseRadio(actualEntity) then
+        print("[rRadio Debug] canUseRadio check failed")
+        ply:ChatPrint("[rRadio] This seat cannot use the radio.")
+        return
+    end
+
+    -- Validate permissions for boomboxes
+    if utils.IsBoombox(actualEntity) then
+        print("[rRadio Debug] Entity is boombox")
+        if not utils.canInteractWithBoombox(ply, actualEntity) then
+            print("[rRadio Debug] Boombox permission check failed")
+            ply:ChatPrint("[rRadio] You don't have permission to use this boombox.")
+            return
+        end
+    end
+
+    -- Request the stream through ResourceManager
+    local success, reason = ResourceManager:RequestStream(ply, actualEntity, stationURL, function(success, error)
+        if not success then
+            print("[rRadio Debug] Stream request failed:", error)
+            ply:ChatPrint("[rRadio] Failed to start stream: " .. (error or "Unknown error"))
+            return
+        end
+        
+        print("[rRadio Debug] Stream request successful, broadcasting to clients")
+        
+        -- Add to active radios first
+        AddActiveRadio(actualEntity, stationName, stationURL, volume)
+
+        -- Then broadcast to all clients to start playback
+        net.Start("PlayCarRadioStation")
+            net.WriteEntity(actualEntity)
+            net.WriteString(stationName)
+            net.WriteString(stationURL)
+            net.WriteFloat(volume)
         net.Broadcast()
-        RemoveActiveRadio(entity)
-    end
 
-    -- Set initial status for boomboxes
-    if utils.IsBoombox(entity) then
-        utils.setRadioStatus(entity, "tuning", stationName)
-    end
-
-    -- Add to active radios and broadcast
-    AddActiveRadio(entity, stationName, stationURL, volume)
-
-    net.Start("PlayCarRadioStation")
-        net.WriteEntity(entity)
-        net.WriteString(stationName)
-        net.WriteString(stationURL)
-        net.WriteFloat(volume)
-    net.Broadcast()
-
-    -- Save permanent boombox state if needed
-    if entity.IsPermanent and SavePermanentBoombox then
-        SavePermanentBoombox(entity)
-    end
-
-    -- Set a timer to update status to "playing"
-    timer.Create("StationUpdate_" .. entIndex, 2, 1, function()
-        if IsValid(entity) then
-            utils.setRadioStatus(entity, "playing", stationName)
+        -- Update boombox status if needed
+        if utils.IsBoombox(actualEntity) then
+            local entIndex = actualEntity:EntIndex()
+            if not BoomboxStatuses[entIndex] then
+                BoomboxStatuses[entIndex] = {}
+            end
+            BoomboxStatuses[entIndex].url = stationURL
+            
+            -- Set initial status to tuning
+            utils.setRadioStatus(actualEntity, "tuning", stationName)
+            
+            -- Set to playing after a delay
+            timer.Create("StationUpdate_" .. entIndex, 2, 1, function()
+                if IsValid(actualEntity) then
+                    utils.setRadioStatus(actualEntity, "playing", stationName)
+                end
+            end)
         end
     end)
+
+    if not success then
+        print("[rRadio Debug] Initial request failed:", reason)
+        ply:ChatPrint("[rRadio] " .. reason)
+    end
 end)
 
 --[[
@@ -700,9 +685,9 @@ concommand.Add("radio_reload_config", function(ply)
     
     -- Notify admins
     if IsValid(ply) then
-        ply:ChatPrint("[Radio] Configuration reloaded!")
+        ply:ChatPrint("[rRadio] Configuration reloaded!")
     else
-        print("[Radio] Configuration reloaded!")
+        print("[rRadio] Configuration reloaded!")
     end
 end)
 
@@ -713,9 +698,9 @@ local function AddRadioCommand(name, helpText)
         local value = tonumber(args[1])
         if not value then
             if IsValid(ply) then
-                ply:ChatPrint("[Radio] Invalid value provided!")
+                ply:ChatPrint("[rRadio] Invalid value provided!")
             else
-                print("[Radio] Invalid value provided!")
+                print("[rRadio] Invalid value provided!")
             end
             return
         end
@@ -724,7 +709,7 @@ local function AddRadioCommand(name, helpText)
         if cvar then
             cvar:SetFloat(value)
             
-            local message = string.format("[Radio] %s set to %.2f", name:gsub("_", " "), value)
+            local message = string.format("[rRadio] %s set to %.2f", name:gsub("_", " "), value)
             if IsValid(ply) then
                 ply:ChatPrint(message)
             else
@@ -801,7 +786,7 @@ local radioCommands = {
 
 concommand.Add("radio_help", function(ply)
     if IsValid(ply) and not ply:IsSuperAdmin() then 
-        ply:ChatPrint("[Radio] You need to be a superadmin to use radio commands!")
+        ply:ChatPrint("[rRadio] You need to be a superadmin to use radio commands!")
         return 
     end
     
@@ -840,7 +825,7 @@ concommand.Add("radio_help", function(ply)
     printMessage("\nNote: All commands require superadmin privileges.")
     
     if IsValid(ply) then
-        ply:ChatPrint("[Radio] Help information printed to console!")
+        ply:ChatPrint("[rRadio] Help information printed to console!")
     end
 end)
 
@@ -850,17 +835,17 @@ local function AddRadioCommand(name)
     
     concommand.Add("radio_set_" .. name, function(ply, cmd, args)
         if IsValid(ply) and not ply:IsSuperAdmin() then 
-            ply:ChatPrint("[Radio] You need to be a superadmin to use this command!")
+            ply:ChatPrint("[rRadio] You need to be a superadmin to use this command!")
             return 
         end
         
         if not args[1] or args[1] == "help" then
-            local msg = string.format("[Radio] %s\nUsage: %s <value>\nExample: %s %s", 
+            local msg = string.format("[rRadio] %s\nUsage: %s <value>\nExample: %s %s", 
                 cmdInfo.desc, cmd, cmd, cmdInfo.example)
             
             if IsValid(ply) then
                 ply:PrintMessage(HUD_PRINTCONSOLE, msg)
-                ply:ChatPrint("[Radio] Command help printed to console!")
+                ply:ChatPrint("[rRadio] Command help printed to console!")
             else
                 print(msg)
             end
@@ -870,9 +855,9 @@ local function AddRadioCommand(name)
         local value = tonumber(args[1])
         if not value then
             if IsValid(ply) then
-                ply:ChatPrint("[Radio] Invalid value provided! Use 'help' for usage information.")
+                ply:ChatPrint("[rRadio] Invalid value provided! Use 'help' for usage information.")
             else
-                print("[Radio] Invalid value provided! Use 'help' for usage information.")
+                print("[rRadio] Invalid value provided! Use 'help' for usage information.")
             end
             return
         end
@@ -881,7 +866,7 @@ local function AddRadioCommand(name)
         if cvar then
             cvar:SetFloat(value)
             
-            local message = string.format("[Radio] %s set to %.2f", name:gsub("_", " "), value)
+            local message = string.format("[rRadio] %s set to %.2f", name:gsub("_", " "), value)
             if IsValid(ply) then
                 ply:ChatPrint(message)
             else
@@ -962,4 +947,3 @@ hook.Add("PlayerDisconnected", "CleanupPlayerRadioData", function(ply)
         end
     end
 end)
-
