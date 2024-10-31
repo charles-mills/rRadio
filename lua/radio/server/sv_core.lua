@@ -136,16 +136,16 @@ end
     - ply: The player to send active radios to.
 ]]
 local function SendActiveRadiosToPlayer(ply)
-    if not IsValid(ply) then
-        return
-    end
+    if not IsValid(ply) then return end
 
     if not PlayerRetryAttempts[ply] then
         PlayerRetryAttempts[ply] = 1
     end
 
+    print("[rRadio Debug] Sending active radios to player:", ply)
+
     local attempt = PlayerRetryAttempts[ply]
-    if next(ActiveRadios) == nil then
+    if table.IsEmpty(ActiveRadios) then
         if attempt >= 3 then
             PlayerRetryAttempts[ply] = nil
             return
@@ -165,14 +165,14 @@ local function SendActiveRadiosToPlayer(ply)
 
     for entIndex, radio in pairs(ActiveRadios) do
         local entity = Entity(entIndex)
-        net.Start("PlayCarRadioStation")
-            net.WriteEntity(entity)
-            net.WriteString(radio.stationName)
-            net.WriteString(radio.url)
-            net.WriteFloat(radio.volume)
-        net.Send(ply)
-
-        ActiveRadios[entIndex] = nil
+        if IsValid(entity) then
+            net.Start("PlayCarRadioStation")
+                net.WriteEntity(entity)
+                net.WriteString(radio.stationName)
+                net.WriteString(radio.url)
+                net.WriteFloat(radio.volume)
+            net.Send(ply)
+        end
     end
 
     PlayerRetryAttempts[ply] = nil

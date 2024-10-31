@@ -65,7 +65,6 @@ local favoriteCountries = getSafeState("favoriteCountries", {})
 local favoriteStations = getSafeState("favoriteStations", {})
 local entityVolumes = getSafeState("entityVolumes", {})
 local lastKeyPress = getSafeState("lastKeyPress", 0)
-local activeStationCount = getSafeState("activeStationCount", 0)
 
 
 local currentFrame = nil
@@ -90,6 +89,46 @@ local lastPermissionMessage = 0
 local PERMISSION_MESSAGE_COOLDOWN = 3
 
 local MAX_CLIENT_STATIONS = 10
+local streamsEnabled = true
+
+hook.Add("OnPlayerChat", "RadioStreamToggleCommands", function(ply, text, teamChat, isDead)
+    if ply ~= LocalPlayer() then return end
+    
+    text = string.lower(text)
+    
+    if text == "!disablestreams" then
+        if not streamsEnabled then
+            chat.AddText(Color(255, 0, 0), "[Radio] Streams are already disabled.")
+            return true
+        end
+        
+        -- Stop all current streams
+        for entity, source in pairs(currentRadioSources) do
+            if IsValid(source) then
+                source:Stop()
+            end
+        end
+        
+        -- Clear states
+        currentRadioSources = {}
+        StreamManager.activeStreams = {}
+        
+        streamsEnabled = false
+        chat.AddText(Color(0, 255, 0), "[Radio] All radio streams have been disabled for this session.")
+        return true
+    end
+    
+    if text == "!enablestreams" then
+        if streamsEnabled then
+            chat.AddText(Color(255, 0, 0), "[Radio] Streams are already enabled.")
+            return true
+        end
+        
+        streamsEnabled = true
+        chat.AddText(Color(0, 255, 0), "[Radio] Radio streams have been re-enabled.")
+        return true
+    end
+end)
 
 -- ------------------------------
 --      Station Data Loading
@@ -144,15 +183,15 @@ LoadStationData()
 ]]
 local function updateStationCount()
     local count = StateManager:UpdateStationCount()
-    activeStationCount = count
     return count
 end
 
-currentRadioSources = currentRadioSources or {}
-
--- Replace the current StreamManager with this simpler version
+-- Update the StreamManager definition
 local StreamManager = {
     activeStreams = {},
+    cleanupQueue = {},
+    lastCleanup = 0,
+    CLEANUP_INTERVAL = 0.2, -- 200ms between cleanups
     
     -- Simple cleanup function
     CleanupStream = function(self, entIndex)
@@ -166,12 +205,36 @@ local StreamManager = {
         
         -- Clear states
         self.activeStreams[entIndex] = nil
-        currentRadioSources[streamData.entity] = nil
         
         -- Clear UI state
         if IsValid(streamData.entity) then
             utils.clearRadioStatus(streamData.entity)
         end
+    end,
+    
+    -- Add QueueCleanup function
+    QueueCleanup = function(self, entIndex, reason)
+        self.cleanupQueue[entIndex] = {
+            reason = reason,
+            timestamp = CurTime()
+        }
+        
+        -- Process queue if enough time has passed
+        if CurTime() - self.lastCleanup >= self.CLEANUP_INTERVAL then
+            self:ProcessCleanupQueue()
+        end
+    end,
+    
+    -- Add ProcessCleanupQueue function
+    ProcessCleanupQueue = function(self)
+        self.lastCleanup = CurTime()
+        
+        for entIndex, cleanupData in pairs(self.cleanupQueue) do
+            self:CleanupStream(entIndex)
+        end
+        
+        -- Clear cleanup queue
+        self.cleanupQueue = {}
     end,
     
     -- Register new stream
@@ -311,7 +374,6 @@ createFonts()
 local selectedCountry = nil
 local radioMenuOpen = false
 local currentlyPlayingStation = nil
-local currentRadioSources = {}
 local lastMessageTime = -math.huge
 local lastStationSelectTime = 0
 local currentlyPlayingStations = {}
@@ -421,14 +483,14 @@ local function playStation(entity, station, volume)
             net.WriteEntity(entity)
         net.SendToServer()
 
-        -- Stop locally
-        if currentRadioSources[entity] and IsValid(currentRadioSources[entity]) then
-            currentRadioSources[entity]:Stop()
-            currentRadioSources[entity] = nil
+        -- Stop locally through StreamManager
+        local streamData = StreamManager.activeStreams[entity:EntIndex()]
+        if streamData and IsValid(streamData.stream) then
+            streamData.stream:Stop()
         end
 
         -- Clean up through StreamManager
-        StreamManager:QueueCleanup(entity:EntIndex(), "station_change")
+        StreamManager:CleanupStream(entity:EntIndex())
 
         -- Wait for cleanup to complete
         timer.Simple(0.2, function()
@@ -743,10 +805,18 @@ local function createStarIcon(parent, country, station, updateList)
         
         starIcon:SetImage(newIsFavorite and "hud/star_full.png" or "hud/star.png")
 
+        -- Force refresh of favorites list if we're in the favorites view
+        if selectedCountry == "favorites" then
+            -- Invalidate cache and force refresh
+            StateManager:InvalidateCache("favorites")
+            populateList(stationListPanel, backButton, searchBox, false)
+        end
+
         if updateList then
             updateList()
         end
 
+        -- Notify state change
         StateManager:Emit(StateManager.Events.FAVORITES_CHANGED, {
             type = station and "station" or "country",
             country = country,
@@ -942,7 +1012,16 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                 favorite.countryName .. " - " .. favorite.station.name,
                 function(button)
                     local currentTime = CurTime()
-                    if currentTime - StateManager:GetState("lastStationSelectTime", 0) < 2 then return end
+                    -- Get last station time with a default value of 0
+                    local lastStationTime = getSafeState("lastStationSelectTime", 0)
+                    
+                    -- Ensure we have valid numbers for comparison
+                    if type(currentTime) ~= "number" or type(lastStationTime) ~= "number" then
+                        print("[rRadio] Warning: Invalid time values in station button handler")
+                        lastStationTime = 0
+                    end
+
+                    if (currentTime - lastStationTime) < 2 then return end
 
                     surface.PlaySound("buttons/button17.wav")
                     local entity = LocalPlayer().currentRadioEntity
@@ -992,7 +1071,16 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                 station.name,
                 function(button)
                     local currentTime = CurTime()
-                    if currentTime - StateManager:GetState("lastStationSelectTime", 0) < 2 then return end
+                    -- Get last station time with a default value of 0
+                    local lastStationTime = getSafeState("lastStationSelectTime", 0)
+                    
+                    -- Ensure we have valid numbers for comparison
+                    if type(currentTime) ~= "number" or type(lastStationTime) ~= "number" then
+                        print("[rRadio] Warning: Invalid time values in station button handler")
+                        lastStationTime = 0
+                    end
+
+                    if (currentTime - lastStationTime) < 2 then return end
 
                     surface.PlaySound("buttons/button17.wav")
                     local entity = LocalPlayer().currentRadioEntity
@@ -1011,24 +1099,28 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                 end
             )
 
-            -- Add playing indicator
+            -- Add paint function for visual state
             stationButton.Paint = function(self, w, h)
                 local entity = LocalPlayer().currentRadioEntity
-                if IsValid(entity) then
-                    local streamData = StreamManager.activeStreams[entity:EntIndex()]
-                    if streamData then
-                        -- Add visual indicators for stream health
-                        if streamData.bufferUnderruns > 0 then
-                            surface.SetDrawColor(255, 255, 0, 50) -- Yellow warning
-                            surface.DrawRect(0, 0, w * 0.1, h)
-                        end
-                        if streamData.retryAttempts > 0 then
-                            surface.SetDrawColor(255, 0, 0, 50) -- Red warning
-                            surface.DrawRect(w * 0.9, 0, w * 0.1, h)
-                        end
+                if IsValid(entity) and currentlyPlayingStations[entity] and 
+                   currentlyPlayingStations[entity].name == station.name then
+                    draw.RoundedBox(8, 0, 0, w, h, Config.UI.PlayingButtonColor)
+                else
+                    draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonColor)
+                    if self:IsHovered() then
+                        draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonHoverColor)
                     end
                 end
-                -- Rest of existing paint code...
+
+                -- Add visual indicators for stream status
+                local streamData = StreamManager.activeStreams[entity:EntIndex()]
+                if streamData then
+                    if streamData.stream and not streamData.stream:IsValid() then
+                        -- Red indicator for invalid stream
+                        surface.SetDrawColor(255, 0, 0, 50)
+                        surface.DrawRect(w * 0.9, 0, w * 0.1, h)
+                    end
+                end
             end
 
             -- Always use raw country code when creating star icons
@@ -1891,6 +1983,8 @@ end)
     Handles playing a radio station on the client.
 ]]
 net.Receive("PlayCarRadioStation", function()
+    if not streamsEnabled then return end
+    
     local entity = net.ReadEntity()
     if not IsValid(entity) then return end
 
@@ -1920,8 +2014,7 @@ net.Receive("PlayCarRadioStation", function()
         if not StreamManager:RegisterStream(entity, station, {
             name = stationName,
             url = url,
-            volume = volume,
-            timestamp = CurTime()
+            volume = volume
         }) then
             station:Stop()
             return
@@ -1929,44 +2022,8 @@ net.Receive("PlayCarRadioStation", function()
 
         -- Configure sound
         station:SetPos(entity:GetPos())
-        station:SetVolume(1)
+        station:SetVolume(volume)
         station:Play()
-        
-        -- Update state
-        currentRadioSources[entity] = station
-        activeStationCount = updateStationCount()
-        
-        -- Set up 3D audio
-        local entityConfig = getEntityConfig(entity)
-        if entityConfig then
-            local minDist = entityConfig.MinVolumeDistance() or 200
-            local maxDist = entityConfig.MaxHearingDistance() or 2000
-            station:Set3DFadeDistance(minDist, maxDist)
-        end
-
-        -- Create position update hook
-        local hookName = "UpdateRadioPosition_" .. entIndex
-        hook.Add("Think", hookName, function()
-            if not IsValid(entity) or not IsValid(station) then
-                hook.Remove("Think", hookName)
-                if IsValid(station) then
-                    station:Stop()
-                end
-                currentRadioSources[entity] = nil
-                activeStationCount = updateStationCount()
-                return
-            end
-
-            -- Update position and volume
-            station:SetPos(entity:GetPos())
-
-            local playerPos = LocalPlayer():GetPos()
-            local entityPos = entity:GetPos()
-            local distanceSqr = playerPos:DistToSqr(entityPos)
-            
-            local isPlayerInCar = utils.isPlayerInVehicle(LocalPlayer(), entity)
-            updateRadioVolume(station, distanceSqr, isPlayerInCar, entity)
-        end)
     end)
 end)
 
@@ -2039,8 +2096,7 @@ net.Receive("RadioConfigUpdate", function()
     end
     
     -- Update station count after cleanup
-    activeStationCount = updateStationCount()
-    StateManager:SetState("activeStationCount", activeStationCount)
+    StateManager:SetState("activeStationCount", updateStationCount())
 end)
 
 -- ------------------------------
@@ -2049,33 +2105,9 @@ end)
 
 -- Entity cleanup
 hook.Add("EntityRemoved", "RadioCleanup", function(entity)
-    -- Sound cleanup
-    if currentRadioSources[entity] then
-        if IsValid(currentRadioSources[entity]) then
-            currentRadioSources[entity]:Stop()
-        end
-        currentRadioSources[entity] = nil
-        activeStationCount = updateStationCount()
-        
-        -- Update state
-        StateManager:SetState("currentRadioSources", currentRadioSources)
-        StateManager:SetState("activeStationCount", activeStationCount)
+    if IsValid(entity) then
+        StreamManager:CleanupStream(entity:EntIndex())
     end
-
-    -- Status cleanup
-    if entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox" then
-        BoomboxStatuses[entity:EntIndex()] = nil
-        StateManager:SetState("boomboxStatuses", BoomboxStatuses)
-    end
-
-    -- Hook cleanup
-    local hookName = "UpdateRadioPosition_" .. entity:EntIndex()
-    if hook.GetTable()["Think"] and hook.GetTable()["Think"][hookName] then
-        hook.Remove("Think", hookName)
-    end
-
-    -- Notify removal
-    StateManager:Emit(StateManager.Events.ENTITY_REMOVED, entity)
 end)
 
 -- Vehicle state cleanup
@@ -2090,20 +2122,12 @@ end)
 
 -- Periodic validation
 timer.Create("RadioStateValidation", 30, 0, function()
-    -- Validate and cleanup radio sources
-    for entity, source in pairs(currentRadioSources) do
-        if not IsValid(entity) or not IsValid(source) then
-            if IsValid(source) then
-                source:Stop()
-            end
-            currentRadioSources[entity] = nil
+    -- Validate and cleanup streams
+    for entIndex, streamData in pairs(StreamManager.activeStreams) do
+        if not IsValid(streamData.entity) or not IsValid(streamData.stream) then
+            StreamManager:CleanupStream(entIndex)
         end
     end
-
-    -- Update counts and state
-    activeStationCount = updateStationCount()
-    StateManager:SetState("currentRadioSources", currentRadioSources)
-    StateManager:SetState("activeStationCount", activeStationCount)
 end)
 
 StateManager:On(StateManager.Events.FAVORITES_LOADED, function(data)
