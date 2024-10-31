@@ -1993,6 +1993,16 @@ net.Receive("PlayCarRadioStation", function()
     local url = net.ReadString()
     local volume = net.ReadFloat()
 
+    -- Update local state immediately
+    if not BoomboxStatuses[entIndex] then
+        BoomboxStatuses[entIndex] = {}
+    end
+    BoomboxStatuses[entIndex] = {
+        stationStatus = "playing",
+        stationName = stationName,
+        url = url
+    }
+
     -- Create new sound stream with error handling
     sound.PlayURL(url, "3d noblock", function(station, errorID, errorName)
         if not IsValid(station) then
