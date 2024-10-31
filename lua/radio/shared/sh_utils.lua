@@ -231,4 +231,43 @@ function utils.canUseRadio(entity)
     return true
 end
 
+--[[
+    Function: isPlayerInVehicle
+    Description: Checks if a player is in a specific vehicle or any of its seats
+    @param player (Player): The player to check
+    @param vehicle (Entity): The vehicle to check
+    @return (boolean): True if the player is in the vehicle or any of its seats
+]]
+function utils.isPlayerInVehicle(player, vehicle)
+    if not IsValid(player) or not IsValid(vehicle) then return false end
+    
+    -- Get the actual vehicle entity
+    vehicle = utils.GetVehicle(vehicle) or vehicle
+    
+    -- Direct check for player's current vehicle
+    local playerVehicle = player:GetVehicle()
+    if IsValid(playerVehicle) then
+        if playerVehicle == vehicle then
+            return true
+        end
+        
+        -- Check if player's seat belongs to this vehicle
+        local seatParent = playerVehicle:GetParent()
+        if IsValid(seatParent) and seatParent == vehicle then
+            return true
+        end
+    end
+    
+    -- Check all seats if it's a vehicle
+    if vehicle:IsVehicle() then
+        for _, seat in pairs(ents.FindByClass("prop_vehicle_prisoner_pod")) do
+            if IsValid(seat) and seat:GetParent() == vehicle and seat:GetDriver() == player then
+                return true
+            end
+        end
+    end
+    
+    return false
+end
+
 return utils

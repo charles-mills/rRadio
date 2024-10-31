@@ -10,9 +10,19 @@ local StateManager = {
         ENTITY_REMOVED = "RadioEntityRemoved",
         SETTINGS_CHANGED = "RadioSettingsChanged",
         THEME_CHANGED = "RadioThemeChanged",
-        LANGUAGE_CHANGED = "RadioLanguageChanged"
+        LANGUAGE_CHANGED = "RadioLanguageChanged",
+        FAVORITES_LOADED = "RadioFavoritesLoaded",
+        FAVORITES_SAVED = "RadioFavoritesSaved"
     },
 
+    -- Initialize data directory
+    dataDir = "rradio",
+    favoriteCountriesFile = "rradio/favorite_countries.json",
+    favoriteStationsFile = "rradio/favorite_stations.json",
+
+    -- Initialize state storage
+    initialized = false,
+    
     -- Core state
     radioMenuOpen = false,
     settingsMenuOpen = false,
@@ -41,17 +51,34 @@ local StateManager = {
     lastKeyPress = 0,
     lastStationSelectTime = 0,
     lastPermissionMessage = 0,
-    lastMessageTime = -math.huge
+    lastMessageTime = -math.huge,
+
+    -- Station management
+    activeStations = {} -- Tracks active stations by entity index
 }
 
+-- Initialize event listeners table
 local eventListeners = {}
 
+function StateManager:Initialize()
+    if self.initialized then return end
+    
+    if not file.IsDir(self.dataDir, "DATA") then
+        file.CreateDir(self.dataDir)
+    end
+
+    self:LoadFavorites()
+    self.initialized = true
+end
+
 function StateManager:On(event, callback)
+    if not event then return end
     eventListeners[event] = eventListeners[event] or {}
     table.insert(eventListeners[event], callback)
 end
 
 function StateManager:Emit(event, ...)
+    if not event then return end
     if eventListeners[event] then
         for _, callback in ipairs(eventListeners[event]) do
             callback(...)
@@ -70,25 +97,68 @@ function StateManager:GetState(key)
     return self[key]
 end
 
-function StateManager:UpdateVolume(entity, volume)
+function StateManager:StopEntityStation(entity)
     if not IsValid(entity) then return end
+    local entIndex = entity:EntIndex()
     
-    self.entityVolumes[entity] = volume
-    self:Emit(self.Events.VOLUME_CHANGED, entity, volume)
+    -- Stop and cleanup existing station
+    if self.activeStations[entIndex] then
+        local currentStation = self.activeStations[entIndex]
+        if IsValid(currentStation.source) then
+            currentStation.source:Stop()
+        end
+        
+        -- Cleanup hooks
+        if currentStation.hookName then
+            hook.Remove("Think", currentStation.hookName)
+        end
+        
+        -- Clear states
+        self.currentRadioSources[entity] = nil
+        self.currentlyPlayingStations[entity] = nil
+        self.activeStations[entIndex] = nil
+        
+        -- Update counts
+        self:UpdateStationCount()
+        
+        -- Emit event
+        self:Emit(self.Events.RADIO_STOPPED, entity)
+        return true
+    end
+    return false
 end
 
-function StateManager:UpdateStation(entity, stationData)
-    if not IsValid(entity) then return end
+function StateManager:StartEntityStation(entity, stationData, source)
+    if not IsValid(entity) then return false end
+    local entIndex = entity:EntIndex()
     
-    self.currentlyPlayingStations[entity] = stationData
-    self:Emit(self.Events.STATION_CHANGED, entity, stationData)
-end
-
-function StateManager:UpdateRadioSource(entity, source)
-    if not IsValid(entity) then return end
+    -- Stop any existing station first
+    self:StopEntityStation(entity)
     
+    -- Register new station
+    self.activeStations[entIndex] = {
+        entity = entity,
+        source = source,
+        stationData = stationData,
+        hookName = "UpdateRadioPosition_" .. entIndex,
+        startTime = CurTime()
+    }
+    
+    -- Update states
     self.currentRadioSources[entity] = source
+    self.currentlyPlayingStations[entity] = stationData
+    
+    -- Update count
     self:UpdateStationCount()
+    
+    -- Emit event
+    self:Emit(self.Events.STATION_CHANGED, entity, stationData)
+    return true
+end
+
+function StateManager:GetEntityStation(entity)
+    if not IsValid(entity) then return nil end
+    return self.activeStations[entity:EntIndex()]
 end
 
 function StateManager:UpdateStationCount()
@@ -108,10 +178,6 @@ function StateManager:UpdateStationCount()
 end
 
 function StateManager:SaveFavorites()
-    local dataDir = "rradio"
-    local favoriteCountriesFile = dataDir .. "/favorite_countries.json"
-    local favoriteStationsFile = dataDir .. "/favorite_stations.json"
-
     -- Create backup of existing files
     local function createBackup(filename)
         if file.Exists(filename, "DATA") then
@@ -129,8 +195,8 @@ function StateManager:SaveFavorites()
     
     local countriesJson = util.TableToJSON(favCountriesList, true)
     if countriesJson then
-        createBackup(favoriteCountriesFile)
-        file.Write(favoriteCountriesFile, countriesJson)
+        createBackup(self.favoriteCountriesFile)
+        file.Write(self.favoriteCountriesFile, countriesJson)
     else
         print("[Radio] Error converting favorite countries to JSON")
         return false
@@ -146,7 +212,6 @@ function StateManager:SaveFavorites()
                     favStationsTable[country][stationName] = isFavorite
                 end
             end
-            -- Clean up empty country entries
             if next(favStationsTable[country]) == nil then
                 favStationsTable[country] = nil
             end
@@ -155,14 +220,14 @@ function StateManager:SaveFavorites()
     
     local stationsJson = util.TableToJSON(favStationsTable, true)
     if stationsJson then
-        createBackup(favoriteStationsFile)
-        file.Write(favoriteStationsFile, stationsJson)
+        createBackup(self.favoriteStationsFile)
+        file.Write(self.favoriteStationsFile, stationsJson)
     else
         print("[Radio] Error converting favorite stations to JSON")
         return false
     end
 
-    self:Emit(self.Events.FAVORITES_CHANGED, {
+    self:Emit(self.Events.FAVORITES_SAVED, {
         countries = self.favoriteCountries,
         stations = self.favoriteStations
     })
@@ -170,14 +235,6 @@ function StateManager:SaveFavorites()
 end
 
 function StateManager:LoadFavorites()
-    local dataDir = "rradio"
-    local favoriteCountriesFile = dataDir .. "/favorite_countries.json"
-    local favoriteStationsFile = dataDir .. "/favorite_stations.json"
-
-    if not file.IsDir(dataDir, "DATA") then
-        file.CreateDir(dataDir)
-    end
-
     local function loadFromBackup(filename)
         if file.Exists(filename .. ".bak", "DATA") then
             print("[Radio] Attempting to load from backup file")
@@ -187,13 +244,13 @@ function StateManager:LoadFavorites()
     end
 
     -- Load favorite countries
-    if file.Exists(favoriteCountriesFile, "DATA") then
+    if file.Exists(self.favoriteCountriesFile, "DATA") then
         local success, data = pcall(function()
-            return util.JSONToTable(file.Read(favoriteCountriesFile, "DATA"))
+            return util.JSONToTable(file.Read(self.favoriteCountriesFile, "DATA"))
         end)
         
         if not success or not data then
-            data = loadFromBackup(favoriteCountriesFile)
+            data = loadFromBackup(self.favoriteCountriesFile)
             if not data then
                 print("[Radio] Error loading favorite countries, resetting")
                 self.favoriteCountries = {}
@@ -210,13 +267,13 @@ function StateManager:LoadFavorites()
     end
 
     -- Load favorite stations
-    if file.Exists(favoriteStationsFile, "DATA") then
+    if file.Exists(self.favoriteStationsFile, "DATA") then
         local success, data = pcall(function()
-            return util.JSONToTable(file.Read(favoriteStationsFile, "DATA"))
+            return util.JSONToTable(file.Read(self.favoriteStationsFile, "DATA"))
         end)
         
         if not success or not data then
-            data = loadFromBackup(favoriteStationsFile)
+            data = loadFromBackup(self.favoriteStationsFile)
             if not data then
                 print("[Radio] Error loading favorite stations, resetting")
                 self.favoriteStations = {}
@@ -233,7 +290,6 @@ function StateManager:LoadFavorites()
                         self.favoriteStations[country][stationName] = isFavorite
                     end
                 end
-                -- Clean up empty country entries
                 if next(self.favoriteStations[country]) == nil then
                     self.favoriteStations[country] = nil
                 end
