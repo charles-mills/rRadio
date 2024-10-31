@@ -209,4 +209,26 @@ function utils.IsBoombox(entity)
     return class == "boombox" or class == "golden_boombox"
 end
 
+--[[
+    Function: canUseRadio
+    Description: Checks if a given entity can use radio functionality
+    @param entity (Entity): The entity to check
+    @return (boolean): True if the entity can use radio, false otherwise
+]]
+function utils.canUseRadio(entity)
+    if not IsValid(entity) then return false end
+    
+    -- Check if it's a boombox
+    if utils.IsBoombox(entity) then return true end
+    
+    -- Get the actual vehicle entity
+    local vehicle = utils.GetVehicle(entity)
+    if not vehicle then return false end
+    
+    -- Check if it's a sit anywhere seat
+    if utils.isSitAnywhereSeat(vehicle) then return false end
+    
+    return true
+end
+
 return utils

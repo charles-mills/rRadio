@@ -207,6 +207,9 @@ hook.Add("PlayerEnteredVehicle", "RadioVehicleHandling", function(ply, vehicle)
     local veh = utils.GetVehicle(vehicle)
     if not veh then return end
     
+    -- Don't show radio message for sit anywhere seats
+    if utils.isSitAnywhereSeat(vehicle) then return end
+    
     if not UpdateVehicleStatus(vehicle) then
         net.Start("CarRadioMessage")
         net.Send(ply)
@@ -286,6 +289,7 @@ net.Receive("PlayCarRadioStation", function(len, ply)
         ply:ChatPrint("The radio system is busy. Please try again in a moment.")
         return
     end
+
     lastGlobalAction = currentTime
 
     local entity = net.ReadEntity()
@@ -295,6 +299,12 @@ net.Receive("PlayCarRadioStation", function(len, ply)
 
     -- Basic validation
     if not IsValid(entity) then return end
+    
+    -- Check if entity can use radio
+    if not utils.canUseRadio(entity) then
+        ply:ChatPrint("[Radio] This seat cannot use the radio.")
+        return
+    }
     
     -- Get the actual vehicle entity if needed
     entity = GetVehicleEntity(entity)
