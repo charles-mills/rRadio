@@ -13,7 +13,7 @@
 -- ------------------------------
 include("radio/shared/sh_config.lua")
 local LanguageManager = include("radio/client/lang/cl_language_manager.lua")
-local themes = include("radio/client/cl_themes.lua") or {}
+local themeModule = include("radio/client/cl_themes.lua")
 local keyCodeMapping = include("radio/client/cl_key_names.lua")
 local utils = include("radio/shared/sh_utils.lua")
 
@@ -1262,8 +1262,8 @@ local function openSettingsMenu(parentFrame, backButton)
     local themeChoices = {}
     
     -- Validate themes table
-    if type(themes) == "table" then
-        for themeName, themeData in pairs(themes) do
+    if type(themeModule.themes) == "table" then
+        for themeName, themeData in pairs(themeModule.themes) do
             if type(themeData) == "table" then
                 table.insert(themeChoices, {
                     name = themeName:gsub("^%l", string.upper),
@@ -1273,7 +1273,7 @@ local function openSettingsMenu(parentFrame, backButton)
         end
     else
         print("[rRadio] Warning: Themes table is invalid")
-        themes = {}
+        themeModule.themes = {}
     end
 
     local currentTheme = GetConVar("radio_theme"):GetString()
@@ -1281,9 +1281,9 @@ local function openSettingsMenu(parentFrame, backButton)
     
     addDropdown(Config.Lang["SelectTheme"] or "Select Theme", themeChoices, currentThemeName, function(_, _, value)
         local lowerValue = value:lower()
-        if themes and themes[lowerValue] then
+        if themeModule.themes and themeModule.themes[lowerValue] then
             RunConsoleCommand("radio_theme", lowerValue)
-            Config.UI = themes[lowerValue]
+            Config.UI = themeModule.themes[lowerValue]
             
             StateManager:SetState("currentTheme", lowerValue)
             StateManager:Emit(StateManager.Events.THEME_CHANGED, lowerValue)
@@ -2134,3 +2134,17 @@ StateManager:On(StateManager.Events.FAVORITES_LOADED, function(data)
     favoriteCountries = data.countries
     favoriteStations = data.stations
 end)
+
+-- Initialize theme
+local function initializeTheme()
+    local themeName = GetConVar("radio_theme"):GetString()
+    if themeModule.themes[themeName] and themeModule.factory:validateTheme(themeModule.themes[themeName]) then
+        Config.UI = themeModule.themes[themeName]
+    else
+        -- Fallback to default theme
+        Config.UI = themeModule.factory:getDefaultThemeData()
+        RunConsoleCommand("radio_theme", themeModule.factory:getDefaultTheme())
+    end
+end
+
+hook.Add("Initialize", "InitializeRadioTheme", initializeTheme)
