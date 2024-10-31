@@ -108,7 +108,18 @@ function StateManager:UpdateStationCount()
 end
 
 function StateManager:SaveFavorites()
-    -- Existing favorites saving logic moved here
+    local dataDir = "rradio"
+    local favoriteCountriesFile = dataDir .. "/favorite_countries.json"
+    local favoriteStationsFile = dataDir .. "/favorite_stations.json"
+
+    -- Create backup of existing files
+    local function createBackup(filename)
+        if file.Exists(filename, "DATA") then
+            file.Write(filename .. ".bak", file.Read(filename, "DATA"))
+        end
+    end
+
+    -- Save favorite countries
     local favCountriesList = {}
     for country, _ in pairs(self.favoriteCountries) do
         if type(country) == "string" then
@@ -116,11 +127,124 @@ function StateManager:SaveFavorites()
         end
     end
     
-    -- Save to file logic...
+    local countriesJson = util.TableToJSON(favCountriesList, true)
+    if countriesJson then
+        createBackup(favoriteCountriesFile)
+        file.Write(favoriteCountriesFile, countriesJson)
+    else
+        print("[Radio] Error converting favorite countries to JSON")
+        return false
+    end
+
+    -- Save favorite stations
+    local favStationsTable = {}
+    for country, stations in pairs(self.favoriteStations) do
+        if type(country) == "string" and type(stations) == "table" then
+            favStationsTable[country] = {}
+            for stationName, isFavorite in pairs(stations) do
+                if type(stationName) == "string" and type(isFavorite) == "boolean" then
+                    favStationsTable[country][stationName] = isFavorite
+                end
+            end
+            -- Clean up empty country entries
+            if next(favStationsTable[country]) == nil then
+                favStationsTable[country] = nil
+            end
+        end
+    end
+    
+    local stationsJson = util.TableToJSON(favStationsTable, true)
+    if stationsJson then
+        createBackup(favoriteStationsFile)
+        file.Write(favoriteStationsFile, stationsJson)
+    else
+        print("[Radio] Error converting favorite stations to JSON")
+        return false
+    end
+
+    self:Emit(self.Events.FAVORITES_CHANGED, {
+        countries = self.favoriteCountries,
+        stations = self.favoriteStations
+    })
+    return true
 end
 
 function StateManager:LoadFavorites()
-    -- Existing favorites loading logic moved here
+    local dataDir = "rradio"
+    local favoriteCountriesFile = dataDir .. "/favorite_countries.json"
+    local favoriteStationsFile = dataDir .. "/favorite_stations.json"
+
+    if not file.IsDir(dataDir, "DATA") then
+        file.CreateDir(dataDir)
+    end
+
+    local function loadFromBackup(filename)
+        if file.Exists(filename .. ".bak", "DATA") then
+            print("[Radio] Attempting to load from backup file")
+            return util.JSONToTable(file.Read(filename .. ".bak", "DATA"))
+        end
+        return nil
+    end
+
+    -- Load favorite countries
+    if file.Exists(favoriteCountriesFile, "DATA") then
+        local success, data = pcall(function()
+            return util.JSONToTable(file.Read(favoriteCountriesFile, "DATA"))
+        end)
+        
+        if not success or not data then
+            data = loadFromBackup(favoriteCountriesFile)
+            if not data then
+                print("[Radio] Error loading favorite countries, resetting")
+                self.favoriteCountries = {}
+                return
+            end
+        end
+
+        self.favoriteCountries = {}
+        for _, country in ipairs(data) do
+            if type(country) == "string" then
+                self.favoriteCountries[country] = true
+            end
+        end
+    end
+
+    -- Load favorite stations
+    if file.Exists(favoriteStationsFile, "DATA") then
+        local success, data = pcall(function()
+            return util.JSONToTable(file.Read(favoriteStationsFile, "DATA"))
+        end)
+        
+        if not success or not data then
+            data = loadFromBackup(favoriteStationsFile)
+            if not data then
+                print("[Radio] Error loading favorite stations, resetting")
+                self.favoriteStations = {}
+                return
+            end
+        end
+
+        self.favoriteStations = {}
+        for country, stations in pairs(data) do
+            if type(country) == "string" and type(stations) == "table" then
+                self.favoriteStations[country] = {}
+                for stationName, isFavorite in pairs(stations) do
+                    if type(stationName) == "string" and type(isFavorite) == "boolean" then
+                        self.favoriteStations[country][stationName] = isFavorite
+                    end
+                end
+                -- Clean up empty country entries
+                if next(self.favoriteStations[country]) == nil then
+                    self.favoriteStations[country] = nil
+                end
+            end
+        end
+    end
+
+    self:Emit(self.Events.FAVORITES_LOADED, {
+        countries = self.favoriteCountries,
+        stations = self.favoriteStations
+    })
 end
 
 function StateManager:CleanupEntity(entity)
