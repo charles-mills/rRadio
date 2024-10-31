@@ -9,7 +9,7 @@
 ]]--
 
 local keyCodeMapping = include("radio/client/cl_key_names.lua")
-local themes = include("radio/client/cl_themes.lua")
+local themeModule = include("radio/client/cl_themes.lua")
 local languageManager = include("radio/client/lang/cl_language_manager.lua")
 
 CreateClientConVar("car_radio_show_messages", "1", true, false, "Enable or disable car radio messages.")
@@ -18,11 +18,15 @@ CreateClientConVar("boombox_show_text", "1", true, false, "Show or hide the text
 CreateClientConVar("car_radio_open_key", "21", true, false, "Select the key to open the car radio menu.")
 
 local function applyTheme(themeName)
-    if themes[themeName] then
-        Config.UI = themes[themeName]
+    if themeModule.themes[themeName] and themeModule.factory:validateTheme(themeModule.themes[themeName]) then
+        Config.UI = themeModule.themes[themeName]
         hook.Run("ThemeChanged", themeName)
     else
-        print("Invalid theme name: " .. themeName)
+        print("[rRadio] Invalid theme name:", themeName)
+        -- Fallback to default theme
+        local defaultTheme = themeModule.factory:getDefaultTheme()
+        Config.UI = themeModule.factory:getDefaultThemeData()
+        RunConsoleCommand("radio_theme", defaultTheme)
     end
 end
 
@@ -32,7 +36,7 @@ local function applyLanguage(languageCode)
         hook.Run("LanguageChanged", languageCode)
         hook.Run("LanguageUpdated")
     else
-        print("Invalid language code: " .. languageCode)
+        print("[rRadio] Invalid language code:", languageCode)
     end
 end
 
@@ -109,18 +113,18 @@ hook.Add("PopulateToolMenu", "AddThemeAndVolumeSelectionMenu", function()
         themeDropdown:SetTooltip("Select the theme for the radio UI.")
 
         -- Dynamically add all available themes to the dropdown
-        for themeName, _ in pairs(themes) do
+        for themeName, _ in pairs(themeModule.themes) do
             themeDropdown:AddChoice(themeName:gsub("^%l", string.upper))
         end
 
         local currentTheme = GetConVar("radio_theme"):GetString()
-        if currentTheme and themes[currentTheme] then
+        if currentTheme and themeModule.themes[currentTheme] then
             themeDropdown:SetValue(currentTheme:gsub("^%l", string.upper))
         end
 
         themeDropdown.OnSelect = function(panel, index, value)
             local lowerValue = value:lower()
-            if themes[lowerValue] then
+            if themeModule.themes[lowerValue] then
                 applyTheme(lowerValue)
                 RunConsoleCommand("radio_theme", lowerValue)
             end
