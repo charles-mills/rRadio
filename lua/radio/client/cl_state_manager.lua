@@ -358,7 +358,21 @@ local StateManager = {
     lastKeyPress = 0,
     lastStationSelectTime = 0,
     lastPermissionMessage = 0,
-    lastMessageTime = -math.huge
+    lastMessageTime = -math.huge,
+
+    -- Save queue management
+    _saveQueue = {},
+    _lastSave = 0,
+    _saveInterval = 0.5, -- Minimum time between saves
+    _pendingSave = false,
+    _dirtyKeys = {}, -- Track which data needs saving
+    
+    -- Binary format version for compatibility
+    _binaryVersion = 1,
+
+    -- Lazy loading state
+    _lazyLoadedStations = {},
+    _lazyLoadCallbacks = {},
 }
 
 -- Apply all functions to StateManager
