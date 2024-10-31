@@ -11,6 +11,7 @@
 
 util.AddNetworkString("PlayCarRadioStation")
 util.AddNetworkString("StopCarRadioStation")
+util.AddNetworkString("OpenRadioMenu")
 util.AddNetworkString("CarRadioMessage")
 util.AddNetworkString("UpdateRadioStatus")
 util.AddNetworkString("UpdateRadioVolume")
