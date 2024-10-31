@@ -31,7 +31,6 @@ local dataDir = "rradio"
 local favoriteCountriesFile = dataDir .. "/favorite_countries.json"
 local favoriteStationsFile = dataDir .. "/favorite_stations.json"
 
--- Ensure the data directory exists
 if not file.IsDir(dataDir, "DATA") then
     file.CreateDir(dataDir)
 end
@@ -1259,6 +1258,12 @@ openRadioMenu = function(openSettings)
     local entity = ply.currentRadioEntity
     
     if not IsValid(entity) then return end
+    
+    -- Check if entity can use radio
+    if not utils.canUseRadio(entity) then
+        chat.AddText(Color(255, 0, 0), "[Radio] This seat cannot use the radio.")
+        return
+    end
     
     if entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox" then
         if not utils.canInteractWithBoombox(ply, entity) then
