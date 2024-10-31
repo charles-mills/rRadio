@@ -297,6 +297,29 @@ function StateManagerFunctions:LoadFavorites()
     })
 end
 
+function StateManagerFunctions:InvalidateCache(cacheType)
+    if cacheType == "favorites" then
+        self._cache.favoritesList = nil
+        self._lastStateUpdate = CurTime()
+        
+        -- Force refresh of favorites list
+        if self.Events then
+            self:Emit(self.Events.FAVORITES_CHANGED)
+        end
+    end
+end
+
+-- Modify SetState to invalidate cache when favorites change
+local originalSetState = StateManagerFunctions.SetState
+function StateManagerFunctions:SetState(key, value)
+    originalSetState(self, key, value)
+    
+    -- Invalidate favorites cache when favorites change
+    if key == "favoriteStations" or key == "favoriteCountries" then
+        self:InvalidateCache("favorites")
+    end
+end
+
 local StateManager = {
     Events = {
         STATE_CHANGED = "RadioStateChanged",
