@@ -257,31 +257,39 @@ local function LoadPermanentBoomboxes(isReload)
 
         -- Start playing the radio
         if row.station_url ~= "" then
-            -- Store the URL and station name in BoomboxStatuses
-            local entIndex = ent:EntIndex()
-            if not BoomboxStatuses[entIndex] then
-                BoomboxStatuses[entIndex] = {}
-            end
-            BoomboxStatuses[entIndex].url = row.station_url
-            BoomboxStatuses[entIndex].stationName = row.station_name
-            BoomboxStatuses[entIndex].stationStatus = "playing"
-            
-            -- Set networked variables
+            -- Set networked variables first
             ent:SetNWString("StationName", row.station_name)
             ent:SetNWString("StationURL", row.station_url)
             ent:SetNWString("Status", "playing")
             ent:SetNWBool("IsPlaying", true)
             
-            -- Broadcast to clients
+            -- Update BoomboxStatuses
+            local entIndex = ent:EntIndex()
+            BoomboxStatuses[entIndex] = {
+                stationStatus = "playing",
+                stationName = row.station_name,
+                url = row.station_url
+            }
+            
+            -- Broadcast status update to clients
+            net.Start("UpdateRadioStatus")
+                net.WriteEntity(ent)
+                net.WriteString(row.station_name)
+                net.WriteBool(true)
+                net.WriteString("playing")
+            net.Broadcast()
+            
+            -- Start playback on clients
             net.Start("PlayCarRadioStation")
                 net.WriteEntity(ent)
-                net.WriteString(row.station_name or "")
+                net.WriteString(row.station_name)
                 net.WriteString(row.station_url)
                 net.WriteFloat(row.volume)
             net.Broadcast()
 
+            -- Add to active radios
             if AddActiveRadio then
-                AddActiveRadio(ent, row.station_name or "", row.station_url, row.volume)
+                AddActiveRadio(ent, row.station_name, row.station_url, row.volume)
             end
         end
 

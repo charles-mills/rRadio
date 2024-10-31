@@ -76,6 +76,16 @@ end)
 function ENT:Initialize()
     self:SetRenderBounds(self:OBBMins(), self:OBBMaxs())
     self.anim = createAnimationState()
+    
+    -- Initialize status if not already set
+    local entIndex = self:EntIndex()
+    if not BoomboxStatuses[entIndex] then
+        BoomboxStatuses[entIndex] = {
+            stationStatus = self:GetNWString("Status", "stopped"),
+            stationName = self:GetNWString("StationName", ""),
+            isPlaying = self:GetNWBool("IsPlaying", false)
+        }
+    end
 end
 
 function ENT:Draw()
