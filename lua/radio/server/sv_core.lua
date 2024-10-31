@@ -12,7 +12,6 @@
 util.AddNetworkString("PlayCarRadioStation")
 util.AddNetworkString("StopCarRadioStation")
 util.AddNetworkString("CarRadioMessage")
-util.AddNetworkString("OpenRadioMenu")
 util.AddNetworkString("UpdateRadioStatus")
 util.AddNetworkString("UpdateRadioVolume")
 util.AddNetworkString("MakeBoomboxPermanent")
@@ -299,12 +298,11 @@ net.Receive("PlayCarRadioStation", function(len, ply)
 
     -- Basic validation
     if not IsValid(entity) then return end
-    
-    -- Check if entity can use radio
+
     if not utils.canUseRadio(entity) then
         ply:ChatPrint("[Radio] This seat cannot use the radio.")
         return
-    }
+    end
     
     -- Get the actual vehicle entity if needed
     entity = GetVehicleEntity(entity)
