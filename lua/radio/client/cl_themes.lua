@@ -259,7 +259,7 @@ safeAddTheme("tokyonight", ThemeFactory:createTheme("tokyonight", {
     text = Color(192, 202, 245),
     button = Color(41, 46, 66),
     buttonHover = Color(52, 59, 88),
-    playing = Color(125, 207, 255),
+    playing = Color(215, 117, 225),
     close = Color(36, 40, 59),
     closeHover = Color(247, 118, 142),
     scrollbar = Color(41, 46, 66),
