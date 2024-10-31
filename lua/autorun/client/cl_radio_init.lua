@@ -1,4 +1,4 @@
-print("[RADIO] Starting client-side initialization")
+print("[rRadio] Starting client-side initialization")
 
 -- Load core dependencies first
 Config = include("radio/shared/sh_config.lua")
@@ -10,7 +10,7 @@ LanguageManager = include("radio/client/lang/cl_language_manager.lua")
 -- Load and initialize StateManager
 _G.StateManager = include("radio/client/cl_state_manager.lua")
 if not StateManager then
-    error("[RADIO] Failed to load StateManager")
+    error("[rRadio] Failed to load StateManager")
 end
 
 if not StateManager.initialized then
@@ -30,4 +30,4 @@ include("radio/client/lang/cl_localisation_strings.lua")
 include("radio/client/lang/cl_country_translations_a.lua")
 include("radio/client/lang/cl_country_translations_b.lua")
 
-print("[RADIO] Finished client-side initialization")
+print("[rRadio] Finished client-side initialization")

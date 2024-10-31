@@ -170,7 +170,7 @@ end
 
 function StateManagerFunctions:GetTranslatedCountryName(country, lang)
     if not LanguageManager then
-        print("[Radio] Warning: LanguageManager not available")
+        print("[rRadio] Warning: LanguageManager not available")
         return country
     end
 
