@@ -16,6 +16,7 @@ local LanguageManager = include("radio/client/lang/cl_language_manager.lua")
 local themeModule = include("radio/client/cl_themes.lua")
 local keyCodeMapping = include("radio/client/cl_key_names.lua")
 local utils = include("radio/shared/sh_utils.lua")
+local Misc = include("radio/client/cl_misc.lua")
 
 if not StateManager then
     error("[rRadio] Failed to load StateManager")
@@ -136,6 +137,94 @@ hook.Add("OnPlayerChat", "RadioStreamToggleCommands", function(ply, text, teamCh
         return true
     end
 end)
+
+-- Update the transitionContent function to handle bottom elements
+local function transitionContent(oldPanel, newPanel, onComplete)
+    if not IsValid(oldPanel) or not IsValid(newPanel) then return end
+    
+    local frame = oldPanel:GetParent()
+    if not IsValid(frame) then return end
+    
+    -- Get references to bottom elements
+    local stopButton = frame:GetChildren()[3]  -- Adjust index if needed
+    local volumePanel = frame:GetChildren()[4]  -- Adjust index if needed
+    
+    -- Store initial positions
+    local width = oldPanel:GetWide()
+    local stopButtonStartX = stopButton:GetX()
+    local volumePanelStartX = volumePanel:GetX()
+    
+    -- Set initial positions for new content
+    oldPanel:SetPos(0, oldPanel:GetY())
+    newPanel:SetPos(width, newPanel:GetY())
+    newPanel:SetVisible(true)
+    newPanel:SetAlpha(255)
+    
+    -- Slide out old content and bottom elements
+    Misc.Animations:CreateTween(
+        0.3,  -- Duration
+        0,
+        -width,
+        function(value)
+            if IsValid(oldPanel) then
+                oldPanel:SetPos(value, oldPanel:GetY())
+                
+                -- Move bottom elements with content
+                if IsValid(stopButton) then
+                    stopButton:SetPos(stopButtonStartX + value, stopButton:GetY())
+                end
+                if IsValid(volumePanel) then
+                    volumePanel:SetPos(volumePanelStartX + value, volumePanel:GetY())
+                end
+            else
+                return false
+            end
+        end,
+        function()
+            if IsValid(oldPanel) then
+                oldPanel:SetVisible(false)
+            end
+        end,
+        Misc.Animations.Easing.OutQuint
+    )
+    
+    -- Slide in new content and bottom elements
+    return Misc.Animations:CreateTween(
+        0.3,  -- Duration
+        width,
+        0,
+        function(value)
+            if IsValid(newPanel) then
+                newPanel:SetPos(value, newPanel:GetY())
+                
+                -- Move bottom elements with content
+                if IsValid(stopButton) then
+                    stopButton:SetPos(stopButtonStartX + (value - width), stopButton:GetY())
+                end
+                if IsValid(volumePanel) then
+                    volumePanel:SetPos(volumePanelStartX + (value - width), volumePanel:GetY())
+                end
+            else
+                return false
+            end
+        end,
+        function()
+            if IsValid(newPanel) and onComplete then
+                onComplete()
+            end
+            
+            -- Reset bottom elements to their original positions
+            if IsValid(stopButton) then
+                stopButton:SetPos(stopButtonStartX, stopButton:GetY())
+            end
+            if IsValid(volumePanel) then
+                volumePanel:SetPos(volumePanelStartX, volumePanel:GetY())
+            end
+        end,
+        Misc.Animations.Easing.OutQuint
+    )
+end
+
 
 -- ------------------------------
 --      Station Data Loading
@@ -773,8 +862,55 @@ local function PrintCarRadioMessage()
     panel:SetSize(panelWidth, panelHeight)
     panel:SetPos(scrW, scrH * 0.2)
     panel:SetText("")
+    panel:SetAlpha(0)
     panel:MoveToFront()
-
+    
+    -- Slide in animation with safety check
+    local panelRef = panel
+    Misc.Animations:CreateTween(0.5, scrW, scrW - panelWidth, function(value)
+        if IsValid(panelRef) then
+            panelRef:SetPos(value, scrH * 0.2)
+        else
+            return false -- Stop animation if panel is invalid
+        end
+    end)
+    
+    -- Fade in animation with safety check
+    Misc.Animations:CreateTween(0.3, 0, 255, function(value)
+        if IsValid(panelRef) then
+            panelRef:SetAlpha(value)
+        else
+            return false
+        end
+    end)
+    
+    -- Auto hide after delay with safety checks
+    timer.Simple(3, function()
+        if IsValid(panelRef) then
+            -- Slide out animation
+            Misc.Animations:CreateTween(0.5, panelRef:GetX(), scrW, function(value)
+                if IsValid(panelRef) then
+                    panelRef:SetPos(value, scrH * 0.2)
+                else
+                    return false
+                end
+            end)
+            
+            -- Fade out animation
+            Misc.Animations:CreateTween(0.3, 255, 0, function(value)
+                if IsValid(panelRef) then
+                    panelRef:SetAlpha(value)
+                else
+                    return false
+                end
+            end, function()
+                if IsValid(panelRef) then
+                    panelRef:Remove()
+                end
+            end)
+        end
+    end)
+    
     local animDuration = 1
     local showDuration = 2
     local startTime = CurTime()
@@ -789,19 +925,18 @@ local function PrintCarRadioMessage()
     end
 
     panel.Paint = function(self, w, h)
-        local bgColor = Config.UI.HeaderColor
+        local bgColor = Config.UI.MessageBackgroundColor
         local hoverBrightness = self:IsHovered() and 1.2 or 1
         bgColor = Color(
             math.min(bgColor.r * hoverBrightness, 255),
             math.min(bgColor.g * hoverBrightness, 255),
             math.min(bgColor.b * hoverBrightness, 255),
-            alpha * 255
+            bgColor.a or 255
         )
         
-        -- Main background with rounded corners only on the left side
         draw.RoundedBoxEx(12, 0, 0, w, h, bgColor, true, false, true, false)
 
-        -- Key highlight box with pulse animation
+        -- Key highlight box
         local keyWidth = Scale(40)
         local keyHeight = Scale(30)
         local keyX = Scale(20)
@@ -813,22 +948,7 @@ local function PrintCarRadioMessage()
         local adjustedKeyY = keyY - (adjustedKeyHeight - keyHeight) / 2
         
         draw.RoundedBox(6, adjustedKeyX, adjustedKeyY, adjustedKeyWidth, adjustedKeyHeight, 
-            ColorAlpha(Config.UI.ButtonColor, alpha * 255))
-
-        -- Separator line
-        surface.SetDrawColor(ColorAlpha(Config.UI.TextColor, alpha * 50))
-        surface.DrawLine(keyX + keyWidth + Scale(7), h * 0.3, 
-                        keyX + keyWidth + Scale(7), h * 0.7)
-
-        -- Draw key text
-        draw.SimpleText(keyName, "Roboto18", keyX + keyWidth/2, h/2, 
-            ColorAlpha(Config.UI.TextColor, alpha * 255), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
-        
-        -- Draw message text
-        local messageX = keyX + keyWidth + Scale(15)
-        draw.SimpleText(Config.Lang["ToOpenRadio"] or "to open radio", "Roboto18", 
-            messageX, h/2, ColorAlpha(Config.UI.TextColor, alpha * 255), 
-            TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+            Config.UI.KeyHighlightColor)
     end
 
     panel.Think = function(self)
@@ -921,7 +1041,7 @@ end
 local function createStarIcon(parent, country, station, updateList)
     local starIcon = vgui.Create("DImageButton", parent)
     starIcon:SetSize(Scale(24), Scale(24))
-    starIcon:SetPos(Scale(8), (Scale(40) - Scale(24)) / 2)
+    starIcon:SetPos(Scale(12), (Scale(40) - Scale(24)) / 2)
 
     local isFavorite = station and 
         (getSafeState("favoriteStations", {})[country] and 
@@ -929,6 +1049,13 @@ local function createStarIcon(parent, country, station, updateList)
         (not station and getSafeState("favoriteCountries", {})[country])
 
     starIcon:SetImage(isFavorite and "hud/star_full.png" or "hud/star.png")
+    
+    -- Update star icon color
+    starIcon.Paint = function(self, w, h)
+        surface.SetDrawColor(Config.UI.FavoriteStarColor)
+        surface.SetMaterial(Material(isFavorite and "hud/star_full.png" or "hud/star.png"))
+        surface.DrawTexturedRect(0, 0, w, h)
+    end
 
     starIcon.DoClick = function()
         if station then
@@ -1018,28 +1145,74 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
         populateList(stationListPanel, backButton, searchBox, false)
     end
 
-    -- Create a button with consistent styling
     local function createStyledButton(parent, text, onClick)
         local button = vgui.Create("DButton", parent)
         button:Dock(TOP)
-        button:DockMargin(Scale(5), Scale(5), Scale(5), 0)
+        button:DockMargin(Scale(10), Scale(5), Scale(10), 0)
         button:SetTall(Scale(40))
         button:SetText(text)
         button:SetFont("Roboto18")
         button:SetTextColor(Config.UI.TextColor)
-
+        button:SetTextInset(Scale(40), 0)
+        
+        -- Animation states
+        button.hoverProgress = 0
+        button.clickScale = 1
+        button.isPlaying = false
+        
         button.Paint = function(self, w, h)
-            local bgColor = self:IsHovered() and Config.UI.ButtonHoverColor or Config.UI.ButtonColor
-            draw.RoundedBox(8, 0, 0, w, h, bgColor)
+            -- Scale animation for click feedback
+            local matrix = Matrix()
+            matrix:Translate(Vector(w/2, h/2, 0))
+            matrix:Scale(Vector(self.clickScale, self.clickScale, 1))
+            matrix:Translate(Vector(-w/2, -h/2, 0))
+            
+            cam.PushModelMatrix(matrix)
+            
+            -- Background with hover animation
+            local baseColor = Config.UI.ButtonColor
+            local hoverColor = Config.UI.ButtonHoverColor
+            local currentColor = LerpColor(self.hoverProgress, baseColor, hoverColor)
+            
+            draw.RoundedBox(8, 0, 0, w, h, currentColor)
+            
+            -- Playing state animation
+            if self.isPlaying then
+                local pulseScale = 1 + math.sin(CurTime() * 2) * 0.02
+                local pulseColor = ColorAlpha(Config.UI.StatusIndicatorColor, 30)
+                draw.RoundedBox(8, -2 * pulseScale, -2 * pulseScale, 
+                              w * pulseScale, h * pulseScale, pulseColor)
+            end
+            
+            cam.PopModelMatrix()
         end
-
-        if onClick then
-            button.DoClick = function()
-                surface.PlaySound("buttons/button3.wav")
-                onClick(button)
+        
+        button.Think = function(self)
+            if self:IsHovered() then
+                self.hoverProgress = math.Approach(self.hoverProgress, 1, FrameTime() * 5)
+            else
+                self.hoverProgress = math.Approach(self.hoverProgress, 0, FrameTime() * 5)
             end
         end
-
+        
+        button.DoClick = function(self)
+            -- Store reference to self
+            local panel = self
+            
+            -- Click animation with safety check
+            self.clickScale = 0.95
+            Misc.Animations:CreateTween(0.2, 0.95, 1, function(value)
+                if IsValid(panel) then
+                    panel.clickScale = value
+                else
+                    return false -- Stop the animation if panel is invalid
+                end
+            end)
+            
+            surface.PlaySound("buttons/button3.wav")
+            if onClick then onClick(self) end
+        end
+        
         return button
     end
 
@@ -1047,10 +1220,10 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
     local function createSeparator()
         local separator = vgui.Create("DPanel", stationListPanel)
         separator:Dock(TOP)
-        separator:DockMargin(Scale(5), Scale(5), Scale(5), Scale(5))
+        separator:DockMargin(Scale(10), Scale(5), Scale(10), Scale(5))  -- Match the button margins
         separator:SetTall(Scale(2))
         separator.Paint = function(self, w, h)
-            draw.RoundedBox(0, 0, 0, w, h, Config.UI.ButtonColor)
+            draw.RoundedBox(0, 0, 0, w, h, Config.UI.SeparatorColor)
         end
         return separator
     end
@@ -1076,6 +1249,9 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                 function()
                     StateManager:SetState("selectedCountry", "favorites")
                     StateManager:SetState("favoritesMenuOpen", true)
+                    selectedCountry = "favorites"
+                    favoritesMenuOpen = true
+                    
                     if backButton then 
                         backButton:SetVisible(true)
                         backButton:SetEnabled(true)
@@ -1135,11 +1311,14 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                 stationListPanel,
                 country.translated, -- Use translated name for display
                 function()
-                    -- Always use the raw country code for storage
-                    local countryCode = country.original  -- This should be the unformatted code
-                    
+                    local countryCode = country.original
                     StateManager:SetState("selectedCountry", countryCode)
-                    if backButton then backButton:SetVisible(true) end
+                    selectedCountry = countryCode
+                    
+                    if backButton then 
+                        backButton:SetVisible(true)
+                        backButton:SetEnabled(true)
+                    end
                     
                     if searchBox then
                         searchBox:SetText("")
@@ -1260,7 +1439,8 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                 local entity = LocalPlayer().currentRadioEntity
                 if IsValid(entity) and currentlyPlayingStations[entity] and 
                    currentlyPlayingStations[entity].name == station.name then
-                    draw.RoundedBox(8, 0, 0, w, h, Config.UI.PlayingButtonColor)
+                    -- Use StatusIndicatorColor for playing stations
+                    draw.RoundedBox(8, 0, 0, w, h, Config.UI.StatusIndicatorColor)
                 else
                     draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonColor)
                     if self:IsHovered() then
@@ -1268,10 +1448,11 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                     end
                 end
 
+                -- Add connection status indicator
                 local streamData = StreamManager.activeStreams[entity:EntIndex()]
                 if streamData then
                     if streamData.stream and not streamData.stream:IsValid() then
-                        surface.SetDrawColor(255, 0, 0, 50)
+                        surface.SetDrawColor(Config.UI.CloseButtonColor)
                         surface.DrawRect(w * 0.9, 0, w * 0.1, h)
                     end
                 end
@@ -1740,10 +1921,40 @@ openRadioMenu = function(openSettings)
         isSearching = false
     end
 
+    local function styleScrollbar(scrollPanel)
+        if not IsValid(scrollPanel) then return end
+        
+        local sbar = scrollPanel:GetVBar()
+        if not IsValid(sbar) then return end
+        
+        sbar:SetWide(Scale(8))
+        
+        sbar.PaintFuncs = {
+            main = function(self, w, h)
+                draw.RoundedBox(8, 0, 0, w, h, Config.UI.ScrollbarColor)
+            end,
+            
+            grip = function(self, w, h)
+                draw.RoundedBox(8, 0, 0, w, h, Config.UI.ScrollbarGripColor)
+            end,
+            
+            updown = function(self, w, h)
+                draw.RoundedBox(8, 0, 0, w, h, Config.UI.ScrollbarColor)
+            end
+        }
+        
+        sbar.Paint = sbar.PaintFuncs.main
+        sbar.btnUp.Paint = sbar.PaintFuncs.updown
+        sbar.btnDown.Paint = sbar.PaintFuncs.updown
+        sbar.btnGrip.Paint = sbar.PaintFuncs.grip
+    end
+
+    -- Update the stationListPanel creation
     local stationListPanel = vgui.Create("DScrollPanel", frame)
     stationListPanel:SetPos(Scale(5), Scale(90))
-    stationListPanel:SetSize(Scale(Config.UI.FrameSize.width) - Scale(20), Scale(Config.UI.FrameSize.height) - Scale(200))
+    stationListPanel:SetSize(Scale(Config.UI.FrameSize.width) - Scale(10), Scale(Config.UI.FrameSize.height) - Scale(200))
     stationListPanel:SetVisible(not settingsMenuOpen)
+    styleScrollbar(stationListPanel)
 
     local stopButtonHeight = Scale(Config.UI.FrameSize.width) / 8
     local stopButtonWidth = Scale(Config.UI.FrameSize.width) / 4
@@ -1856,7 +2067,7 @@ openRadioMenu = function(openSettings)
     end
 
     volumeIcon.Paint = function(self, w, h)
-        surface.SetDrawColor(Config.UI.TextColor)
+        surface.SetDrawColor(Config.UI.IconColor)
         local mat = self:GetMaterial()
         if mat then
             surface.SetMaterial(mat)
@@ -1884,8 +2095,8 @@ openRadioMenu = function(openSettings)
 
     updateVolumeIcon(volumeIcon, currentVolume)
     local volumeSlider = vgui.Create("DNumSlider", volumePanel)
-    volumeSlider:SetPos(-Scale(170), Scale(5))
-    volumeSlider:SetSize(Scale(Config.UI.FrameSize.width) + Scale(120) - stopButtonWidth, volumePanel:GetTall() - Scale(20))
+    volumeSlider:SetPos(-Scale(170), Scale(2))  -- Adjusted Y position
+    volumeSlider:SetSize(Scale(Config.UI.FrameSize.width) + Scale(120) - stopButtonWidth, volumePanel:GetTall() - Scale(4))  -- Adjusted height
     volumeSlider:SetText("")
     volumeSlider:SetMin(0)
     volumeSlider:SetMax(Config.MaxVolume())
@@ -1893,12 +2104,57 @@ openRadioMenu = function(openSettings)
     volumeSlider:SetValue(currentVolume)
 
     volumeSlider.Slider.Paint = function(self, w, h)
-        draw.RoundedBox(8, 0, h / 2 - 4, w, 16, Config.UI.TextColor)
+        local centerY = h/2  -- Center point for the track
+        local trackHeight = Scale(12)  -- Track height
+        local trackY = centerY - trackHeight/2  -- Keep track centered
+        
+        -- Calculate the knob position correctly
+        local knobX = self:GetSlideX()
+        local fraction = self:GetSlideX() / self:GetWide()
+        local fillWidth = w * fraction
+        
+        -- Draw background track (inactive part)
+        draw.RoundedBox(trackHeight/2, 0, trackY, w, trackHeight, ColorAlpha(Config.UI.VolumeSliderColor, 100))
+        
+        -- Draw active track with proper rounded corners
+        if fillWidth > 0 then
+            -- Use same radius for both ends to ensure consistent rounding
+            local radius = trackHeight/2
+            
+            -- Draw the active part of the track
+            if fillWidth < radius then
+                -- Special case for very start of slider to avoid visual glitches
+                draw.RoundedBox(radius, 0, trackY, fillWidth + radius, trackHeight, Config.UI.VolumeSliderColor)
+            else
+                draw.RoundedBox(radius, 0, trackY, fillWidth, trackHeight, Config.UI.VolumeSliderColor)
+            end
+        end
     end
 
+    -- Update the slider knob appearance
     volumeSlider.Slider.Knob.Paint = function(self, w, h)
-        draw.RoundedBox(12, 0, Scale(-2), w * 2, h * 2, Config.UI.BackgroundColor)
+        local knobSize = Scale(24)
+        local offset = knobSize/2
+        
+        -- Knob shadow
+        local shadowSize = Scale(2)
+        local shadowAlpha = 100
+        draw.RoundedBox(knobSize/2, shadowSize, shadowSize, knobSize, knobSize, 
+            ColorAlpha(Color(0, 0, 0), shadowAlpha))
+        
+        -- Main knob
+        draw.RoundedBox(knobSize/2, 0, 0, knobSize, knobSize, Config.UI.VolumeKnobColor)
+        
+        -- Hover effect
+        if self:IsHovered() then
+            draw.RoundedBox(knobSize/2, 0, 0, knobSize, knobSize, 
+                ColorAlpha(Config.UI.TextColor, 20))
+        end
     end
+
+    -- Adjust the knob size to match the new dimensions
+    volumeSlider.Slider.Knob:SetSize(Scale(24), Scale(24))  -- Match the new knob size
+    volumeSlider.Slider.Knob:SetTall(Scale(24))  -- Ensure consistent height
 
     volumeSlider.TextArea:SetVisible(false)
 
@@ -1932,13 +2188,6 @@ openRadioMenu = function(openSettings)
         end
     end
 
-    local sbar = stationListPanel:GetVBar()
-    sbar:SetWide(Scale(8))
-    function sbar:Paint(w, h) draw.RoundedBox(8, 0, 0, w, h, Config.UI.ScrollbarColor) end
-    function sbar.btnUp:Paint(w, h) draw.RoundedBox(8, 0, 0, w, h, Config.UI.ScrollbarColor) end
-    function sbar.btnDown:Paint(w, h) draw.RoundedBox(8, 0, 0, w, h, Config.UI.ScrollbarColor) end
-    function sbar.btnGrip:Paint(w, h) draw.RoundedBox(8, 0, 0, w, h, Config.UI.ScrollbarGripColor) end
-
     local buttonSize = Scale(25)
     local topMargin = Scale(7)
     local buttonPadding = Scale(5)
@@ -1960,7 +2209,7 @@ openRadioMenu = function(openSettings)
     )
     closeButton.Paint = function(self, w, h)
         surface.SetMaterial(Material("hud/close.png"))
-        surface.SetDrawColor(ColorAlpha(Config.UI.TextColor, 255 * (0.5 + 0.5 * self.lerp)))
+        surface.SetDrawColor(ColorAlpha(Config.UI.IconColor, 255 * (0.5 + 0.5 * self.lerp)))
         surface.DrawTexturedRect(0, 0, w, h)
     end
 
@@ -1986,7 +2235,7 @@ openRadioMenu = function(openSettings)
     )
     settingsButton.Paint = function(self, w, h)
         surface.SetMaterial(Material("hud/settings.png"))
-        surface.SetDrawColor(ColorAlpha(Config.UI.TextColor, 255 * (0.5 + 0.5 * self.lerp)))
+        surface.SetDrawColor(ColorAlpha(Config.UI.IconColor, 255 * (0.5 + 0.5 * self.lerp)))
         surface.DrawTexturedRect(0, 0, w, h)
     end
 
@@ -2002,38 +2251,98 @@ openRadioMenu = function(openSettings)
         Config.UI.ButtonHoverColor, 
         function()
             surface.PlaySound("buttons/lightswitch2.wav")
+            
             if settingsMenuOpen then
-                settingsMenuOpen = false
-                StateManager:SetState("settingsMenuOpen", false)
-                if IsValid(settingsFrame) then
-                    settingsFrame:Remove()
-                    settingsFrame = nil
+                -- Create a container panel for the transition
+                local containerPanel = vgui.Create("DPanel", frame)
+                containerPanel:SetSize(frame:GetWide() - Scale(20), frame:GetTall() - Scale(50) - Scale(10))
+                containerPanel:SetPos(Scale(10), Scale(50))
+                containerPanel.Paint = function() end -- Make container transparent
+                
+                -- Create new content panel
+                local newContent = vgui.Create("DPanel", containerPanel)
+                newContent:SetSize(containerPanel:GetWide(), containerPanel:GetTall())
+                newContent:SetPos(containerPanel:GetWide(), 0) -- Start off-screen to the right
+                newContent.Paint = function(self, w, h)
+                    draw.RoundedBox(8, 0, 0, w, h, Config.UI.BackgroundColor)
                 end
+                
+                -- Reparent the existing panels to the new content
+                searchBox:SetParent(newContent)
+                searchBox:SetPos(0, 0)
+                stationListPanel:SetParent(newContent)
+                stationListPanel:SetPos(0, Scale(40))
+                
                 searchBox:SetVisible(true)
                 stationListPanel:SetVisible(true)
-
-                stationDataLoaded = false
-                LoadStationData()
-                timer.Simple(0, function()
-                    populateList(stationListPanel, backButton, searchBox, true)
-                end)
                 
-                backButton:SetVisible(StateManager:GetState("selectedCountry") ~= nil)
-                backButton:SetEnabled(StateManager:GetState("selectedCountry") ~= nil)
+                -- Ensure scrollbar styling is maintained
+                styleScrollbar(stationListPanel)
+                
+                -- Perform the transition
+                transitionContent(settingsFrame, newContent, function()
+                    -- Cleanup after transition
+                    settingsMenuOpen = false
+                    StateManager:SetState("settingsMenuOpen", false)
+                    
+                    if IsValid(settingsFrame) then
+                        settingsFrame:Remove()
+                        settingsFrame = nil
+                    end
+                    
+                    -- Reset panel hierarchy
+                    searchBox:SetParent(frame)
+                    searchBox:SetPos(Scale(10), Scale(50))
+                    stationListPanel:SetParent(frame)
+                    stationListPanel:SetPos(Scale(5), Scale(90))
+                    
+                    -- Cleanup transition containers
+                    if IsValid(newContent) then newContent:Remove() end
+                    if IsValid(containerPanel) then containerPanel:Remove() end
+                    
+                    -- Reapply styling
+                    styleScrollbar(stationListPanel)
+                    
+                    -- Update back button state
+                    local currentCountry = StateManager:GetState("selectedCountry")
+                    backButton:SetVisible(currentCountry ~= nil)
+                    backButton:SetEnabled(currentCountry ~= nil)
+                end)
             else
-                -- Reset country selection and update UI
-                StateManager:SetState("selectedCountry", nil)
-                StateManager:SetState("favoritesMenuOpen", false)
-                backButton:SetVisible(false)
-                backButton:SetEnabled(false)
-                populateList(stationListPanel, backButton, searchBox, true)
+                local currentCountry = StateManager:GetState("selectedCountry")
+                if currentCountry then
+                    -- Create new content panel
+                    local newListPanel = vgui.Create("DScrollPanel", frame)
+                    newListPanel:SetSize(stationListPanel:GetSize())
+                    newListPanel:SetPos(stationListPanel:GetPos())
+                    styleScrollbar(newListPanel)  -- Apply styling to new panel
+                    
+                    -- Update state
+                    StateManager:SetState("selectedCountry", nil)
+                    StateManager:SetState("favoritesMenuOpen", false)
+                    selectedCountry = nil
+                    favoritesMenuOpen = false
+                    
+                    -- Populate new panel
+                    populateList(newListPanel, backButton, searchBox, true)
+                    
+                    -- Perform transition
+                    transitionContent(stationListPanel, newListPanel, function()
+                        stationListPanel:Remove()
+                        stationListPanel = newListPanel
+                        styleScrollbar(stationListPanel)  -- Ensure styling is maintained
+                        
+                        backButton:SetVisible(false)
+                        backButton:SetEnabled(false)
+                    end)
+                end
             end
         end
     )
     backButton.Paint = function(self, w, h)
         if self:IsVisible() then
             surface.SetMaterial(Material("hud/return.png"))
-            surface.SetDrawColor(ColorAlpha(Config.UI.TextColor, 255 * (0.5 + 0.5 * self.lerp)))
+            surface.SetDrawColor(ColorAlpha(Config.UI.IconColor, 255 * (0.5 + 0.5 * self.lerp)))
             surface.DrawTexturedRect(0, 0, w, h)
         end
     end
