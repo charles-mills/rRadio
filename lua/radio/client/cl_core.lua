@@ -1371,8 +1371,24 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                 local entity = LocalPlayer().currentRadioEntity
                 if IsValid(entity) and currentlyPlayingStations[entity] and 
                    currentlyPlayingStations[entity].name == station.name then
-                    -- Use StatusIndicatorColor for playing stations
+                    -- Base playing station color
                     draw.RoundedBox(8, 0, 0, w, h, Config.UI.StatusIndicatorColor)
+                    
+                    -- Add pulse effect for newly playing stations
+                    if Misc.PulseEffects:IsElementPulsing(self) then
+                        local progress = Misc.PulseEffects:GetPulseProgress(self)
+                        local pulseAlpha = math.sin(progress * math.pi) * 50 -- Fade in and out
+                        local pulseColor = ColorAlpha(Config.UI.StatusIndicatorColor, pulseAlpha)
+                        
+                        -- Draw expanding pulse
+                        local pulseScale = 1 + (progress * 0.1) -- 10% max expansion
+                        local expandW = w * pulseScale
+                        local expandH = h * pulseScale
+                        local offsetX = (expandW - w) / 2
+                        local offsetY = (expandH - h) / 2
+                        
+                        draw.RoundedBox(8, -offsetX, -offsetY, expandW, expandH, pulseColor)
+                    end
                 else
                     draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonColor)
                     if self:IsHovered() then
@@ -1790,6 +1806,21 @@ openRadioMenu = function(openSettings)
     end
 
     frame.Paint = function(self, w, h)
+        -- Get current menu scale
+        local scale = Misc.PulseEffects:GetMenuScale()
+        
+        -- Apply scale transform
+        if scale ~= 1 then
+            local matrix = Matrix()
+            local centerX, centerY = w/2, h/2
+            matrix:Translate(Vector(centerX, centerY, 0))
+            matrix:Scale(Vector(scale, scale, 1))
+            matrix:Translate(Vector(-centerX, -centerY, 0))
+            
+            cam.PushModelMatrix(matrix)
+        end
+        
+        -- Normal painting
         draw.RoundedBox(8, 0, 0, w, h, Config.UI.BackgroundColor)
         draw.RoundedBoxEx(8, 0, 0, w, Scale(40), Config.UI.HeaderColor, true, true, false, false)
 
@@ -1831,6 +1862,10 @@ openRadioMenu = function(openSettings)
         draw.SimpleText(headerText, "HeaderFont", iconOffsetX + iconSize + Scale(5), 
                        headerHeight/2, Config.UI.TextColor, 
                        TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+        
+        if scale ~= 1 then
+            cam.PopModelMatrix()
+        end
     end
 
     local searchBox = vgui.Create("DTextEntry", frame)
@@ -1985,51 +2020,44 @@ openRadioMenu = function(openSettings)
     local entity = LocalPlayer().currentRadioEntity
     local currentVolume = 0.5
 
-    if IsValid(entity) then
-        if entityVolumes[entity] then
-            currentVolume = entityVolumes[entity]
-        else
-            local entityConfig = getEntityConfig(entity)
-            if entityConfig and entityConfig.Volume then
-                currentVolume = type(entityConfig.Volume) == "function" 
-                    and entityConfig.Volume() 
-                    or entityConfig.Volume
-            end
+    if entityVolumes[entity] then
+        currentVolume = entityVolumes[entity]
+    else
+        local entityConfig = getEntityConfig(entity)
+        if entityConfig and entityConfig.Volume then
+            currentVolume = type(entityConfig.Volume) == "function" 
+                and entityConfig.Volume() 
+                or entityConfig.Volume
         end
-
-        currentVolume = math.min(currentVolume, Config.MaxVolume())
     end
+
+    currentVolume = math.min(currentVolume, Config.MaxVolume())
 
     updateVolumeIcon(volumeIcon, currentVolume)
     local volumeSlider = vgui.Create("DNumSlider", volumePanel)
-    volumeSlider:SetPos(-Scale(170), Scale(2))  -- Adjusted Y position
-    volumeSlider:SetSize(Scale(Config.UI.FrameSize.width) + Scale(120) - stopButtonWidth, volumePanel:GetTall() - Scale(4))  -- Adjusted height
+    volumeSlider:SetPos(-Scale(170), Scale(2))
+    volumeSlider:SetSize(Scale(Config.UI.FrameSize.width) + Scale(120) - stopButtonWidth, volumePanel:GetTall() - Scale(4))
     volumeSlider:SetText("")
     volumeSlider:SetMin(0)
     volumeSlider:SetMax(Config.MaxVolume())
     volumeSlider:SetDecimals(2)
     volumeSlider:SetValue(currentVolume)
 
-    -- Update the slider track appearance
     volumeSlider.Slider.Paint = function(self, w, h)
-        local centerY = h/2  -- Center point for the track
-        local trackHeight = Scale(12)  -- Increased track height from 8 to 12
-        local trackY = centerY - trackHeight/2  -- Keep track centered
-        
-        -- Background track
+        local centerY = h/2
+        local trackHeight = Scale(12)
+        local trackY = centerY - trackHeight/2
+
         draw.RoundedBox(trackHeight/2, 0, trackY, w, trackHeight, ColorAlpha(Config.UI.VolumeSliderColor, 100))
-        
-        -- Active track
+
         local knobX = self:GetSlideX()
         draw.RoundedBox(trackHeight/2, 0, trackY, knobX, trackHeight, Config.UI.VolumeSliderColor)
     end
 
-    -- Update the slider knob appearance
     volumeSlider.Slider.Knob.Paint = function(self, w, h)
         local knobSize = Scale(24)
         local offset = knobSize/2
-        
-        -- Knob shadow
+
         local shadowSize = Scale(2)
         local shadowAlpha = 100
         draw.RoundedBox(knobSize/2, shadowSize, shadowSize, knobSize, knobSize, 
@@ -2045,24 +2073,20 @@ openRadioMenu = function(openSettings)
         end
     end
 
-    -- Adjust the knob size to match the new dimensions
-    volumeSlider.Slider.Knob:SetSize(Scale(24), Scale(24))  -- Match the new knob size
-    volumeSlider.Slider.Knob:SetTall(Scale(24))  -- Ensure consistent height
+    volumeSlider.Slider.Knob:SetSize(Scale(24), Scale(24))
+    volumeSlider.Slider.Knob:SetTall(Scale(24))
 
     volumeSlider.TextArea:SetVisible(false)
 
     local lastServerUpdate = 0
     volumeSlider.OnValueChanged = function(_, value)
         local entity = LocalPlayer().currentRadioEntity
-        if not IsValid(entity) then return end
 
         entity = utils.GetVehicle(entity) or entity
         value = math.min(value, Config.MaxVolume())
-        
-        -- Update local volume immediately for responsive UI
+
         entityVolumes[entity] = value
-        
-        -- Update stream volume if exists
+
         local streamData = StreamManager.activeStreams[entity:EntIndex()]
         if streamData and IsValid(streamData.stream) then
             streamData.stream:SetVolume(value)
@@ -2070,7 +2094,6 @@ openRadioMenu = function(openSettings)
         
         updateVolumeIcon(volumeIcon, value)
 
-        -- Send to server with debounce
         local currentTime = CurTime()
         if currentTime - lastServerUpdate >= 0.1 then
             lastServerUpdate = currentTime

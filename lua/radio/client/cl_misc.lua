@@ -191,9 +191,59 @@ Modules.Effects = {
     end
 }
 
+-- Update the PulseEffects module to handle menu-wide pulses
+Modules.PulseEffects = {
+    menuPulse = nil,
+    
+    -- Simplified pulse creation for menu
+    CreateMenuPulse = function(self, duration)
+        -- Only allow one menu pulse at a time for performance
+        if self.menuPulse then return end
+        
+        self.menuPulse = {
+            startTime = CurTime(),
+            duration = duration,
+            lastUpdate = 0,
+            updateInterval = 0.016 -- ~60fps cap
+        }
+    end,
+    
+    -- Optimized think function
+    Think = function(self)
+        if not self.menuPulse then return end
+        
+        local currentTime = CurTime()
+        
+        -- Skip update if too soon
+        if (currentTime - self.menuPulse.lastUpdate) < self.menuPulse.updateInterval then
+            return
+        end
+        
+        local progress = (currentTime - self.menuPulse.startTime) / self.menuPulse.duration
+        if progress >= 1 then
+            self.menuPulse = nil
+        else
+            self.menuPulse.lastUpdate = currentTime
+        end
+    end,
+    
+    -- Get current menu pulse scale
+    GetMenuScale = function(self)
+        if not self.menuPulse then return 1 end
+        
+        local progress = (CurTime() - self.menuPulse.startTime) / self.menuPulse.duration
+        progress = math.Clamp(progress, 0, 1)
+        
+        -- Quick scale up, slower scale down
+        local scale = 1 + (0.02 * math.sin(progress * math.pi)) -- 2% max scale
+        return scale
+    end
+}
+
 -- Think hook for animations
 hook.Add("Think", "RadioMiscModulesThink", function()
     Modules.Animations:Think()
+    Modules.PulseEffects:Think()
 end)
 
 return Modules 
