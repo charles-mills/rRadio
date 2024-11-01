@@ -138,91 +138,23 @@ hook.Add("OnPlayerChat", "RadioStreamToggleCommands", function(ply, text, teamCh
     end
 end)
 
--- Update the transitionContent function to handle bottom elements
-local function transitionContent(oldPanel, newPanel, onComplete)
-    if not IsValid(oldPanel) or not IsValid(newPanel) then return end
+local function transitionContent(panel, direction, onComplete)
+    if not IsValid(panel) then return end
     
-    local frame = oldPanel:GetParent()
-    if not IsValid(frame) then return end
+    -- Store panel reference
+    local panelRef = panel
     
-    -- Get references to bottom elements
-    local stopButton = frame:GetChildren()[3]  -- Adjust index if needed
-    local volumePanel = frame:GetChildren()[4]  -- Adjust index if needed
+    -- Use the Transitions module for sliding with safety check
+    Misc.Transitions:SlideElement(panel, direction, 0.3, function()
+        if IsValid(panelRef) and onComplete then
+            onComplete()
+        end
+    end)
     
-    -- Store initial positions
-    local width = oldPanel:GetWide()
-    local stopButtonStartX = stopButton:GetX()
-    local volumePanelStartX = volumePanel:GetX()
-    
-    -- Set initial positions for new content
-    oldPanel:SetPos(0, oldPanel:GetY())
-    newPanel:SetPos(width, newPanel:GetY())
-    newPanel:SetVisible(true)
-    newPanel:SetAlpha(255)
-    
-    -- Slide out old content and bottom elements
-    Misc.Animations:CreateTween(
-        0.3,  -- Duration
-        0,
-        -width,
-        function(value)
-            if IsValid(oldPanel) then
-                oldPanel:SetPos(value, oldPanel:GetY())
-                
-                -- Move bottom elements with content
-                if IsValid(stopButton) then
-                    stopButton:SetPos(stopButtonStartX + value, stopButton:GetY())
-                end
-                if IsValid(volumePanel) then
-                    volumePanel:SetPos(volumePanelStartX + value, volumePanel:GetY())
-                end
-            else
-                return false
-            end
-        end,
-        function()
-            if IsValid(oldPanel) then
-                oldPanel:SetVisible(false)
-            end
-        end,
-        Misc.Animations.Easing.OutQuint
-    )
-    
-    -- Slide in new content and bottom elements
-    return Misc.Animations:CreateTween(
-        0.3,  -- Duration
-        width,
-        0,
-        function(value)
-            if IsValid(newPanel) then
-                newPanel:SetPos(value, newPanel:GetY())
-                
-                -- Move bottom elements with content
-                if IsValid(stopButton) then
-                    stopButton:SetPos(stopButtonStartX + (value - width), stopButton:GetY())
-                end
-                if IsValid(volumePanel) then
-                    volumePanel:SetPos(volumePanelStartX + (value - width), volumePanel:GetY())
-                end
-            else
-                return false
-            end
-        end,
-        function()
-            if IsValid(newPanel) and onComplete then
-                onComplete()
-            end
-            
-            -- Reset bottom elements to their original positions
-            if IsValid(stopButton) then
-                stopButton:SetPos(stopButtonStartX, stopButton:GetY())
-            end
-            if IsValid(volumePanel) then
-                volumePanel:SetPos(volumePanelStartX, volumePanel:GetY())
-            end
-        end,
-        Misc.Animations.Easing.OutQuint
-    )
+    -- Handle fade effect with safety check
+    Misc.Transitions:FadeElement(panel, direction, 0.2, function()
+        if not IsValid(panelRef) then return false end
+    end)
 end
 
 
@@ -1871,19 +1803,24 @@ openRadioMenu = function(openSettings)
         surface.SetDrawColor(Config.UI.TextColor)
         surface.DrawTexturedRect(iconOffsetX, iconOffsetY, iconSize, iconSize)
 
-        -- Get header text based on menu state
+        -- Get current language and state
+        local lang = GetConVar("radio_language"):GetString() or "en"
+        local currentCountry = getSafeState("selectedCountry", nil)
+        local isSettingsOpen = getSafeState("settingsMenuOpen", false)
+        local isFavoritesOpen = getSafeState("favoritesMenuOpen", false)
+
+        -- Determine header text
         local headerText
-        if settingsMenuOpen then
+        if isSettingsOpen then
             headerText = Config.Lang["Settings"] or "Settings"
-        elseif selectedCountry then
-            if selectedCountry == "favorites" then
+        elseif currentCountry then
+            if currentCountry == "favorites" or isFavoritesOpen then
                 headerText = Config.Lang["FavoriteStations"] or "Favorite Stations"
             else
-                -- Format and translate the country name
-                local formattedCountry = selectedCountry:gsub("_", " "):gsub("(%a)([%w_']*)", function(a, b) 
+                -- Format and translate country name
+                local formattedCountry = currentCountry:gsub("_", " "):gsub("(%a)([%w_']*)", function(a, b) 
                     return string.upper(a) .. string.lower(b) 
                 end)
-                local lang = GetConVar("radio_language"):GetString() or "en"
                 headerText = LanguageManager:GetCountryTranslation(lang, formattedCountry) or formattedCountry
             end
         else
@@ -1921,40 +1858,10 @@ openRadioMenu = function(openSettings)
         isSearching = false
     end
 
-    local function styleScrollbar(scrollPanel)
-        if not IsValid(scrollPanel) then return end
-        
-        local sbar = scrollPanel:GetVBar()
-        if not IsValid(sbar) then return end
-        
-        sbar:SetWide(Scale(8))
-        
-        sbar.PaintFuncs = {
-            main = function(self, w, h)
-                draw.RoundedBox(8, 0, 0, w, h, Config.UI.ScrollbarColor)
-            end,
-            
-            grip = function(self, w, h)
-                draw.RoundedBox(8, 0, 0, w, h, Config.UI.ScrollbarGripColor)
-            end,
-            
-            updown = function(self, w, h)
-                draw.RoundedBox(8, 0, 0, w, h, Config.UI.ScrollbarColor)
-            end
-        }
-        
-        sbar.Paint = sbar.PaintFuncs.main
-        sbar.btnUp.Paint = sbar.PaintFuncs.updown
-        sbar.btnDown.Paint = sbar.PaintFuncs.updown
-        sbar.btnGrip.Paint = sbar.PaintFuncs.grip
-    end
-
-    -- Update the stationListPanel creation
     local stationListPanel = vgui.Create("DScrollPanel", frame)
     stationListPanel:SetPos(Scale(5), Scale(90))
     stationListPanel:SetSize(Scale(Config.UI.FrameSize.width) - Scale(10), Scale(Config.UI.FrameSize.height) - Scale(200))
     stationListPanel:SetVisible(not settingsMenuOpen)
-    styleScrollbar(stationListPanel)
 
     local stopButtonHeight = Scale(Config.UI.FrameSize.width) / 8
     local stopButtonWidth = Scale(Config.UI.FrameSize.width) / 4
@@ -2103,32 +2010,18 @@ openRadioMenu = function(openSettings)
     volumeSlider:SetDecimals(2)
     volumeSlider:SetValue(currentVolume)
 
+    -- Update the slider track appearance
     volumeSlider.Slider.Paint = function(self, w, h)
         local centerY = h/2  -- Center point for the track
-        local trackHeight = Scale(12)  -- Track height
+        local trackHeight = Scale(12)  -- Increased track height from 8 to 12
         local trackY = centerY - trackHeight/2  -- Keep track centered
         
-        -- Calculate the knob position correctly
-        local knobX = self:GetSlideX()
-        local fraction = self:GetSlideX() / self:GetWide()
-        local fillWidth = w * fraction
-        
-        -- Draw background track (inactive part)
+        -- Background track
         draw.RoundedBox(trackHeight/2, 0, trackY, w, trackHeight, ColorAlpha(Config.UI.VolumeSliderColor, 100))
         
-        -- Draw active track with proper rounded corners
-        if fillWidth > 0 then
-            -- Use same radius for both ends to ensure consistent rounding
-            local radius = trackHeight/2
-            
-            -- Draw the active part of the track
-            if fillWidth < radius then
-                -- Special case for very start of slider to avoid visual glitches
-                draw.RoundedBox(radius, 0, trackY, fillWidth + radius, trackHeight, Config.UI.VolumeSliderColor)
-            else
-                draw.RoundedBox(radius, 0, trackY, fillWidth, trackHeight, Config.UI.VolumeSliderColor)
-            end
-        end
+        -- Active track
+        local knobX = self:GetSlideX()
+        draw.RoundedBox(trackHeight/2, 0, trackY, knobX, trackHeight, Config.UI.VolumeSliderColor)
     end
 
     -- Update the slider knob appearance
@@ -2187,6 +2080,13 @@ openRadioMenu = function(openSettings)
             net.SendToServer()
         end
     end
+
+    local sbar = stationListPanel:GetVBar()
+    sbar:SetWide(Scale(8))
+    function sbar:Paint(w, h) draw.RoundedBox(8, 0, 0, w, h, Config.UI.ScrollbarColor) end
+    function sbar.btnUp:Paint(w, h) draw.RoundedBox(8, 0, 0, w, h, Config.UI.ScrollbarColor) end
+    function sbar.btnDown:Paint(w, h) draw.RoundedBox(8, 0, 0, w, h, Config.UI.ScrollbarColor) end
+    function sbar.btnGrip:Paint(w, h) draw.RoundedBox(8, 0, 0, w, h, Config.UI.ScrollbarGripColor) end
 
     local buttonSize = Scale(25)
     local topMargin = Scale(7)
@@ -2253,84 +2153,36 @@ openRadioMenu = function(openSettings)
             surface.PlaySound("buttons/lightswitch2.wav")
             
             if settingsMenuOpen then
-                -- Create a container panel for the transition
-                local containerPanel = vgui.Create("DPanel", frame)
-                containerPanel:SetSize(frame:GetWide() - Scale(20), frame:GetTall() - Scale(50) - Scale(10))
-                containerPanel:SetPos(Scale(10), Scale(50))
-                containerPanel.Paint = function() end -- Make container transparent
-                
-                -- Create new content panel
-                local newContent = vgui.Create("DPanel", containerPanel)
-                newContent:SetSize(containerPanel:GetWide(), containerPanel:GetTall())
-                newContent:SetPos(containerPanel:GetWide(), 0) -- Start off-screen to the right
-                newContent.Paint = function(self, w, h)
-                    draw.RoundedBox(8, 0, 0, w, h, Config.UI.BackgroundColor)
-                end
-                
-                -- Reparent the existing panels to the new content
-                searchBox:SetParent(newContent)
-                searchBox:SetPos(0, 0)
-                stationListPanel:SetParent(newContent)
-                stationListPanel:SetPos(0, Scale(40))
-                
-                searchBox:SetVisible(true)
-                stationListPanel:SetVisible(true)
-                
-                -- Ensure scrollbar styling is maintained
-                styleScrollbar(stationListPanel)
-                
-                -- Perform the transition
-                transitionContent(settingsFrame, newContent, function()
-                    -- Cleanup after transition
+                -- Transition out settings
+                transitionContent(settingsFrame, "out", function()
                     settingsMenuOpen = false
                     StateManager:SetState("settingsMenuOpen", false)
-                    
                     if IsValid(settingsFrame) then
                         settingsFrame:Remove()
                         settingsFrame = nil
                     end
                     
-                    -- Reset panel hierarchy
-                    searchBox:SetParent(frame)
-                    searchBox:SetPos(Scale(10), Scale(50))
-                    stationListPanel:SetParent(frame)
-                    stationListPanel:SetPos(Scale(5), Scale(90))
+                    -- Transition in main content
+                    searchBox:SetVisible(true)
+                    stationListPanel:SetVisible(true)
+                    transitionContent(stationListPanel, "in")
                     
-                    -- Cleanup transition containers
-                    if IsValid(newContent) then newContent:Remove() end
-                    if IsValid(containerPanel) then containerPanel:Remove() end
-                    
-                    -- Reapply styling
-                    styleScrollbar(stationListPanel)
-                    
-                    -- Update back button state
                     local currentCountry = StateManager:GetState("selectedCountry")
                     backButton:SetVisible(currentCountry ~= nil)
                     backButton:SetEnabled(currentCountry ~= nil)
                 end)
             else
+                -- Handle country/favorites navigation
                 local currentCountry = StateManager:GetState("selectedCountry")
                 if currentCountry then
-                    -- Create new content panel
-                    local newListPanel = vgui.Create("DScrollPanel", frame)
-                    newListPanel:SetSize(stationListPanel:GetSize())
-                    newListPanel:SetPos(stationListPanel:GetPos())
-                    styleScrollbar(newListPanel)  -- Apply styling to new panel
-                    
-                    -- Update state
-                    StateManager:SetState("selectedCountry", nil)
-                    StateManager:SetState("favoritesMenuOpen", false)
-                    selectedCountry = nil
-                    favoritesMenuOpen = false
-                    
-                    -- Populate new panel
-                    populateList(newListPanel, backButton, searchBox, true)
-                    
-                    -- Perform transition
-                    transitionContent(stationListPanel, newListPanel, function()
-                        stationListPanel:Remove()
-                        stationListPanel = newListPanel
-                        styleScrollbar(stationListPanel)  -- Ensure styling is maintained
+                    transitionContent(stationListPanel, "out", function()
+                        StateManager:SetState("selectedCountry", nil)
+                        StateManager:SetState("favoritesMenuOpen", false)
+                        selectedCountry = nil
+                        favoritesMenuOpen = false
+                        
+                        populateList(stationListPanel, backButton, searchBox, true)
+                        transitionContent(stationListPanel, "in")
                         
                         backButton:SetVisible(false)
                         backButton:SetEnabled(false)
