@@ -94,46 +94,22 @@ Modules.Animations = {
 Modules.Transitions = {
     activeTransitions = {},
     
-    SlideElements = function(self, oldElement, newElement, duration, onComplete)
-        if not IsValid(oldElement) or not IsValid(newElement) then return end
+    SlideElement = function(self, element, direction, duration, onComplete)
+        if not IsValid(element) then return end
         
-        local width = oldElement:GetWide()
+        local startX = direction == "in" and element:GetWide() or 0
+        local endX = direction == "in" and 0 or -element:GetWide()
         
-        -- Set initial positions
-        oldElement:SetPos(0, oldElement:GetY())
-        newElement:SetPos(width, newElement:GetY())
-        newElement:SetVisible(true)
-        newElement:SetAlpha(255)
-        
-        -- Create parallel animations
-        Modules.Animations:CreateTween(
-            duration,
-            0,
-            -width,
-            function(value)
-                if IsValid(oldElement) then
-                    oldElement:SetPos(value, oldElement:GetY())
-                else
-                    return false
-                end
-            end,
-            function()
-                if IsValid(oldElement) then
-                    oldElement:SetVisible(false)
-                end
-            end,
-            Modules.Animations.Easing.OutQuint
-        )
+        element:SetVisible(true)
+        element:SetAlpha(255)
         
         return Modules.Animations:CreateTween(
             duration,
-            width,
-            0,
+            startX,
+            endX,
             function(value)
-                if IsValid(newElement) then
-                    newElement:SetPos(value, newElement:GetY())
-                else
-                    return false
+                if IsValid(element) then
+                    element:SetPos(value, element:GetY())
                 end
             end,
             onComplete,
@@ -141,41 +117,21 @@ Modules.Transitions = {
         )
     end,
     
-    FadeElements = function(self, oldElement, newElement, duration, onComplete)
-        if not IsValid(oldElement) or not IsValid(newElement) then return end
+    FadeElement = function(self, element, direction, duration, onComplete)
+        if not IsValid(element) then return end
         
-        newElement:SetVisible(true)
-        newElement:SetAlpha(0)
+        local startAlpha = direction == "in" and 0 or 255
+        local endAlpha = direction == "in" and 255 or 0
         
-        -- Create parallel animations
-        Modules.Animations:CreateTween(
-            duration,
-            255,
-            0,
-            function(value)
-                if IsValid(oldElement) then
-                    oldElement:SetAlpha(value)
-                else
-                    return false
-                end
-            end,
-            function()
-                if IsValid(oldElement) then
-                    oldElement:SetVisible(false)
-                end
-            end,
-            Modules.Animations.Easing.OutQuint
-        )
+        element:SetVisible(true)
         
         return Modules.Animations:CreateTween(
             duration,
-            0,
-            255,
+            startAlpha,
+            endAlpha,
             function(value)
-                if IsValid(newElement) then
-                    newElement:SetAlpha(value)
-                else
-                    return false
+                if IsValid(element) then
+                    element:SetAlpha(value)
                 end
             end,
             onComplete,
