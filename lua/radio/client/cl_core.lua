@@ -145,7 +145,7 @@ local function transitionContent(panel, direction, onComplete)
     local panelRef = panel
     
     -- Use the Transitions module for sliding with safety check
-    Misc.Transitions:SlideElement(panel, direction, 0.3, function()
+    Misc.Transitions:SlideElement(panel, 0.3, direction, function()
         if IsValid(panelRef) and onComplete then
             onComplete()
         end
@@ -2073,7 +2073,6 @@ openRadioMenu = function(openSettings)
     local lastServerUpdate = 0
     volumeSlider.OnValueChanged = function(_, value)
         local entity = LocalPlayer().currentRadioEntity
-
         entity = utils.GetVehicle(entity) or entity
         value = math.min(value, Config.MaxVolume())
 
@@ -2558,7 +2557,6 @@ hook.Add("Think", "UpdateStreamPositions", function()
     end
 end)
 
--- Add validity cache update to Think hook
 hook.Add("Think", "UpdateStreamValidityCache", function()
     StreamManager:UpdateValidityCache()
 end)
@@ -2600,8 +2598,6 @@ local UIReferenceTracker = {
     end
 }
 
--- Add to Think hook
 hook.Add("Think", "UpdateUIReferences", function()
     UIReferenceTracker:Update()
 end)
-

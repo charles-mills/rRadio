@@ -97,6 +97,11 @@ Modules.Transitions = {
     SlideElement = function(self, element, duration, direction, onComplete)
         if not IsValid(element) then return end
         
+        -- Validate parameters
+        if type(duration) ~= "number" then
+            duration = 0.3 -- Default duration if invalid
+        end
+        
         -- Cache element reference and validity state
         local elementRef = element
         local isValid = true
@@ -133,6 +138,11 @@ Modules.Transitions = {
     
     FadeElement = function(self, element, direction, duration, onComplete)
         if not IsValid(element) then return end
+        
+        -- Validate parameters
+        if type(duration) ~= "number" then
+            duration = 0.2 -- Default duration if invalid
+        end
         
         -- Cache element reference and validity state
         local elementRef = element
