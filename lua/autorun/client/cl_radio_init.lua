@@ -21,7 +21,7 @@ end
 include("radio/client/cl_themes.lua")
 include("radio/client/cl_settings.lua")
 include("radio/client/cl_key_names.lua")
-
+include("radio/client/cl_misc.lua")
 -- Load core after all dependencies
 include("radio/client/cl_core.lua")
 
