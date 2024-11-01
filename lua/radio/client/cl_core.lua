@@ -99,6 +99,13 @@ local isLoadingStations = false
 local STATION_CHUNK_SIZE = 100
 local loadingProgress = 0
 
+-- Add near the top with other local variables
+local RANGE_CHECK_INTERVAL = 1
+local UNLOAD_DELAY = 30
+local RELOAD_DELAY = 5
+local outOfRangeTimers = {}
+local inRangeTimers = {}
+
 hook.Add("OnPlayerChat", "RadioStreamToggleCommands", function(ply, text, teamChat, isDead)
     if ply ~= LocalPlayer() then return end
     
@@ -266,7 +273,6 @@ local function LoadStationData()
     end)
 end
 
--- Initialize station data
 LoadStationData()
 
 -- ------------------------------
@@ -286,7 +292,6 @@ local function updateStationCount()
     return count
 end
 
--- Update the StreamManager definition
 local StreamManager = {
     activeStreams = {},
     cleanupQueue = {},
@@ -387,6 +392,53 @@ local StreamManager = {
         return true
     end
 }
+
+local function handleRangeChange(entity, inRange)
+    local entIndex = entity:EntIndex()
+    
+    if inRange then
+        -- Cancel any pending unload
+        if outOfRangeTimers[entIndex] then
+            timer.Remove(outOfRangeTimers[entIndex])
+            outOfRangeTimers[entIndex] = nil
+        end
+        
+        -- Start reload timer if not already loaded
+        if not StreamManager.activeStreams[entIndex] and not inRangeTimers[entIndex] then
+            local timerName = "RadioReload_" .. entIndex
+            inRangeTimers[entIndex] = timerName
+            
+            timer.Create(timerName, RELOAD_DELAY, 1, function()
+                if IsValid(entity) and utils.isInStationRange(LocalPlayer(), entity) then
+                    -- Request stream data from server
+                    net.Start("RequestRadioStream")
+                        net.WriteEntity(entity)
+                    net.SendToServer()
+                end
+                inRangeTimers[entIndex] = nil
+            end)
+        end
+    else
+        -- Cancel any pending reload
+        if inRangeTimers[entIndex] then
+            timer.Remove(inRangeTimers[entIndex])
+            inRangeTimers[entIndex] = nil
+        end
+        
+        -- Start unload timer
+        if StreamManager.activeStreams[entIndex] and not outOfRangeTimers[entIndex] then
+            local timerName = "RadioUnload_" .. entIndex
+            outOfRangeTimers[entIndex] = timerName
+            
+            timer.Create(timerName, UNLOAD_DELAY, 1, function()
+                if IsValid(entity) then
+                    StreamManager:CleanupStream(entIndex)
+                end
+                outOfRangeTimers[entIndex] = nil
+            end)
+        end
+    end
+end
 
 -- Essential cleanup hooks
 hook.Add("EntityRemoved", "RadioStreamCleanup", function(entity)
@@ -2600,4 +2652,89 @@ local UIReferenceTracker = {
 
 hook.Add("Think", "UpdateUIReferences", function()
     UIReferenceTracker:Update()
+end)
+
+hook.Add("Think", "RadioRangeCheck", function()
+    if not StreamManager then return end
+    
+    local currentTime = CurTime()
+    if (currentTime - (StreamManager._lastRangeCheck or 0)) < RANGE_CHECK_INTERVAL then
+        return
+    end
+    
+    StreamManager._lastRangeCheck = currentTime
+    local player = LocalPlayer()
+    
+    -- Check all active streams and nearby radio entities
+    for entIndex, streamData in pairs(StreamManager.activeStreams) do
+        if IsValid(streamData.entity) then
+            local inRange = utils.isInStationRange(player, streamData.entity)
+            handleRangeChange(streamData.entity, inRange)
+        end
+    end
+    
+    -- Check nearby radio entities that aren't streaming
+    for _, entity in ipairs(ents.FindInSphere(player:GetPos(), 2000)) do
+        if utils.canUseRadio(entity) and not StreamManager.activeStreams[entity:EntIndex()] then
+            local inRange = utils.isInStationRange(player, entity)
+            handleRangeChange(entity, inRange)
+        end
+    end
+end)
+
+-- Add cleanup for range timers
+hook.Add("EntityRemoved", "CleanupRangeTimers", function(entity)
+    local entIndex = entity:EntIndex()
+    
+    if outOfRangeTimers[entIndex] then
+        timer.Remove(outOfRangeTimers[entIndex])
+        outOfRangeTimers[entIndex] = nil
+    end
+    
+    if inRangeTimers[entIndex] then
+        timer.Remove(inRangeTimers[entIndex])
+        inRangeTimers[entIndex] = nil
+    end
+end)
+
+concommand.Add("radio_connected_stations", function(ply)
+    if not StreamManager or not StreamManager.activeStreams then
+        print("[Radio] No active streams found")
+        return
+    end
+    
+    print("\n=== Connected Radio Stations ===")
+    print(string.format("%-6s | %-20s | %-15s | %-10s | %s", 
+        "EntID", "Entity Type", "Status", "Volume", "Station Name"))
+    print(string.rep("-", 80))
+    
+    local count = 0
+    for entIndex, streamData in pairs(StreamManager.activeStreams) do
+        if IsValid(streamData.entity) and IsValid(streamData.stream) then
+            local entity = streamData.entity
+            local entityType = entity:GetClass()
+            local volume = streamData.stream:GetVolume()
+            local stationName = streamData.data and streamData.data.name or "Unknown"
+            local status = "Playing"
+
+            if utils.IsBoombox(entity) then
+                status = entity:GetNWString("Status", "Playing")
+            end
+            
+            print(string.format("%-6d | %-20s | %-15s | %-10.2f | %s", 
+                entIndex,
+                entityType,
+                status,
+                volume,
+                stationName
+            ))
+            count = count + 1
+        end
+    end
+    
+    print(string.rep("-", 80))
+    print(string.format("Total Active Stations: %d", count))
+    print("Range Check Interval: " .. RANGE_CHECK_INTERVAL .. "s")
+    print("Unload Delay: " .. UNLOAD_DELAY .. "s")
+    print("Reload Delay: " .. RELOAD_DELAY .. "s\n")
 end)

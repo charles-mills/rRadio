@@ -19,6 +19,7 @@ util.AddNetworkString("MakeBoomboxPermanent")
 util.AddNetworkString("RemoveBoomboxPermanent")
 util.AddNetworkString("BoomboxPermanentConfirmation")
 util.AddNetworkString("RadioConfigUpdate")
+util.AddNetworkString("RequestRadioStream")
 
 -- Core constants
 local GLOBAL_COOLDOWN = 0.1
@@ -287,6 +288,35 @@ local TimerManager = {
     end
 }
 
+-- Add this function definition before CleanupEntity
+--[[
+    Function: RemoveActiveRadio
+    Removes a radio from the active radios list and cleans up associated data.
+    Parameters:
+    - entity: The entity representing the radio.
+]]
+local function RemoveActiveRadio(entity)
+    if not IsValid(entity) then return end
+    local entIndex = entity:EntIndex()
+    
+    -- Clear active radio data
+    ActiveRadios[entIndex] = nil
+    
+    -- Clear networked variables
+    entity:SetNWString("StationName", "")
+    entity:SetNWString("StationURL", "")
+    
+    -- Update radio status for boomboxes
+    if utils.IsBoombox(entity) then
+        utils.setRadioStatus(entity, "stopped", "", false)
+    end
+    
+    -- Notify clients to stop playback
+    net.Start("StopCarRadioStation")
+        net.WriteEntity(entity)
+    net.Broadcast()
+end
+
 -- Consolidated cleanup function
 local function CleanupEntity(entity)
     if not IsValid(entity) then return end
@@ -346,13 +376,17 @@ local function StartNewStream(entity, stationName, stationURL, volume)
     -- Add to active radios
     AddActiveRadio(entity, stationName, stationURL, volume)
     
-    -- Broadcast to clients
-    net.Start("PlayCarRadioStation")
-        net.WriteEntity(entity)
-        net.WriteString(stationName)
-        net.WriteString(stationURL)
-        net.WriteFloat(volume)
-    net.Broadcast()
+    -- Only broadcast to players in range
+    local inRangePlayers = utils.getPlayersInRange(entity)
+    
+    if #inRangePlayers > 0 then
+        net.Start("PlayCarRadioStation")
+            net.WriteEntity(entity)
+            net.WriteString(stationName)
+            net.WriteString(stationURL)
+            net.WriteFloat(volume)
+        net.Send(inRangePlayers)
+    end
     
     -- Handle boombox specific logic
     if utils.IsBoombox(entity) then
@@ -1326,4 +1360,26 @@ end)
 hook.Add("EntityRemoved", "CleanupRadioVolume", function(entity)
     local entIndex = entity:EntIndex()
     EntityVolumes[entIndex] = nil
+end)
+
+-- Add new handler for stream requests
+net.Receive("RequestRadioStream", function(len, ply)
+    local entity = net.ReadEntity()
+    if not IsValid(entity) then return end
+    
+    local entIndex = entity:EntIndex()
+    local radioData = ActiveRadios[entIndex]
+    
+    if not radioData then return end
+    
+    -- Verify player is in range
+    if not utils.isInStationRange(ply, entity) then return end
+    
+    -- Send stream data to requesting player
+    net.Start("PlayCarRadioStation")
+        net.WriteEntity(entity)
+        net.WriteString(radioData.stationName)
+        net.WriteString(radioData.url)
+        net.WriteFloat(radioData.volume)
+    net.Send(ply)
 end)
