@@ -555,6 +555,115 @@ local function playStation(entity, station, volume)
         return 
     end
 
+    -- Validate volume range
+    volume = math.Clamp(volume, 0, Config.MaxVolume())
+
+    -- Track retry attempts
+    local retryCount = 0
+    local MAX_RETRIES = 3
+    local RETRY_DELAY = 2
+    local TIMEOUT_DURATION = 10
+
+    -- Function to handle stream creation and retries
+    local function startNewStream()
+        if not IsValid(entity) then return end
+
+        -- Update server state
+        net.Start("PlayCarRadioStation")
+            net.WriteEntity(entity)
+            net.WriteString(station.name)
+            net.WriteString(station.url)
+            net.WriteFloat(volume)
+        net.SendToServer()
+
+        -- Create local stream with timeout handling
+        local timeoutTimer = timer.Create("RadioTimeout_" .. entity:EntIndex(), TIMEOUT_DURATION, 1, function()
+            if retryCount < MAX_RETRIES then
+                print("[rRadio] Stream timeout, retrying... (" .. (retryCount + 1) .. "/" .. MAX_RETRIES .. ")")
+                retryCount = retryCount + 1
+                timer.Simple(RETRY_DELAY, startNewStream)
+            else
+                print("[rRadio] Stream failed after " .. MAX_RETRIES .. " attempts")
+                utils.playErrorSound("connection")
+                utils.clearRadioStatus(entity)
+                
+                -- Notify user of failure
+                chat.AddText(Color(255, 0, 0), "[Radio] Failed to connect to station after multiple attempts")
+                
+                -- Clean up any partial streams
+                StreamManager:CleanupStream(entity:EntIndex())
+            end
+        end)
+
+        sound.PlayURL(station.url, "3d noblock", function(stream, errorID, errorName)
+            -- Clear timeout timer if we got a response
+            if timer.Exists("RadioTimeout_" .. entity:EntIndex()) then
+                timer.Remove("RadioTimeout_" .. entity:EntIndex())
+            end
+
+            if not IsValid(stream) then
+                print("[rRadio] Error creating sound stream:", errorName)
+                
+                if retryCount < MAX_RETRIES then
+                    print("[rRadio] Retrying... (" .. (retryCount + 1) .. "/" .. MAX_RETRIES .. ")")
+                    retryCount = retryCount + 1
+                    timer.Simple(RETRY_DELAY, startNewStream)
+                else
+                    utils.playErrorSound("connection")
+                    if IsValid(entity) then
+                        utils.clearRadioStatus(entity)
+                    end
+                end
+                return
+            end
+
+            if not IsValid(entity) then
+                stream:Stop()
+                return
+            end
+
+            -- Register with StreamManager
+            if not StreamManager:RegisterStream(entity, stream, {
+                name = station.name,
+                url = station.url,
+                volume = volume,
+                startTime = CurTime()
+            }) then
+                stream:Stop()
+                return
+            end
+
+            -- Configure and start stream
+            stream:SetPos(entity:GetPos())
+            stream:SetVolume(volume)
+            
+            -- Add error handling for stream start
+            local success, err = pcall(function()
+                stream:Play()
+            end)
+            
+            if not success then
+                print("[rRadio] Error starting stream:", err)
+                StreamManager:CleanupStream(entity:EntIndex())
+                utils.playErrorSound("playback")
+                return
+            end
+
+            -- Update state
+            StateManager:SetState("currentlyPlayingStations", {
+                [entity] = station
+            })
+            StateManager:SetState("lastStationSelectTime", CurTime())
+            
+            -- Emit stream started event
+            StateManager:Emit(StateManager.Events.STREAM_STARTED, {
+                entity = entity,
+                station = station,
+                stream = stream
+            })
+        end)
+    end
+
     -- Stop current playback first
     if currentlyPlayingStations[entity] then
         -- Stop on server
@@ -571,38 +680,12 @@ local function playStation(entity, station, volume)
         -- Clean up through StreamManager
         StreamManager:CleanupStream(entity:EntIndex())
 
-        -- Wait for cleanup to complete
+        -- Add delay before starting new stream
         timer.Simple(0.2, function()
-            if not IsValid(entity) then return end
-
-            -- Start new playback
-            net.Start("PlayCarRadioStation")
-                net.WriteEntity(entity)
-                net.WriteString(station.name)
-                net.WriteString(station.url)
-                net.WriteFloat(volume)
-            net.SendToServer()
-
-            -- Update state
-            StateManager:SetState("currentlyPlayingStations", {
-                [entity] = station
-            })
-            StateManager:SetState("lastStationSelectTime", CurTime())
+            startNewStream()
         end)
     else
-        -- If no station is playing, start playback immediately
-        net.Start("PlayCarRadioStation")
-            net.WriteEntity(entity)
-            net.WriteString(station.name)
-            net.WriteString(station.url)
-            net.WriteFloat(volume)
-        net.SendToServer()
-
-        -- Update state
-        StateManager:SetState("currentlyPlayingStations", {
-            [entity] = station
-        })
-        StateManager:SetState("lastStationSelectTime", CurTime())
+        startNewStream()
     end
 end
 
@@ -1708,17 +1791,30 @@ openRadioMenu = function(openSettings)
         function()
             surface.PlaySound("buttons/button6.wav")
             local entity = LocalPlayer().currentRadioEntity
-            if IsValid(entity) then
-                net.Start("StopCarRadioStation")
-                    net.WriteEntity(entity)
-                net.SendToServer()
-                currentlyPlayingStation = nil
+            if not IsValid(entity) then return end
+
+            -- Get actual vehicle entity
+            entity = utils.GetVehicle(entity) or entity
+            
+            -- Send stop request to server
+            net.Start("StopCarRadioStation")
+                net.WriteEntity(entity)
+            net.SendToServer()
+            
+            -- Clean up local state immediately
+            local entIndex = entity:EntIndex()
+            StreamManager:CleanupStream(entIndex)
+            
+            if currentlyPlayingStations[entity] then
                 currentlyPlayingStations[entity] = nil
-                populateList(stationListPanel, backButton, searchBox, false)
-                if backButton then
-                    backButton:SetVisible(selectedCountry ~= nil or settingsMenuOpen)
-                    backButton:SetEnabled(selectedCountry ~= nil or settingsMenuOpen)
-                end
+                StateManager:SetState("currentlyPlayingStations", currentlyPlayingStations)
+            end
+            
+            -- Update UI
+            populateList(stationListPanel, backButton, searchBox, false)
+            if backButton then
+                backButton:SetVisible(selectedCountry ~= nil or settingsMenuOpen)
+                backButton:SetEnabled(selectedCountry ~= nil or settingsMenuOpen)
             end
         end
     )
@@ -2077,7 +2173,7 @@ net.Receive("PlayCarRadioStation", function()
         url = url
     }
 
-    sound.PlayURL(url, "3d noblock", function(station, errorID, errorName)
+    sound.PlayURL(url, "3d", function(station, errorID, errorName)
         if not IsValid(station) then
             print("[Radio] Error creating sound stream:", errorName)
             utils.playErrorSound("connection")
@@ -2115,11 +2211,24 @@ net.Receive("StopCarRadioStation", function()
     local entity = net.ReadEntity()
     if not IsValid(entity) then return end
     
-    entity = utils.GetVehicle(entity)
+    -- Get the actual vehicle entity
+    entity = utils.GetVehicle(entity) or entity
     if not IsValid(entity) then return end
 
-    -- Queue cleanup through StreamManager
-    StreamManager:QueueCleanup(entity:EntIndex(), "user_stopped")
+    -- Clean up through StreamManager
+    local entIndex = entity:EntIndex()
+    StreamManager:CleanupStream(entIndex)
+    
+    -- Clear local state
+    if currentlyPlayingStations[entity] then
+        currentlyPlayingStations[entity] = nil
+        StateManager:SetState("currentlyPlayingStations", currentlyPlayingStations)
+    end
+    
+    -- Clear status for boomboxes
+    if utils.IsBoombox(entity) then
+        utils.clearRadioStatus(entity)
+    end
 end)
 
 --[[
