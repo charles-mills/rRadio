@@ -91,6 +91,14 @@ local PERMISSION_MESSAGE_COOLDOWN = 3
 local MAX_CLIENT_STATIONS = 10
 local streamsEnabled = true
 
+local lastStreamUpdate = 0
+local STREAM_UPDATE_INTERVAL = 0.1
+
+-- Add these variables near the top with other state variables
+local isLoadingStations = false
+local STATION_CHUNK_SIZE = 100
+local loadingProgress = 0
+
 hook.Add("OnPlayerChat", "RadioStreamToggleCommands", function(ply, text, teamChat, isDead)
     if ply ~= LocalPlayer() then return end
     
@@ -136,34 +144,106 @@ end)
 
 --[[
     Function: LoadStationData
-    Loads station data from files, ensuring it's loaded only once.
+    Loads station data from files asynchronously to prevent UI freezing.
+    Uses chunked loading with progress tracking.
 ]]
 local function LoadStationData()
-    if stationDataLoaded then return end
-    StationData = {}
+    if stationDataLoaded or isLoadingStations then return end
     
+    StationData = {}
+    isLoadingStations = true
+    loadingProgress = 0
+    
+    -- Get all data files first
     local dataFiles = file.Find("radio/client/stations/data_*.lua", "LUA")
-    for _, filename in ipairs(dataFiles) do
-        local success, data = pcall(include, "radio/client/stations/" .. filename)
-        if success and data then
+    local totalFiles = #dataFiles
+    local currentFileIndex = 1
+    local currentStationIndex = 1
+    local currentCountry = nil
+    local currentStations = nil
+    
+    -- Create temporary storage for file data
+    local fileData = {}
+    
+    -- Process files in chunks
+    timer.Create("LoadStationDataChunks", 0.05, 0, function()
+        -- Process current chunk
+        local startTime = SysTime()
+        
+        while (SysTime() - startTime) < 0.016 and currentFileIndex <= totalFiles do
+            local filename = dataFiles[currentFileIndex]
+            
+            -- Load file data if not already loaded
+            if not fileData[filename] then
+                local success, data = pcall(include, "radio/client/stations/" .. filename)
+                if success and data then
+                    fileData[filename] = data
+                else
+                    print("[rRadio] Error loading station data from: " .. filename)
+                    fileData[filename] = {}
+                end
+            end
+            
+            -- Process stations from current file
+            local data = fileData[filename]
             for country, stations in pairs(data) do
-                -- Extract base country name by removing any suffixes like '_number'
+                -- Extract base country name
                 local baseCountry = country:gsub("_(%d+)$", "")
                 if not StationData[baseCountry] then
                     StationData[baseCountry] = {}
                 end
-                for _, station in ipairs(stations) do
-                    table.insert(StationData[baseCountry], { name = station.n, url = station.u })
+                
+                -- Process stations in chunks
+                for i = 1, #stations, STATION_CHUNK_SIZE do
+                    local endIndex = math.min(i + STATION_CHUNK_SIZE - 1, #stations)
+                    for j = i, endIndex do
+                        local station = stations[j]
+                        table.insert(StationData[baseCountry], {
+                            name = station.n,
+                            url = station.u
+                        })
+                    end
+                    
+                    -- Update progress
+                    loadingProgress = (currentFileIndex / totalFiles) * 100
+                    
+                    -- Emit progress event
+                    StateManager:Emit(StateManager.Events.STATION_LOAD_PROGRESS, {
+                        progress = loadingProgress,
+                        currentFile = filename,
+                        totalFiles = totalFiles
+                    })
+                    
+                    -- Break chunk processing if time exceeded
+                    if (SysTime() - startTime) >= 0.016 then
+                        return
+                    end
                 end
             end
-        else
-            print("[rRadio] Error loading station data from: " .. filename)
+            
+            currentFileIndex = currentFileIndex + 1
         end
-    end
-    
-    stationDataLoaded = true
-    StateManager:SetState("stationDataLoaded", true)
-    StateManager:SetState("stationData", StationData)
+        
+        -- Check if loading is complete
+        if currentFileIndex > totalFiles then
+            timer.Remove("LoadStationDataChunks")
+            stationDataLoaded = true
+            isLoadingStations = false
+            loadingProgress = 100
+            
+            -- Update state
+            StateManager:SetState("stationDataLoaded", true)
+            StateManager:SetState("stationData", StationData)
+            
+            -- Emit completion event
+            StateManager:Emit(StateManager.Events.STATION_LOAD_COMPLETE, {
+                totalStations = table.Count(StationData)
+            })
+            
+            -- Clear temporary storage
+            fileData = nil
+        end
+    end)
 end
 
 -- Initialize station data
@@ -2006,7 +2086,6 @@ net.Receive("PlayCarRadioStation", function()
         url = url
     }
 
-    -- Create new sound stream with error handling
     sound.PlayURL(url, "3d noblock", function(station, errorID, errorName)
         if not IsValid(station) then
             print("[Radio] Error creating sound stream:", errorName)
@@ -2162,8 +2241,16 @@ end
 
 hook.Add("Initialize", "InitializeRadioTheme", initializeTheme)
 
--- Add near the top with other hooks
 hook.Add("Think", "UpdateStreamPositions", function()
+    local currentTime = CurTime()
+    
+    -- Only update if enough time has passed
+    if (currentTime - lastStreamUpdate) < STREAM_UPDATE_INTERVAL then
+        return
+    end
+    
+    lastStreamUpdate = currentTime
+
     for entIndex, streamData in pairs(StreamManager.activeStreams) do
         local entity = streamData.entity
         local stream = streamData.stream
