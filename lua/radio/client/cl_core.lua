@@ -94,7 +94,6 @@ local streamsEnabled = true
 local lastStreamUpdate = 0
 local STREAM_UPDATE_INTERVAL = 0.1
 
--- Add these variables near the top with other state variables
 local isLoadingStations = false
 local STATION_CHUNK_SIZE = 100
 local loadingProgress = 0
@@ -974,7 +973,6 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
     end
 
     if selectedCountry == nil then
-        -- Check for favorites first
         local hasFavorites = false
         for country, stations in pairs(favoriteStations) do
             for stationName, isFavorite in pairs(stations) do
@@ -986,7 +984,6 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
             if hasFavorites then break end
         end
 
-        -- Create favorites section if needed
         if hasFavorites then
             createSeparator()
 
@@ -1004,10 +1001,8 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                 end
             )
 
-            -- Move text to the right to make room for icon
             favoritesButton:SetTextInset(Scale(40), 0)
 
-            -- Add favorites icon with proper positioning and scaling
             favoritesButton.PaintOver = function(self, w, h)
                 surface.SetMaterial(Material("hud/star_full.png"))
                 surface.SetDrawColor(Config.UI.TextColor)
@@ -1022,7 +1017,6 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
             createSeparator()
         end
 
-        -- Populate countries list
         local countries = {}
         for country, _ in pairs(StationData) do
             -- Format and translate the country name
@@ -1033,7 +1027,6 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
             local translatedCountry = LanguageManager:GetCountryTranslation(lang, formattedCountry) or formattedCountry
 
             if filterText == "" or translatedCountry:lower():find(filterText, 1, true) then
-                -- Check if country is in favorites using StateManager
                 local isFavorite = getSafeState("favoriteCountries", {})[country] or false
                 
                 table.insert(countries, { 
@@ -1192,11 +1185,9 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                     end
                 end
 
-                -- Add visual indicators for stream status
                 local streamData = StreamManager.activeStreams[entity:EntIndex()]
                 if streamData then
                     if streamData.stream and not streamData.stream:IsValid() then
-                        -- Red indicator for invalid stream
                         surface.SetDrawColor(255, 0, 0, 50)
                         surface.DrawRect(w * 0.9, 0, w * 0.1, h)
                     end
@@ -2251,31 +2242,24 @@ hook.Add("Think", "UpdateStreamPositions", function()
     
     lastStreamUpdate = currentTime
 
+    local ply = LocalPlayer()
+    local plyPos = ply:GetPos()
+
     for entIndex, streamData in pairs(StreamManager.activeStreams) do
         local entity = streamData.entity
         local stream = streamData.stream
         
-        if IsValid(entity) and IsValid(stream) then
-            stream:SetPos(entity:GetPos())
-            
-            -- Update volume based on distance
-            local ply = LocalPlayer()
-            if IsValid(ply) then
-                local distanceSqr = ply:GetPos():DistToSqr(entity:GetPos())
-                local isPlayerInCar = false
-                
-                if entity:IsVehicle() then
-                    local vehicle = utils.GetVehicle(entity)
-                    if IsValid(vehicle) then
-                        isPlayerInCar = (vehicle:GetDriver() == ply)
-                    end
-                end
-                
-                updateRadioVolume(stream, distanceSqr, isPlayerInCar, entity)
-            end
-        else
-            -- Cleanup invalid streams
-            StreamManager:QueueCleanup(entIndex, "invalid_entity")
+        stream:SetPos(entity:GetPos())
+        
+        -- Update volume based on distance
+        local distanceSqr = plyPos:DistToSqr(entity:GetPos())
+        local isPlayerInCar = false
+        
+        if entity:IsVehicle() then
+            local vehicle = utils.GetVehicle(entity)
+            isPlayerInCar = (vehicle:GetDriver() == ply)
         end
+        
+        updateRadioVolume(stream, distanceSqr, isPlayerInCar, entity)
     end
 end)
