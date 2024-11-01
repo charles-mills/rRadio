@@ -531,30 +531,53 @@ net.Receive("UpdateRadioVolume", function(len, ply)
     end
 end)
 
-hook.Add("EntityRemoved", "CleanupVolumeUpdateTimers", function(entity)
+hook.Add("EntityRemoved", "RadioSystemCleanup", function(entity)
+    if not IsValid(entity) then return end
+    
     local entIndex = entity:EntIndex()
-    if timer.Exists("VolumeUpdate_" .. entIndex) then
-        timer.Remove("VolumeUpdate_" .. entIndex)
-    end
-    volumeUpdateQueue[entIndex] = nil
-end)
-
-hook.Add("PlayerDisconnected", "CleanupPlayerVolumeUpdateData", function(ply)
-    for entIndex, updateData in pairs(volumeUpdateQueue) do
-        if updateData.player == ply then
-            if timer.Exists("VolumeUpdate_" .. entIndex) then
-                timer.Remove("VolumeUpdate_" .. entIndex)
-            end
-            volumeUpdateQueue[entIndex] = nil
+    
+    -- Clean up timers
+    local timerNames = {
+        "VolumeUpdate_" .. entIndex,
+        "StationUpdate_" .. entIndex
+    }
+    
+    for _, timerName in ipairs(timerNames) do
+        if timer.Exists(timerName) then
+            timer.Remove(timerName)
         end
     end
+    
+    -- Clean up data tables
+    LatestVolumeUpdates[entIndex] = nil
+    VolumeUpdateTimers[entIndex] = nil
+    volumeUpdateQueue[entIndex] = nil
+    EntityVolumes[entIndex] = nil
+    
+    -- Clean up radio status
+    if ActiveRadios[entIndex] then
+        RemoveActiveRadio(entity)
+    end
+    
+    -- Clean up boombox status if applicable
+    if utils.IsBoombox(entity) then
+        BoomboxStatuses[entIndex] = nil
+    end
 end)
 
-hook.Add("EntityRemoved", "CleanupActiveRadioOnEntityRemove", function(entity)
-    local mainEntity = entity:GetParent() or entity
-
-    if ActiveRadios[mainEntity:EntIndex()] then
-        RemoveActiveRadio(mainEntity)
+hook.Add("PlayerDisconnected", "CleanupPlayerRadioData", function(ply)
+    -- Clean up player-specific data
+    PlayerRetryAttempts[ply] = nil
+    PlayerCooldowns[ply] = nil
+    
+    -- Clean up any entities owned by this player
+    for entIndex, data in pairs(volumeUpdateQueue) do
+        if data.pendingPlayer == ply then
+            local entity = Entity(entIndex)
+            if IsValid(entity) then
+                CleanupEntity(entity)
+            end
+        end
     end
 end)
 
@@ -627,34 +650,11 @@ hook.Add("InitPostEntity", "LoadPermanentBoomboxesOnServerStart", function()
     end)
 end)
 
-hook.Add("EntityRemoved", "CleanupVolumeUpdateData", function(entity)
-    local entIndex = entity:EntIndex()
-    LatestVolumeUpdates[entIndex] = nil
-    if VolumeUpdateTimers[entIndex] then
-        timer.Remove(VolumeUpdateTimers[entIndex])
-        VolumeUpdateTimers[entIndex] = nil
-    end
-end)
+hook.Add("EntityRemoved", "CleanupActiveRadioOnEntityRemove", function(entity)
+    local mainEntity = entity:GetParent() or entity
 
-hook.Add("PlayerDisconnected", "CleanupPlayerVolumeUpdateData", function(ply)
-    for entIndex, updateData in pairs(LatestVolumeUpdates) do
-        if updateData.ply == ply then
-            LatestVolumeUpdates[entIndex] = nil
-            if VolumeUpdateTimers[entIndex] then
-                timer.Remove(VolumeUpdateTimers[entIndex])
-                VolumeUpdateTimers[entIndex] = nil
-            end
-        end
-    end
-end)
-
-hook.Add("EntityRemoved", "CleanupRadioTimers", function(entity)
-    local entIndex = entity:EntIndex()
-    if timer.Exists("VolumeUpdate_" .. entIndex) then
-        timer.Remove("VolumeUpdate_" .. entIndex)
-    end
-    if timer.Exists("StationUpdate_" .. entIndex) then
-        timer.Remove("StationUpdate_" .. entIndex)
+    if ActiveRadios[mainEntity:EntIndex()] then
+        RemoveActiveRadio(mainEntity)
     end
 end)
 
@@ -891,59 +891,4 @@ end)
 hook.Add("EntityRemoved", "CleanupRadioVolume", function(entity)
     local entIndex = entity:EntIndex()
     EntityVolumes[entIndex] = nil
-end)
-
-local RadioTimers = {
-    "VolumeUpdate_",
-    "StationUpdate_"
-}
-
-local RadioDataTables = {
-    LatestVolumeUpdates = true,
-    VolumeUpdateTimers = true,
-    volumeUpdateQueue = true
-}
-
---[[
-    Function: CleanupEntityData
-    Cleans up all timers and data associated with an entity
-    Parameters:
-    - entIndex: The entity index to cleanup
-]]
-local function CleanupEntityData(entIndex)
-    -- Clean up all timer types
-    for _, timerPrefix in ipairs(RadioTimers) do
-        local timerName = timerPrefix .. entIndex
-        if timer.Exists(timerName) then
-            timer.Remove(timerName)
-        end
-    end
-
-    -- Clean up all data tables
-    for tableName in pairs(RadioDataTables) do
-        if _G[tableName] and _G[tableName][entIndex] then
-            _G[tableName][entIndex] = nil
-        end
-    end
-end
-
--- Single EntityRemoved hook to handle all cleanup
-hook.Add("EntityRemoved", "CleanupRadioData", function(entity)
-    if IsValid(entity) then
-        CleanupEntityData(entity:EntIndex())
-    end
-end)
-
--- Single PlayerDisconnected hook to handle all cleanup
-hook.Add("PlayerDisconnected", "CleanupPlayerRadioData", function(ply)
-    -- Clean up player-specific data from all tracked tables
-    for tableName in pairs(RadioDataTables) do
-        if _G[tableName] then
-            for entIndex, data in pairs(_G[tableName]) do
-                if data.ply == ply or data.pendingPlayer == ply then
-                    CleanupEntityData(entIndex)
-                end
-            end
-        end
-    end
 end)
