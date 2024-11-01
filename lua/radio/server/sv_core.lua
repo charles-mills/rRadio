@@ -20,6 +20,10 @@ util.AddNetworkString("RemoveBoomboxPermanent")
 util.AddNetworkString("BoomboxPermanentConfirmation")
 util.AddNetworkString("RadioConfigUpdate")
 
+-- Global action cooldown system
+local GLOBAL_COOLDOWN = 0.1 -- 100ms cooldown between global actions
+local lastGlobalAction = 0
+
 local ActiveRadios = {}
 local PlayerRetryAttempts = {}
 local PlayerCooldowns = {}
@@ -33,6 +37,32 @@ local ResourceManager = include("radio/server/sv_resource_manager.lua")
 SavePermanentBoombox = _G.SavePermanentBoombox
 RemovePermanentBoombox = _G.RemovePermanentBoombox
 LoadPermanentBoomboxes = _G.LoadPermanentBoomboxes
+
+--[[
+    Function: CreateSafeTimer
+    Creates a timer with safety checks and automatic cleanup
+    Parameters:
+    - name: Timer identifier
+    - delay: Time between executions
+    - reps: Number of repetitions (0 for infinite)
+    - func: Function to execute that returns true to keep timer running
+]]
+local function CreateSafeTimer(name, delay, reps, func)
+    if not name or not delay or not reps or not func then
+        ErrorNoHalt("[rRadio] CreateSafeTimer: Invalid parameters provided\n")
+        return
+    end
+    
+    if timer.Exists(name) then 
+        timer.Remove(name) 
+    end
+    
+    timer.Create(name, delay, reps, function()
+        if not func() then 
+            timer.Remove(name)
+        end
+    end)
+end
 
 --[[
     VolumeUpdater: Handles volume update queuing and debouncing
@@ -136,7 +166,7 @@ hook.Add("EntityRemoved", "RadioSystemCleanup", function(entity)
     -- Clean up volume updates
     VolumeUpdater:cleanup(entity)
     
-    -- Clean up other data
+    -- Clean up data tables
     EntityVolumes[entIndex] = nil
     
     if ActiveRadios[entIndex] then
@@ -161,12 +191,6 @@ hook.Add("PlayerDisconnected", "CleanupPlayerRadioData", function(ply)
     PlayerRetryAttempts[ply] = nil
     PlayerCooldowns[ply] = nil
 end)
-
--- Remove now-unused variables
-LatestVolumeUpdates = nil
-VolumeUpdateTimers = nil
-volumeUpdateQueue = nil
-VOLUME_UPDATE_DEBOUNCE_TIME = nil
 
 local EntityVolumes = {}
 
@@ -406,7 +430,7 @@ end
 net.Receive("PlayCarRadioStation", function(len, ply)
     local currentTime = CurTime()
     if currentTime - lastGlobalAction < GLOBAL_COOLDOWN then
-        ply:ChatPrint("The radio system is busy. Please try again in a moment.")
+        ply:ChatPrint("[rRadio] The radio system is busy. Please try again in a moment.")
         return
     end
 
@@ -606,25 +630,6 @@ local function ProcessVolumeUpdate(entity, volume, ply)
     net.Broadcast()
 end
 
---[[
-    Function: CreateSafeTimer
-    Creates a timer with safety checks and automatic cleanup
-    Parameters:
-    - name: Timer identifier
-    - delay: Time between executions
-    - reps: Number of repetitions (0 for infinite)
-    - func: Function to execute that returns true to keep timer running
-]]
-local function CreateSafeTimer(name, delay, reps, func)
-    if timer.Exists(name) then timer.Remove(name) end
-    timer.Create(name, delay, reps, function()
-        if not func() then 
-            timer.Remove(name)
-        end
-    end)
-end
-
--- Update the volume update receiver to use CreateSafeTimer:
 net.Receive("UpdateRadioVolume", function(len, ply)
     local entity = net.ReadEntity()
     local volume = net.ReadFloat()
@@ -685,9 +690,6 @@ hook.Add("EntityRemoved", "RadioSystemCleanup", function(entity)
     end
     
     -- Clean up data tables
-    LatestVolumeUpdates[entIndex] = nil
-    VolumeUpdateTimers[entIndex] = nil
-    volumeUpdateQueue[entIndex] = nil
     EntityVolumes[entIndex] = nil
     
     -- Clean up radio status
