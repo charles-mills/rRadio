@@ -6,7 +6,7 @@
                  requests for playing and stopping stations, and coordinates with permanent
                  boombox functionality. It also includes utility functions for entity ownership
                  and permissions.
-    Date: October 30, 2024
+    Date: November 01, 2024
 ]]--
 
 util.AddNetworkString("PlayCarRadioStation")
@@ -34,20 +34,139 @@ SavePermanentBoombox = _G.SavePermanentBoombox
 RemovePermanentBoombox = _G.RemovePermanentBoombox
 LoadPermanentBoomboxes = _G.LoadPermanentBoomboxes
 
-local LatestVolumeUpdates = {}
-local VolumeUpdateTimers = {}
-local DEBOUNCE_TIME = 10
+--[[
+    VolumeUpdater: Handles volume update queuing and debouncing
+    Provides a clean interface for processing volume updates with built-in safety checks
+]]
+local VolumeUpdater = {
+    queue = {},
+    timeout = 0.1,
+    
+    -- Process a volume update request
+    process = function(self, entity, volume, ply)
+        if not IsValid(entity) or not IsValid(ply) then return false end
+        
+        local entIndex = entity:EntIndex()
+        
+        -- If already queued, update the pending values
+        if self.queue[entIndex] then
+            self.queue[entIndex].volume = volume
+            self.queue[entIndex].ply = ply
+            return true
+        end
+        
+        -- Queue the update
+        self.queue[entIndex] = {
+            volume = volume,
+            ply = ply,
+            time = CurTime(),
+            entity = entity
+        }
+        
+        -- Create safe timer to process this update
+        CreateSafeTimer("VolumeUpdate_" .. entIndex, self.timeout, 1, function()
+            return self:processQueue(entIndex)
+        end)
+        
+        return true
+    end,
+    
+    -- Process a queued update
+    processQueue = function(self, entIndex)
+        local data = self.queue[entIndex]
+        if not data then return false end
+        
+        -- Validate all required components
+        if not IsValid(data.entity) or not IsValid(data.ply) then
+            self.queue[entIndex] = nil
+            return false
+        end
+        
+        -- Process the actual volume update
+        ProcessVolumeUpdate(data.entity, data.volume, data.ply)
+        
+        -- Cleanup
+        self.queue[entIndex] = nil
+        return true
+    end,
+    
+    -- Clean up any queued updates for an entity
+    cleanup = function(self, entity)
+        if not IsValid(entity) then return end
+        local entIndex = entity:EntIndex()
+        
+        if self.queue[entIndex] then
+            if timer.Exists("VolumeUpdate_" .. entIndex) then
+                timer.Remove("VolumeUpdate_" .. entIndex)
+            end
+            self.queue[entIndex] = nil
+        end
+    end,
+    
+    -- Clean up any queued updates for a player
+    cleanupPlayer = function(self, ply)
+        for entIndex, data in pairs(self.queue) do
+            if data.ply == ply then
+                if timer.Exists("VolumeUpdate_" .. entIndex) then
+                    timer.Remove("VolumeUpdate_" .. entIndex)
+                end
+                self.queue[entIndex] = nil
+            end
+        end
+    end
+}
 
-local MAX_ACTIVE_RADIOS = 100
-local PLAYER_RADIO_LIMIT = 5
-local GLOBAL_COOLDOWN = 1
-local lastGlobalAction = 0
+-- Replace the existing volume update receiver with this simplified version:
+net.Receive("UpdateRadioVolume", function(len, ply)
+    local entity = net.ReadEntity()
+    local volume = net.ReadFloat()
+    
+    if not IsValid(entity) then return end
+    
+    -- Let VolumeUpdater handle all the queuing and processing
+    VolumeUpdater:process(entity, volume, ply)
+end)
 
-local VOLUME_UPDATE_DEBOUNCE_TIME = 0.1
-local volumeUpdateQueue = {}
+-- Update the cleanup hooks to use VolumeUpdater:
+hook.Add("EntityRemoved", "RadioSystemCleanup", function(entity)
+    if not IsValid(entity) then return end
+    
+    local entIndex = entity:EntIndex()
+    
+    -- Clean up volume updates
+    VolumeUpdater:cleanup(entity)
+    
+    -- Clean up other data
+    EntityVolumes[entIndex] = nil
+    
+    if ActiveRadios[entIndex] then
+        RemoveActiveRadio(entity)
+    end
+    
+    if utils.IsBoombox(entity) then
+        BoomboxStatuses[entIndex] = nil
+    end
+    
+    -- Clean up any remaining timers
+    if timer.Exists("StationUpdate_" .. entIndex) then
+        timer.Remove("StationUpdate_" .. entIndex)
+    end
+end)
 
-local STATION_CHANGE_COOLDOWN = 0.5
-local lastStationChangeTimes = {}
+hook.Add("PlayerDisconnected", "CleanupPlayerRadioData", function(ply)
+    -- Clean up volume updates for this player
+    VolumeUpdater:cleanupPlayer(ply)
+    
+    -- Clean up other player data
+    PlayerRetryAttempts[ply] = nil
+    PlayerCooldowns[ply] = nil
+end)
+
+-- Remove now-unused variables
+LatestVolumeUpdates = nil
+VolumeUpdateTimers = nil
+volumeUpdateQueue = nil
+VOLUME_UPDATE_DEBOUNCE_TIME = nil
 
 local EntityVolumes = {}
 
@@ -487,7 +606,25 @@ local function ProcessVolumeUpdate(entity, volume, ply)
     net.Broadcast()
 end
 
--- Update the volume update receiver
+--[[
+    Function: CreateSafeTimer
+    Creates a timer with safety checks and automatic cleanup
+    Parameters:
+    - name: Timer identifier
+    - delay: Time between executions
+    - reps: Number of repetitions (0 for infinite)
+    - func: Function to execute that returns true to keep timer running
+]]
+local function CreateSafeTimer(name, delay, reps, func)
+    if timer.Exists(name) then timer.Remove(name) end
+    timer.Create(name, delay, reps, function()
+        if not func() then 
+            timer.Remove(name)
+        end
+    end)
+end
+
+-- Update the volume update receiver to use CreateSafeTimer:
 net.Receive("UpdateRadioVolume", function(len, ply)
     local entity = net.ReadEntity()
     local volume = net.ReadFloat()
@@ -517,17 +654,16 @@ net.Receive("UpdateRadioVolume", function(len, ply)
         updateData.pendingVolume = nil
         updateData.pendingPlayer = nil
     else
-        -- Otherwise, schedule an update
-        if not timer.Exists("VolumeUpdate_" .. entIndex) then
-            timer.Create("VolumeUpdate_" .. entIndex, VOLUME_UPDATE_DEBOUNCE_TIME, 1, function()
-                if updateData.pendingVolume and IsValid(updateData.pendingPlayer) then
-                    ProcessVolumeUpdate(entity, updateData.pendingVolume, updateData.pendingPlayer)
-                    updateData.lastUpdate = CurTime()
-                    updateData.pendingVolume = nil
-                    updateData.pendingPlayer = nil
-                end
-            end)
-        end
+        -- Otherwise, schedule an update using safe timer
+        CreateSafeTimer("VolumeUpdate_" .. entIndex, VOLUME_UPDATE_DEBOUNCE_TIME, 1, function()
+            if not IsValid(entity) or not IsValid(updateData.pendingPlayer) then return false end
+            
+            ProcessVolumeUpdate(entity, updateData.pendingVolume, updateData.pendingPlayer)
+            updateData.lastUpdate = CurTime()
+            updateData.pendingVolume = nil
+            updateData.pendingPlayer = nil
+            return true
+        end)
     end
 end)
 
@@ -642,11 +778,36 @@ hook.Add("PlayerDisconnected", "ClearPlayerDataOnDisconnect", function(ply)
     PlayerCooldowns[ply] = nil
 end)
 
+-- Update the CleanupInactiveRadios timer:
+local function CleanupInactiveRadios()
+    local currentTime = CurTime()
+    for entIndex, radio in pairs(ActiveRadios) do
+        if not IsValid(radio.entity) or currentTime - radio.timestamp > 3600 then  -- 1 hour inactivity
+            RemoveActiveRadio(Entity(entIndex))
+        end
+    end
+    return true -- Keep timer running
+end
+
+CreateSafeTimer("CleanupInactiveRadios", 300, 0, CleanupInactiveRadios)  -- Run every 5 minutes
+
+-- Update the InitPostEntity hook to use CreateSafeTimer:
 hook.Add("InitPostEntity", "LoadPermanentBoomboxesOnServerStart", function()
-    timer.Simple(0.5, function()
+    CreateSafeTimer("LoadPermanentBoomboxes", 0.5, 1, function()
         if LoadPermanentBoomboxes then
             LoadPermanentBoomboxes()
         end
+        return true
+    end)
+end)
+
+-- Update OnEntityCreated hook to use CreateSafeTimer:
+hook.Add("OnEntityCreated", "InitializeRadioVolume", function(entity)
+    CreateSafeTimer("InitVolume_" .. entity:EntIndex(), 0, 1, function()
+        if IsValid(entity) and (utils.IsBoombox(entity) or utils.GetVehicle(entity)) then
+            InitializeEntityVolume(entity)
+        end
+        return true
     end)
 end)
 
@@ -665,17 +826,6 @@ hook.Add("InitPostEntity", "EnsureActiveRadioFunctionAvailable", function()
         _G.AddActiveRadio = AddActiveRadio
     end
 end)
-
-local function CleanupInactiveRadios()
-    local currentTime = CurTime()
-    for entIndex, radio in pairs(ActiveRadios) do
-        if not IsValid(radio.entity) or currentTime - radio.timestamp > 3600 then  -- 1 hour inactivity
-            RemoveActiveRadio(Entity(entIndex))
-        end
-    end
-end
-
-timer.Create("CleanupInactiveRadios", 300, 0, CleanupInactiveRadios)  -- Run every 5 minutes
 
 concommand.Add("radio_reload_config", function(ply)
     if IsValid(ply) and not ply:IsSuperAdmin() then return end
