@@ -94,11 +94,34 @@ local function ProcessVolumeUpdate(entity, volume, ply)
     EntityVolumes[entIndex] = volume
     entity:SetNWFloat("Volume", volume)
 
-    -- Broadcast to all clients
-    net.Start("UpdateRadioVolume")
-        net.WriteEntity(entity)
-        net.WriteFloat(volume)
-    net.Broadcast()
+    -- Only broadcast to players in range
+    local inRangePlayers = {}
+    local entityPos = entity:GetPos()
+    
+    -- Get max distance based on entity type
+    local maxDistance
+    if utils.IsBoombox(entity) then
+        if entity:GetClass() == "golden_boombox" then
+            maxDistance = GetConVar("radio_golden_boombox_max_distance"):GetFloat()
+        else
+            maxDistance = GetConVar("radio_boombox_max_distance"):GetFloat()
+        end
+    else
+        maxDistance = GetConVar("radio_vehicle_max_distance"):GetFloat()
+    end
+    
+    for _, player in ipairs(player.GetAll()) do
+        if player:GetPos():DistToSqr(entityPos) <= (maxDistance * maxDistance) then
+            table.insert(inRangePlayers, player)
+        end
+    end
+
+    if #inRangePlayers > 0 then
+        net.Start("UpdateRadioVolume")
+            net.WriteEntity(entity)
+            net.WriteFloat(volume)
+        net.Send(inRangePlayers)
+    end
     
     return true
 end
