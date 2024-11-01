@@ -94,8 +94,12 @@ Modules.Animations = {
 Modules.Transitions = {
     activeTransitions = {},
     
-    SlideElement = function(self, element, direction, duration, onComplete)
+    SlideElement = function(self, element, duration, direction, onComplete)
         if not IsValid(element) then return end
+        
+        -- Cache element reference and validity state
+        local elementRef = element
+        local isValid = true
         
         local startX = direction == "in" and element:GetWide() or 0
         local endX = direction == "in" and 0 or -element:GetWide()
@@ -108,17 +112,31 @@ Modules.Transitions = {
             startX,
             endX,
             function(value)
-                if IsValid(element) then
-                    element:SetPos(value, element:GetY())
+                -- Single validity check that updates cached state
+                if isValid and not IsValid(elementRef) then
+                    isValid = false
+                    return false
+                end
+                
+                if isValid then
+                    elementRef:SetPos(value, elementRef:GetY())
                 end
             end,
-            onComplete,
+            function()
+                if isValid and onComplete then
+                    onComplete()
+                end
+            end,
             Modules.Animations.Easing.OutQuint
         )
     end,
     
     FadeElement = function(self, element, direction, duration, onComplete)
         if not IsValid(element) then return end
+        
+        -- Cache element reference and validity state
+        local elementRef = element
+        local isValid = true
         
         local startAlpha = direction == "in" and 0 or 255
         local endAlpha = direction == "in" and 255 or 0
@@ -130,11 +148,21 @@ Modules.Transitions = {
             startAlpha,
             endAlpha,
             function(value)
-                if IsValid(element) then
-                    element:SetAlpha(value)
+                -- Single validity check that updates cached state
+                if isValid and not IsValid(elementRef) then
+                    isValid = false
+                    return false
+                end
+                
+                if isValid then
+                    elementRef:SetAlpha(value)
                 end
             end,
-            onComplete,
+            function()
+                if isValid and onComplete then
+                    onComplete()
+                end
+            end,
             Modules.Animations.Easing.OutQuint
         )
     end

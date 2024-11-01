@@ -293,6 +293,33 @@ local StreamManager = {
     lastCleanup = 0,
     CLEANUP_INTERVAL = 0.2, -- 200ms between cleanups
     
+    -- Add validity cache
+    _validityCache = {},
+    _lastValidityCheck = 0,
+    VALIDITY_CHECK_INTERVAL = 0.5, -- Check validity every 0.5 seconds
+    
+    UpdateValidityCache = function(self)
+        local currentTime = CurTime()
+        if (currentTime - self._lastValidityCheck) < self.VALIDITY_CHECK_INTERVAL then
+            return
+        end
+        
+        self._lastValidityCheck = currentTime
+        self._validityCache = {}
+        
+        for entIndex, streamData in pairs(self.activeStreams) do
+            if IsValid(streamData.entity) and IsValid(streamData.stream) then
+                self._validityCache[entIndex] = true
+            else
+                self:QueueCleanup(entIndex, "invalid_reference")
+            end
+        end
+    end,
+    
+    IsStreamValid = function(self, entIndex)
+        return self._validityCache[entIndex] == true
+    end,
+    
     -- Simple cleanup function
     CleanupStream = function(self, entIndex)
         local streamData = self.activeStreams[entIndex]
@@ -341,16 +368,21 @@ local StreamManager = {
     RegisterStream = function(self, entity, stream, data)
         if not IsValid(entity) or not IsValid(stream) then return false end
         
+        local entIndex = entity:EntIndex()
+        
         -- Cleanup any existing stream first
-        self:CleanupStream(entity:EntIndex())
+        self:CleanupStream(entIndex)
         
         -- Register new stream
-        self.activeStreams[entity:EntIndex()] = {
+        self.activeStreams[entIndex] = {
             stream = stream,
             entity = entity,
             data = data,
             startTime = CurTime()
         }
+        
+        -- Update validity cache immediately
+        self._validityCache[entIndex] = true
         
         return true
     end
@@ -641,6 +673,7 @@ local function playStation(entity, station, volume)
             if not IsValid(entity) then
                 stream:Stop()
                 return
+
             end
 
             -- Register with StreamManager
@@ -797,6 +830,14 @@ local function PrintCarRadioMessage()
     panel:SetAlpha(0)
     panel:MoveToFront()
     
+    -- Add text label
+    local textLabel = vgui.Create("DLabel", panel)
+    textLabel:SetText("Play Radio")
+    textLabel:SetFont("Roboto18")
+    textLabel:SetTextColor(Config.UI.TextColor)
+    textLabel:SizeToContents()
+    textLabel:SetPos(Scale(70), panelHeight/2 - textLabel:GetTall()/2)
+    
     -- Slide in animation with safety check
     local panelRef = panel
     Misc.Animations:CreateTween(0.5, scrW, scrW - panelWidth, function(value)
@@ -868,7 +909,6 @@ local function PrintCarRadioMessage()
         
         draw.RoundedBoxEx(12, 0, 0, w, h, bgColor, true, false, true, false)
 
-        -- Key highlight box
         local keyWidth = Scale(40)
         local keyHeight = Scale(30)
         local keyX = Scale(20)
@@ -879,8 +919,22 @@ local function PrintCarRadioMessage()
         local adjustedKeyX = keyX - (adjustedKeyWidth - keyWidth) / 2
         local adjustedKeyY = keyY - (adjustedKeyHeight - keyHeight) / 2
         
+        -- Draw key background
         draw.RoundedBox(6, adjustedKeyX, adjustedKeyY, adjustedKeyWidth, adjustedKeyHeight, 
             Config.UI.KeyHighlightColor)
+
+        -- Draw the key name
+        draw.SimpleText(keyName, "Roboto18", adjustedKeyX + adjustedKeyWidth/2, adjustedKeyY + adjustedKeyHeight/2, 
+            Config.UI.TextColor, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+
+        -- Draw subtle divider line
+        surface.SetDrawColor(ColorAlpha(Config.UI.TextColor, 40))  -- 40 alpha for subtle effect
+        surface.DrawLine(
+            Scale(70) - Scale(5),  -- Slightly left of text
+            h * 0.3,               -- Start from 30% height
+            Scale(70) - Scale(5),  -- Same X position
+            h * 0.7                -- End at 70% height
+        )
     end
 
     panel.Think = function(self)
@@ -1090,7 +1144,6 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
         -- Animation states
         button.hoverProgress = 0
         button.clickScale = 1
-        button.isPlaying = false
         
         button.Paint = function(self, w, h)
             -- Scale animation for click feedback
@@ -1108,14 +1161,6 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
             
             draw.RoundedBox(8, 0, 0, w, h, currentColor)
             
-            -- Playing state animation
-            if self.isPlaying then
-                local pulseScale = 1 + math.sin(CurTime() * 2) * 0.02
-                local pulseColor = ColorAlpha(Config.UI.StatusIndicatorColor, 30)
-                draw.RoundedBox(8, -2 * pulseScale, -2 * pulseScale, 
-                              w * pulseScale, h * pulseScale, pulseColor)
-            end
-            
             cam.PopModelMatrix()
         end
         
@@ -1127,23 +1172,7 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
             end
         end
         
-        button.DoClick = function(self)
-            -- Store reference to self
-            local panel = self
-            
-            -- Click animation with safety check
-            self.clickScale = 0.95
-            Misc.Animations:CreateTween(0.2, 0.95, 1, function(value)
-                if IsValid(panel) then
-                    panel.clickScale = value
-                else
-                    return false -- Stop the animation if panel is invalid
-                end
-            end)
-            
-            surface.PlaySound("buttons/button3.wav")
-            if onClick then onClick(self) end
-        end
+        button.DoClick = onClick
         
         return button
     end
@@ -1152,7 +1181,7 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
     local function createSeparator()
         local separator = vgui.Create("DPanel", stationListPanel)
         separator:Dock(TOP)
-        separator:DockMargin(Scale(10), Scale(5), Scale(10), Scale(5))  -- Match the button margins
+        separator:DockMargin(Scale(10), Scale(5), Scale(10), Scale(5))
         separator:SetTall(Scale(2))
         separator.Paint = function(self, w, h)
             draw.RoundedBox(0, 0, 0, w, h, Config.UI.SeparatorColor)
@@ -1373,22 +1402,6 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                    currentlyPlayingStations[entity].name == station.name then
                     -- Base playing station color
                     draw.RoundedBox(8, 0, 0, w, h, Config.UI.StatusIndicatorColor)
-                    
-                    -- Add pulse effect for newly playing stations
-                    if Misc.PulseEffects:IsElementPulsing(self) then
-                        local progress = Misc.PulseEffects:GetPulseProgress(self)
-                        local pulseAlpha = math.sin(progress * math.pi) * 50 -- Fade in and out
-                        local pulseColor = ColorAlpha(Config.UI.StatusIndicatorColor, pulseAlpha)
-                        
-                        -- Draw expanding pulse
-                        local pulseScale = 1 + (progress * 0.1) -- 10% max expansion
-                        local expandW = w * pulseScale
-                        local expandH = h * pulseScale
-                        local offsetX = (expandW - w) / 2
-                        local offsetY = (expandH - h) / 2
-                        
-                        draw.RoundedBox(8, -offsetX, -offsetY, expandW, expandH, pulseColor)
-                    end
                 else
                     draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonColor)
                     if self:IsHovered() then
@@ -1806,20 +1819,6 @@ openRadioMenu = function(openSettings)
     end
 
     frame.Paint = function(self, w, h)
-        -- Get current menu scale
-        local scale = Misc.PulseEffects:GetMenuScale()
-        
-        -- Apply scale transform
-        if scale ~= 1 then
-            local matrix = Matrix()
-            local centerX, centerY = w/2, h/2
-            matrix:Translate(Vector(centerX, centerY, 0))
-            matrix:Scale(Vector(scale, scale, 1))
-            matrix:Translate(Vector(-centerX, -centerY, 0))
-            
-            cam.PushModelMatrix(matrix)
-        end
-        
         -- Normal painting
         draw.RoundedBox(8, 0, 0, w, h, Config.UI.BackgroundColor)
         draw.RoundedBoxEx(8, 0, 0, w, Scale(40), Config.UI.HeaderColor, true, true, false, false)
@@ -1862,10 +1861,6 @@ openRadioMenu = function(openSettings)
         draw.SimpleText(headerText, "HeaderFont", iconOffsetX + iconSize + Scale(5), 
                        headerHeight/2, Config.UI.TextColor, 
                        TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
-        
-        if scale ~= 1 then
-            cam.PopModelMatrix()
-        end
     end
 
     local searchBox = vgui.Create("DTextEntry", frame)
@@ -2049,9 +2044,6 @@ openRadioMenu = function(openSettings)
         local trackY = centerY - trackHeight/2
 
         draw.RoundedBox(trackHeight/2, 0, trackY, w, trackHeight, ColorAlpha(Config.UI.VolumeSliderColor, 100))
-
-        local knobX = self:GetSlideX()
-        draw.RoundedBox(trackHeight/2, 0, trackY, knobX, trackHeight, Config.UI.VolumeSliderColor)
     end
 
     volumeSlider.Slider.Knob.Paint = function(self, w, h)
@@ -2528,7 +2520,6 @@ hook.Add("Initialize", "InitializeRadioTheme", initializeTheme)
 hook.Add("Think", "UpdateStreamPositions", function()
     local currentTime = CurTime()
     
-    -- Only update if enough time has passed
     if (currentTime - lastStreamUpdate) < STREAM_UPDATE_INTERVAL then
         return
     end
@@ -2538,13 +2529,23 @@ hook.Add("Think", "UpdateStreamPositions", function()
     local ply = LocalPlayer()
     local plyPos = ply:GetPos()
 
+    -- Cache IsValid results at start
+    local validStreams = {}
     for entIndex, streamData in pairs(StreamManager.activeStreams) do
+        if IsValid(streamData.entity) and IsValid(streamData.stream) then
+            validStreams[entIndex] = streamData
+        else
+            StreamManager:QueueCleanup(entIndex, "invalid_reference")
+        end
+    end
+
+    -- Use cached valid streams
+    for entIndex, streamData in pairs(validStreams) do
         local entity = streamData.entity
         local stream = streamData.stream
         
         stream:SetPos(entity:GetPos())
         
-        -- Update volume based on distance
         local distanceSqr = plyPos:DistToSqr(entity:GetPos())
         local isPlayerInCar = false
         
@@ -2556,3 +2557,51 @@ hook.Add("Think", "UpdateStreamPositions", function()
         updateRadioVolume(stream, distanceSqr, isPlayerInCar, entity)
     end
 end)
+
+-- Add validity cache update to Think hook
+hook.Add("Think", "UpdateStreamValidityCache", function()
+    StreamManager:UpdateValidityCache()
+end)
+
+local UIReferenceTracker = {
+    references = {},
+    validityCache = {},
+    lastCheck = 0,
+    CHECK_INTERVAL = 0.5,
+    
+    Track = function(self, element, id)
+        self.references[id] = element
+        self.validityCache[id] = true
+    end,
+    
+    Untrack = function(self, id)
+        self.references[id] = nil
+        self.validityCache[id] = nil
+    end,
+    
+    IsValid = function(self, id)
+        return self.validityCache[id] == true
+    end,
+    
+    Update = function(self)
+        local currentTime = CurTime()
+        if (currentTime - self.lastCheck) < self.CHECK_INTERVAL then
+            return
+        end
+        
+        self.lastCheck = currentTime
+        
+        for id, element in pairs(self.references) do
+            self.validityCache[id] = IsValid(element)
+            if not self.validityCache[id] then
+                self.references[id] = nil
+            end
+        end
+    end
+}
+
+-- Add to Think hook
+hook.Add("Think", "UpdateUIReferences", function()
+    UIReferenceTracker:Update()
+end)
+
