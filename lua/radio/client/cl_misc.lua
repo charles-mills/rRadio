@@ -229,7 +229,6 @@ Modules.Effects = {
     end
 }
 
--- Update the PulseEffects module to handle menu-wide pulses
 Modules.PulseEffects = {
     menuPulse = nil,
     

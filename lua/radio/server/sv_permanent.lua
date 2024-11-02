@@ -9,13 +9,39 @@
     Date: October 30, 2024
 ]]--
 
--- Create the ConVar for boombox permanence
 CreateConVar("boombox_permanent", "0", FCVAR_ARCHIVE + FCVAR_REPLICATED, "Toggle boombox permanence")
 
 local initialLoadComplete = false
 local spawnedBoomboxesByPosition = {}
 local spawnedBoomboxes = {}
 local currentMap = game.GetMap()
+
+local ActiveRadioRegistry = include("radio/server/sv_radio_registry.lua")
+
+local POSITION_SAVE_INTERVAL = 30 -- Save position every 30 seconds
+local STATION_SAVE_DEBOUNCE = 2 -- Debounce station saves by 2 seconds
+local pendingSaves = {}
+local lastPositionSaves = {}
+
+local POSITION_THRESHOLD = 0.5 -- Only save position changes greater than this
+
+local function hasPositionChanged(oldPos, newPos)
+    if not oldPos or not newPos then return true end
+    return math.abs(oldPos.x - newPos.x) > POSITION_THRESHOLD or
+           math.abs(oldPos.y - newPos.y) > POSITION_THRESHOLD or
+           math.abs(oldPos.z - newPos.z) > POSITION_THRESHOLD
+end
+
+local function hasDataChanged(oldData, newData)
+    if not oldData then return true end
+    
+    -- Check if any essential data has changed
+    return oldData.stationName ~= newData.stationName or
+           oldData.url ~= newData.url or
+           math.abs(oldData.volume - newData.volume) > 0.01 or
+           hasPositionChanged(oldData.position, newData.position) or
+           oldData.angles ~= newData.angles
+end
 
 -- Initialize the SQLite database
 local function InitializeDatabase()
@@ -61,75 +87,58 @@ local function InitializeDatabase()
     end
 end
 
--- Call the initialization function
 InitializeDatabase()
 
--- Function to sanitize inputs to prevent SQL injection
 local function sanitize(str)
     return string.gsub(str, "'", "''")
 end
 
--- Function to generate a unique permanent ID
 local function GeneratePermanentID()
     return os.time() .. "_" .. math.random(1000, 9999)
 end
 
--- Function to add or update a permanent boombox in the database
 local function SavePermanentBoombox(ent)
     if not IsValid(ent) then 
+        print("[rRadio Debug] SavePermanentBoombox: Invalid entity")
         return 
     end
-
-    -- Check if the table exists
-    if not sql.TableExists("permanent_boomboxes") then
-        InitializeDatabase()  -- Try to create the table
-        if not sql.TableExists("permanent_boomboxes") then
-            return
-        end
-    end
-
-    local model = sanitize(ent:GetModel())
-    local pos = ent:GetPos()
-    local ang = ent:GetAngles()
     
-    -- Get the current station info from ActiveRadios if available
     local entIndex = ent:EntIndex()
-    local stationName = ""
-    local stationURL = ""
-    local volume = ent:GetNWFloat("Volume", 1.0)
-
-    -- Check ActiveRadios table first
-    if ActiveRadios and ActiveRadios[entIndex] then
-        stationName = sanitize(ActiveRadios[entIndex].stationName or "")
-        stationURL = sanitize(ActiveRadios[entIndex].url or "")
-    end
-
-    -- If no URL found in ActiveRadios, check BoomboxStatuses
-    if (stationURL == "" or stationName == "") and BoomboxStatuses and BoomboxStatuses[entIndex] then
-        if stationURL == "" then
-            stationURL = sanitize(BoomboxStatuses[entIndex].url or "")
-        end
-        if stationName == "" then
-            stationName = sanitize(BoomboxStatuses[entIndex].stationName or "")
-        end
-    end
-
-    -- Fallback to networked values if still no info
-    if stationURL == "" or stationName == "" then
-        if stationName == "" then
-            stationName = sanitize(ent:GetNWString("StationName", ""))
-        end
-        if stationURL == "" then
-            stationURL = sanitize(ent:GetNWString("StationURL", ""))
-        end
-    end
-
+    local saveData = pendingSaves[entIndex]
+    
+    -- Get permanent ID or generate new one
     local permanentID = ent:GetNWString("PermanentID", "")
     if permanentID == "" then
         permanentID = GeneratePermanentID()
         ent:SetNWString("PermanentID", permanentID)
+        print("[rRadio Debug] Generated new PermanentID:", permanentID)
     end
-
+    
+    -- Get current radio data from registry first
+    local radioData = ActiveRadioRegistry:Get(ent)
+    print("[rRadio Debug] SavePermanentBoombox called for entity", entIndex)
+    print("  - PermanentID:", permanentID)
+    print("  - Has SaveData:", saveData ~= nil)
+    print("  - Has RadioData:", radioData ~= nil)
+    if radioData then
+        print("  - RadioData Station:", radioData.stationName)
+        print("  - RadioData URL:", radioData.url)
+    end
+    
+    -- Use pending save data if available, otherwise use current state
+    local model = sanitize(ent:GetModel())
+    local pos = saveData and saveData.position or ent:GetPos()
+    local ang = saveData and saveData.angles or ent:GetAngles()
+    local stationName = (saveData and saveData.stationName) or (radioData and radioData.stationName) or ent:GetNWString("StationName", "")
+    local stationURL = (saveData and saveData.url) or (radioData and radioData.url) or ent:GetNWString("StationURL", "")
+    local volume = (saveData and saveData.volume) or (radioData and radioData.volume) or ent:GetNWFloat("Volume", 1.0)
+    
+    print("[rRadio Debug] Final save data:")
+    print("  - Station:", stationName)
+    print("  - URL:", stationURL)
+    print("  - Volume:", volume)
+    print("  - Position:", pos.x, pos.y, pos.z)
+    
     -- Check if the boombox already exists for this map
     local query = string.format([[
         SELECT id FROM permanent_boomboxes
@@ -139,6 +148,7 @@ local function SavePermanentBoombox(ent)
 
     local result = sql.Query(query)
     if result == false then
+        print("[rRadio Debug] SQL Error in existence check:", sql.LastError())
         return
     end
 
@@ -156,24 +166,53 @@ local function SavePermanentBoombox(ent)
             sql.SQLStr(stationName), sql.SQLStr(stationURL), volume, tonumber(id)
         )
         result = sql.Query(updateQuery)
+        if result == false then
+            print("[rRadio Debug] SQL Update Error:", sql.LastError())
+            print("[rRadio Debug] Failed Query:", updateQuery)
+        else
+            print("[rRadio Debug] Successfully updated existing boombox record")
+        end
     else
         -- Insert new entry
         local insertQuery = string.format([[
-            INSERT INTO permanent_boomboxes (map, permanent_id, model, pos_x, pos_y, pos_z, angle_pitch, angle_yaw, angle_roll, station_name, station_url, volume)
+            INSERT INTO permanent_boomboxes 
+            (map, permanent_id, model, pos_x, pos_y, pos_z, 
+            angle_pitch, angle_yaw, angle_roll, station_name, station_url, volume)
             VALUES (%s, %s, %s, %f, %f, %f, %f, %f, %f, %s, %s, %f);
         ]],
-            sql.SQLStr(currentMap), sql.SQLStr(permanentID), sql.SQLStr(model), pos.x, pos.y, pos.z, ang.p, ang.y, ang.r,
+            sql.SQLStr(currentMap), sql.SQLStr(permanentID), sql.SQLStr(model),
+            pos.x, pos.y, pos.z, ang.p, ang.y, ang.r,
             sql.SQLStr(stationName), sql.SQLStr(stationURL), volume
         )
         result = sql.Query(insertQuery)
+        if result == false then
+            print("[rRadio Debug] SQL Insert Error:", sql.LastError())
+            print("[rRadio Debug] Failed Query:", insertQuery)
+        else
+            print("[rRadio Debug] Successfully inserted new boombox record")
+        end
     end
 
-    -- After saving, verify the entry
-    local verifyQuery = string.format("SELECT * FROM permanent_boomboxes WHERE permanent_id = %s", sql.SQLStr(permanentID))
+    -- Verify the save
+    local verifyQuery = string.format([[
+        SELECT * FROM permanent_boomboxes 
+        WHERE map = %s AND permanent_id = %s;
+    ]], sql.SQLStr(currentMap), sql.SQLStr(permanentID))
+    
     local verifyResult = sql.Query(verifyQuery)
+    if verifyResult and #verifyResult > 0 then
+        print("[rRadio Debug] Save verification successful:")
+        print("  - Verified Station:", verifyResult[1].station_name)
+        print("  - Verified URL:", verifyResult[1].station_url)
+        print("  - Verified Volume:", verifyResult[1].volume)
+    else
+        print("[rRadio Debug] Failed to verify save!")
+        if verifyResult == false then
+            print("[rRadio Debug] SQL Verify Error:", sql.LastError())
+        end
+    end
 end
 
--- Function to remove a permanent boombox from the database
 local function RemovePermanentBoombox(ent)
     if not IsValid(ent) then 
         return 
@@ -192,45 +231,61 @@ local function RemovePermanentBoombox(ent)
     local success = sql.Query(deleteQuery)
 end
 
--- Function to load and spawn all permanent boomboxes from the database
 local function LoadPermanentBoomboxes(isReload)    
-    -- Clear the tracking tables
-    table.Empty(spawnedBoomboxes)
-    table.Empty(spawnedBoomboxesByPosition)
-
-    -- Remove existing permanent boomboxes
-    for _, ent in ipairs(ents.FindByClass("boombox")) do
-        if ent.IsPermanent then
-            ent:Remove()
+    print("[rRadio Debug] Starting LoadPermanentBoomboxes (isReload:", isReload, ")")
+    
+    -- Clear existing permanent boomboxes
+    if isReload then
+        local count = 0
+        for _, ent in ipairs(ents.FindByClass("boombox")) do
+            if ent.IsPermanent then
+                ent:Remove()
+                count = count + 1
+            end
         end
+        print("[rRadio Debug] Cleared", count, "existing permanent boomboxes")
     end
 
     if not sql.TableExists("permanent_boomboxes") then
+        print("[rRadio Debug] No permanent_boomboxes table exists")
         return
+    end
+
+    -- Dump current database state for debugging
+    print("[rRadio Debug] Current Database State:")
+    local dumpQuery = string.format("SELECT * FROM permanent_boomboxes WHERE map = '%s';", currentMap)
+    local dumpResult = sql.Query(dumpQuery)
+    if dumpResult then
+        for _, row in ipairs(dumpResult) do
+            print(string.format("DB Entry: ID=%s, PermanentID=%s", row.id, row.permanent_id))
+            print("  - Station:", row.station_name)
+            print("  - URL:", row.station_url)
+            print("  - Volume:", row.volume)
+        end
     end
 
     local loadQuery = string.format("SELECT * FROM permanent_boomboxes WHERE map = '%s';", currentMap)
     local result = sql.Query(loadQuery)
     
-    if not result then
-        return
+    if not result then 
+        print("[rRadio Debug] No permanent boomboxes found for map:", currentMap)
+        return 
     end
     
-    for i, row in ipairs(result) do
-        -- Check if this boombox has already been spawned by ID
-        if spawnedBoomboxes[row.permanent_id] then
-            continue
-        end
-
-        -- Check if a boombox already exists at this position
-        local posKey = string.format("%.2f,%.2f,%.2f", row.pos_x, row.pos_y, row.pos_z)
-        if spawnedBoomboxesByPosition[posKey] then
-            continue
-        end
-
+    print("[rRadio Debug] Found", #result, "permanent boomboxes to restore")
+    
+    for _, row in ipairs(result) do
+        print("[rRadio Debug] Restoring boombox:", row.permanent_id)
+        print("  - Position:", row.pos_x, row.pos_y, row.pos_z)
+        print("  - Station:", row.station_name)
+        print("  - URL:", row.station_url)
+        print("  - Volume:", row.volume)
+        
+        -- Create the boombox entity
         local ent = ents.Create("boombox")
-        if not IsValid(ent) then
-            continue
+        if not IsValid(ent) then 
+            print("[rRadio Debug] Failed to create boombox entity")
+            continue 
         end
 
         ent:SetModel(row.model)
@@ -245,58 +300,60 @@ local function LoadPermanentBoomboxes(isReload)
             phys:EnableMotion(false)
         end
 
-        -- Set networked variables
+        -- Set permanent properties
         ent:SetNWString("PermanentID", row.permanent_id)
-        ent:SetNWString("StationName", row.station_name)
-        ent:SetNWString("StationURL", row.station_url)
-        ent:SetNWFloat("Volume", row.volume)
-
-        -- Mark as permanent
         ent.IsPermanent = true
         ent:SetNWBool("IsPermanent", true)
 
-        -- Start playing the radio
-        if row.station_url ~= "" then
-            -- Set networked variables first
+        -- If there's a station, start playing through ActiveRadioRegistry
+        if row.station_url and row.station_url ~= "" then
+            print("[rRadio Debug] Starting station playback for boombox:", row.permanent_id)
+            print("  - Station Name:", row.station_name)
+            print("  - URL:", row.station_url)
+            print("  - Volume:", row.volume)
+            
+            -- Set initial networked values
             ent:SetNWString("StationName", row.station_name)
             ent:SetNWString("StationURL", row.station_url)
-            ent:SetNWString("Status", "playing")
-            ent:SetNWBool("IsPlaying", true)
+            ent:SetNWFloat("Volume", row.volume)
             
-            -- Update BoomboxStatuses
-            local entIndex = ent:EntIndex()
-            BoomboxStatuses[entIndex] = {
-                stationStatus = "playing",
-                stationName = row.station_name,
-                url = row.station_url
-            }
+            -- Add to registry first
+            local success = ActiveRadioRegistry:Add(
+                ent, 
+                row.station_name,
+                row.station_url,
+                row.volume,
+                true  -- Mark as permanent
+            )
+            print("[rRadio Debug] Initial registry add result:", success)
             
-            -- Broadcast status update to clients
-            net.Start("UpdateRadioStatus")
-                net.WriteEntity(ent)
-                net.WriteString(row.station_name)
-                net.WriteBool(true)
-                net.WriteString("playing")
-            net.Broadcast()
-            
-            -- Start playback on clients
-            net.Start("PlayCarRadioStation")
-                net.WriteEntity(ent)
-                net.WriteString(row.station_name)
-                net.WriteString(row.station_url)
-                net.WriteFloat(row.volume)
-            net.Broadcast()
+            if success then
+                -- Start the stream
+                net.Start("PlayCarRadioStation")
+                    net.WriteEntity(ent)
+                    net.WriteString(row.station_name)
+                    net.WriteString(row.station_url)
+                    net.WriteFloat(row.volume)
+                net.Broadcast()  -- Broadcast to all clients, they will handle range checking
 
-            -- Add to active radios
-            if AddActiveRadio then
-                AddActiveRadio(ent, row.station_name, row.station_url, row.volume)
+                -- Set status after starting stream
+                utils.setRadioStatus(ent, "playing", row.station_name, true)
+                
+                -- Then load as permanent boombox
+                success = ActiveRadioRegistry:LoadPermanentBoombox(
+                    ent,
+                    row.station_name,
+                    row.station_url,
+                    row.volume
+                )
+                print("[rRadio Debug] LoadPermanentBoombox result:", success)
             end
+        else
+            print("[rRadio Debug] No station URL for boombox:", row.permanent_id)
         end
-
-        -- Mark this boombox as spawned
-        spawnedBoomboxes[row.permanent_id] = true
-        spawnedBoomboxesByPosition[posKey] = true
     end
+    
+    print("[rRadio Debug] Finished loading permanent boomboxes")
 end
 
 hook.Remove("InitPostEntity", "LoadPermanentBoomboxes")
@@ -432,4 +489,156 @@ end
 
 hook.Add("Initialize", "UpdateCurrentMapForPermanentBoomboxes", function()
     currentMap = game.GetMap()
+end)
+
+local function QueueSave(entity, reason)
+    if not IsValid(entity) or not entity.IsPermanent then 
+        print("[rRadio Debug] QueueSave rejected:", not IsValid(entity) and "Invalid entity" or "Not permanent")
+        return 
+    end
+    
+    local entIndex = entity:EntIndex()
+    local radioData = ActiveRadioRegistry:Get(entity)
+    local currentTime = CurTime()
+    
+    print("[rRadio Debug] QueueSave called")
+    print("  - Entity:", entIndex)
+    print("  - Reason:", reason)
+    print("  - Has RadioData:", radioData ~= nil)
+    print("  - Current Station:", radioData and radioData.stationName or "none")
+    print("  - Current URL:", radioData and radioData.url or "none")
+    
+    -- Get current state
+    local currentState = {
+        position = entity:GetPos(),
+        angles = entity:GetAngles(),
+        stationName = radioData and radioData.stationName or entity:GetNWString("StationName", ""),
+        url = radioData and radioData.url or entity:GetNWString("StationURL", ""),
+        volume = entity:GetNWFloat("Volume", 1.0)
+    }
+    
+    -- Initialize or update pending save
+    if not pendingSaves[entIndex] then
+        pendingSaves[entIndex] = {
+            entity = entity,
+            lastSave = 0,
+            nextSave = currentTime + STATION_SAVE_DEBOUNCE,
+            position = currentState.position,
+            lastSavedPosition = currentState.position,
+            angles = currentState.angles,
+            lastPositionSave = lastPositionSaves[entIndex] or 0,
+            stationName = currentState.stationName,
+            url = currentState.url,
+            volume = currentState.volume,
+            lastSavedState = table.Copy(currentState)
+        }
+        print("[rRadio Debug] Created new pending save")
+    else
+        -- Check if position has changed significantly
+        local positionChanged = hasPositionChanged(
+            pendingSaves[entIndex].lastSavedPosition,
+            currentState.position
+        )
+        
+        -- Check if other data has changed
+        local dataChanged = hasDataChanged(
+            pendingSaves[entIndex].lastSavedState,
+            currentState
+        )
+        
+        if positionChanged or dataChanged then
+            print("[rRadio Debug] Updating pending save")
+            print("  - Position changed:", positionChanged)
+            print("  - Data changed:", dataChanged)
+            
+            pendingSaves[entIndex].position = currentState.position
+            pendingSaves[entIndex].angles = currentState.angles
+            pendingSaves[entIndex].stationName = currentState.stationName
+            pendingSaves[entIndex].url = currentState.url
+            pendingSaves[entIndex].volume = currentState.volume
+            pendingSaves[entIndex].nextSave = currentTime + STATION_SAVE_DEBOUNCE
+            
+            -- Only update position save time if position changed
+            if positionChanged then
+                pendingSaves[entIndex].lastPositionSave = currentTime
+                pendingSaves[entIndex].lastSavedPosition = currentState.position
+            end
+            
+            -- Update saved state
+            pendingSaves[entIndex].lastSavedState = table.Copy(currentState)
+        else
+            print("[rRadio Debug] No significant changes to save")
+        end
+    end
+end
+
+_G.QueueBoomboxSave = QueueSave
+
+-- Update the timer that processes saves
+timer.Create("ProcessPermanentBoomboxSaves", 1, 0, function()
+    local currentTime = CurTime()
+    
+    for entIndex, saveData in pairs(pendingSaves) do
+        if not IsValid(saveData.entity) then
+            print("[rRadio Debug] Removing invalid entity from pending saves:", entIndex)
+            pendingSaves[entIndex] = nil
+            continue
+        end
+        
+        local shouldSave = false
+        local reasons = {}
+        
+        -- Check if position needs saving
+        if currentTime - saveData.lastPositionSave >= POSITION_SAVE_INTERVAL then
+            if hasPositionChanged(saveData.lastSavedPosition, saveData.position) then
+                shouldSave = true
+                table.insert(reasons, "position_update")
+            end
+        end
+        
+        -- Check if station data needs saving
+        if currentTime >= saveData.nextSave then
+            -- Get current state
+            local currentState = {
+                stationName = saveData.stationName,
+                url = saveData.url,
+                volume = saveData.volume
+            }
+            
+            -- Compare with last saved state
+            if not saveData.lastSavedState or 
+               currentState.stationName ~= saveData.lastSavedState.stationName or
+               currentState.url ~= saveData.lastSavedState.url or
+               math.abs(currentState.volume - saveData.lastSavedState.volume) > 0.01 then
+                shouldSave = true
+                table.insert(reasons, "station_update")
+            end
+        end
+        
+        if shouldSave then
+            print(string.format("[rRadio Debug] Processing save for boombox %d", entIndex))
+            print("  - Reasons:", table.concat(reasons, ", "))
+            print("  - Station:", saveData.stationName)
+            print("  - URL:", saveData.url)
+            
+            SavePermanentBoombox(saveData.entity)
+            
+            -- Update save times and last saved state
+            saveData.lastSave = currentTime
+            if table.HasValue(reasons, "position_update") then
+                saveData.lastPositionSave = currentTime
+                saveData.lastSavedPosition = saveData.position
+            end
+            
+            -- Update last saved state
+            saveData.lastSavedState = {
+                stationName = saveData.stationName,
+                url = saveData.url,
+                volume = saveData.volume
+            }
+            
+            -- Clear pending save
+            pendingSaves[entIndex] = nil
+        end
+    end
 end)

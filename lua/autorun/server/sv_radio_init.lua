@@ -24,6 +24,9 @@ end
 
 -- Include the server-side radio logic
 include("radio/server/sv_core.lua")
+include("radio/server/sv_radio_registry.lua")
+include("radio/server/sv_permanent.lua")
+include("radio/server/sv_resource_manager.lua")
 
 -- Add resources
 resource.AddFile("models/rammel/boombox.mdl")
