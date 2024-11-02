@@ -67,7 +67,6 @@ local favoriteStations = getSafeState("favoriteStations", {})
 local entityVolumes = getSafeState("entityVolumes", {})
 local lastKeyPress = getSafeState("lastKeyPress", 0)
 
-
 local currentFrame = nil
 local settingsMenuOpen = false
 local openRadioMenu
@@ -2167,40 +2166,35 @@ openRadioMenu = function(openSettings)
             surface.PlaySound("buttons/lightswitch2.wav")
             
             if settingsMenuOpen then
-                -- Transition out settings
-                transitionContent(settingsFrame, "out", function()
-                    settingsMenuOpen = false
-                    StateManager:SetState("settingsMenuOpen", false)
-                    if IsValid(settingsFrame) then
-                        settingsFrame:Remove()
-                        settingsFrame = nil
-                    end
-                    
-                    -- Transition in main content
-                    searchBox:SetVisible(true)
-                    stationListPanel:SetVisible(true)
-                    transitionContent(stationListPanel, "in")
-                    
-                    local currentCountry = StateManager:GetState("selectedCountry")
-                    backButton:SetVisible(currentCountry ~= nil)
-                    backButton:SetEnabled(currentCountry ~= nil)
-                end)
+                -- Remove settings instantly
+                settingsMenuOpen = false
+                StateManager:SetState("settingsMenuOpen", false)
+                if IsValid(settingsFrame) then
+                    settingsFrame:Remove()
+                    settingsFrame = nil
+                end
+                
+                -- Show main content immediately
+                searchBox:SetVisible(true)
+                stationListPanel:SetVisible(true)
+                
+                local currentCountry = StateManager:GetState("selectedCountry")
+                backButton:SetVisible(currentCountry ~= nil)
+                backButton:SetEnabled(currentCountry ~= nil)
             else
                 -- Handle country/favorites navigation
                 local currentCountry = StateManager:GetState("selectedCountry")
                 if currentCountry then
-                    transitionContent(stationListPanel, "out", function()
-                        StateManager:SetState("selectedCountry", nil)
-                        StateManager:SetState("favoritesMenuOpen", false)
-                        selectedCountry = nil
-                        favoritesMenuOpen = false
-                        
-                        populateList(stationListPanel, backButton, searchBox, true)
-                        transitionContent(stationListPanel, "in")
-                        
-                        backButton:SetVisible(false)
-                        backButton:SetEnabled(false)
-                    end)
+                    -- Instantly switch back to country list
+                    StateManager:SetState("selectedCountry", nil)
+                    StateManager:SetState("favoritesMenuOpen", false)
+                    selectedCountry = nil
+                    favoritesMenuOpen = false
+                    
+                    populateList(stationListPanel, backButton, searchBox, true)
+                    
+                    backButton:SetVisible(false)
+                    backButton:SetEnabled(false)
                 end
             end
         end
