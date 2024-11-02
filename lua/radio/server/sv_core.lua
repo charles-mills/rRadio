@@ -287,7 +287,24 @@ local TimerManager = {
     end
 }
 
--- Consolidated cleanup function
+--[[
+    Function: RemoveActiveRadio
+    Removes a radio from the active radios list.
+    Parameters:
+    - entity: The entity representing the radio.
+]]
+local function RemoveActiveRadio(entity)
+    if not IsValid(entity) then return end
+    local entIndex = entity:EntIndex()
+    ActiveRadios[entIndex] = nil
+    
+    -- Clean up any associated timers
+    if timer.Exists("StationUpdate_" .. entIndex) then
+        timer.Remove("StationUpdate_" .. entIndex)
+    end
+end
+
+-- Move this function definition before any code that uses it
 local function CleanupEntity(entity)
     if not IsValid(entity) then return end
     local entIndex = entity:EntIndex()
@@ -311,7 +328,9 @@ local function CleanupEntity(entity)
     end
 end
 
-hook.Add("EntityRemoved", "RadioSystemCleanup", CleanupEntity)
+hook.Add("EntityRemoved", "RadioSystemCleanup", function(entity)
+    CleanupEntity(entity)
+end)
 
 hook.Add("PlayerDisconnected", "CleanupPlayerRadioData", function(ply)
     PlayerRetryAttempts[ply] = nil
@@ -529,16 +548,6 @@ local function AddActiveRadio(entity, stationName, url, volume)
     if utils.IsBoombox(entity) then
         utils.setRadioStatus(entity, "playing", stationName, true)
     end
-end
-
---[[
-    Function: RemoveActiveRadio
-    Removes a radio from the active radios list.
-    Parameters:
-    - entity: The entity representing the radio.
-]]
-local function RemoveActiveRadio(entity)
-    ActiveRadios[entity:EntIndex()] = nil
 end
 
 --[[
