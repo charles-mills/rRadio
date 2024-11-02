@@ -60,7 +60,15 @@ local ThemeFactory = {
             ScrollbarColor = baseColors.scrollbar,
             ScrollbarGripColor = baseColors.scrollbarGrip,
             SearchBoxColor = baseColors.search,
-            AccentColor = baseColors.accent
+            AccentColor = baseColors.accent,
+            SeparatorColor = baseColors.separator or baseColors.button,
+            IconColor = baseColors.icon or baseColors.text,
+            VolumeSliderColor = baseColors.volumeSlider or baseColors.accent,
+            VolumeKnobColor = baseColors.volumeKnob or baseColors.button,
+            StatusIndicatorColor = baseColors.statusIndicator or baseColors.accent,
+            FavoriteStarColor = baseColors.favoriteStar or baseColors.accent,
+            MessageBackgroundColor = baseColors.messageBackground or baseColors.header,
+            KeyHighlightColor = baseColors.keyHighlight or baseColors.button,
         }
         
         -- Validate the created theme
@@ -143,7 +151,16 @@ safeAddTheme("midnight", ThemeFactory:createTheme("midnight", {
     closeHover = Color(50, 50, 100),
     scrollbar = Color(30, 30, 60),
     scrollbarGrip = Color(50, 50, 100),
-    search = Color(20, 20, 50)
+    search = Color(20, 20, 50),
+    accent = Color(0, 150, 255),
+    separator = Color(40, 40, 80),
+    icon = Color(255, 255, 255, 200),
+    volumeSlider = Color(0, 150, 255),
+    volumeKnob = Color(40, 40, 80),
+    statusIndicator = Color(0, 255, 150),
+    favoriteStar = Color(255, 215, 0),
+    messageBackground = Color(25, 25, 60, 230),
+    keyHighlight = Color(40, 40, 80)
 }))
 
 safeAddTheme("dark", ThemeFactory:createTheme("dark", {
@@ -157,7 +174,16 @@ safeAddTheme("dark", ThemeFactory:createTheme("dark", {
     closeHover = Color(80, 80, 80),
     scrollbar = Color(70, 70, 70),
     scrollbarGrip = Color(120, 120, 120),
-    search = Color(60, 60, 60)
+    search = Color(60, 60, 60),
+    accent = Color(100, 100, 100),
+    separator = Color(90, 90, 90),
+    icon = Color(240, 240, 240, 200),
+    volumeSlider = Color(120, 120, 120),
+    volumeKnob = Color(90, 90, 90),
+    statusIndicator = Color(100, 200, 100),
+    favoriteStar = Color(255, 215, 0),
+    messageBackground = Color(50, 50, 50, 230),
+    keyHighlight = Color(80, 80, 80)
 }))
 
 -- Cyberpunk theme
@@ -173,7 +199,15 @@ safeAddTheme("cyberpunk", ThemeFactory:createTheme("cyberpunk", {
     scrollbar = Color(40, 20, 60),
     scrollbarGrip = Color(0, 255, 255),
     search = Color(30, 15, 45),
-    accent = Color(255, 0, 128)
+    accent = Color(255, 0, 128),
+    separator = Color(0, 255, 255, 50),
+    icon = Color(255, 0, 255, 200),
+    volumeSlider = Color(255, 0, 128),
+    volumeKnob = Color(0, 255, 255),
+    statusIndicator = Color(0, 255, 128),
+    favoriteStar = Color(255, 255, 0),
+    messageBackground = Color(40, 20, 60, 230),
+    keyHighlight = Color(60, 30, 90)
 }))
 
 -- Retro theme
@@ -189,7 +223,15 @@ safeAddTheme("retro", ThemeFactory:createTheme("retro", {
     scrollbar = Color(220, 200, 160),
     scrollbarGrip = Color(180, 160, 120),
     search = Color(200, 180, 140),
-    accent = Color(160, 140, 100)
+    accent = Color(160, 140, 100),
+    separator = Color(180, 160, 120),
+    icon = Color(100, 80, 60, 200),
+    volumeSlider = Color(160, 140, 100),
+    volumeKnob = Color(180, 160, 120),
+    statusIndicator = Color(120, 180, 120),
+    favoriteStar = Color(200, 160, 80),
+    messageBackground = Color(220, 200, 160, 230),
+    keyHighlight = Color(200, 180, 140)
 }))
 
 -- Nord theme
@@ -205,7 +247,15 @@ safeAddTheme("nord", ThemeFactory:createTheme("nord", {
     scrollbar = Color(67, 76, 94),
     scrollbarGrip = Color(129, 161, 193),
     search = Color(59, 66, 82),
-    accent = Color(136, 192, 208)
+    accent = Color(136, 192, 208),
+    separator = Color(76, 86, 106),
+    icon = Color(236, 239, 244, 200),
+    volumeSlider = Color(136, 192, 208),
+    volumeKnob = Color(76, 86, 106),
+    statusIndicator = Color(163, 190, 140),
+    favoriteStar = Color(235, 203, 139),
+    messageBackground = Color(67, 76, 94, 230),
+    keyHighlight = Color(76, 86, 106)
 }))
 
 safeAddTheme("dracula", ThemeFactory:createTheme("dracula", {
@@ -220,7 +270,15 @@ safeAddTheme("dracula", ThemeFactory:createTheme("dracula", {
     scrollbar = Color(68, 71, 90),
     scrollbarGrip = Color(139, 233, 253),
     search = Color(68, 71, 90),
-    accent = Color(80, 250, 123)
+    accent = Color(80, 250, 123),
+    separator = Color(98, 114, 164),
+    icon = Color(248, 248, 242, 200),
+    volumeSlider = Color(139, 233, 253),
+    volumeKnob = Color(98, 114, 164),
+    statusIndicator = Color(80, 250, 123),
+    favoriteStar = Color(241, 250, 140),
+    messageBackground = Color(68, 71, 90, 230),
+    keyHighlight = Color(98, 114, 164)
 }))
 
 safeAddTheme("material", ThemeFactory:createTheme("material", {
@@ -235,7 +293,15 @@ safeAddTheme("material", ThemeFactory:createTheme("material", {
     scrollbar = Color(69, 90, 100),
     scrollbarGrip = Color(0, 150, 136),
     search = Color(55, 71, 79),
-    accent = Color(0, 188, 212)
+    accent = Color(0, 188, 212),
+    separator = Color(84, 110, 122),
+    icon = Color(236, 239, 241, 200),
+    volumeSlider = Color(0, 188, 212),
+    volumeKnob = Color(84, 110, 122),
+    statusIndicator = Color(0, 150, 136),
+    favoriteStar = Color(255, 235, 59),
+    messageBackground = Color(69, 90, 100, 230),
+    keyHighlight = Color(84, 110, 122)
 }))
 
 safeAddTheme("gruvbox", ThemeFactory:createTheme("gruvbox", {
@@ -250,7 +316,15 @@ safeAddTheme("gruvbox", ThemeFactory:createTheme("gruvbox", {
     scrollbar = Color(80, 73, 69),
     scrollbarGrip = Color(215, 153, 33),
     search = Color(60, 56, 54),
-    accent = Color(250, 189, 47)
+    accent = Color(250, 189, 47),
+    separator = Color(102, 92, 84),
+    icon = Color(235, 219, 178, 200),
+    volumeSlider = Color(215, 153, 33),
+    volumeKnob = Color(102, 92, 84),
+    statusIndicator = Color(184, 187, 38),
+    favoriteStar = Color(250, 189, 47),
+    messageBackground = Color(80, 73, 69, 230),
+    keyHighlight = Color(102, 92, 84)
 }))
 
 safeAddTheme("tokyonight", ThemeFactory:createTheme("tokyonight", {
@@ -265,7 +339,15 @@ safeAddTheme("tokyonight", ThemeFactory:createTheme("tokyonight", {
     scrollbar = Color(41, 46, 66),
     scrollbarGrip = Color(187, 154, 247),
     search = Color(36, 40, 59),
-    accent = Color(187, 154, 247)
+    accent = Color(187, 154, 247),
+    separator = Color(52, 59, 88),
+    icon = Color(192, 202, 245, 200),
+    volumeSlider = Color(187, 154, 247),
+    volumeKnob = Color(52, 59, 88),
+    statusIndicator = Color(158, 206, 106),
+    favoriteStar = Color(224, 175, 104),
+    messageBackground = Color(41, 46, 66, 230),
+    keyHighlight = Color(52, 59, 88)
 }))
 
 CreateClientConVar("radio_theme", ThemeFactory:getDefaultTheme(), true, false, "Select the theme for the radio UI.")

@@ -8,6 +8,7 @@ AddCSLuaFile("radio/client/cl_themes.lua")
 AddCSLuaFile("radio/client/cl_key_names.lua")
 AddCSLuaFile("radio/client/cl_state_manager.lua")
 AddCSLuaFile("radio/shared/sh_utils.lua")
+AddCSLuaFile("radio/client/cl_misc.lua")
 
 -- Dynamically include all radio station data files
 local dataFiles = file.Find("radio/client/stations/data_*.lua", "LUA")
