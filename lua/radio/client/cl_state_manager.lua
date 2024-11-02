@@ -309,7 +309,6 @@ function StateManagerFunctions:InvalidateCache(cacheType)
     end
 end
 
--- Modify SetState to invalidate cache when favorites change
 local originalSetState = StateManagerFunctions.SetState
 function StateManagerFunctions:SetState(key, value)
     originalSetState(self, key, value)

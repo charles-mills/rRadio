@@ -20,6 +20,7 @@ util.AddNetworkString("RemoveBoomboxPermanent")
 util.AddNetworkString("BoomboxPermanentConfirmation")
 util.AddNetworkString("RadioConfigUpdate")
 util.AddNetworkString("RequestRadioStream")
+util.AddNetworkString("UpdateRadioRegistry")
 
 -- Core constants
 local GLOBAL_COOLDOWN = 0.1
@@ -39,6 +40,30 @@ local PlayerCooldowns = {}
 local EntityVolumes = {}
 local volumeUpdateQueue = {}
 BoomboxStatuses = BoomboxStatuses or {}
+
+local ActiveRadioRegistry = include("radio/server/sv_radio_registry.lua")
+
+-- Add periodic cleanup
+timer.Create("RadioRegistryCleanup", 300, 0, function()
+    local removed = ActiveRadioRegistry:Cleanup()
+    if removed > 0 and utils.debug_mode then
+        print("[rRadio] Cleaned up", removed, "invalid radio entries")
+    end
+end)
+
+hook.Add("OnEntityCreated", "RegisterRadioEntity", function(entity)
+    timer.Simple(0, function()
+        if not IsValid(entity) then return end
+        
+        if utils.IsBoombox(entity) or utils.GetVehicle(entity) then
+            ActiveRadioRegistry:Add(entity, "", "", 0.5)
+        end
+    end)
+end)
+
+hook.Add("EntityRemoved", "UnregisterRadioEntity", function(entity)
+    ActiveRadioRegistry:Remove(entity)
+end)
 
 local function GetDefaultVolume(entity)
     if not IsValid(entity) then return 0.5 end
@@ -288,7 +313,6 @@ local TimerManager = {
     end
 }
 
--- Add this function definition before CleanupEntity
 --[[
     Function: RemoveActiveRadio
     Removes a radio from the active radios list and cleans up associated data.
@@ -297,21 +321,9 @@ local TimerManager = {
 ]]
 local function RemoveActiveRadio(entity)
     if not IsValid(entity) then return end
-    local entIndex = entity:EntIndex()
+    ActiveRadioRegistry:Remove(entity)
     
-    -- Clear active radio data
-    ActiveRadios[entIndex] = nil
-    
-    -- Clear networked variables
-    entity:SetNWString("StationName", "")
-    entity:SetNWString("StationURL", "")
-    
-    -- Update radio status for boomboxes
-    if utils.IsBoombox(entity) then
-        utils.setRadioStatus(entity, "stopped", "", false)
-    end
-    
-    -- Notify clients to stop playback
+    -- Notify all clients to stop playback
     net.Start("StopCarRadioStation")
         net.WriteEntity(entity)
     net.Broadcast()
@@ -371,14 +383,12 @@ end)
 ]]
 local function StartNewStream(entity, stationName, stationURL, volume)
     if not IsValid(entity) then return end
-    local entIndex = entity:EntIndex()
     
-    -- Add to active radios
-    AddActiveRadio(entity, stationName, stationURL, volume)
+    -- Add to registry
+    ActiveRadioRegistry:Add(entity, stationName, stationURL, volume)
     
     -- Only broadcast to players in range
-    local inRangePlayers = utils.getPlayersInRange(entity)
-    
+    local inRangePlayers = ActiveRadioRegistry:GetInRangePlayers(entity)
     if #inRangePlayers > 0 then
         net.Start("PlayCarRadioStation")
             net.WriteEntity(entity)
@@ -386,18 +396,6 @@ local function StartNewStream(entity, stationName, stationURL, volume)
             net.WriteString(stationURL)
             net.WriteFloat(volume)
         net.Send(inRangePlayers)
-    end
-    
-    -- Handle boombox specific logic
-    if utils.IsBoombox(entity) then
-        utils.setRadioStatus(entity, "tuning", stationName)
-        
-        TimerManager:create("StationUpdate_" .. entIndex, STATION_TUNING_DELAY, 1, function()
-            if IsValid(entity) then
-                utils.setRadioStatus(entity, "playing", stationName)
-            end
-            return true
-        end)
     end
 end
 
@@ -484,7 +482,6 @@ local VolumeUpdater = {
     end
 }
 
--- Replace the existing volume update receiver with this simplified version:
 net.Receive("UpdateRadioVolume", function(len, ply)
     local entity = net.ReadEntity()
     local volume = net.ReadFloat()
@@ -539,9 +536,8 @@ end)
     - url: The URL of the station.
     - volume: The volume level.
 ]]
-local function AddActiveRadio(entity, stationName, url, volume)
-    if not IsValid(entity) or not utils.canUseRadio(entity) then return end
-    
+local function AddActiveRadio(entity, stationName, stationURL, volume)
+    if not IsValid(entity) then return end
     local entIndex = entity:EntIndex()
     
     -- Initialize volume if not set
@@ -549,19 +545,29 @@ local function AddActiveRadio(entity, stationName, url, volume)
 
     -- Set networked variables
     entity:SetNWString("StationName", stationName)
-    entity:SetNWString("StationURL", url)
+    entity:SetNWString("StationURL", stationURL)
     entity:SetNWFloat("Volume", EntityVolumes[entIndex])
 
     -- Update ActiveRadios table
     ActiveRadios[entIndex] = {
         stationName = stationName,
-        url = url,
-        volume = EntityVolumes[entIndex]
+        url = stationURL,
+        volume = EntityVolumes[entIndex],
+        isPlaying = true
     }
 
     -- Update radio status
     if utils.IsBoombox(entity) then
         utils.setRadioStatus(entity, "playing", stationName, true)
+        
+        -- Ensure status stays synced
+        timer.Create("StatusSync_" .. entIndex, 1, 0, function()
+            if IsValid(entity) and ActiveRadios[entIndex] then
+                utils.setRadioStatus(entity, "playing", stationName, true)
+            else
+                timer.Remove("StatusSync_" .. entIndex)
+            end
+        end)
     end
 end
 
@@ -620,8 +626,9 @@ local function SendActiveRadiosToPlayer(ply)
             net.Send(ply)
         end
     end
-
-    PlayerRetryAttempts[ply] = nil
+    timer.Simple(5, function()
+        PlayerRetryAttempts[ply] = nil
+    end)
 end
 
 hook.Add("PlayerInitialSpawn", "SendActiveRadiosOnJoin", function(ply)
@@ -632,12 +639,6 @@ hook.Add("PlayerInitialSpawn", "SendActiveRadiosOnJoin", function(ply)
     end)
 end)
 
---[[
-    Function: UpdateVehicleStatus
-    Description: Returns the actual vehicle entity, handling parent relationships
-    @param vehicle (Entity): The vehicle to check
-    @return (Entity): The actual vehicle entity or nil
-]]
 local function UpdateVehicleStatus(vehicle)
     if not IsValid(vehicle) then return end
 
@@ -663,7 +664,6 @@ hook.Add("PlayerEnteredVehicle", "RadioVehicleHandling", function(ply, vehicle)
     end
 end)
 
--- Add hook for new vehicles
 hook.Add("OnEntityCreated", "InitializeVehicleStatus", function(ent)
     timer.Simple(0, function()
         if IsValid(ent) and utils.GetVehicle(ent) then
@@ -756,28 +756,16 @@ net.Receive("PlayCarRadioStation", function(len, ply)
 
     local entIndex = actualEntity:EntIndex()
     
-    -- Handle the stream request
-    ResourceManager:RequestStream(ply, actualEntity, stationURL, function(success, error)
-        if not success then
-            ply:ChatPrint("[rRadio] " .. (error or "Failed to start stream"))
-            return
-        end
-        
-        -- Stop any existing playback
-        if ActiveRadios[entIndex] then
-            net.Start("StopCarRadioStation")
-                net.WriteEntity(actualEntity)
-            net.Broadcast()
-            
-            -- Add delay before starting new stream
-            TimerManager:create("StartStream_" .. entIndex, STREAM_RETRY_DELAY, 1, function()
-                StartNewStream(actualEntity, stationName, stationURL, volume)
-                return true
-            end)
-        else
-            StartNewStream(actualEntity, stationName, stationURL, volume)
-        end
-    end)
+    -- Add to registry first
+    ActiveRadioRegistry:Add(actualEntity, stationName, stationURL, volume, actualEntity.IsPermanent)
+    
+    -- Then queue save if it's a permanent boombox
+    if utils.IsBoombox(actualEntity) and actualEntity.IsPermanent then
+        ActiveRadioRegistry:QueueSave(actualEntity, "station_started")
+    end
+    
+    -- Finally start the stream
+    StartNewStream(actualEntity, stationName, stationURL, volume)
 end)
 
 
@@ -841,6 +829,11 @@ net.Receive("StopCarRadioStation", function(len, ply)
             net.WriteBool(false)
         net.Broadcast()
     end
+
+    -- Queue save if it's a permanent boombox
+    if utils.IsBoombox(entity) and entity.IsPermanent then
+        ActiveRadioRegistry:QueueSave(entity, "station_stopped")
+    end
 end)
 
 net.Receive("UpdateRadioVolume", function(len, ply)
@@ -889,6 +882,11 @@ net.Receive("UpdateRadioVolume", function(len, ply)
                 updateData.pendingPlayer = nil
             end
         end)
+    end
+
+    -- Queue save if it's a permanent boombox
+    if utils.IsBoombox(entity) and entity.IsPermanent then
+        ActiveRadioRegistry:QueueSave(entity, "volume_changed")
     end
 end)
 
@@ -1362,14 +1360,12 @@ hook.Add("EntityRemoved", "CleanupRadioVolume", function(entity)
     EntityVolumes[entIndex] = nil
 end)
 
--- Add new handler for stream requests
 net.Receive("RequestRadioStream", function(len, ply)
     local entity = net.ReadEntity()
     if not IsValid(entity) then return end
     
-    local entIndex = entity:EntIndex()
-    local radioData = ActiveRadios[entIndex]
-    
+    -- Check if entity is actually playing a station
+    local radioData = ActiveRadioRegistry:Get(entity)
     if not radioData then return end
     
     -- Verify player is in range
@@ -1383,3 +1379,28 @@ net.Receive("RequestRadioStream", function(len, ply)
         net.WriteFloat(radioData.volume)
     net.Send(ply)
 end)
+
+concommand.Add("radio_registry_debug", function(ply)
+    if IsValid(ply) and not ply:IsSuperAdmin() then return end
+    
+    local count, byClass = ActiveRadioRegistry:GetStats()
+    
+    print("\n=== Active Radio Registry ===")
+    print("Total Active Radios:", count)
+    print("\nBy Class:")
+    
+    for class, classCount in pairs(byClass) do
+        print(string.format("%s: %d", class, classCount))
+        
+        -- Show detailed info for each active radio of this class
+        for entIndex, data in pairs(ActiveRadioRegistry.entities) do
+            if IsValid(data.entity) and data.entity:GetClass() == class then
+                print(string.format("  Entity %d:", entIndex))
+                print(string.format("    Station: %s", data.stationName))
+                print(string.format("    Volume: %.2f", data.volume))
+                print(string.format("    Players in range: %d", #ActiveRadioRegistry:GetInRangePlayers(data.entity)))
+            end
+        end
+    end
+end)
+

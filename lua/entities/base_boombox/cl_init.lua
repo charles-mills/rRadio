@@ -221,11 +221,11 @@ function ENT:GetStatusColor(status)
 end
 
 function ENT:DrawEqualizer(x, y, alpha, color)
-    if not self.anim then -- Ensure animation state exists
+    if not self.anim then
         self.anim = createAnimationState()
     end
 
-    if not self.anim.equalizerHeights then -- Ensure equalizer heights are initialized
+    if not self.anim.equalizerHeights then
         self.anim.equalizerHeights = {0, 0, 0}
     end
 
@@ -233,9 +233,9 @@ function ENT:DrawEqualizer(x, y, alpha, color)
     local spacing = 4
     local maxHeight = HUD.DIMENSIONS.HEIGHT * 0.7
     local volume = entityVolumes[self] or 1
-    self:UpdateEqualizerHeights(volume, FrameTime()) -- Update equalizer heights
+    self:UpdateEqualizerHeights(volume, FrameTime())
     for i = 1, HUD.EQUALIZER.BARS do
-        local height = maxHeight * (self.anim.equalizerHeights[i] or 0) -- Add fallback value
+        local height = maxHeight * (self.anim.equalizerHeights[i] or 0)
         draw.RoundedBox(1, x + (i - 1) * (barWidth + spacing), y - height / 2, barWidth, height, ColorAlpha(color, alpha))
     end
 end
