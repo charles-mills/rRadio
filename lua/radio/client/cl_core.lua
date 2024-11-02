@@ -67,6 +67,7 @@ local favoriteStations = getSafeState("favoriteStations", {})
 local entityVolumes = getSafeState("entityVolumes", {})
 local lastKeyPress = getSafeState("lastKeyPress", 0)
 
+
 local currentFrame = nil
 local settingsMenuOpen = false
 local openRadioMenu
@@ -97,108 +98,6 @@ local STREAM_UPDATE_INTERVAL = 0.1
 local isLoadingStations = false
 local STATION_CHUNK_SIZE = 100
 local loadingProgress = 0
-
-local RANGE_CHECK_INTERVAL = 1
-local UNLOAD_DELAY = 15
-local RELOAD_DELAY = 2
-local outOfRangeTimers = {}
-local inRangeTimers = {}
-
-local PARTITION_SIZE = 1000 -- Size of each partition
-local PARTITION_UPDATE_INTERVAL = 1 -- How often to update partitions
-local lastPartitionUpdate = 0
-local spatialPartitions = {} -- Store entities by partition
-local activePartitions = {} -- Track which partitions are active
-
-local activeRadioEntities = {}
-local lastEntityUpdate = 0
-local ENTITY_UPDATE_INTERVAL = 1
-
-local ActiveRadioCache = {
-    entities = {},
-    lastUpdate = 0,
-    
-    Add = function(self, entity, data)
-        if not IsValid(entity) then return end
-        self.entities[entity:EntIndex()] = {
-            entity = entity,
-            data = data,
-            lastUpdate = CurTime()
-        }
-    end,
-    
-    Remove = function(self, entity)
-        if not IsValid(entity) then return end
-        self.entities[entity:EntIndex()] = nil
-    end,
-    
-    Get = function(self, entity)
-        if not IsValid(entity) then return nil end
-        return self.entities[entity:EntIndex()]
-    end,
-    
-    GetAll = function(self)
-        return self.entities
-    end,
-    
-    Cleanup = function(self)
-        for entIndex, data in pairs(self.entities) do
-            if not IsValid(data.entity) then
-                self.entities[entIndex] = nil
-            end
-        end
-    end
-}
-
-local function getPartitionKey(pos)
-    local x = math.floor(pos.x / PARTITION_SIZE)
-    local y = math.floor(pos.y / PARTITION_SIZE)
-    local z = math.floor(pos.z / PARTITION_SIZE)
-    return string.format("%d,%d,%d", x, y, z)
-end
-
-local function getNeighboringPartitions(pos)
-    local baseX = math.floor(pos.x / PARTITION_SIZE)
-    local baseY = math.floor(pos.y / PARTITION_SIZE)
-    local baseZ = math.floor(pos.z / PARTITION_SIZE)
-    local neighbors = {}
-    
-    -- Check 3x3x3 cube of partitions around player
-    for x = -1, 1 do
-        for y = -1, 1 do
-            for z = -1, 1 do
-                local key = string.format("%d,%d,%d", 
-                    baseX + x, 
-                    baseY + y, 
-                    baseZ + z)
-                neighbors[key] = true
-            end
-        end
-    end
-    
-    return neighbors
-end
-
-local function updateSpatialPartitions()
-    local currentTime = CurTime()
-    if (currentTime - lastPartitionUpdate) < PARTITION_UPDATE_INTERVAL then
-        return
-    end
-    
-    lastPartitionUpdate = currentTime
-    spatialPartitions = {}
-    
-    -- Partition all radio entities
-    for _, entity in ipairs(ents.GetAll()) do
-        if utils.canUseRadio(entity) then
-            local pos = entity:GetPos()
-            local key = getPartitionKey(pos)
-            
-            spatialPartitions[key] = spatialPartitions[key] or {}
-            table.insert(spatialPartitions[key], entity)
-        end
-    end
-end
 
 hook.Add("OnPlayerChat", "RadioStreamToggleCommands", function(ply, text, teamChat, isDead)
     if ply ~= LocalPlayer() then return end
@@ -367,6 +266,7 @@ local function LoadStationData()
     end)
 end
 
+-- Initialize station data
 LoadStationData()
 
 -- ------------------------------
@@ -386,12 +286,14 @@ local function updateStationCount()
     return count
 end
 
+-- Update the StreamManager definition
 local StreamManager = {
     activeStreams = {},
     cleanupQueue = {},
     lastCleanup = 0,
     CLEANUP_INTERVAL = 0.2, -- 200ms between cleanups
     
+    -- Add validity cache
     _validityCache = {},
     _lastValidityCheck = 0,
     VALIDITY_CHECK_INTERVAL = 0.5, -- Check validity every 0.5 seconds
@@ -431,14 +333,13 @@ local StreamManager = {
         -- Clear states
         self.activeStreams[entIndex] = nil
         
-        -- Only clear UI state if we're fully stopping (not just unloading due to range)
-        if not outOfRangeTimers[entIndex] then
-            if IsValid(streamData.entity) then
-                utils.clearRadioStatus(streamData.entity)
-            end
+        -- Clear UI state
+        if IsValid(streamData.entity) then
+            utils.clearRadioStatus(streamData.entity)
         end
     end,
     
+    -- Add QueueCleanup function
     QueueCleanup = function(self, entIndex, reason)
         self.cleanupQueue[entIndex] = {
             reason = reason,
@@ -451,6 +352,7 @@ local StreamManager = {
         end
     end,
     
+    -- Add ProcessCleanupQueue function
     ProcessCleanupQueue = function(self)
         self.lastCleanup = CurTime()
         
@@ -482,66 +384,9 @@ local StreamManager = {
         -- Update validity cache immediately
         self._validityCache[entIndex] = true
         
-        -- Update entity status
-        if utils.IsBoombox(entity) then
-            utils.setRadioStatus(entity, "playing", data.name, true)
-        end
-        
         return true
     end
 }
-
-local function handleRangeChange(entity, inRange)
-    local entIndex = entity:EntIndex()
-    
-    if inRange then
-        -- Cancel any pending unload
-        if outOfRangeTimers[entIndex] then
-            timer.Remove(outOfRangeTimers[entIndex])
-            outOfRangeTimers[entIndex] = nil
-        end
-        
-        -- Start reload timer if not already loaded
-        if not StreamManager.activeStreams[entIndex] and not inRangeTimers[entIndex] then
-            local timerName = "RadioReload_" .. entIndex
-            inRangeTimers[entIndex] = timerName
-            
-            timer.Create(timerName, RELOAD_DELAY, 1, function()
-                if IsValid(entity) and utils.isInStationRange(LocalPlayer(), entity) then
-                    -- Request stream data from server
-                    net.Start("RequestRadioStream")
-                        net.WriteEntity(entity)
-                    net.SendToServer()
-                end
-                inRangeTimers[entIndex] = nil
-            end)
-        end
-    else
-        -- Cancel any pending reload
-        if inRangeTimers[entIndex] then
-            timer.Remove(inRangeTimers[entIndex])
-            inRangeTimers[entIndex] = nil
-        end
-        
-        -- Start unload timer
-        if StreamManager.activeStreams[entIndex] and not outOfRangeTimers[entIndex] then
-            local timerName = "RadioUnload_" .. entIndex
-            outOfRangeTimers[entIndex] = timerName
-            
-            timer.Create(timerName, UNLOAD_DELAY, 1, function()
-                if IsValid(entity) then
-                    -- Don't clear the radio status, just stop the stream
-                    local streamData = StreamManager.activeStreams[entIndex]
-                    if streamData and IsValid(streamData.stream) then
-                        streamData.stream:Stop()
-                    end
-                    StreamManager.activeStreams[entIndex] = nil
-                end
-                outOfRangeTimers[entIndex] = nil
-            end)
-        end
-    end
-end
 
 -- Essential cleanup hooks
 hook.Add("EntityRemoved", "RadioStreamCleanup", function(entity)
@@ -846,6 +691,7 @@ local function playStation(entity, station, volume)
             stream:SetPos(entity:GetPos())
             stream:SetVolume(volume)
             
+            -- Add error handling for stream start
             local success, err = pcall(function()
                 stream:Play()
             end)
@@ -888,6 +734,7 @@ local function playStation(entity, station, volume)
         -- Clean up through StreamManager
         StreamManager:CleanupStream(entity:EntIndex())
 
+        -- Add delay before starting new stream
         timer.Simple(0.2, function()
             startNewStream()
         end)
@@ -982,7 +829,8 @@ local function PrintCarRadioMessage()
     panel:SetText("")
     panel:SetAlpha(0)
     panel:MoveToFront()
-
+    
+    -- Add text label
     local textLabel = vgui.Create("DLabel", panel)
     textLabel:SetText("Play Radio")
     textLabel:SetFont("Roboto18")
@@ -1187,7 +1035,8 @@ local function createStarIcon(parent, country, station, updateList)
         (not station and getSafeState("favoriteCountries", {})[country])
 
     starIcon:SetImage(isFavorite and "hud/star_full.png" or "hud/star.png")
-
+    
+    -- Update star icon color
     starIcon.Paint = function(self, w, h)
         surface.SetDrawColor(Config.UI.FavoriteStarColor)
         surface.SetMaterial(Material(isFavorite and "hud/star_full.png" or "hud/star.png"))
@@ -1481,7 +1330,8 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
 
                     -- Play the station
                     playStation(entity, favorite.station, volume)
-
+                    
+                    -- Update UI
                     updateList()
                 end
             )
@@ -1539,11 +1389,13 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
 
                     -- Play the station
                     playStation(entity, station, volume)
-
+                    
+                    -- Update UI
                     updateList()
                 end
             )
 
+            -- Add paint function for visual state
             stationButton.Paint = function(self, w, h)
                 local entity = LocalPlayer().currentRadioEntity
                 if IsValid(entity) and currentlyPlayingStations[entity] and 
@@ -1557,6 +1409,7 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                     end
                 end
 
+                -- Add connection status indicator
                 local streamData = StreamManager.activeStreams[entity:EntIndex()]
                 if streamData then
                     if streamData.stream and not streamData.stream:IsValid() then
@@ -1607,8 +1460,8 @@ local function openSettingsMenu(parentFrame, backButton)
             header:DockMargin(0, Scale(5), 0, Scale(0))
         else
             header:DockMargin(0, Scale(10), 0, Scale(5))
-            header:SetContentAlignment(4)
         end
+        header:SetContentAlignment(4)
     end
 
     local function addDropdown(text, choices, currentValue, onSelect)
@@ -1680,6 +1533,7 @@ local function openSettingsMenu(parentFrame, backButton)
         label:SizeToContents()
         label:SetPos(Scale(40), (container:GetTall() - label:GetTall()) / 2)
 
+        -- Add state management and validation
         checkbox.OnChange = function(self, value)
             if not ConVarExists(convar) then
                 print("[rRadio] Warning: ConVar " .. convar .. " does not exist")
@@ -2399,7 +2253,8 @@ hook.Add("Think", "OpenCarRadioMenu", function()
     -- Check if key is pressed and enough time has passed
     if not input.IsKeyDown(openKey) then return end
     if (currentTime - lastPress) <= keyPressDelay then return end
-
+    
+    -- Update last key press time
     setSafeState("lastKeyPress", currentTime)
 
     -- Handle menu close if already open
@@ -2473,27 +2328,15 @@ end)
     Handles playing a radio station on the client.
 ]]
 net.Receive("PlayCarRadioStation", function()
-    if not streamsEnabled then 
-        print("[rRadio Debug] Streams are disabled, ignoring PlayCarRadioStation")
-        return 
-    end
+    if not streamsEnabled then return end
     
     local entity = net.ReadEntity()
-    if not IsValid(entity) then 
-        print("[rRadio Debug] Invalid entity in PlayCarRadioStation")
-        return 
-    end
+    if not IsValid(entity) then return end
 
     local entIndex = entity:EntIndex()
     local stationName = net.ReadString()
     local url = net.ReadString()
     local volume = net.ReadFloat()
-    
-    print("[rRadio Debug] Received PlayCarRadioStation")
-    print("  - Entity:", entity)
-    print("  - EntIndex:", entIndex)
-    print("  - Station:", stationName)
-    print("  - IsPermanent:", entity:GetNWBool("IsPermanent"))
 
     -- Update local state immediately
     if not BoomboxStatuses[entIndex] then
@@ -2757,162 +2600,4 @@ local UIReferenceTracker = {
 
 hook.Add("Think", "UpdateUIReferences", function()
     UIReferenceTracker:Update()
-end)
-
-
-net.Receive("UpdateRadioRegistry", function()
-    local action = net.ReadString() -- "add" or "remove"
-    local entity = net.ReadEntity()
-    
-    if action == "add" then
-        local data = {
-            stationName = net.ReadString(),
-            url = net.ReadString(),
-            volume = net.ReadFloat()
-        }
-        ActiveRadioCache:Add(entity, data)
-    else
-        ActiveRadioCache:Remove(entity)
-    end
-end)
-
-hook.Add("Think", "RadioRangeCheck", function()
-    if not StreamManager then return end
-    
-    local currentTime = CurTime()
-    if (currentTime - (StreamManager._lastRangeCheck or 0)) < RANGE_CHECK_INTERVAL then
-        return
-    end
-    
-    StreamManager._lastRangeCheck = currentTime
-    local player = LocalPlayer()
-    
-    -- Only check entities in our cache
-    for entIndex, data in pairs(ActiveRadioCache:GetAll()) do
-        if IsValid(data.entity) then
-            local inRange = utils.isInStationRange(player, data.entity)
-            handleRangeChange(data.entity, inRange)
-        else
-            ActiveRadioCache:Remove(data.entity)
-        end
-    end
-end)
-
--- Update debug command
-concommand.Add("radio_active_entities", function()
-    print("\n=== Active Radio Entities ===")
-    print(string.format("%-6s | %-20s | %-15s | %s", 
-        "EntID", "Entity Type", "Has Stream", "Distance"))
-    print(string.rep("-", 80))
-    
-    local player = LocalPlayer()
-    local count = 0
-    
-    for entIndex, data in pairs(ActiveRadioCache:GetAll()) do
-        if IsValid(data.entity) then
-            local hasStream = StreamManager.activeStreams[entIndex] ~= nil
-            local distance = player:GetPos():Distance(data.entity:GetPos())
-            
-            print(string.format("%-6d | %-20s | %-15s | %.1f units", 
-                entIndex,
-                data.entity:GetClass(),
-                hasStream and "Yes" or "No",
-                distance
-            ))
-            count = count + 1
-        end
-    end
-    
-    print(string.rep("-", 80))
-    print(string.format("Total Active Entities: %d", count))
-end)
-
-concommand.Add("radio_partition_debug", function()
-    local totalPartitions = 0
-    local totalEntities = 0
-    local entitiesPerPartition = {}
-    
-    for key, partition in pairs(spatialPartitions) do
-        totalPartitions = totalPartitions + 1
-        entitiesPerPartition[key] = #partition
-        totalEntities = totalEntities + #partition
-    end
-    
-    print("\n=== Radio Spatial Partition Debug ===")
-    print("Partition Size: " .. PARTITION_SIZE .. " units")
-    print("Update Interval: " .. PARTITION_UPDATE_INTERVAL .. "s")
-    print("Total Partitions: " .. totalPartitions)
-    print("Total Radio Entities: " .. totalEntities)
-    print("\nPartition Contents:")
-    
-    for key, count in pairs(entitiesPerPartition) do
-        print(string.format("Partition %s: %d entities", key, count))
-    end
-    
-    local player = LocalPlayer()
-    local playerPartition = getPartitionKey(player:GetPos())
-    print("\nPlayer Partition: " .. playerPartition)
-    print("Active Neighboring Partitions: " .. table.Count(getNeighboringPartitions(player:GetPos())))
-end)
-
-hook.Add("EntityRemoved", "CleanupRangeTimers", function(entity)
-    local entIndex = entity:EntIndex()
-    
-    if outOfRangeTimers[entIndex] then
-        timer.Remove(outOfRangeTimers[entIndex])
-        outOfRangeTimers[entIndex] = nil
-    end
-    
-    if inRangeTimers[entIndex] then
-        timer.Remove(inRangeTimers[entIndex])
-        inRangeTimers[entIndex] = nil
-    end
-end)
-
-concommand.Add("radio_connected_stations", function(ply)
-    if not StreamManager or not StreamManager.activeStreams then
-        print("[Radio] No active streams found")
-        return
-    end
-    
-    print("\n=== Connected Radio Stations ===")
-    print(string.format("%-6s | %-20s | %-15s | %-10s | %-20s | %s", 
-        "EntID", "Entity Type", "Status", "Volume", "NW Status", "Station Name"))
-    print(string.rep("-", 100))
-    
-    local count = 0
-    for entIndex, streamData in pairs(StreamManager.activeStreams) do
-        if IsValid(streamData.entity) and IsValid(streamData.stream) then
-            local entity = streamData.entity
-            local entityType = entity:GetClass()
-            local volume = streamData.stream:GetVolume()
-            local stationName = streamData.data and streamData.data.name or "Unknown"
-            local status = "Playing"
-            local nwStatus = "N/A"
-
-            if utils.IsBoombox(entity) then
-                status = entity:GetNWString("Status", "Playing")
-                nwStatus = string.format("%s (%s)", 
-                    entity:GetNWString("Status", "unknown"),
-                    entity:GetNWBool("IsPlaying") and "playing" or "stopped"
-                )
-            end
-            
-            print(string.format("%-6d | %-20s | %-15s | %-10.2f | %-20s | %s", 
-                entIndex,
-                entityType,
-                status,
-                volume,
-                nwStatus,
-                stationName
-            ))
-            count = count + 1
-        end
-    end
-    
-    print(string.rep("-", 100))
-    print(string.format("Total Active Stations: %d", count))
-    print("Range Check Interval: " .. RANGE_CHECK_INTERVAL .. "s")
-    print("Unload Delay: " .. UNLOAD_DELAY .. "s")
-    print("Reload Delay: " .. RELOAD_DELAY .. "s\n")
 end)
