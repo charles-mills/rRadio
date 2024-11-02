@@ -51,6 +51,7 @@ function ENT:Initialize()
     self.IsPermanent = false
 end
 
+-- Add Use function to handle interaction
 function ENT:Use(activator, caller)
     if not IsValid(activator) or not activator:IsPlayer() then return end
     

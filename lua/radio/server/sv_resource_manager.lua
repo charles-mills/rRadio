@@ -140,7 +140,8 @@ function ResourceManager:StartStream(streamRequest)
     timer.Create(timeoutTimer, self.Config.CONNECTION_TIMEOUT, 1, function()
         self:HandleStreamTimeout(streamRequest)
     end)
-
+    
+    -- Add to active streams
     self.activeStreams[streamRequest.id] = {
         request = streamRequest,
         startTime = CurTime(),
@@ -207,7 +208,8 @@ function ResourceManager:CleanupStream(streamId, reason)
             table.RemoveByValue(playerStreamList, streamId)
         end
     end
-
+    
+    -- Add to history
     table.insert(self.streamHistory, {
         id = streamId,
         player = stream.request.player,
