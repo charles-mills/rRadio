@@ -173,26 +173,6 @@ hook.Add("OnPlayerChat", "RadioStreamToggleCommands", function(ply, text, teamCh
     end
 end)
 
-local function transitionContent(panel, direction, onComplete)
-    if not IsValid(panel) then return end
-    
-    -- Store panel reference
-    local panelRef = panel
-    
-    -- Use the Transitions module for sliding with safety check
-    Misc.Transitions:SlideElement(panel, 0.3, direction, function()
-        if IsValid(panelRef) and onComplete then
-            onComplete()
-        end
-    end)
-    
-    -- Handle fade effect with safety check
-    Misc.Transitions:FadeElement(panel, direction, 0.2, function()
-        if not IsValid(panelRef) then return false end
-    end)
-end
-
-
 -- ------------------------------
 --      Station Data Loading
 -- ------------------------------
@@ -747,7 +727,7 @@ local function playStation(entity, station, volume)
         local displayName = utils.truncateStationName(station.name)
 
         -- Update server state with truncated name
-        net.Start("PlayCarRadioStation")
+        net.Start("QueueStream")
             net.WriteEntity(entity)
             net.WriteString(displayName) -- Send truncated name
             net.WriteString(station.url)
@@ -846,7 +826,7 @@ local function playStation(entity, station, volume)
     -- Stop current playback first
     if currentlyPlayingStations[entity] then
         -- Stop on server
-        net.Start("StopCarRadioStation")
+        net.Start("StopStream")
             net.WriteEntity(entity)
         net.SendToServer()
 
@@ -2829,7 +2809,7 @@ openRadioMenu = function(openSettings)
             entity = utils.GetVehicle(entity) or entity
             
             -- Send stop request to server
-            net.Start("StopCarRadioStation")
+            net.Start("StopStream")
                 net.WriteEntity(entity)
             net.SendToServer()
             
@@ -3108,11 +3088,7 @@ end
 --      Hooks and Net Messages
 -- ------------------------------
 
---[[
-    Hook: Think
-    Opens the car radio menu when the player presses the designated key.
-]]
-hook.Add("Think", "OpenCarRadioMenu", function()
+hook.Add("Think", "OpenRadioPlayerMenu", function()
     local openKey = GetConVar("car_radio_open_key"):GetInt()
     local ply = LocalPlayer()
     
@@ -3223,10 +3199,10 @@ net.Receive("UpdateRadioStatus", function()
 end)
 
 --[[
-    Network Receiver: PlayCarRadioStation
+    Network Receiver: QueueStream
     Handles playing a radio station on the client.
 ]]
-net.Receive("PlayCarRadioStation", function()
+net.Receive("QueueStream", function()
     if not streamsEnabled then return end
     
     local entity = net.ReadEntity()
@@ -3241,7 +3217,7 @@ net.Receive("PlayCarRadioStation", function()
     local url = net.ReadString()
     local volume = net.ReadFloat()
 
-    utils.DebugPrint("Received PlayCarRadioStation", 
+    utils.DebugPrint("Received QueueStream", 
         "\nEntity:", entity,
         "\nClass:", entity:GetClass(),
         "\nStation:", stationName,
@@ -3293,7 +3269,7 @@ net.Receive("PlayCarRadioStation", function()
 end)
 
 -- Update the stop handler
-net.Receive("StopCarRadioStation", function()
+net.Receive("StopStream", function()
     local entity = net.ReadEntity()
     if not IsValid(entity) then return end
     
@@ -3473,11 +3449,11 @@ hook.Add("Think", "UpdateStreamPositions", function()
 end)
 
 local function initializeNetworking()
-    net.Receive("CarRadioMessage", function()
+    net.Receive("PlayCarEnterAnimation", function()
         local vehicle = net.ReadEntity()
         local isValid = net.ReadBool()
         
-        utils.DebugPrint("Received CarRadioMessage:",
+        utils.DebugPrint("Received PlayCarEnterAnimation:",
         "\nVehicle:", IsValid(vehicle) and vehicle:GetClass() or "invalid",
         "\nValidation Flag:", isValid)
     
