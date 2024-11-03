@@ -122,6 +122,9 @@ local VOLUME_ICONS = {
     HIGH = MaterialCache:Get("hud/vol_up.png")
 }
 
+local unauthorizedUIOpen = false
+local isBoomboxMuted = {}
+
 local lastPermissionMessage = 0
 local PERMISSION_MESSAGE_COOLDOWN = 3
 
@@ -570,6 +573,79 @@ local formattedCountryNames = {}
 local stationDataLoaded = false
 local isSearching = false
 
+-- Add near the top with other state variables
+local MuteManager = {
+    mutedEntities = {},
+    originalVolumes = {},
+    
+    IsMuted = function(self, entIndex)
+        return self.mutedEntities[entIndex] == true
+    end,
+    
+    MuteEntity = function(self, entIndex, entity)
+        if not IsValid(entity) then return end
+        
+        -- Store original volume for unmuting
+        local streamData = StreamManager.activeStreams[entIndex]
+        if streamData and IsValid(streamData.stream) then
+            self.originalVolumes[entIndex] = streamData.stream:GetVolume()
+        else
+            self.originalVolumes[entIndex] = entityVolumes[entity] or 0.5
+        end
+        
+        self.mutedEntities[entIndex] = true
+        
+        -- Apply mute immediately
+        if streamData and IsValid(streamData.stream) then
+            streamData.stream:SetVolume(0)
+        end
+        
+        -- Emit state change event
+        StateManager:Emit(StateManager.Events.BOOMBOX_MUTE_CHANGED, {
+            entity = entity,
+            muted = true
+        })
+    end,
+    
+    UnmuteEntity = function(self, entIndex, entity)
+        if not IsValid(entity) then return end
+        
+        local originalVolume = self.originalVolumes[entIndex] or entityVolumes[entity] or 0.5
+        self.mutedEntities[entIndex] = nil
+        self.originalVolumes[entIndex] = nil
+        
+        -- Restore volume
+        local streamData = StreamManager.activeStreams[entIndex]
+        if streamData and IsValid(streamData.stream) then
+            streamData.stream:SetVolume(originalVolume)
+        end
+        
+        -- Emit state change event
+        StateManager:Emit(StateManager.Events.BOOMBOX_MUTE_CHANGED, {
+            entity = entity,
+            muted = false
+        })
+    end,
+    
+    CleanupEntity = function(self, entIndex)
+        self.mutedEntities[entIndex] = nil
+        self.originalVolumes[entIndex] = nil
+    end,
+    
+    -- Handle volume updates while maintaining mute state
+    HandleVolumeUpdate = function(self, entity, newVolume)
+        local entIndex = entity:EntIndex()
+        
+        if self:IsMuted(entIndex) then
+            -- Update stored original volume but keep muted
+            self.originalVolumes[entIndex] = newVolume
+            return 0 -- Return 0 to maintain mute
+        end
+        
+        return newVolume -- Return original volume if not muted
+    end
+}
+
 -- ------------------------------
 --      Helper Functions
 -- ------------------------------
@@ -825,6 +901,13 @@ local function updateRadioVolume(station, distanceSqr, isPlayerInCar, entity)
     local userVolume = ClampVolume(entity:GetNWFloat("Volume", entityConfig.Volume()))
 
     if userVolume <= 0.02 then
+        station:SetVolume(0)
+        return
+    end
+
+    -- Check mute state before proceeding
+    local entIndex = entity:EntIndex()
+    if MuteManager:IsMuted(entIndex) then
         station:SetVolume(0)
         return
     end
@@ -2344,6 +2427,176 @@ local function openSettingsMenu(parentFrame, backButton)
     end
 end
 
+--[[
+    Function: openUnauthorizedUI
+    Opens a limited UI for users without boombox permissions.
+    Shows current station, mute controls, and settings access.
+]]
+local function openUnauthorizedUI(entity)
+    if unauthorizedUIOpen then return end
+    if not IsValid(entity) then return end
+    
+    unauthorizedUIOpen = true
+    
+    local frame = vgui.Create("DFrame")
+    currentFrame = frame
+    frame:SetTitle("")
+    frame:SetSize(Scale(Config.UI.FrameSize.width), Scale(200))
+    frame:Center()
+    frame:SetDraggable(false)
+    frame:ShowCloseButton(false)
+    frame:MakePopup()
+    
+    frame.OnClose = function()
+        unauthorizedUIOpen = false
+    end
+
+    frame.Paint = function(self, w, h)
+        -- Background
+        draw.RoundedBox(8, 0, 0, w, h, Config.UI.BackgroundColor)
+        draw.RoundedBoxEx(8, 0, 0, w, Scale(40), Config.UI.HeaderColor, true, true, false, false)
+
+        -- Header icon and text
+        local headerHeight = Scale(40)
+        local iconSize = Scale(25)
+        local iconOffsetX = Scale(10)
+        local iconOffsetY = headerHeight/2 - iconSize/2
+
+        surface.SetMaterial(MaterialCache:Get("hud/radio.png"))
+        surface.SetDrawColor(Config.UI.TextColor)
+        surface.DrawTexturedRect(iconOffsetX, iconOffsetY, iconSize, iconSize)
+
+        draw.SimpleText(
+            Config.Lang["UnauthorizedAccess"] or "Unauthorized Access", 
+            "HeaderFont", 
+            iconOffsetX + iconSize + Scale(5), 
+            headerHeight/2, 
+            Config.UI.TextColor, 
+            TEXT_ALIGN_LEFT, 
+            TEXT_ALIGN_CENTER
+        )
+    end
+
+    -- Station info panel
+    local infoPanel = vgui.Create("DPanel", frame)
+    infoPanel:SetPos(Scale(10), Scale(50))
+    infoPanel:SetSize(frame:GetWide() - Scale(20), Scale(60))
+    infoPanel.Paint = function(self, w, h)
+        draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonColor)
+        
+        local stationName = entity:GetNWString("StationName", "")
+        local status = entity:GetNWString("Status", "")
+        
+        if stationName ~= "" then
+            draw.SimpleText(
+                stationName,
+                "Roboto18",
+                Scale(10),
+                Scale(10),
+                Config.UI.TextColor,
+                TEXT_ALIGN_LEFT,
+                TEXT_ALIGN_TOP
+            )
+            
+            draw.SimpleText(
+                status:sub(1,1):upper() .. status:sub(2),
+                "Roboto18",
+                Scale(10),
+                Scale(35),
+                Config.UI.TextColor,
+                TEXT_ALIGN_LEFT,
+                TEXT_ALIGN_TOP
+            )
+        else
+            draw.SimpleText(
+                Config.Lang["NoStation"] or "No Station Playing",
+                "Roboto18",
+                w/2,
+                h/2,
+                Config.UI.TextColor,
+                TEXT_ALIGN_CENTER,
+                TEXT_ALIGN_CENTER
+            )
+        end
+    end
+
+    -- Mute button
+    local muteButton = vgui.Create("DButton", frame)
+    muteButton:SetPos(Scale(10), Scale(120))
+    muteButton:SetSize(frame:GetWide() - Scale(20), Scale(40))
+    muteButton:SetText("")
+    
+    local isMuted = isBoomboxMuted[entity:EntIndex()] or false
+    
+    muteButton.Paint = function(self, w, h)
+        local bgColor = isMuted and Config.UI.CloseButtonColor or Config.UI.ButtonColor
+        local hoverColor = isMuted and Config.UI.CloseButtonHoverColor or Config.UI.ButtonHoverColor
+        
+        if self:IsHovered() then
+            draw.RoundedBox(8, 0, 0, w, h, hoverColor)
+        else
+            draw.RoundedBox(8, 0, 0, w, h, bgColor)
+        end
+        
+        -- Icon
+        surface.SetMaterial(MaterialCache:Get(isMuted and "hud/vol_mute.png" or "hud/vol_up.png"))
+        surface.SetDrawColor(Config.UI.TextColor)
+        surface.DrawTexturedRect(Scale(10), Scale(8), Scale(24), Scale(24))
+        
+        -- Text
+        draw.SimpleText(
+            isMuted and (Config.Lang["Unmute"] or "Unmute Boombox") or (Config.Lang["Mute"] or "Mute Boombox"),
+            "Roboto18",
+            Scale(44),
+            h/2,
+            Config.UI.TextColor,
+            TEXT_ALIGN_LEFT,
+            TEXT_ALIGN_CENTER
+        )
+    end
+    
+    muteButton.DoClick = function()
+        surface.PlaySound("buttons/button15.wav")
+        local entIndex = entity:EntIndex()
+        
+        if MuteManager:IsMuted(entIndex) then
+            MuteManager:UnmuteEntity(entIndex, entity)
+            isMuted = false
+        else
+            MuteManager:MuteEntity(entIndex, entity)
+            isMuted = true
+        end
+    end
+
+    -- Close and settings buttons
+    local buttonSize = Scale(25)
+    local topMargin = Scale(7)
+    local buttonPadding = Scale(5)
+
+    local closeButton = vgui.Create("DButton", frame)
+    closeButton:SetPos(frame:GetWide() - buttonSize - Scale(10), topMargin)
+    closeButton:SetSize(buttonSize, buttonSize)
+    closeButton:SetText("")
+    closeButton.lerp = 0
+    
+    closeButton.Paint = function(self, w, h)
+        if self:IsHovered() then
+            self.lerp = math.Approach(self.lerp, 1, FrameTime() * 5)
+        else
+            self.lerp = math.Approach(self.lerp, 0, FrameTime() * 5)
+        end
+        
+        surface.SetMaterial(MaterialCache:Get("hud/close.png"))
+        surface.SetDrawColor(ColorAlpha(Config.UI.IconColor, 255 * (0.5 + 0.5 * self.lerp)))
+        surface.DrawTexturedRect(0, 0, w, h)
+    end
+    
+    closeButton.DoClick = function()
+        surface.PlaySound("buttons/lightswitch2.wav")
+        frame:Close()
+    end
+end
+
 -- ------------------------------
 --      Main UI Function
 -- ------------------------------
@@ -3019,11 +3272,14 @@ net.Receive("OpenRadioMenu", function()
                 openRadioMenu()
             end
         else
-            -- Rate-limited permission message
+            -- Show unauthorized UI instead of just a chat message
             if currentTime - lastPermissionMessage >= PERMISSION_MESSAGE_COOLDOWN then
                 chat.AddText(Color(255, 0, 0), "You don't have permission to interact with this boombox.")
                 lastPermissionMessage = currentTime
                 StateManager:SetState("lastPermissionMessage", currentTime)
+                
+                -- Open unauthorized UI
+                openUnauthorizedUI(ent)
             end
         end
     end
