@@ -45,7 +45,6 @@ end
 -- ------------------------------
 local LanguageManager = include("radio/client/lang/cl_language_manager.lua")
 local themes = include("radio/client/cl_themes.lua") or {}
-local keyCodeMapping = include("radio/client/cl_key_names.lua") or {}
 
 -- ------------------------------
 --      Configuration Tables

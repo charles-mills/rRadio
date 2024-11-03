@@ -14,7 +14,6 @@
 include("radio/shared/sh_config.lua")
 local LanguageManager = include("radio/client/lang/cl_language_manager.lua")
 local themeModule = include("radio/client/cl_themes.lua")
-local keyCodeMapping = include("radio/client/cl_key_names.lua")
 local utils = include("radio/shared/sh_utils.lua")
 local Misc = include("radio/client/cl_misc.lua")
 local Settings = include("radio/client/cl_settings.lua")
@@ -964,7 +963,7 @@ local function PrintCarRadioMessage()
     isMessageAnimating = true
 
     local openKey = GetConVar("car_radio_open_key"):GetInt()
-    local keyName = GetKeyName(openKey)
+    local keyName = Misc.KeyNames:GetKeyName(openKey)
 
     local scrW, scrH = ScrW(), ScrH()
     local panelWidth = Scale(300)
@@ -2264,8 +2263,8 @@ local function openSettingsMenu(parentFrame, backButton)
     local functionKeys = {}
     local otherKeys = {}
 
-    for keyCode, keyName in pairs(keyCodeMapping) do
-        if type(keyName) == "string" then
+    for keyCode, keyName in pairs(Misc.KeyNames) do
+        if type(keyName) == "string" and keyCode ~= "GetKeyName" then
             local entry = {code = tonumber(keyCode), name = keyName}
             
             if keyName:match("^%a$") then
@@ -2303,7 +2302,7 @@ local function openSettingsMenu(parentFrame, backButton)
     end
 
     local currentKey = GetConVar("car_radio_open_key"):GetInt()
-    local currentKeyName = keyCodeMapping[currentKey] or "K"
+    local currentKeyName = Misc.KeyNames:GetKeyName(currentKey)
 
     addDropdown(Config.Lang["SelectKey"] or "Select Key", keyChoices, currentKeyName, function(panel, _, name, data)
         print("[rRadio Debug] Key Selection:")
@@ -2330,7 +2329,7 @@ local function openSettingsMenu(parentFrame, backButton)
         -- Verify convar was set
         timer.Simple(0.1, function()
             print("  - Verified key convar:", GetConVar("car_radio_open_key"):GetInt())
-            print("  - Key name for verified code:", keyCodeMapping[GetConVar("car_radio_open_key"):GetInt()])
+            print("  - Key name for verified code:", Misc.KeyNames:GetKeyName(GetConVar("car_radio_open_key"):GetInt()))
         end)
         
         -- Update state
