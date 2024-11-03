@@ -6,6 +6,10 @@ AddCSLuaFile("radio/client/cl_theme_manager.lua")
 AddCSLuaFile("radio/client/cl_state_manager.lua")
 AddCSLuaFile("radio/shared/sh_utils.lua")
 AddCSLuaFile("radio/client/cl_misc.lua")
+AddCSLuaFile("radio/client/cl_stream_manager.lua")
+AddCSLuaFile("radio/client/cl_hooks.lua")
+AddCSLuaFile("radio/shared/sh_events.lua")
+AddCSLuaFile("radio/shared/sh_debug.lua")
 
 local dataFiles = file.Find("radio/client/stations/data_*.lua", "LUA")
 for _, filename in ipairs(dataFiles) do

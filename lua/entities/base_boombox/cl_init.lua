@@ -41,7 +41,7 @@ local HUD = {
         TEXT = Color(255, 255, 255),
         INACTIVE = Color(180, 180, 180)
     },
-    TRUNCATE_LENGTH = 30
+    TRUNCATE_LENGTH = 25
 }
 
 local GOLDEN_HUD = {

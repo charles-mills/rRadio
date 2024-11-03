@@ -6,117 +6,277 @@
     Date: October 31, 2024
 ]]--
 
-local StateManagerFunctions = {}
+local utils = include("radio/shared/sh_utils.lua")
+local Debug = RadioDebug
+local Events = include("radio/shared/sh_events.lua")
+local Misc = include("radio/client/cl_misc.lua")
 
-function StateManagerFunctions:GetState(key)
-    return self[key]
-end
+local StateManager = {
+    -- Core state
+    initialized = false,
+    _state = {},
+    _eventListeners = {},
+    _cache = {
+        favoritesList = nil,
+        countryTranslations = {},
+        lastUpdate = 0
+    },
+    _lastStateUpdate = 0,
+    
+    -- Configuration
+    Config = {
+        dataDir = "rradio",
+        favoriteCountriesFile = "rradio/favorite_countries.json",
+        favoriteStationsFile = "rradio/favorite_stations.json",
+        maxHistorySize = 100,
+        saveInterval = 0.5
+    },
+    
+    -- Event definitions
+    Events = Events.STATE
+}
 
-function StateManagerFunctions:SetState(key, value)
-    if self[key] ~= value then
-        self[key] = value
-        self:Emit(self.Events.STATE_CHANGED, key, value)
+function StateManager:Initialize()
+    if self.initialized then
+        Debug:Warning("StateManager already initialized")
+        return self
     end
+    
+    Debug:Log("Initializing StateManager")
+    
+    -- Create data directory if it doesn't exist
+    if not file.IsDir(self.Config.dataDir, "DATA") then
+        file.CreateDir(self.Config.dataDir)
+    end
+    
+    -- Initialize state storage
+    self._state = {
+        favoriteCountries = {},
+        favoriteStations = {},
+        entityVolumes = {},
+        currentlyPlayingStations = {},
+        streamsEnabled = true,
+        stationDataLoaded = false,
+        currentRadioEntity = nil,
+        radioMenuOpen = false,
+        settingsMenuOpen = false,
+        favoritesMenuOpen = false,
+        selectedCountry = nil,
+        activeStationCount = 0,
+        lastKeyPress = 0,
+        lastStationSelectTime = 0,
+        lastPermissionMessage = 0,
+        lastMessageTime = -math.huge
+    }
+    
+    self.initialized = true -- Mark as initialized before loading favorites
+    Debug:Log("StateManager initialized successfully")
+    
+    -- Load saved data after initialization
+    self:LoadFavorites()
+    
+    self:Emit(self.Events.INITIALIZED)
+    
+    return self
 end
 
-function StateManagerFunctions:On(event, callback)
+function StateManager:GetState(key)
+    if not self.initialized then
+        Debug:Error("Attempted to get state before initialization")
+        return nil
+    end
+    return self._state[key]
+end
+
+function StateManager:SetState(key, value)
+    if not self.initialized then
+        Debug:Error("Attempted to set state before initialization")
+        return false
+    end
+    
+    if self._state[key] ~= value then
+        self._state[key] = value
+        self._lastStateUpdate = CurTime()
+        self:Emit(self.Events.CHANGED, key, value)
+    end
+    return true
+end
+
+function StateManager:On(event, callback)
     if not event then return end
     self._eventListeners[event] = self._eventListeners[event] or {}
     table.insert(self._eventListeners[event], callback)
 end
 
-function StateManagerFunctions:Emit(event, ...)
+function StateManager:Emit(event, ...)
     if not event then return end
     if self._eventListeners[event] then
         for _, callback in ipairs(self._eventListeners[event]) do
-            callback(...)
-        end
-    end
-end
-
-function StateManagerFunctions:Initialize()
-    if self.initialized then return end
-    
-    if not file.IsDir(self.dataDir, "DATA") then
-        file.CreateDir(self.dataDir)
-    end
-
-    self.initialized = true
-    self:LoadFavorites()
-    self:Emit(self.Events.STATE_INITIALIZED)
-    
-    return true
-end
-
-function StateManagerFunctions:StopEntityStation(entity)
-    if not IsValid(entity) then return end
-    local entIndex = entity:EntIndex()
-    
-    if self.activeStations[entIndex] then
-        local currentStation = self.activeStations[entIndex]
-        if IsValid(currentStation.source) then
-            currentStation.source:Stop()
-        end
-        
-        if currentStation.hookName then
-            hook.Remove("Think", currentStation.hookName)
-        end
-        
-        self.currentRadioSources[entity] = nil
-        self.currentlyPlayingStations[entity] = nil
-        self.activeStations[entIndex] = nil
-        
-        self:UpdateStationCount()
-        self:Emit(self.Events.RADIO_STOPPED, entity)
-        return true
-    end
-    return false
-end
-
-function StateManagerFunctions:StartEntityStation(entity, stationData, source)
-    if not IsValid(entity) then return false end
-    local entIndex = entity:EntIndex()
-    
-    self:StopEntityStation(entity)
-    
-    self.activeStations[entIndex] = {
-        entity = entity,
-        source = source,
-        stationData = stationData,
-        hookName = "UpdateRadioPosition_" .. entIndex,
-        startTime = CurTime()
-    }
-    
-    self.currentRadioSources[entity] = source
-    self.currentlyPlayingStations[entity] = stationData
-    
-    self:UpdateStationCount()
-    self:Emit(self.Events.STATION_CHANGED, entity, stationData)
-    return true
-end
-
-function StateManagerFunctions:GetEntityStation(entity)
-    if not IsValid(entity) then return nil end
-    return self.activeStations[entity:EntIndex()]
-end
-
-function StateManagerFunctions:UpdateStationCount()
-    local count = 0
-    for ent, source in pairs(self.currentRadioSources) do
-        if IsValid(ent) and IsValid(source) then
-            count = count + 1
-        else
-            if IsValid(source) then
-                source:Stop()
+            local success, err = pcall(callback, ...)
+            if not success then
+                Debug:Error("Error in event handler for", event, ":", err)
             end
-            self.currentRadioSources[ent] = nil
         end
     end
-    self.activeStationCount = count
+end
+
+function StateManager:SaveFavorites()
+    if not self.initialized then return false end
+
+    Debug:Log("Saving favorites...")
+
+    -- Create backup function
+    local function createBackup(filename)
+        if file.Exists(filename, "DATA") then
+            local content = file.Read(filename, "DATA")
+            if content then
+                file.Write(filename .. ".bak", content)
+                Debug:Log("Created backup for", filename)
+            end
+        end
+    end
+
+    -- Save countries
+    local favCountriesList = {}
+    for country, _ in pairs(self._state.favoriteCountries) do
+        if type(country) == "string" then
+            table.insert(favCountriesList, country)
+        end
+    end
+    
+    local countriesJson = util.TableToJSON(favCountriesList, true)
+    if countriesJson then
+        createBackup(self.Config.favoriteCountriesFile)
+        file.Write(self.Config.favoriteCountriesFile, countriesJson)
+        Debug:Log("Saved favorite countries:", #favCountriesList)
+    else
+        Debug:Error("Failed to serialize favorite countries")
+        return false
+    end
+
+    -- Save stations
+    local favStationsTable = {}
+    for country, stations in pairs(self._state.favoriteStations) do
+        if type(country) == "string" and type(stations) == "table" then
+            favStationsTable[country] = {}
+            for stationName, isFavorite in pairs(stations) do
+                if type(stationName) == "string" and type(isFavorite) == "boolean" then
+                    favStationsTable[country][stationName] = isFavorite
+                end
+            end
+        end
+    end
+    
+    local stationsJson = util.TableToJSON(favStationsTable, true)
+    if stationsJson then
+        createBackup(self.Config.favoriteStationsFile)
+        file.Write(self.Config.favoriteStationsFile, stationsJson)
+        Debug:Log("Saved favorite stations:", table.Count(favStationsTable))
+    else
+        Debug:Error("Failed to serialize favorite stations")
+        return false
+    end
+
+    self:Emit(self.Events.FAVORITES_SAVED)
+    Debug:Log("Favorites saved successfully")
+    return true
+end
+
+function StateManager:LoadFavorites()
+    if not self.initialized then
+        Debug:Error("Attempted to load favorites before initialization")
+        return false
+    end
+    
+    Debug:Log("Loading favorites...")
+
+    local function loadFromBackup(filename)
+        if file.Exists(filename .. ".bak", "DATA") then
+            local content = file.Read(filename .. ".bak", "DATA")
+            if content then
+                Debug:Log("Loading from backup:", filename)
+                return util.JSONToTable(content)
+            end
+        end
+        return nil
+    end
+    
+    -- Initialize state if not exists
+    self._state.favoriteCountries = self._state.favoriteCountries or {}
+    self._state.favoriteStations = self._state.favoriteStations or {}
+    
+    -- Load countries
+    if file.Exists(self.Config.favoriteCountriesFile, "DATA") then
+        local content = file.Read(self.Config.favoriteCountriesFile, "DATA")
+        local success, data = pcall(function()
+            return content and util.JSONToTable(content)
+        end)
+        
+        if not success or not data then
+            Debug:Warning("Failed to load favorite countries, attempting backup")
+            data = loadFromBackup(self.Config.favoriteCountriesFile)
+        end
+        
+        if data then
+            self._state.favoriteCountries = {}
+            for _, country in ipairs(data) do
+                if type(country) == "string" then
+                    self._state.favoriteCountries[country] = true
+                end
+            end
+            Debug:Log("Loaded favorite countries:", table.Count(self._state.favoriteCountries))
+        end
+    end
+    
+    -- Load stations
+    if file.Exists(self.Config.favoriteStationsFile, "DATA") then
+        local content = file.Read(self.Config.favoriteStationsFile, "DATA")
+        local success, data = pcall(function()
+            return content and util.JSONToTable(content)
+        end)
+        
+        if not success or not data then
+            Debug:Warning("Failed to load favorite stations, attempting backup")
+            data = loadFromBackup(self.Config.favoriteStationsFile)
+        end
+        
+        if data then
+            self._state.favoriteStations = {}
+            for country, stations in pairs(data) do
+                if type(country) == "string" and type(stations) == "table" then
+                    self._state.favoriteStations[country] = {}
+                    for stationName, isFavorite in pairs(stations) do
+                        if type(stationName) == "string" and type(isFavorite) == "boolean" then
+                            self._state.favoriteStations[country][stationName] = isFavorite
+                        end
+                    end
+                end
+            end
+            Debug:Log("Loaded favorite stations:", table.Count(self._state.favoriteStations))
+        end
+    end
+    
+    self:Emit(self.Events.FAVORITES_LOADED, {
+        countries = self._state.favoriteCountries,
+        stations = self._state.favoriteStations
+    })
+    
+    Debug:Log("Favorites loaded successfully")
+    return true
+end
+
+function StateManager:UpdateStationCount()
+    local count = 0
+    for entIndex, streamData in pairs(StreamManager._streams) do
+        if StreamManager:IsValid(entIndex) then
+            count = count + 1
+        end
+    end
+    self:SetState("activeStationCount", count)
     return count
 end
 
-function StateManagerFunctions:GetFavoritesList(lang, filterText)
+function StateManager:GetFavoritesList(lang, filterText)
     local cacheKey = lang .. "_" .. (filterText or "")
     
     -- Check if cache is valid
@@ -128,24 +288,16 @@ function StateManagerFunctions:GetFavoritesList(lang, filterText)
 
     local favoritesList = {}
     
-    -- Ensure StationData is available
-    if not StationData then return favoritesList end
-    
     -- Iterate through favorite stations
-    for country, stations in pairs(self.favoriteStations) do
-        if StationData[country] then
-            -- Find matching stations in StationData
-            for _, stationData in ipairs(StationData[country]) do
-                if stations[stationData.name] and 
-                   (not filterText or stationData.name:lower():find(filterText:lower(), 1, true)) then
-                    local translatedName = self:GetTranslatedCountryName(country, lang)
-                    
-                    table.insert(favoritesList, {
-                        station = stationData, -- Use full station data including URL
-                        country = country,
-                        countryName = translatedName
-                    })
-                end
+    for country, stations in pairs(self._state.favoriteStations) do
+        for stationName, isFavorite in pairs(stations) do
+            if isFavorite and (not filterText or stationName:lower():find(filterText:lower(), 1, true)) then
+                local translatedCountry = self:GetTranslatedCountryName(country, lang)
+                table.insert(favoritesList, {
+                    station = { name = stationName },
+                    country = country,
+                    countryName = translatedCountry
+                })
             end
         end
     end
@@ -168,12 +320,7 @@ function StateManagerFunctions:GetFavoritesList(lang, filterText)
     return favoritesList
 end
 
-function StateManagerFunctions:GetTranslatedCountryName(country, lang)
-    if not LanguageManager then
-        print("[rRadio] Warning: LanguageManager not available")
-        return country
-    end
-
+function StateManager:GetTranslatedCountryName(country, lang)
     local cacheKey = country .. "_" .. lang
     
     if self._cache.countryTranslations[cacheKey] then
@@ -184,223 +331,32 @@ function StateManagerFunctions:GetTranslatedCountryName(country, lang)
         return first:upper() .. rest:lower()
     end)
     
-    local translatedName = LanguageManager:GetCountryTranslation(lang, formattedCountry) or formattedCountry
+    local translatedName = (Misc and Misc.Language and Misc.Language:GetCountryTranslation(lang, formattedCountry)) or formattedCountry
     self._cache.countryTranslations[cacheKey] = translatedName
     
     return translatedName
 end
 
-function StateManagerFunctions:SaveFavorites()
-    if not self.initialized then return false end
-
-    local function createBackup(filename)
-        if file.Exists(filename, "DATA") then
-            file.Write(filename .. ".bak", file.Read(filename, "DATA"))
-        end
-    end
-
-    -- Save countries
-    local favCountriesList = {}
-    for country, _ in pairs(self.favoriteCountries) do
-        if type(country) == "string" then
-            table.insert(favCountriesList, country)
-        end
-    end
-    
-    local countriesJson = util.TableToJSON(favCountriesList, true)
-    if countriesJson then
-        createBackup(self.favoriteCountriesFile)
-        file.Write(self.favoriteCountriesFile, countriesJson)
-    end
-
-    -- Save stations
-    local favStationsTable = {}
-    for country, stations in pairs(self.favoriteStations) do
-        if type(country) == "string" and type(stations) == "table" then
-            favStationsTable[country] = {}
-            for stationName, isFavorite in pairs(stations) do
-                if type(stationName) == "string" and type(isFavorite) == "boolean" then
-                    favStationsTable[country][stationName] = isFavorite
-                end
-            end
-        end
-    end
-    
-    local stationsJson = util.TableToJSON(favStationsTable, true)
-    if stationsJson then
-        createBackup(self.favoriteStationsFile)
-        file.Write(self.favoriteStationsFile, stationsJson)
-    end
-
-    self:Emit(self.Events.FAVORITES_SAVED)
-    return true
-end
-
-function StateManagerFunctions:LoadFavorites()
-    if not self.initialized then return end
-
-    local function loadFromBackup(filename)
-        if file.Exists(filename .. ".bak", "DATA") then
-            return util.JSONToTable(file.Read(filename .. ".bak", "DATA"))
-        end
-        return nil
-    end
-
-    -- Load countries
-    if file.Exists(self.favoriteCountriesFile, "DATA") then
-        local success, data = pcall(function()
-            return util.JSONToTable(file.Read(self.favoriteCountriesFile, "DATA"))
-        end)
-        
-        if not success or not data then
-            data = loadFromBackup(self.favoriteCountriesFile)
-        end
-
-        if data then
-            self.favoriteCountries = {}
-            for _, country in ipairs(data) do
-                if type(country) == "string" then
-                    self.favoriteCountries[country] = true
-                end
-            end
-        end
-    end
-
-    -- Load stations
-    if file.Exists(self.favoriteStationsFile, "DATA") then
-        local success, data = pcall(function()
-            return util.JSONToTable(file.Read(self.favoriteStationsFile, "DATA"))
-        end)
-        
-        if not success or not data then
-            data = loadFromBackup(self.favoriteStationsFile)
-        end
-
-        if data then
-            self.favoriteStations = {}
-            for country, stations in pairs(data) do
-                if type(country) == "string" and type(stations) == "table" then
-                    self.favoriteStations[country] = {}
-                    for stationName, isFavorite in pairs(stations) do
-                        if type(stationName) == "string" and type(isFavorite) == "boolean" then
-                            self.favoriteStations[country][stationName] = isFavorite
-                        end
-                    end
-                end
-            end
-        end
-    end
-
-    self:Emit(self.Events.FAVORITES_LOADED, {
-        countries = self.favoriteCountries,
-        stations = self.favoriteStations
-    })
-end
-
-function StateManagerFunctions:InvalidateCache(cacheType)
+function StateManager:InvalidateCache(cacheType)
     if cacheType == "favorites" then
         self._cache.favoritesList = nil
         self._lastStateUpdate = CurTime()
-        
-        -- Force refresh of favorites list
-        if self.Events then
-            self:Emit(self.Events.FAVORITES_CHANGED)
+        self:Emit(self.Events.FAVORITES_CHANGED)
+    elseif cacheType == "translations" then
+        self._cache.countryTranslations = {}
+    end
+end
+
+function StateManager:InitializeStreamEvents(StreamManager)
+    if not StreamManager then return end
+    
+    StreamManager:On(StreamManager.Events.STATE_CHANGED, function(data)
+        if data.type == "stream_created" then
+            self:SetState("currentlyPlayingStations", StreamManager:GetPlayingStations())
+        elseif data.type == "stream_stopped" then
+            self:SetState("currentlyPlayingStations", StreamManager:GetPlayingStations())
         end
-    end
-end
-
--- Modify SetState to invalidate cache when favorites change
-local originalSetState = StateManagerFunctions.SetState
-function StateManagerFunctions:SetState(key, value)
-    originalSetState(self, key, value)
-    
-    -- Invalidate favorites cache when favorites change
-    if key == "favoriteStations" or key == "favoriteCountries" then
-        self:InvalidateCache("favorites")
-    end
-end
-
-local StateManager = {
-    Events = {
-        STATE_CHANGED = "RadioStateChanged",
-        STATE_INITIALIZED = "RadioStateInitialized",
-        VOLUME_CHANGED = "RadioVolumeChanged",
-        STATION_CHANGED = "RadioStationChanged",
-        FAVORITES_CHANGED = "RadioFavoritesChanged",
-        RADIO_STATUS_CHANGED = "RadioStatusChanged",
-        RADIO_STOPPED = "RadioStopped",
-        ENTITY_REMOVED = "RadioEntityRemoved",
-        SETTINGS_CHANGED = "RadioSettingsChanged",
-        THEME_CHANGED = "RadioThemeChanged",
-        LANGUAGE_CHANGED = "RadioLanguageChanged",
-        FAVORITES_LOADED = "RadioFavoritesLoaded",
-        FAVORITES_SAVED = "RadioFavoritesSaved"
-    },
-
-    -- Initialize data directory
-    dataDir = "rradio",
-    favoriteCountriesFile = "rradio/favorite_countries.json",
-    favoriteStationsFile = "rradio/favorite_stations.json",
-
-    -- State storage
-    initialized = false,
-    _eventListeners = {},
-    _cache = {
-        favoritesList = nil,
-        countryTranslations = {},
-        lastUpdate = 0
-    },
-    _lastStateUpdate = 0,
-    
-    -- Core state
-    radioMenuOpen = false,
-    settingsMenuOpen = false,
-    favoritesMenuOpen = false,
-    selectedCountry = nil,
-    isSearching = false,
-    
-    -- Audio state
-    currentRadioSources = {},
-    activeStations = {},
-    activeStationCount = 0,
-    entityVolumes = {},
-    currentlyPlayingStations = {},
-    
-    -- UI state
-    currentFrame = nil,
-    BoomboxStatuses = {},
-    
-    -- Favorites state
-    favoriteCountries = {},
-    favoriteStations = {},
-    
-    -- Cache
-    formattedCountryNames = {},
-    
-    -- Timing
-    lastKeyPress = 0,
-    lastStationSelectTime = 0,
-    lastPermissionMessage = 0,
-    lastMessageTime = -math.huge,
-
-    -- Save queue management
-    _saveQueue = {},
-    _lastSave = 0,
-    _saveInterval = 0.5, -- Minimum time between saves
-    _pendingSave = false,
-    _dirtyKeys = {}, -- Track which data needs saving
-    
-    -- Binary format version for compatibility
-    _binaryVersion = 1,
-
-    -- Lazy loading state
-    _lazyLoadedStations = {},
-    _lazyLoadCallbacks = {},
-}
-
--- Apply all functions to StateManager
-for name, func in pairs(StateManagerFunctions) do
-    StateManager[name] = func
+    end)
 end
 
 return StateManager 

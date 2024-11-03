@@ -1,23 +1,39 @@
 print("[rRadio] Starting client-side initialization")
 
--- Load core dependencies first
-Config = include("radio/shared/sh_config.lua")
+-- Load shared modules first
+include("radio/shared/sh_debug.lua")
+_G.RadioDebug = include("radio/shared/sh_debug.lua")
+include("radio/shared/sh_events.lua")
+include("radio/shared/sh_config.lua")
 include("radio/shared/sh_utils.lua")
 
--- Load and initialize StateManager
-_G.StateManager = include("radio/client/cl_state_manager.lua")
-if not StateManager then
-    error("[rRadio] Failed to load StateManager")
-end
-
+-- Create and initialize managers in correct order
+local StateManager = include("radio/client/cl_state_manager.lua")
 if not StateManager.initialized then
     StateManager:Initialize()
 end
 
--- Load UI and language dependencies
+local StreamManager = include("radio/client/cl_stream_manager.lua")
+if not StreamManager.initialized then
+    StreamManager:Initialize()
+end
+
+-- Verify initialization
+if not StateManager.initialized then
+    error("[rRadio] Failed to initialize StateManager")
+end
+
+if not StreamManager.initialized then
+    error("[rRadio] Failed to initialize StreamManager")
+end
+
+-- Initialize event bridge after both managers are ready
+StateManager:InitializeStreamEvents(StreamManager)
+
+-- Load remaining modules
 include("radio/client/cl_theme_manager.lua")
-local Misc = include("radio/client/cl_misc.lua")
--- Load core after all dependencies
+include("radio/client/cl_misc.lua")
+include("radio/client/cl_hooks.lua")
 include("radio/client/cl_core.lua")
 
 print("[rRadio] Finished client-side initialization")

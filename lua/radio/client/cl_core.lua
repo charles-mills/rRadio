@@ -12,29 +12,30 @@
 --          Imports
 -- ------------------------------
 include("radio/shared/sh_config.lua")
+local StreamManager = include("radio/client/cl_stream_manager.lua")
+local StateManager = include("radio/client/cl_state_manager.lua")
 local themeModule = include("radio/client/cl_theme_manager.lua")
 local utils = include("radio/shared/sh_utils.lua")
 local Misc = include("radio/client/cl_misc.lua")
+local Debug = include("radio/shared/sh_debug.lua")
+local Events = include("radio/shared/sh_events.lua")
+
+if not StreamManager then
+    error("[rRadio] Failed to load StreamManager")
+end
 
 if not StateManager then
     error("[rRadio] Failed to load StateManager")
 end
 
+-- Initialize managers
 StateManager:Initialize()
 
 local function getSafeState(key, default)
-    if not StateManager or not StateManager.initialized then
-        return default
-    end
-    
     return StateManager:GetState(key) or default
 end
 
 local function setSafeState(key, value)
-    if not StateManager or not StateManager.initialized then
-        return
-    end
-    
     StateManager:SetState(key, value)
 end
 
@@ -154,7 +155,7 @@ hook.Add("OnPlayerChat", "RadioStreamToggleCommands", function(ply, text, teamCh
         
         -- Clear states
         currentRadioSources = {}
-        StreamManager.activeStreams = {}
+        StreamManager._streams = {}
         
         streamsEnabled = false
         chat.AddText(Color(0, 255, 0), "[Radio] All radio streams have been disabled for this session.")
@@ -342,117 +343,6 @@ local function updateStationCount()
     return count
 end
 
-local StreamManager = {
-    activeStreams = {},
-    cleanupQueue = {},
-    lastCleanup = 0,
-    CLEANUP_INTERVAL = 0.2, -- 200ms between cleanups
-
-    _validityCache = {},
-    _lastValidityCheck = 0,
-    VALIDITY_CHECK_INTERVAL = 0.5, -- Check validity every 0.5 seconds
-    
-    UpdateValidityCache = function(self)
-        local currentTime = CurTime()
-        if (currentTime - self._lastValidityCheck) < self.VALIDITY_CHECK_INTERVAL then
-            return
-        end
-        
-        self._lastValidityCheck = currentTime
-        self._validityCache = {}
-        
-        -- Combine IsValid checks
-        for entIndex, streamData in pairs(self.activeStreams) do
-            if IsValid(streamData.entity) and IsValid(streamData.stream) then
-                self._validityCache[entIndex] = true
-            else
-                self:QueueCleanup(entIndex, "invalid_reference")
-            end
-        end
-    end,
-    
-    IsStreamValid = function(self, entIndex)
-        return self._validityCache[entIndex] == true
-    end,
-    
-    -- Simple cleanup function
-    CleanupStream = function(self, entIndex)
-        local streamData = self.activeStreams[entIndex]
-        if not streamData then return end
-        
-        -- Stop sound
-        if IsValid(streamData.stream) then
-            streamData.stream:Stop()
-        end
-        
-        -- Clear states
-        self.activeStreams[entIndex] = nil
-        
-        -- Clear UI state
-        if IsValid(streamData.entity) then
-            utils.clearRadioStatus(streamData.entity)
-        end
-    end,
-
-    QueueCleanup = function(self, entIndex, reason)
-        self.cleanupQueue[entIndex] = {
-            reason = reason,
-            timestamp = CurTime()
-        }
-        
-        -- Process queue if enough time has passed
-        if CurTime() - self.lastCleanup >= self.CLEANUP_INTERVAL then
-            self:ProcessCleanupQueue()
-        end
-    end,
-
-    ProcessCleanupQueue = function(self)
-        self.lastCleanup = CurTime()
-        
-        for entIndex, cleanupData in pairs(self.cleanupQueue) do
-            self:CleanupStream(entIndex)
-        end
-        
-        -- Clear cleanup queue
-        self.cleanupQueue = {}
-    end,
-
-    RegisterStream = function(self, entity, stream, data)
-        if not IsValid(entity) or not IsValid(stream) then return false end
-        
-        local entIndex = entity:EntIndex()
-        
-        -- Cleanup any existing stream first
-        self:CleanupStream(entIndex)
-        
-        -- Register new stream
-        self.activeStreams[entIndex] = {
-            stream = stream,
-            entity = entity,
-            data = data,
-            startTime = CurTime()
-        }
-        
-        -- Update validity cache immediately
-        self._validityCache[entIndex] = true
-        
-        return true
-    end
-}
-
--- Essential cleanup hooks
-hook.Add("EntityRemoved", "RadioStreamCleanup", function(entity)
-    if IsValid(entity) then
-        StreamManager:CleanupStream(entity:EntIndex())
-    end
-end)
-
-hook.Add("ShutDown", "RadioStreamCleanup", function()
-    for entIndex, _ in pairs(StreamManager.activeStreams) do
-        StreamManager:CleanupStream(entIndex)
-    end
-end)
-
 -- ------------------------------
 --      Utility Functions
 -- ------------------------------
@@ -554,7 +444,6 @@ createFonts()
 -- ------------------------------
 
 local selectedCountry = nil
-local radioMenuOpen = false
 local currentlyPlayingStation = nil
 local lastMessageTime = -math.huge
 local lastStationSelectTime = 0
@@ -575,22 +464,16 @@ local MuteManager = {
     MuteEntity = function(self, entIndex, entity)
         if not IsValid(entity) then return end
         
-        -- Store original volume for unmuting
-        local streamData = StreamManager.activeStreams[entIndex]
-        if streamData and IsValid(streamData.stream) then
-            self.originalVolumes[entIndex] = streamData.stream:GetVolume()
-        else
-            self.originalVolumes[entIndex] = entityVolumes[entity] or 0.5
+        -- Store original volume and update stream
+        local streamData = StreamManager._streams[entIndex]
+        if streamData then
+            self.originalVolumes[entIndex] = streamData.data.volume
+            StreamManager:UpdateStreamVolume(entIndex, 0)
         end
         
         self.mutedEntities[entIndex] = true
         
-        -- Apply mute immediately
-        if streamData and IsValid(streamData.stream) then
-            streamData.stream:SetVolume(0)
-        end
-        
-        -- Emit state change event
+        -- Emit state change
         StateManager:Emit(StateManager.Events.BOOMBOX_MUTE_CHANGED, {
             entity = entity,
             muted = true
@@ -600,12 +483,20 @@ local MuteManager = {
     UnmuteEntity = function(self, entIndex, entity)
         if not IsValid(entity) then return end
         
-        local originalVolume = self.originalVolumes[entIndex] or entityVolumes[entity] or 0.5
+        local originalVolume = self.originalVolumes[entIndex]
+        if originalVolume then
+            local streamData = StreamManager._streams[entIndex]
+            if streamData then
+                streamData.data.volume = originalVolume
+                StreamManager:UpdateStreamVolume(entIndex)
+            end
+        end
+        
         self.mutedEntities[entIndex] = nil
         self.originalVolumes[entIndex] = nil
         
         -- Restore volume
-        local streamData = StreamManager.activeStreams[entIndex]
+        local streamData = StreamManager._streams[entIndex]
         if streamData and IsValid(streamData.stream) then
             streamData.stream:SetVolume(originalVolume)
         end
@@ -733,138 +624,43 @@ local function playStation(entity, station, volume)
     -- Validate volume range
     volume = math.Clamp(volume, 0, Config.MaxVolume())
 
-    -- Track retry attempts
-    local retryCount = 0
-    local MAX_RETRIES = 3
-    local RETRY_DELAY = 2
-    local TIMEOUT_DURATION = 10
+    -- Update local state immediately
+    local entIndex = entity:EntIndex()
+    if not BoomboxStatuses[entIndex] then
+        BoomboxStatuses[entIndex] = {}
+    end
+    BoomboxStatuses[entIndex] = {
+        stationStatus = "playing",
+        stationName = station.name,
+        url = station.url
+    }
 
-    -- Function to handle stream creation and retries
-    local function startNewStream()
-        if not IsValid(entity) then return end
+    -- Create stream through StreamManager
+    local success = StreamManager:CreateStream(entity, {
+        name = station.name,
+        url = station.url,
+        volume = volume,
+        minDist = utils.GetEntityConfig(entity).MinVolumeDistance(),
+        maxDist = utils.GetEntityConfig(entity).MaxHearingDistance()
+    })
 
-        -- Truncate station name before sending to server
-        local displayName = utils.truncateStationName(station.name)
-
-        -- Update server state with truncated name
+    if success then
+        -- Update server state
         net.Start("PlayCarRadioStation")
             net.WriteEntity(entity)
-            net.WriteString(displayName) -- Send truncated name
+            net.WriteString(utils.truncateStationName(station.name))
             net.WriteString(station.url)
             net.WriteFloat(volume)
         net.SendToServer()
 
-        -- Create local stream with timeout handling
-        local timeoutTimer = timer.Create("RadioTimeout_" .. entity:EntIndex(), TIMEOUT_DURATION, 1, function()
-            if retryCount < MAX_RETRIES then
-                print("[rRadio] Stream timeout, retrying... (" .. (retryCount + 1) .. "/" .. MAX_RETRIES .. ")")
-                retryCount = retryCount + 1
-                timer.Simple(RETRY_DELAY, startNewStream)
-            else
-                print("[rRadio] Stream failed after " .. MAX_RETRIES .. " attempts")
-                utils.playErrorSound("connection")
-                utils.clearRadioStatus(entity)
-                
-                -- Notify user of failure
-                chat.AddText(Color(255, 0, 0), "[Radio] Failed to connect to station after multiple attempts")
-                
-                -- Clean up any partial streams
-                StreamManager:CleanupStream(entity:EntIndex())
-            end
-        end)
-
-        sound.PlayURL(station.url, "3d noblock", function(stream, errorID, errorName)
-            -- Clear timeout timer if we got a response
-            if timer.Exists("RadioTimeout_" .. entity:EntIndex()) then
-                timer.Remove("RadioTimeout_" .. entity:EntIndex())
-            end
-
-            if not IsValid(stream) then
-                print("[rRadio] Error creating sound stream:", errorName)
-                
-                if retryCount < MAX_RETRIES then
-                    print("[rRadio] Retrying... (" .. (retryCount + 1) .. "/" .. MAX_RETRIES .. ")")
-                    retryCount = retryCount + 1
-                    timer.Simple(RETRY_DELAY, startNewStream)
-                else
-                    utils.playErrorSound("connection")
-                    if IsValid(entity) then
-                        utils.clearRadioStatus(entity)
-                    end
-                end
-                return
-            end
-
-            if not IsValid(entity) then
-                stream:Stop()
-                return
-
-            end
-
-            -- Register with StreamManager
-            if not StreamManager:RegisterStream(entity, stream, {
-                name = station.name,
-                url = station.url,
-                volume = volume,
-                startTime = CurTime()
-            }) then
-                stream:Stop()
-                return
-            end
-
-            -- Configure and start stream
-            stream:SetPos(entity:GetPos())
-            stream:SetVolume(volume)
-            
-            -- Add error handling for stream start
-            local success, err = pcall(function()
-                stream:Play()
-            end)
-            
-            if not success then
-                print("[rRadio] Error starting stream:", err)
-                StreamManager:CleanupStream(entity:EntIndex())
-                utils.playErrorSound("playback")
-                return
-            end
-
-            -- Update state
-            StateManager:SetState("currentlyPlayingStations", {
-                [entity] = station
-            })
-            StateManager:SetState("lastStationSelectTime", CurTime())
-            
-            -- Emit stream started event
-            StateManager:Emit(StateManager.Events.STREAM_STARTED, {
-                entity = entity,
-                station = station,
-                stream = stream
-            })
-        end)
-    end
-
-    -- Stop current playback first
-    if currentlyPlayingStations[entity] then
-        -- Stop on server
-        net.Start("StopCarRadioStation")
-            net.WriteEntity(entity)
-        net.SendToServer()
-
-        -- Stop locally through StreamManager
-        local streamData = StreamManager.activeStreams[entity:EntIndex()]
-        if streamData and IsValid(streamData.stream) then
-            streamData.stream:Stop()
-        end
-
-        -- Clean up through StreamManager
-        StreamManager:CleanupStream(entity:EntIndex())
-
-        -- Add delay before starting new stream
-        timer.Simple(0.1, function()
-            startNewStream()
-        end)
+        -- Update state
+        StateManager:SetState("currentlyPlayingStations", {
+            [entity] = station
+        })
+        StateManager:SetState("lastStationSelectTime", CurTime())
     else
-        startNewStream()
+        utils.playErrorSound("connection")
+        utils.clearRadioStatus(entity)
     end
 end
 
@@ -930,7 +726,7 @@ local function updateRadioVolume(station, distanceSqr, isPlayerInCar, entity)
     station:SetVolume(finalVolume)
 
     -- Update stream activity timestamp
-    local streamData = StreamManager.activeStreams[entity:EntIndex()]
+    local streamData = StreamManager._streams[entity:EntIndex()]
     if streamData then
         streamData.lastActivity = CurTime()
     end
@@ -1459,7 +1255,7 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                 stationListPanel,
                 Config.Lang["FavoriteStations"] or "Favorite Stations",
                 function()
-                    surface.PlaySound("garrysmod/content_downloaded.wav") -- Cheerful notification sound
+                    surface.PlaySound("garrysmod/content_downloaded.wav")
                     StateManager:SetState("selectedCountry", "favorites")
                     StateManager:SetState("favoritesMenuOpen", true)
                     selectedCountry = "favorites"
@@ -1682,7 +1478,8 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                     end
                 end
 
-                local streamData = StreamManager.activeStreams[entity:EntIndex()]
+                -- Update reference from activeStreams to _streams
+                local streamData = StreamManager._streams[entity:EntIndex()]
                 if streamData then
                     if streamData.stream and not streamData.stream:IsValid() then
                         surface.SetDrawColor(Config.UI.CloseButtonColor)
@@ -2652,31 +2449,45 @@ end
     Opens the radio menu UI for the player.
 ]]
 openRadioMenu = function(openSettings)
-    if radioMenuOpen then return end
+    Debug:Log("Attempting to open radio menu")
     
-    local ply = LocalPlayer()
-    local entity = ply.currentRadioEntity
-    
-    -- Combine all entity validation into one check
-    if not IsValid(entity) or 
-       not utils.canUseRadio(entity) or 
-       (utils.IsBoombox(entity) and not utils.canInteractWithBoombox(ply, entity)) then
+    -- Add mutex lock to prevent multiple opens
+    if StateManager:GetState("isOpeningMenu") then
+        Debug:Log("Menu is currently in opening process, returning")
         return
     end
     
-    -- Reset states when opening menu
-    selectedCountry = nil
-    settingsMenuOpen = false
-    favoritesMenuOpen = false
-    StateManager:SetState("selectedCountry", nil)
-    StateManager:SetState("favoritesMenuOpen", false)
-    StateManager:SetState("settingsMenuOpen", false)
+    -- Check if menu is already open
+    if StateManager:GetState("radioMenuOpen") then 
+        Debug:Log("Menu already open, returning")
+        return 
+    end
     
-    radioMenuOpen = true
+    -- Set opening state
+    StateManager:SetState("isOpeningMenu", true)
     
-    local backButton
-
+    local ply = LocalPlayer()
+    local entity = StateManager:GetState("currentRadioEntity")
+    
+    Debug:Log("Entity check:", IsValid(entity), entity)
+    
+    if not IsValid(entity) or 
+       not utils.canUseRadio(entity) or 
+       (utils.IsBoombox(entity) and not utils.canInteractWithBoombox(ply, entity)) then
+        Debug:Log("Failed entity validation checks")
+        StateManager:SetState("isOpeningMenu", false)
+        return
+    end
+    
+    -- Create frame BEFORE setting menu state
+    Debug:Log("Creating frame")
     local frame = vgui.Create("DFrame")
+    if not IsValid(frame) then
+        Debug:Error("Failed to create frame")
+        StateManager:SetState("isOpeningMenu", false)
+        return
+    end
+    
     currentFrame = frame
     frame:SetTitle("")
     frame:SetSize(Scale(Config.UI.FrameSize.width), Scale(Config.UI.FrameSize.height))
@@ -2684,24 +2495,34 @@ openRadioMenu = function(openSettings)
     frame:SetDraggable(false)
     frame:ShowCloseButton(false)
     frame:MakePopup()
+    
+    -- Only set menu state after successful frame creation
+    Debug:Log("Setting menu states")
+    StateManager:SetState("radioMenuOpen", true)
+    StateManager:SetState("settingsMenuOpen", openSettings or false)
+    StateManager:SetState("favoritesMenuOpen", false)
+    StateManager:SetState("selectedCountry", nil)
+    
+    -- Clear opening state
+    StateManager:SetState("isOpeningMenu", false)
+    
     frame.OnClose = function()
-        radioMenuOpen = false
-        -- Reset all menu states when closing
+        Debug:Log("Frame closing, cleaning up states")
+        StateManager:SetState("radioMenuOpen", false)
         StateManager:SetState("selectedCountry", nil)
         StateManager:SetState("favoritesMenuOpen", false)
         StateManager:SetState("settingsMenuOpen", false)
-        selectedCountry = nil
-        settingsMenuOpen = false
-        favoritesMenuOpen = false
+        StateManager:SetState("isOpeningMenu", false)
+        currentFrame = nil
         
         -- Clean up any abandoned streams
-        for entIndex, streamData in pairs(StreamManager.activeStreams) do
+        for entIndex, streamData in pairs(StreamManager._streams) do
             if not IsValid(streamData.entity) then
                 StreamManager:QueueCleanup(entIndex, "menu_closed")
             end
         end
     end
-
+    
     frame.Paint = function(self, w, h)
         -- Normal painting
         draw.RoundedBox(8, 0, 0, w, h, Config.UI.BackgroundColor)
@@ -2957,26 +2778,10 @@ openRadioMenu = function(openSettings)
     local lastServerUpdate = 0
     volumeSlider.OnValueChanged = function(_, value)
         local entity = LocalPlayer().currentRadioEntity
-        entity = utils.GetVehicle(entity) or entity
+        if not IsValid(entity) then return end
+
         value = math.min(value, Config.MaxVolume())
-
-        entityVolumes[entity] = value
-
-        local streamData = StreamManager.activeStreams[entity:EntIndex()]
-        if streamData and IsValid(streamData.stream) then
-            streamData.stream:SetVolume(value)
-        end
-        
-        updateVolumeIcon(volumeIcon, value)
-
-        local currentTime = CurTime()
-        if currentTime - lastServerUpdate >= 0.1 then
-            lastServerUpdate = currentTime
-            net.Start("UpdateRadioVolume")
-                net.WriteEntity(entity)
-                net.WriteFloat(value)
-            net.SendToServer()
-        end
+        StreamManager:UpdateStreamVolume(entity:EntIndex(), value)
     end
 
     local sbar = stationListPanel:GetVBar()
@@ -3112,73 +2917,64 @@ end
     Hook: Think
     Opens the car radio menu when the player presses the designated key.
 ]]
+local lastKeyState = false
+
+-- Add at the top with other local variables:
+local isProcessingOpen = false
+local OPEN_COOLDOWN = 0.2
+
 hook.Add("Think", "OpenCarRadioMenu", function()
+    if isProcessingOpen then return end
+    
     local openKey = GetConVar("car_radio_open_key"):GetInt()
     local ply = LocalPlayer()
-    
-    -- Validate player and key state
+
     if not IsValid(ply) or not openKey then return end
     if ply:IsTyping() then return end
+
+    local currentKeyState = input.IsKeyDown(openKey)
     
-    -- Get current time and last press time with proper default
+    -- Only trigger on key press, not hold
+    if currentKeyState == lastKeyState then return end
+    lastKeyState = currentKeyState
+    
+    -- Only handle key press, not release
+    if not currentKeyState then return end
+
     local currentTime = CurTime()
-    local keyPressDelay = 0.2
-    local lastPress = getSafeState("lastKeyPress", 0)
-
-    -- Check if key is pressed and enough time has passed
-    if not input.IsKeyDown(openKey) then return end
-    if (currentTime - lastPress) <= keyPressDelay then return end
+    local lastPress = StateManager:GetState("lastKeyPress", 0)
     
-    -- Update last key press time
-    setSafeState("lastKeyPress", currentTime)
+    if (currentTime - lastPress) <= OPEN_COOLDOWN then return end
+    StateManager:SetState("lastKeyPress", currentTime)
 
-    -- Handle menu close if already open
-    if radioMenuOpen and not isSearching then
+    -- Handle closing if menu is open
+    if StateManager:GetState("radioMenuOpen") and not isSearching then
         surface.PlaySound("buttons/lightswitch2.wav")
         if IsValid(currentFrame) then
             currentFrame:Close()
         end
-        radioMenuOpen = false
-        selectedCountry = nil
-        settingsMenuOpen = false
-        favoritesMenuOpen = false
         return
     end
 
-    -- Get the player's current vehicle/seat
+    -- Only handle vehicle radio here, boombox is handled by network message
     local currentSeat = ply:GetVehicle()
-    if not IsValid(currentSeat) then 
-        utils.DebugPrint("No valid seat found")
-        return 
-    end
+    if not IsValid(currentSeat) then return end
 
-    -- Get the actual vehicle using our utility function
     local actualVehicle = utils.GetVehicle(currentSeat)
-    if not actualVehicle then
-        utils.DebugPrint("No valid vehicle found from seat:", currentSeat:GetClass())
-        if IsValid(currentSeat:GetParent()) then
-            utils.DebugPrint("Parent class:", currentSeat:GetParent():GetClass())
-        end
-        return
-    end
+    if not actualVehicle or not utils.canUseRadio(actualVehicle) then return end
 
-    -- Debug info
-    utils.DebugPrint("Vehicle Info:", 
-        "\nClass:", actualVehicle:GetClass(),
-        "\nLVS:", actualVehicle.LVS and "true" or "false",
-        "\nParent:", IsValid(actualVehicle:GetParent()) and actualVehicle:GetParent():GetClass() or "none",
-        "\nIsVehicle:", actualVehicle:IsVehicle() and "true" or "false")
-
-    -- Validate that the vehicle can use radio
-    if not utils.canUseRadio(actualVehicle) then
-        utils.DebugPrint("Vehicle cannot use radio")
-        return
-    end
-
-    -- Set current radio entity and open menu
+    isProcessingOpen = true
     ply.currentRadioEntity = actualVehicle
     StateManager:SetState("currentRadioEntity", actualVehicle)
-    openRadioMenu()
+    
+    timer.Simple(0, function()
+        if not StateManager:GetState("radioMenuOpen") then
+            openRadioMenu()
+        end
+        timer.Simple(OPEN_COOLDOWN, function()
+            isProcessingOpen = false
+        end)
+    end)
 end)
 
 --[[
@@ -3275,7 +3071,7 @@ net.Receive("PlayCarRadioStation", function()
         end
 
         -- Register with StreamManager
-        if not StreamManager:RegisterStream(entity, station, {
+        if not StreamManager:CreateStream(entity, {
             name = stationName,
             url = url,
             volume = volume,
@@ -3317,11 +3113,27 @@ net.Receive("StopCarRadioStation", function()
     end
 end)
 
+local function cleanupRadioMenu()
+    if IsValid(currentFrame) then
+        currentFrame:Remove()
+        currentFrame = nil
+    end
+    radioMenuOpen = false
+    selectedCountry = nil
+    settingsMenuOpen = false
+    favoritesMenuOpen = false
+    StateManager:SetState("settingsMenuOpen", false)
+    StateManager:SetState("selectedCountry", nil)
+    StateManager:SetState("favoritesMenuOpen", false)
+end
+
 --[[
     Network Receiver: OpenRadioMenu
     Opens the radio menu for a given entity.
 ]]
 net.Receive("OpenRadioMenu", function()
+    if isProcessingOpen then return end
+    
     local ent = net.ReadEntity()
     if not IsValid(ent) then return end
 
@@ -3331,12 +3143,18 @@ net.Receive("OpenRadioMenu", function()
     if ent:GetClass() == "boombox" or ent:GetClass() == "golden_boombox" then
         -- Validate interaction permissions
         if utils.canInteractWithBoombox(ply, ent) then
+            isProcessingOpen = true
             ply.currentRadioEntity = ent
             StateManager:SetState("currentRadioEntity", ent)
             
-            if not radioMenuOpen then
-                openRadioMenu()
-            end
+            timer.Simple(0, function()
+                if not StateManager:GetState("radioMenuOpen") then
+                    openRadioMenu()
+                end
+                timer.Simple(OPEN_COOLDOWN, function()
+                    isProcessingOpen = false
+                end)
+            end)
         else
             -- Show unauthorized UI instead of just a chat message
             if currentTime - lastPermissionMessage >= PERMISSION_MESSAGE_COOLDOWN then
@@ -3353,20 +3171,16 @@ end)
 
 net.Receive("RadioConfigUpdate", function()
     -- Update all active radio volumes with validation
-    for entity, source in pairs(currentRadioSources) do
-        if IsValid(entity) and IsValid(source) then
-            local entityConfig = getEntityConfig(entity)
-            if entityConfig and entityConfig.Volume then
-                local volume = ClampVolume(entityVolumes[entity] or entityConfig.Volume())
-                source:SetVolume(volume)
+    for entIndex, streamData in pairs(StreamManager._streams) do -- Changed from activeStreams to _streams
+        if StreamManager:IsValid(entIndex) then
+            local entity = streamData.entity
+            if IsValid(entity) then
+                local entityConfig = utils.GetEntityConfig(entity)
+                if utils.entityConfig then
+                    local volume = ClampVolume(entityVolumes[entity] or entityConfig.Volume())
+                    StreamManager:UpdateStreamVolume(entIndex, volume)
+                end
             end
-        else
-            -- Cleanup invalid entries
-            if IsValid(source) then
-                source:Stop()
-            end
-            currentRadioSources[entity] = nil
-            StateManager:SetState("currentRadioSources", currentRadioSources)
         end
     end
     
@@ -3405,8 +3219,8 @@ end)
 
 -- Periodic validation
 timer.Create("RadioStateValidation", 30, 0, function()
-    -- Validate and cleanup streams
-    for entIndex, streamData in pairs(StreamManager.activeStreams) do
+    -- Update reference from activeStreams to _streams
+    for entIndex, streamData in pairs(StreamManager._streams) do
         if not IsValid(streamData.entity) or not IsValid(streamData.stream) then
             StreamManager:CleanupStream(entIndex)
         end
@@ -3446,7 +3260,7 @@ hook.Add("Think", "UpdateStreamPositions", function()
 
     -- Cache IsValid results at start
     local validStreams = {}
-    for entIndex, streamData in pairs(StreamManager.activeStreams) do
+    for entIndex, streamData in pairs(StreamManager._streams) do
         if IsValid(streamData.entity) and IsValid(streamData.stream) then
             validStreams[entIndex] = streamData
         else
@@ -3508,4 +3322,172 @@ hook.Add("Think", "RadioAnimationsThink", function()
     if Misc and Misc.Animations then
         Misc.Animations:Think()
     end
+end)
+
+-- Stream event handlers
+StreamManager:On(StreamManager.Events.STREAM_STARTED, function(entity, data)
+    if not IsValid(entity) then return end
+    
+    -- Update entity state
+    entity:SetNWString("Status", "playing")
+    entity:SetNWString("StationName", data.name)
+    entity:SetNWBool("IsPlaying", true)
+    
+    -- Update UI if needed
+    if IsValid(currentFrame) then
+        populateList(stationListPanel, backButton, searchBox, false)
+    end
+    
+    -- Update state
+    StateManager:SetState("currentlyPlayingStations", {
+        [entity] = { name = data.name, url = data.url }
+    })
+    
+    -- Emit state change event
+    StateManager:Emit(StateManager.Events.RADIO_STATUS_CHANGED, {
+        entity = entity,
+        status = "playing",
+        station = data.name
+    })
+end)
+
+StreamManager:On(StreamManager.Events.STREAM_STOPPED, function(entity)
+    if not IsValid(entity) then return end
+    
+    -- Update entity state
+    entity:SetNWString("Status", "stopped")
+    entity:SetNWString("StationName", "")
+    entity:SetNWBool("IsPlaying", false)
+    
+    -- Update UI if needed
+    if IsValid(currentFrame) then
+        populateList(stationListPanel, backButton, searchBox, false)
+    end
+    
+    -- Update state
+    local currentStations = StateManager:GetState("currentlyPlayingStations") or {}
+    currentStations[entity] = nil
+    StateManager:SetState("currentlyPlayingStations", currentStations)
+    
+    -- Emit state change event
+    StateManager:Emit(StateManager.Events.RADIO_STATUS_CHANGED, {
+        entity = entity,
+        status = "stopped"
+    })
+end)
+
+StreamManager:On(StreamManager.Events.STREAM_ERROR, function(entity, errorID, errorName)
+    if not IsValid(entity) then return end
+    
+    -- Update entity state
+    entity:SetNWString("Status", "error")
+    
+    -- Play error sound and notify user
+    utils.playErrorSound("connection")
+    chat.AddText(Color(255, 0, 0), 
+        string.format("[Radio] Error playing station: %s", errorName))
+    
+    -- Update UI if needed
+    if IsValid(currentFrame) then
+        populateList(stationListPanel, backButton, searchBox, false)
+    end
+    
+    -- Emit error event
+    StateManager:Emit(StateManager.Events.RADIO_STATUS_CHANGED, {
+        entity = entity,
+        status = "error",
+        error = errorName
+    })
+end)
+
+-- State event handlers
+StateManager:On(StateManager.Events.RADIO_STATUS_CHANGED, function(data)
+    if not data.entity then return end
+    
+    -- Update UI elements
+    if IsValid(currentFrame) then
+        populateList(stationListPanel, backButton, searchBox, false)
+    end
+end)
+
+StateManager:On(StateManager.Events.FAVORITES_CHANGED, function(data)
+    -- Update local references
+    favoriteCountries = StateManager:GetState("favoriteCountries") or {}
+    favoriteStations = StateManager:GetState("favoriteStations") or {}
+    
+    -- Update UI if needed
+    if IsValid(currentFrame) then
+        populateList(stationListPanel, backButton, searchBox, false)
+    end
+end)
+
+StateManager:On(StateManager.Events.VOLUME_CHANGED, function(data)
+    if not data.entity then return end
+    
+    -- Update volume UI if needed
+    if IsValid(volumeSlider) and data.entity == LocalPlayer().currentRadioEntity then
+        volumeSlider:SetValue(data.volume)
+    end
+    
+    -- Update volume icon
+    if IsValid(volumeIcon) then
+        updateVolumeIcon(volumeIcon, data.volume)
+    end
+end)
+
+StateManager:On(StateManager.Events.BOOMBOX_MUTE_CHANGED, function(data)
+    if not data.entity then return end
+    
+    -- Update mute button if needed
+    if IsValid(muteButton) and data.entity == LocalPlayer().currentRadioEntity then
+        muteButton:SetText(data.muted and "Unmute" or "Mute")
+    end
+    
+    -- Update volume display
+    if data.muted then
+        if IsValid(volumeIcon) then
+            volumeIcon:SetMaterial(VOLUME_ICONS.MUTE)
+        end
+    else
+        local volume = entityVolumes[data.entity] or 0.5
+        if IsValid(volumeIcon) then
+            updateVolumeIcon(volumeIcon, volume)
+        end
+    end
+end)
+
+-- Network event handlers
+net.Receive("RadioConfigUpdate", function()
+    for entIndex, streamData in pairs(StreamManager._streams) do
+        if StreamManager:IsValid(entIndex) then
+            local entity = streamData.entity
+            if IsValid(entity) then
+                local entityConfig = utils.getEntityConfig(entity)
+                if entityConfig then
+                    local volume = ClampVolume(entityVolumes[entity] or entityConfig.Volume())
+                    StreamManager:UpdateStreamVolume(entIndex, volume)
+                end
+            end
+        end
+    end
+    
+    -- Update UI if needed
+    if IsValid(currentFrame) then
+        populateList(stationListPanel, backButton, searchBox, false)
+    end
+end)
+
+local function updateUI()
+    local playingStations = StreamManager:GetPlayingStations()
+    local streamStates = StreamManager:GetAllStreamStates()
+
+    -- Update UI based on stream states
+    if IsValid(currentFrame) then
+        populateList(stationListPanel, backButton, searchBox, false)
+    end
+end
+
+-- Update event handlers
+StreamManager:On(StreamManager.Events.STATE_CHANGED, function(data)
+    updateUI()
 end)
