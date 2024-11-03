@@ -13,7 +13,7 @@
 -- ------------------------------
 include("radio/shared/sh_config.lua")
 local LanguageManager = include("radio/client/lang/cl_language_manager.lua")
-local themeModule = include("radio/client/cl_themes.lua")
+local themeModule = include("radio/client/cl_theme_manager.lua")
 local utils = include("radio/shared/sh_utils.lua")
 local Misc = include("radio/client/cl_misc.lua")
 
