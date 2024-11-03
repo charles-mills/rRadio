@@ -206,7 +206,7 @@ function utils.setRadioStatus(entity, status, stationName, isPlaying, updateName
 
     -- If we're on the server, broadcast the status update
     if SERVER then
-        net.Start("UpdateRadioStatus")
+        net.Start("rRadio_UpdateRadioStatus")
             net.WriteEntity(entity)
             net.WriteString(stationName)
             net.WriteBool(isPlaying)

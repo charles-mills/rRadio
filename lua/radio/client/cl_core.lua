@@ -45,7 +45,7 @@ local lastKeyPress = getSafeState("lastKeyPress", 0)
 
 local currentFrame = nil
 local settingsMenuOpen = false
-local openRadioMenu
+local rRadio_OpenRadioPlayer
 
 local lastIconUpdate = 0
 local iconUpdateDelay = 0.1
@@ -447,21 +447,21 @@ local function LerpColor(t, col1, col2)
 end
 
 --[[
-    Function: reopenRadioMenu
+    Function: rerRadio_OpenRadioPlayer
     Reopens the radio menu with optional settings flag.
 
     Parameters:
     - openSettingsMenuFlag: Boolean to determine if settings menu should be opened.
 ]]
-local function reopenRadioMenu(openSettingsMenuFlag)
-    if openRadioMenu then
+local function rerRadio_OpenRadioPlayer(openSettingsMenuFlag)
+    if rRadio_OpenRadioPlayer then
         if IsValid(LocalPlayer()) and LocalPlayer().currentRadioEntity then
             timer.Simple(0.1, function()
-                openRadioMenu(openSettingsMenuFlag)
+                rRadio_OpenRadioPlayer(openSettingsMenuFlag)
             end)
         end
     else
-        print("Error: openRadioMenu function not found")
+        print("Error: rRadio_OpenRadioPlayer function not found")
     end
 end
 
@@ -727,7 +727,7 @@ local function playStation(entity, station, volume)
         local displayName = utils.truncateStationName(station.name)
 
         -- Update server state with truncated name
-        net.Start("QueueStream")
+        net.Start("rRadio_QueueStream")
             net.WriteEntity(entity)
             net.WriteString(displayName) -- Send truncated name
             net.WriteString(station.url)
@@ -826,7 +826,7 @@ local function playStation(entity, station, volume)
     -- Stop current playback first
     if currentlyPlayingStations[entity] then
         -- Stop on server
-        net.Start("StopStream")
+        net.Start("rRadio_StopStream")
             net.WriteEntity(entity)
         net.SendToServer()
 
@@ -850,10 +850,10 @@ end
 
 
 --[[
-    Function: updateRadioVolume
+    Function: rRadio_UpdateRadioVolume
     Updates the volume of the radio station based on distance and whether the player is in the car.
 ]]
-local function updateRadioVolume(station, distanceSqr, isPlayerInCar, entity)
+local function rRadio_UpdateRadioVolume(station, distanceSqr, isPlayerInCar, entity)
     local entityConfig = getEntityConfig(entity)
     if not entityConfig then 
         print("[rRadio] Warning: No entity config found for", entity)
@@ -1985,7 +1985,7 @@ local function openSettingsMenu(parentFrame, backButton)
             if IsValid(parentFrame) then
                 parentFrame:Close()
                 timer.Simple(0.1, function()
-                    reopenRadioMenu(true)
+                    rerRadio_OpenRadioPlayer(true)
                 end)
             end
         else
@@ -2126,7 +2126,7 @@ local function openSettingsMenu(parentFrame, backButton)
                         if IsValid(parentFrame) then
                             parentFrame:Close()
                             timer.Simple(0.1, function()
-                                reopenRadioMenu(true)
+                                rerRadio_OpenRadioPlayer(true)
                             end)
                         end
                     end
@@ -2218,18 +2218,18 @@ local function openSettingsMenu(parentFrame, backButton)
         if IsValid(currentFrame) then
             currentFrame:Close()
             timer.Simple(0.1, function()
-                if openRadioMenu then
+                if rRadio_OpenRadioPlayer then
                     radioMenuOpen = false
                     StateManager:SetState("selectedCountry", nil)
                     StateManager:SetState("settingsMenuOpen", false)
                     StateManager:SetState("favoritesMenuOpen", false)
-                    openRadioMenu(true)
+                    rRadio_OpenRadioPlayer(true)
                 end
             end)
         end
     end)
 
-    addHeader(Config.Lang["SelectKeyToOpenRadioMenu"] or "Select Key to Open Radio Menu")
+    addHeader(Config.Lang["SelectKeyTorRadio_OpenRadioPlayer"] or "Select Key to Open Radio Menu")
     local keyChoices = {}
 
     local letterKeys = {}
@@ -2344,13 +2344,13 @@ local function openSettingsMenu(parentFrame, backButton)
                         net.WriteEntity(currentEntity)
                     net.SendToServer()
                 else
-                    net.Start("RemoveBoomboxPermanent")
+                    net.Start("rRadio_RemoveBoomboxPermanent")
                         net.WriteEntity(currentEntity)
                     net.SendToServer()
                 end
             end
 
-            net.Receive("BoomboxPermanentConfirmation", function()
+            net.Receive("rRadio_BoomboxPermanentConfirmation", function()
                 local message = net.ReadString()
                 chat.AddText(Color(0, 255, 0), "[Boombox] ", Color(255, 255, 255), message)
                 if string.find(message, "marked as permanent") then
@@ -2628,10 +2628,10 @@ end
 -- ------------------------------
 
 --[[
-    Function: openRadioMenu
+    Function: rRadio_OpenRadioPlayer
     Opens the radio menu UI for the player.
 ]]
-openRadioMenu = function(openSettings)
+rRadio_OpenRadioPlayer = function(openSettings)
     if radioMenuOpen then return end
     
     local ply = LocalPlayer()
@@ -2809,7 +2809,7 @@ openRadioMenu = function(openSettings)
             entity = utils.GetVehicle(entity) or entity
             
             -- Send stop request to server
-            net.Start("StopStream")
+            net.Start("rRadio_StopStream")
                 net.WriteEntity(entity)
             net.SendToServer()
             
@@ -2952,7 +2952,7 @@ openRadioMenu = function(openSettings)
         local currentTime = CurTime()
         if currentTime - lastServerUpdate >= 0.1 then
             lastServerUpdate = currentTime
-            net.Start("UpdateRadioVolume")
+            net.Start("rRadio_UpdateRadioVolume")
                 net.WriteEntity(entity)
                 net.WriteFloat(value)
             net.SendToServer()
@@ -3081,7 +3081,7 @@ openRadioMenu = function(openSettings)
         populateList(stationListPanel, backButton, searchBox, false)
     end
 
-    _G.openRadioMenu = openRadioMenu
+    _G.rRadio_OpenRadioPlayer = rRadio_OpenRadioPlayer
 end
 
 -- ------------------------------
@@ -3154,14 +3154,14 @@ hook.Add("Think", "OpenRadioPlayerMenu", function()
     -- Set current radio entity and open menu
     ply.currentRadioEntity = actualVehicle
     StateManager:SetState("currentRadioEntity", actualVehicle)
-    openRadioMenu()
+    rRadio_OpenRadioPlayer()
 end)
 
 --[[
-    Network Receiver: UpdateRadioStatus
+    Network Receiver: rRadio_UpdateRadioStatus
     Updates the status of the boombox.
 ]]
-net.Receive("UpdateRadioStatus", function()
+net.Receive("rRadio_UpdateRadioStatus", function()
     local entity = net.ReadEntity()
     local stationName = net.ReadString()
     local displayName = truncateStationName(stationName)
@@ -3199,10 +3199,10 @@ net.Receive("UpdateRadioStatus", function()
 end)
 
 --[[
-    Network Receiver: QueueStream
+    Network Receiver: rRadio_QueueStream
     Handles playing a radio station on the client.
 ]]
-net.Receive("QueueStream", function()
+net.Receive("rRadio_QueueStream", function()
     if not streamsEnabled then return end
     
     local entity = net.ReadEntity()
@@ -3217,7 +3217,7 @@ net.Receive("QueueStream", function()
     local url = net.ReadString()
     local volume = net.ReadFloat()
 
-    utils.DebugPrint("Received QueueStream", 
+    utils.DebugPrint("Received rRadio_QueueStream", 
         "\nEntity:", entity,
         "\nClass:", entity:GetClass(),
         "\nStation:", stationName,
@@ -3269,7 +3269,7 @@ net.Receive("QueueStream", function()
 end)
 
 -- Update the stop handler
-net.Receive("StopStream", function()
+net.Receive("rRadio_StopStream", function()
     local entity = net.ReadEntity()
     if not IsValid(entity) then return end
     
@@ -3294,10 +3294,10 @@ net.Receive("StopStream", function()
 end)
 
 --[[
-    Network Receiver: OpenRadioMenu
+    Network Receiver: rRadio_OpenRadioPlayer
     Opens the radio menu for a given entity.
 ]]
-net.Receive("OpenRadioMenu", function()
+net.Receive("rRadio_OpenRadioPlayer", function()
     local ent = net.ReadEntity()
     if not IsValid(ent) then return end
 
@@ -3311,7 +3311,7 @@ net.Receive("OpenRadioMenu", function()
             StateManager:SetState("currentRadioEntity", ent)
             
             if not radioMenuOpen then
-                openRadioMenu()
+                rRadio_OpenRadioPlayer()
             end
         else
             -- Show unauthorized UI instead of just a chat message
@@ -3327,7 +3327,7 @@ net.Receive("OpenRadioMenu", function()
     end
 end)
 
-net.Receive("RadioConfigUpdate", function()
+net.Receive("rRadio_RadioConfigUpdate", function()
     -- Update all active radio volumes with validation
     for entity, source in pairs(currentRadioSources) do
         if IsValid(entity) and IsValid(source) then
@@ -3444,16 +3444,16 @@ hook.Add("Think", "UpdateStreamPositions", function()
             isPlayerInCar = (vehicle:GetDriver() == ply)
         end
         
-        updateRadioVolume(stream, distanceSqr, isPlayerInCar, entity)
+        rRadio_UpdateRadioVolume(stream, distanceSqr, isPlayerInCar, entity)
     end
 end)
 
 local function initializeNetworking()
-    net.Receive("PlayCarEnterAnimation", function()
+    net.Receive("rRadio_PlayCarEnterAnimation", function()
         local vehicle = net.ReadEntity()
         local isValid = net.ReadBool()
         
-        utils.DebugPrint("Received PlayCarEnterAnimation:",
+        utils.DebugPrint("Received rRadio_PlayCarEnterAnimation:",
         "\nVehicle:", IsValid(vehicle) and vehicle:GetClass() or "invalid",
         "\nValidation Flag:", isValid)
     
