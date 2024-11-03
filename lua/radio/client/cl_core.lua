@@ -778,17 +778,22 @@ local function updateRadioVolume(station, distanceSqr, isPlayerInCar, entity)
         return
     end
 
-    -- Enable 3D audio when outside
     station:Set3DEnabled(true)
     local minDist = entityConfig.MinVolumeDistance()
+    
+    -- innerAngle of 180 means full volume in front hemisphere
+    -- outerAngle of 360 means sound can be heard from all directions
+    -- outerVolume of 0.8 means only 20% volume reduction when behind the source
+    station:Set3DCone(180, 360, 0.8)
+    
     station:Set3DFadeDistance(minDist, maxDist)
-
-    -- Calculate distance-based volume only if within audible range
+    station:SetPlaybackRate(1.0)
+    
     local finalVolume = userVolume
     if distanceSqr > minDist * minDist then
         local dist = math.sqrt(distanceSqr)
-        local falloff = 1 - math.Clamp((dist - minDist) / (maxDist - minDist), 0, 1)
-        finalVolume = userVolume * falloff
+        local falloff = 1 - math.pow((dist - minDist) / (maxDist - minDist), 0.75)
+        finalVolume = userVolume * math.Clamp(falloff, 0, 1)
     end
 
     station:SetVolume(finalVolume)

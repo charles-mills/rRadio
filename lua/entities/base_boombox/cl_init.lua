@@ -31,6 +31,13 @@ local HUD = {
     }
 }
 
+local GOLDEN_HUD = {
+    BACKGROUND = Color(40, 35, 25, 255),
+    ACCENT = Color(255, 215, 0),      -- Gold
+    TEXT = Color(255, 235, 180),      -- Light gold
+    INACTIVE = Color(180, 160, 120)    -- Muted gold
+}
+
 local function UpdateHUDColors()
     local themeName = GetConVar("radio_theme"):GetString()
     local currentTheme = Themes.themes[themeName]
@@ -47,12 +54,15 @@ local function UpdateHUDColors()
     
     print("[Boombox] Updating HUD colors with theme:", themeName)
     
-    HUD.COLORS = {
+    -- Store default colors
+    HUD.DEFAULT_COLORS = {
         BACKGROUND = currentTheme.BackgroundColor,
         ACCENT = currentTheme.AccentColor,
         TEXT = currentTheme.TextColor,
         INACTIVE = currentTheme.ScrollbarColor
     }
+    
+    HUD.COLORS = table.Copy(HUD.DEFAULT_COLORS)
 end
 
 hook.Add("ThemeChanged", "UpdateBoomboxHUDColors", function(themeName)
@@ -121,6 +131,17 @@ hook.Add("EntityRemoved", "CleanupBoomboxVolumes", function(ent)
     end
 end)
 
+local function createAnimationState()
+    return {
+        progress = 0,
+        statusTransition = 0,
+        textOffset = 0,
+        lastStatus = "",
+        equalizerHeights = {0, 0, 0},
+        lastVolume = 0
+    }
+end
+
 function ENT:Initialize()
     self:SetRenderBounds(self:OBBMins(), self:OBBMaxs())
     self.anim = createAnimationState()
@@ -139,19 +160,29 @@ end
 function ENT:Draw()
     self:DrawModel()
     if not GetConVar("boombox_show_text"):GetBool() then return end
-    local entIndex = self:EntIndex() -- Get entity status
+    
+    -- Check if this is a golden boombox and set appropriate colors
+    if self:GetClass() == "golden_boombox" then
+        HUD.COLORS = GOLDEN_HUD
+    else
+        HUD.COLORS = HUD.DEFAULT_COLORS
+    end
+    
+    local entIndex = self:EntIndex()
     local statusData = BoomboxStatuses[entIndex] or {}
     local status = statusData.stationStatus or self:GetNWString("Status", "stopped")
     local stationName = statusData.stationName or self:GetNWString("StationName", "")
-    local alpha = self:CalculateVisibility() -- Calculate visibility
+    local alpha = self:CalculateVisibility()
     if alpha <= 0 then return end
-    self:UpdateAnimations(status, FrameTime()) -- Update animations
+    
+    self:UpdateAnimations(status, FrameTime())
     local pos = self:GetPos() + self:GetForward() * 4.6 + self:GetUp() * 14.5
     local ang = self:GetAngles()
     ang:RotateAroundAxis(ang:Up(), -90)
     ang:RotateAroundAxis(ang:Forward(), 90)
     ang:RotateAroundAxis(ang:Right(), 180)
-    cam.Start3D2D(pos, ang, 0.06) -- Reduced scale from 0.1 to 0.06 for sharper text
+    
+    cam.Start3D2D(pos, ang, 0.06)
     local success, err = pcall(function() self:DrawModernHUD(status, stationName, alpha) end)
     cam.End3D2D()
     if not success then ErrorNoHalt("Error in DrawModernHUD: " .. tostring(err) .. "\n") end
@@ -232,9 +263,19 @@ function ENT:GetDisplayText(status, stationName)
 end
 
 function ENT:DrawBackground(width, height, alpha)
-    local bgAlpha = alpha * 1.0 -- Main background with solid colors
-    draw.RoundedBox(4, -width / 2, -height / 2, width, height, Color(0, 0, 0, bgAlpha))
-    draw.RoundedBox(4, -width / 2, -height / 2, width, height, ColorAlpha(HUD.COLORS.BACKGROUND, bgAlpha))
+    local bgAlpha = alpha * 1.0
+    
+    if self:GetClass() == "golden_boombox" then
+        -- Draw outer glow
+        local glowSize = 2
+        local glowColor = ColorAlpha(GOLDEN_HUD.ACCENT, bgAlpha * 0.3)
+        draw.RoundedBox(6, -width/2 - glowSize, -height/2 - glowSize, 
+                       width + glowSize*2, height + glowSize*2, glowColor)
+    end
+    
+    -- Main background
+    draw.RoundedBox(4, -width/2, -height/2, width, height, Color(0, 0, 0, bgAlpha))
+    draw.RoundedBox(4, -width/2, -height/2, width, height, ColorAlpha(HUD.COLORS.BACKGROUND, bgAlpha))
 end
 
 function ENT:DrawContent(text, width, height, status, alpha)
@@ -304,9 +345,23 @@ function ENT:DrawEqualizer(x, y, alpha, color)
     local maxHeight = HUD.DIMENSIONS.HEIGHT * 0.7
     local volume = entityVolumes[self] or 1
     self:UpdateEqualizerHeights(volume, FrameTime())
+    
+    -- Special golden equalizer
+    if self:GetClass() == "golden_boombox" then
+        -- Draw glow behind bars
+        for i = 1, HUD.EQUALIZER.BARS do
+            local height = maxHeight * (self.anim.equalizerHeights[i] or 0)
+            local glowColor = ColorAlpha(GOLDEN_HUD.ACCENT, alpha * 0.3)
+            draw.RoundedBox(2, x + (i-1)*(barWidth + spacing) - 1, y - height/2 - 1, 
+                          barWidth + 2, height + 2, glowColor)
+        end
+    end
+    
+    -- Draw main bars
     for i = 1, HUD.EQUALIZER.BARS do
         local height = maxHeight * (self.anim.equalizerHeights[i] or 0)
-        draw.RoundedBox(1, x + (i - 1) * (barWidth + spacing), y - height / 2, barWidth, height, ColorAlpha(color, alpha))
+        draw.RoundedBox(1, x + (i-1)*(barWidth + spacing), y - height/2, 
+                       barWidth, height, ColorAlpha(color, alpha))
     end
 end
 
