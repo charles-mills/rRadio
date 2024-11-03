@@ -762,7 +762,6 @@ net.Receive("PlayCarRadioStation", function(len, ply)
     
     -- Validate permissions
     if utils.IsBoombox(actualEntity) and not utils.canInteractWithBoombox(ply, actualEntity) then
-        ply:ChatPrint("[rRadio] You don't have permission to use this boombox.")
         return
     end
 
