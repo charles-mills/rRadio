@@ -1145,13 +1145,37 @@ local function createTooltip(panel, text)
             tooltip = vgui.Create("DPanel")
             tooltip:SetDrawOnTop(true)
             
-            -- Calculate text size
-            surface.SetFont("Roboto18")
-            local textWidth, textHeight = surface.GetTextSize(text)
-            
-            -- Add padding
+            -- Calculate maximum width based on screen size
+            local maxWidth = math.min(ScrW() * 0.3, Scale(400))
             local padding = Scale(10)
-            tooltip:SetSize(textWidth + padding * 2, textHeight + padding * 2)
+            
+            -- Wrap text to fit width
+            local wrappedText = {}
+            local currentLine = ""
+            local words = string.Explode(" ", text)
+            
+            surface.SetFont("Roboto18")
+            for _, word in ipairs(words) do
+                local testLine = currentLine .. (currentLine ~= "" and " " or "") .. word
+                local textWidth = surface.GetTextSize(testLine)
+                
+                if textWidth > maxWidth - (padding * 2) then
+                    table.insert(wrappedText, currentLine)
+                    currentLine = word
+                else
+                    currentLine = testLine
+                end
+            end
+            if currentLine ~= "" then
+                table.insert(wrappedText, currentLine)
+            end
+            
+            -- Calculate height based on number of lines
+            local _, lineHeight = surface.GetTextSize("TEST")
+            local textHeight = #wrappedText * lineHeight
+            
+            -- Set tooltip size
+            tooltip:SetSize(maxWidth, textHeight + padding * 2)
             
             -- Position tooltip below cursor
             local x, y = gui.MousePos()
@@ -1177,16 +1201,18 @@ local function createTooltip(panel, text)
                 -- Main background
                 draw.RoundedBox(8, 0, 0, w, h, Config.UI.MessageBackgroundColor)
                 
-                -- Text
-                draw.SimpleText(
-                    text,
-                    "Roboto18",
-                    padding,
-                    h/2,
-                    Config.UI.TextColor,
-                    TEXT_ALIGN_LEFT,
-                    TEXT_ALIGN_CENTER
-                )
+                -- Draw wrapped text
+                for i, line in ipairs(wrappedText) do
+                    draw.SimpleText(
+                        line,
+                        "Roboto18",
+                        padding,
+                        padding + (i-1) * lineHeight,
+                        Config.UI.TextColor,
+                        TEXT_ALIGN_LEFT,
+                        TEXT_ALIGN_TOP
+                    )
+                end
             end
             
             -- Remove tooltip when panel is removed
