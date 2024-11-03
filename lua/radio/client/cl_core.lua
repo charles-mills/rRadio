@@ -1655,13 +1655,18 @@ local function openSettingsMenu(parentFrame, backButton)
 
     -- Theme Selection
     addHeader(Config.Lang["ThemeSelection"] or "Theme Selection", true)
-    local themeChoices = {}
-    
+    local themeChoices = {
+        main = {},
+        strange = {},
+        other = {}
+    }
+
     -- Validate themes table
     if type(themeModule.themes) == "table" then
         for themeName, themeData in pairs(themeModule.themes) do
             if type(themeData) == "table" then
-                table.insert(themeChoices, {
+                local category = themeData.category or "other"
+                table.insert(themeChoices[category], {
                     name = themeName:gsub("^%l", string.upper),
                     data = themeName
                 })
@@ -1672,15 +1677,62 @@ local function openSettingsMenu(parentFrame, backButton)
         themeModule.themes = {}
     end
 
+    -- Sort themes within each category
+    for _, categoryThemes in pairs(themeChoices) do
+        table.sort(categoryThemes, function(a, b)
+            return a.name < b.name
+        end)
+    end
+
+    -- Create final choices array with category headers
+    local finalThemeChoices = {}
+
+    -- Add Main themes
+    if #themeChoices.main > 0 then
+        table.insert(finalThemeChoices, {
+            name = Config.Lang["Main"] or "Main Themes",
+            data = nil,
+            isHeader = true
+        })
+        for _, theme in ipairs(themeChoices.main) do
+            table.insert(finalThemeChoices, theme)
+        end
+    end
+
+    -- Add Strange themes
+    if #themeChoices.strange > 0 then
+        table.insert(finalThemeChoices, {
+            name = Config.Lang["Strange"] or "Strange Themes",
+            data = nil,
+            isHeader = true
+        })
+        for _, theme in ipairs(themeChoices.strange) do
+            table.insert(finalThemeChoices, theme)
+        end
+    end
+
+    -- Add Other themes
+    if #themeChoices.other > 0 then
+        table.insert(finalThemeChoices, {
+            name = Config.Lang["Other"] or "Other Themes",
+            data = nil,
+            isHeader = true
+        })
+        for _, theme in ipairs(themeChoices.other) do
+            table.insert(finalThemeChoices, theme)
+        end
+    end
+
     local currentTheme = GetConVar("radio_theme"):GetString()
     local currentThemeName = currentTheme:gsub("^%l", string.upper)
-    
-    addDropdown(Config.Lang["SelectTheme"] or "Select Theme", themeChoices, currentThemeName, function(_, _, value)
+
+    -- Modify the dropdown creation to handle categories
+    local themeDropdown = addDropdown(Config.Lang["SelectTheme"] or "Select Theme", finalThemeChoices, currentThemeName, function(_, _, value)
         local lowerValue = value:lower()
         if themeModule.themes[lowerValue] then
-            RunConsoleCommand("radio_theme", lowerValue) // Set convar first
-            timer.Simple(0, function() // Wait for convar to update
-                Settings.applyTheme(lowerValue)  // Use Settings.applyTheme instead of just applyTheme
+            RunConsoleCommand("radio_theme", lowerValue)
+            timer.Simple(0, function()
+                Settings.applyTheme(lowerValue)
             end)
             
             -- Safely close and reopen the menu
@@ -1694,6 +1746,174 @@ local function openSettingsMenu(parentFrame, backButton)
             print("[rRadio] Warning: Invalid theme selected:", value)
         end
     end)
+
+    themeDropdown.OpenMenu = function(self, pControlOpener)
+        if IsValid(self.Menu) then
+            self.Menu:Remove()
+            self.Menu = nil
+        end
+
+        local menu = DermaMenu()
+        menu:SetMinimumWidth(self:GetWide())
+
+        local scrollPanel = vgui.Create("DScrollPanel", menu)
+        scrollPanel:Dock(FILL)
+        local maxHeight = Scale(300)
+
+        -- Enhanced scrollbar styling
+        local sbar = scrollPanel:GetVBar()
+        sbar:SetWide(Scale(8))
+        sbar:SetHideButtons(true)
+        sbar.Paint = function(_, w, h)
+            draw.RoundedBox(4, 0, 0, w, h, ColorAlpha(Config.UI.ScrollbarColor, 100))
+        end
+        sbar.btnGrip.Paint = function(_, w, h)
+            draw.RoundedBox(4, 0, 0, w, h, Config.UI.ScrollbarGripColor)
+        end
+
+        -- Enhanced menu background
+        menu.Paint = function(_, w, h)
+            -- Main background
+            draw.RoundedBox(8, 0, 0, w, h, Config.UI.SearchBoxColor)
+            
+            -- Subtle border
+            surface.SetDrawColor(ColorAlpha(Config.UI.ButtonColor, 30))
+            surface.DrawRect(0, 0, w, 1)
+            surface.DrawRect(0, h-1, w, 1)
+            
+            -- Subtle shadow effect
+            for i = 1, 5 do
+                local alpha = math.max(0, 20 - i * 4)
+                surface.SetDrawColor(0, 0, 0, alpha)
+                draw.RoundedBox(8, -i, i, w + i*2, h, Color(0, 0, 0, alpha))
+            end
+        end
+
+        local totalHeight = 0
+        local optionHeight = Scale(32)
+        local headerHeight = Scale(28)
+        local padding = Scale(10)
+        
+        for _, choice in ipairs(finalThemeChoices) do
+            if choice.isHeader then
+                -- Enhanced header styling
+                local header = vgui.Create("DPanel", scrollPanel)
+                header:SetTall(headerHeight)
+                header:Dock(TOP)
+                header:DockMargin(0, totalHeight == 0 and 0 or padding, 0, Scale(2))
+                
+                header.Paint = function(_, w, h)
+                    -- Header background
+                    draw.RoundedBox(4, padding/2, 0, w-padding, h, ColorAlpha(Config.UI.ButtonColor, 40))
+                    
+                    -- Header text
+                    draw.SimpleText(
+                        choice.name, 
+                        "Roboto18", 
+                        padding + Scale(5), 
+                        h/2,
+                        Config.UI.TextColor, 
+                        TEXT_ALIGN_LEFT, 
+                        TEXT_ALIGN_CENTER
+                    )
+                    
+                    -- Subtle separator line
+                    surface.SetDrawColor(ColorAlpha(Config.UI.TextColor, 20))
+                    surface.DrawLine(
+                        padding + Scale(5), 
+                        h-1, 
+                        w-padding-Scale(5), 
+                        h-1
+                    )
+                end
+                totalHeight = totalHeight + headerHeight + (totalHeight == 0 and 0 or padding)
+            else
+                -- Enhanced theme option styling
+                local panel = vgui.Create("DPanel", scrollPanel)
+                panel:SetTall(optionHeight)
+                panel:Dock(TOP)
+                panel:DockMargin(padding, Scale(2), padding, 0)
+                
+                local isCurrentTheme = choice.data == GetConVar("radio_theme"):GetString()
+                local hoverAlpha = 0
+                
+                panel.Paint = function(self, w, h)
+                    -- Background with hover effect
+                    local bgColor = isCurrentTheme and Config.UI.ButtonColor or Color(0,0,0,0)
+                    local hoverColor = Config.UI.ButtonHoverColor
+                    
+                    if self:IsHovered() then
+                        hoverAlpha = math.Approach(hoverAlpha, 1, FrameTime() * 10)
+                    else
+                        hoverAlpha = math.Approach(hoverAlpha, 0, FrameTime() * 10)
+                    end
+                    
+                    local finalColor = LerpColor(hoverAlpha, bgColor, hoverColor)
+                    draw.RoundedBox(6, 0, 0, w, h, finalColor)
+                    
+                    -- Current theme indicator
+                    if isCurrentTheme then
+                        -- Accent dot
+                        local dotSize = Scale(6)
+                        local dotMargin = Scale(8)
+                        draw.RoundedBox(dotSize/2, dotMargin, h/2-dotSize/2, dotSize, dotSize, Config.UI.AccentColor)
+                    end
+                end
+                
+                local button = vgui.Create("DButton", panel)
+                button:Dock(FILL)
+                button:DockMargin(isCurrentTheme and Scale(20) or Scale(8), 0, 0, 0)
+                button:SetText(choice.name)
+                button:SetTextColor(Config.UI.TextColor)
+                button:SetFont("Roboto18")
+                button.Paint = function() end
+                
+                button.DoClick = function()
+                    surface.PlaySound("buttons/button15.wav")
+                    self:SetValue(choice.name)
+                    if choice.data then
+                        RunConsoleCommand("radio_theme", choice.data)
+                        timer.Simple(0, function()
+                            Settings.applyTheme(choice.data)
+                        end)
+                        
+                        if IsValid(parentFrame) then
+                            parentFrame:Close()
+                            timer.Simple(0.1, function()
+                                reopenRadioMenu(true)
+                            end)
+                        end
+                    end
+                    menu:Remove()
+                end
+                
+                totalHeight = totalHeight + optionHeight + Scale(2)
+            end
+        end
+
+        -- Set menu size with padding
+        local menuHeight = math.min(totalHeight + padding * 2, maxHeight)
+        menu:SetTall(menuHeight)
+        scrollPanel:SetTall(menuHeight)
+
+        -- Position the menu with improved screen boundary checking
+        local x, y = self:LocalToScreen(0, self:GetTall())
+        local screenW, screenH = ScrW(), ScrH()
+        
+        -- Horizontal position adjustment
+        if x + menu:GetWide() > screenW then
+            x = screenW - menu:GetWide() - padding
+        end
+        
+        -- Vertical position adjustment
+        if y + menuHeight > screenH then
+            y = y - menuHeight - self:GetTall()
+        end
+        
+        menu:SetPos(x, y)
+        menu:MakePopup()
+        self.Menu = menu
+    end
 
     -- Language Selection
     addHeader(Config.Lang["LanguageSelection"] or "Language Selection")
