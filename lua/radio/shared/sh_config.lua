@@ -43,9 +43,7 @@ end
 -- ------------------------------
 --          Imports
 -- ------------------------------
-local LanguageManager = include("radio/client/lang/cl_language_manager.lua")
-local themes = include("radio/client/cl_themes.lua") or {}
-local keyCodeMapping = include("radio/client/cl_key_names.lua") or {}
+local themes = include("radio/client/cl_theme_manager.lua") or {}
 
 -- ------------------------------
 --      Configuration Tables
@@ -156,9 +154,14 @@ Config.VolumeAttenuationExponent = 0.8
 
 -- Function to load and set the current language
 local function loadLanguage()
-    local lang = languageConVar:GetString() or "en"
-    LanguageManager:SetLanguage(lang)
-    Config.Lang = LanguageManager.translations[lang] or {}
+    if CLIENT then
+        local Misc = include("radio/client/cl_misc.lua")
+        local lang = languageConVar:GetString() or "en"
+        if Misc and Misc.Language then
+            Misc.Language:SetLanguage(lang)
+            Config.Lang = Misc.Language.translations[lang] or {}
+        end
+    end
 end
 
 -- Initialize Language
@@ -226,7 +229,7 @@ end
 
 -- Function to get translated country name
 local function getTranslatedCountryName(country)
-    return LanguageManager:GetCountryTranslation(LanguageManager.currentLanguage, country) or country
+    return Misc.Language:GetCountryTranslation(Misc.Language.currentLanguage, country) or country
 end
 
 -- ------------------------------
