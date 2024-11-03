@@ -351,7 +351,6 @@ hook.Add("PlayerDisconnected", "CleanupPlayerRadioData", function(ply)
     end
 end)
 
--- Add near the start of the file after includes
 local function DebugPrint(...)
     if GetConVar("radio_debug"):GetBool() then
         print("[rRadio Debug Server]", ...)
@@ -381,8 +380,7 @@ local function StartNewStream(entity, stationName, stationURL, volume)
         "\nURL:", stationURL,
         "\nVolume:", volume,
         "\nIsPermanent:", entity:GetNWBool("IsPermanent"))
-    
-    -- Add to active radios
+
     AddActiveRadio(entity, stationName, stationURL, volume)
     DebugPrint("Added to ActiveRadios:",
         "\nEntity:", entity,
@@ -675,7 +673,6 @@ hook.Add("PlayerEnteredVehicle", "RadioVehicleHandling", function(ply, vehicle)
     end
 end)
 
--- Add hook for new vehicles
 hook.Add("OnEntityCreated", "InitializeVehicleStatus", function(ent)
     timer.Simple(0, function()
         if IsValid(ent) and utils.GetVehicle(ent) then
@@ -780,8 +777,7 @@ net.Receive("PlayCarRadioStation", function(len, ply)
             net.Start("StopCarRadioStation")
                 net.WriteEntity(actualEntity)
             net.Broadcast()
-            
-            -- Add delay before starting new stream
+
             TimerManager:create("StartStream_" .. entIndex, STREAM_RETRY_DELAY, 1, function()
                 StartNewStream(actualEntity, stationName, stationURL, volume)
                 return true

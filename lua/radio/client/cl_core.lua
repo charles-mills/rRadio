@@ -99,7 +99,6 @@ local isLoadingStations = false
 local STATION_CHUNK_SIZE = 100
 local loadingProgress = 0
 
--- Add near the start of the file after includes
 local function DebugPrint(...)
     if GetConVar("radio_debug"):GetBool() then
         print("[rRadio Debug Client]", ...)
@@ -298,8 +297,7 @@ local StreamManager = {
     cleanupQueue = {},
     lastCleanup = 0,
     CLEANUP_INTERVAL = 0.2, -- 200ms between cleanups
-    
-    -- Add validity cache
+
     _validityCache = {},
     _lastValidityCheck = 0,
     VALIDITY_CHECK_INTERVAL = 0.5, -- Check validity every 0.5 seconds
@@ -344,8 +342,7 @@ local StreamManager = {
             utils.clearRadioStatus(streamData.entity)
         end
     end,
-    
-    -- Add QueueCleanup function
+
     QueueCleanup = function(self, entIndex, reason)
         self.cleanupQueue[entIndex] = {
             reason = reason,
@@ -357,8 +354,7 @@ local StreamManager = {
             self:ProcessCleanupQueue()
         end
     end,
-    
-    -- Add ProcessCleanupQueue function
+
     ProcessCleanupQueue = function(self)
         self.lastCleanup = CurTime()
         
@@ -369,8 +365,7 @@ local StreamManager = {
         -- Clear cleanup queue
         self.cleanupQueue = {}
     end,
-    
-    -- Register new stream
+
     RegisterStream = function(self, entity, stream, data)
         if not IsValid(entity) or not IsValid(stream) then return false end
         
@@ -741,7 +736,7 @@ local function playStation(entity, station, volume)
         StreamManager:CleanupStream(entity:EntIndex())
 
         -- Add delay before starting new stream
-        timer.Simple(0.2, function()
+        timer.Simple(0.1, function()
             startNewStream()
         end)
     else
@@ -825,7 +820,6 @@ local function PrintCarRadioMessage()
     local openKey = GetConVar("car_radio_open_key"):GetInt()
     local keyName = GetKeyName(openKey)
 
-    -- Create notification panel
     local scrW, scrH = ScrW(), ScrH()
     local panelWidth = Scale(300)
     local panelHeight = Scale(70)
@@ -835,8 +829,7 @@ local function PrintCarRadioMessage()
     panel:SetText("")
     panel:SetAlpha(0)
     panel:MoveToFront()
-    
-    -- Add text label
+
     local textLabel = vgui.Create("DLabel", panel)
     textLabel:SetText("Play Radio")
     textLabel:SetFont("Roboto18")
@@ -1403,7 +1396,6 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                 end
             )
 
-            -- Add paint function for visual state
             stationButton.Paint = function(self, w, h)
                 local entity = LocalPlayer().currentRadioEntity
                 if IsValid(entity) and currentlyPlayingStations[entity] and 
@@ -1417,7 +1409,6 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                     end
                 end
 
-                -- Add connection status indicator
                 local streamData = StreamManager.activeStreams[entity:EntIndex()]
                 if streamData then
                     if streamData.stream and not streamData.stream:IsValid() then
@@ -1513,8 +1504,7 @@ local function openSettingsMenu(parentFrame, backButton)
             surface.DrawLine(x, y, x + arrowSize/2, y + arrowSize)
             surface.DrawLine(x + arrowSize/2, y + arrowSize, x + arrowSize, y)
         end
-        
-        -- Style the dropdown choices
+
         dropdown.OpenMenu = function(self, pControlOpener)
             if IsValid(self.Menu) then
                 self.Menu:Remove()
@@ -1523,13 +1513,11 @@ local function openSettingsMenu(parentFrame, backButton)
 
             local menu = DermaMenu()
             menu:SetMinimumWidth(self:GetWide())
-            
-            -- Create scroll panel for menu content
+
             local scrollPanel = vgui.Create("DScrollPanel", menu)
             scrollPanel:Dock(FILL)
             local maxHeight = Scale(300)
-            
-            -- Style scrollbar
+
             local sbar = scrollPanel:GetVBar()
             sbar:SetWide(Scale(8))
             sbar:SetHideButtons(true)
@@ -1539,15 +1527,13 @@ local function openSettingsMenu(parentFrame, backButton)
             function sbar.btnGrip:Paint(w, h) 
                 draw.RoundedBox(4, 0, 0, w, h, Config.UI.ScrollbarGripColor) 
             end
-            
-            -- Style menu
+
             menu.Paint = function(_, w, h)
                 draw.RoundedBox(6, 0, 0, w, h, Config.UI.SearchBoxColor)
                 surface.SetDrawColor(Config.UI.ButtonColor)
                 surface.DrawRect(0, 0, w, 1)
             end
 
-            -- Add choices with styling
             local totalHeight = 0
             local optionHeight = Scale(30)
             
@@ -2354,7 +2340,7 @@ openRadioMenu = function(openSettings)
         Color(0, 0, 0, 0), 
         Config.UI.ButtonHoverColor, 
         function()
-            surface.PlaySound("ui/buttonrollover.wav") -- Add different sound for going back
+            surface.PlaySound("ui/buttonrollover.wav")
             
             if settingsMenuOpen then
                 settingsMenuOpen = false
