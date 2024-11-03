@@ -4,7 +4,7 @@
     Description: This file defines various visual themes for the Radio Addon's user interface.
                  It includes color schemes and style settings for different UI elements,
                  allowing users to customize the look and feel of the radio menu.
-    Date: October 31, 2024
+    Date: November 3, 2024
 ]]--
 
 local DEFAULT_FRAME_SIZE = { width = 600, height = 800 }
@@ -186,7 +186,6 @@ safeAddTheme("retro", ThemeFactory:createTheme("retro", {
     keyHighlight = Color(205, 185, 145)
 }))
 
--- Nord theme refinements
 safeAddTheme("nord", ThemeFactory:createTheme("nord", {
     background = Color(46, 52, 64),
     header = Color(59, 66, 82),
@@ -210,7 +209,6 @@ safeAddTheme("nord", ThemeFactory:createTheme("nord", {
     keyHighlight = Color(76, 86, 106)
 }))
 
--- Dracula theme refinements
 safeAddTheme("dracula", ThemeFactory:createTheme("dracula", {
     background = Color(40, 42, 54),
     header = Color(68, 71, 90),

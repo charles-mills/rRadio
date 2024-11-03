@@ -99,6 +99,13 @@ local isLoadingStations = false
 local STATION_CHUNK_SIZE = 100
 local loadingProgress = 0
 
+-- Add near the start of the file after includes
+local function DebugPrint(...)
+    if GetConVar("radio_debug"):GetBool() then
+        print("[rRadio Debug Client]", ...)
+    end
+end
+
 hook.Add("OnPlayerChat", "RadioStreamToggleCommands", function(ply, text, teamChat, isDead)
     if ply ~= LocalPlayer() then return end
     
@@ -2511,6 +2518,13 @@ net.Receive("PlayCarRadioStation", function()
     local stationName = net.ReadString()
     local url = net.ReadString()
     local volume = net.ReadFloat()
+
+    DebugPrint("Received PlayCarRadioStation", 
+        "\nEntity:", entity,
+        "\nStation:", stationName,
+        "\nURL:", url,
+        "\nVolume:", volume,
+        "\nIsPermanent:", entity:GetNWBool("IsPermanent"))
 
     -- Update local state immediately
     if not BoomboxStatuses[entIndex] then

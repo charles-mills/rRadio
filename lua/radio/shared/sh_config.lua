@@ -395,4 +395,7 @@ function Config.CalculateVolume(entity, player, distanceSqr)
     return baseVolume * falloff
 end
 
+-- Add this to your existing ConVars
+CreateConVar("radio_debug", "0", FCVAR_ARCHIVE + FCVAR_REPLICATED, "Enable debug prints for radio system")
+
 return Config
