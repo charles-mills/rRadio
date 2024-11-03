@@ -97,12 +97,6 @@ local isLoadingStations = false
 local STATION_CHUNK_SIZE = 100
 local loadingProgress = 0
 
-local function DebugPrint(...)
-    if GetConVar("radio_debug"):GetBool() then
-        print("[rRadio Debug Client]", ...)
-    end
-end
-
 local UIReferenceTracker = {
     references = {},
     validityCache = {},
@@ -969,92 +963,76 @@ local function createMessageAnimation(panel, startPos, endPos, duration, onCompl
     )
 end
 
--- Find and replace the PrintCarRadioMessage function with this updated version
-local function PrintCarRadioMessage()
-    -- Clean up any existing message first
+local function playCarEnterAnim()
+    if not GetConVar("car_radio_show_messages"):GetBool() then return end
+
     cleanupMessage()
     
-    -- Early validation checks
-    if not GetConVar("car_radio_show_messages"):GetBool() then
-        DebugPrint("Messages disabled in ConVar")
-        return
-    end
-    
     local currentTime = CurTime()
-    if currentTime - (lastMessageTime or 0) < Config.MessageCooldown() then
-        DebugPrint("Message skipped - cooldown active")
-        return
-    end
-    
-    -- Prevent multiple messages
-    if isMessageAnimating then
-        DebugPrint("Message skipped - animation in progress")
-        return
-    end
+    if currentTime - (lastMessageTime or 0) < Config.MessageCooldown() then return end
+
+    if isMessageAnimating then return end
 
     lastMessageTime = currentTime
     isMessageAnimating = true
 
-    -- Get key name with fallback
     local openKey = GetConVar("car_radio_open_key"):GetInt()
     local keyName = Misc.KeyNames:GetKeyName(openKey) or "Unknown"
 
-    -- Calculate dimensions
     local scrW, scrH = ScrW(), ScrH()
     local panelWidth = Scale(300)
     local panelHeight = Scale(70)
 
-    -- Create message panel
     local panel = vgui.Create("DPanel")
     messagePanel = panel
-    
-    -- Set up panel properties - Position at absolute right
+
     panel:SetSize(panelWidth, panelHeight)
-    panel:SetPos(scrW, scrH * 0.2) -- Start off screen to the right
+    panel:SetPos(scrW, scrH * 0.2)
     panel:SetAlpha(0)
     panel:MoveToFront()
-    
-    -- Track the panel
+    panel:SetZPos(32767)
+    panel:ParentToHUD()
+    panel:SetPaintedManually(false)
+    panel:SetVisible(true)
+    panel:SetEnabled(true)
+
+    panel.SetVisible = function(self, state)
+        if not state then return end
+        self.BaseClass.SetVisible(self, true)
+    end
+
     UIReferenceTracker:Track(panel, "message_panel")
 
-    -- Paint function for the panel
     panel.Paint = function(self, w, h)
         if not IsValid(self) then return end
-        
-        -- Background with rounded corners (only round left side)
+
         draw.RoundedBoxEx(12, 0, 0, w, h, Config.UI.MessageBackgroundColor, true, false, true, false)
-        
-        -- Key display
+
         local keyWidth = Scale(40)
         local keyHeight = Scale(30)
         local keyX = Scale(20)
         local keyY = h/2 - keyHeight/2
         
-        -- Pulse animation for key highlight
         local pulse = 1 + math.sin(CurTime() * 3) * 0.05
         local adjustedWidth = keyWidth * pulse
         local adjustedHeight = keyHeight * pulse
         local adjustedX = keyX - (adjustedWidth - keyWidth) / 2
         local adjustedY = keyY - (adjustedHeight - keyHeight) / 2
-        
-        -- Draw key background with pulse
+
         draw.RoundedBox(6, adjustedX, adjustedY, adjustedWidth, adjustedHeight, 
             Config.UI.KeyHighlightColor)
-        
-        -- Draw key text
+
         draw.SimpleText(keyName, "Roboto18", 
             adjustedX + adjustedWidth/2, 
             adjustedY + adjustedHeight/2, 
             Config.UI.TextColor, 
             TEXT_ALIGN_CENTER, 
             TEXT_ALIGN_CENTER)
-        
-        -- Draw message text
+
         draw.SimpleText(Config.Lang["OpenRadio"] or "Open Radio", "Roboto18",
             Scale(70), h/2, Config.UI.TextColor, 
             TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
-        
-        -- Vertical separator line
+
         surface.SetDrawColor(ColorAlpha(Config.UI.TextColor, 40))
         surface.DrawLine(
             Scale(70) - Scale(5), h * 0.3,
@@ -1062,56 +1040,59 @@ local function PrintCarRadioMessage()
         )
     end
 
-    -- Set up animations
-    local startX = scrW -- Start from screen edge
-    local endX = scrW - panelWidth -- End flush with right edge
+    local startX = scrW
+    local endX = scrW - panelWidth
     
-    -- Slide in animation
-    Misc.Animations:CreateTween(0.5, startX, endX, 
-        function(value)
-            if IsValid(panel) then
-                panel:SetPos(value, panel:GetY())
-            end
-        end
-    )
-    
-    -- Fade in animation
-    Misc.Animations:CreateTween(0.3, 0, 255,
-        function(value)
-            if IsValid(panel) then
-                panel:SetAlpha(value)
-            end
-        end
-    )
-    
-    -- Set up auto-hide timer
-    timer.Create("HideRadioMessage", 3, 1, function()
-        if not IsValid(panel) then return end
+    if not IsValid(panel) then return end
+
+    local startTime = CurTime()
+    local duration = 0.5
+    local startAlpha = 0
+    local endAlpha = 255
+
+    panel.Think = function(self)
+        if not self:IsValid() then cleanupMessage() return end
         
-        -- Slide out animation - slide to right edge
-        Misc.Animations:CreateTween(0.5, panel:GetX(), scrW,
-            function(value)
-                if IsValid(panel) then
-                    panel:SetPos(value, panel:GetY())
-                end
-            end,
-            function()
-                if IsValid(panel) then
-                    panel:Remove()
-                end
-                isMessageAnimating = false
-            end
-        )
+        local currentTime = CurTime()
+        local delta = math.Clamp((currentTime - startTime) / duration, 0, 1)
+
+        local newX = Lerp(delta, startX, endX)
+        local newAlpha = Lerp(delta, startAlpha, endAlpha)
         
-        -- Fade out animation
-        Misc.Animations:CreateTween(0.3, 255, 0,
-            function(value)
-                if IsValid(panel) then
-                    panel:SetAlpha(value)
+        self:SetPos(newX, self:GetY())
+        self:SetAlpha(newAlpha)
+        
+        if delta >= 1 then
+            timer.Create("HideRadioMessage", 3, 1, function()
+                if not IsValid(self) then return end
+                
+                local hideStartTime = CurTime()
+                local hideStartX = self:GetX()
+                
+                self.Think = function()
+                    if not IsValid(self) then return end
+                    
+                    local hideDelta = math.Clamp((CurTime() - hideStartTime) / duration, 0, 1)
+                    
+                    local hideX = Lerp(hideDelta, hideStartX, scrW)
+                    local hideAlpha = Lerp(hideDelta, endAlpha, 0)
+                    
+                    self:SetPos(hideX, self:GetY())
+                    self:SetAlpha(hideAlpha)
+                    
+                    if hideDelta >= 1 then
+                        self:Remove()
+                        isMessageAnimating = false
+                    end
                 end
-            end
-        )
-    end)
+            end)
+
+            self.Think = nil
+        end
+    end
+
+    panel:SetPos(startX, panel:GetY())
+    panel:SetAlpha(startAlpha)
 end
 
 -- ------------------------------
@@ -1710,7 +1691,6 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                 end
             end
 
-            -- Always use raw country code when creating star icons
             createStarIcon(stationButton, selectedCountry, station, updateList)
         end
 
@@ -1856,7 +1836,7 @@ local function openSettingsMenu(parentFrame, backButton)
                     
                     self:SetValue(choice.name)
                     if onSelect then
-                        onSelect(self, nil, choice.name, choice.data) -- Pass name and data correctly
+                        onSelect(self, nil, choice.name, choice.data)
                     end
                     menu:Remove()
                 end
@@ -1871,11 +1851,10 @@ local function openSettingsMenu(parentFrame, backButton)
 
             -- Position the menu
             local x, y = self:LocalToScreen(0, self:GetTall())
-            
-            -- Ensure menu doesn't go off screen
+
             local screenH = ScrH()
             if y + menuHeight > screenH then
-                y = y - menuHeight - self:GetTall() -- Show above instead
+                y = y - menuHeight - self:GetTall()
             end
             
             menu:SetPos(x, y)
@@ -3169,22 +3148,22 @@ hook.Add("Think", "OpenCarRadioMenu", function()
     -- Get the player's current vehicle/seat
     local currentSeat = ply:GetVehicle()
     if not IsValid(currentSeat) then 
-        DebugPrint("No valid seat found")
+        utils.DebugPrint("No valid seat found")
         return 
     end
 
     -- Get the actual vehicle using our utility function
     local actualVehicle = utils.GetVehicle(currentSeat)
     if not actualVehicle then
-        DebugPrint("No valid vehicle found from seat:", currentSeat:GetClass())
+        utils.DebugPrint("No valid vehicle found from seat:", currentSeat:GetClass())
         if IsValid(currentSeat:GetParent()) then
-            DebugPrint("Parent class:", currentSeat:GetParent():GetClass())
+            utils.DebugPrint("Parent class:", currentSeat:GetParent():GetClass())
         end
         return
     end
 
     -- Debug info
-    DebugPrint("Vehicle Info:", 
+    utils.DebugPrint("Vehicle Info:", 
         "\nClass:", actualVehicle:GetClass(),
         "\nLVS:", actualVehicle.LVS and "true" or "false",
         "\nParent:", IsValid(actualVehicle:GetParent()) and actualVehicle:GetParent():GetClass() or "none",
@@ -3192,7 +3171,7 @@ hook.Add("Think", "OpenCarRadioMenu", function()
 
     -- Validate that the vehicle can use radio
     if not utils.canUseRadio(actualVehicle) then
-        DebugPrint("Vehicle cannot use radio")
+        utils.DebugPrint("Vehicle cannot use radio")
         return
     end
 
@@ -3262,7 +3241,7 @@ net.Receive("PlayCarRadioStation", function()
     local url = net.ReadString()
     local volume = net.ReadFloat()
 
-    DebugPrint("Received PlayCarRadioStation", 
+    utils.DebugPrint("Received PlayCarRadioStation", 
         "\nEntity:", entity,
         "\nClass:", entity:GetClass(),
         "\nStation:", stationName,
@@ -3372,23 +3351,6 @@ net.Receive("OpenRadioMenu", function()
     end
 end)
 
--- Add this net receiver near the other net message handlers
-net.Receive("CarRadioMessage", function()
-    local vehicle = net.ReadEntity()
-    local isValid = net.ReadBool()
-    
-    DebugPrint("Received CarRadioMessage:",
-        "\nVehicle:", IsValid(vehicle) and vehicle:GetClass() or "invalid",
-        "\nValidation Flag:", isValid)
-    
-    if not isValid then
-        DebugPrint("Message rejected - invalid validation flag")
-        return
-    end
-    
-    PrintCarRadioMessage()
-end)
-
 net.Receive("RadioConfigUpdate", function()
     -- Update all active radio volumes with validation
     for entity, source in pairs(currentRadioSources) do
@@ -3492,7 +3454,6 @@ hook.Add("Think", "UpdateStreamPositions", function()
         end
     end
 
-    -- Use cached valid streams
     for entIndex, streamData in pairs(validStreams) do
         local entity = streamData.entity
         local stream = streamData.stream
@@ -3511,10 +3472,40 @@ hook.Add("Think", "UpdateStreamPositions", function()
     end
 end)
 
+local function initializeNetworking()
+    net.Receive("CarRadioMessage", function()
+        local vehicle = net.ReadEntity()
+        local isValid = net.ReadBool()
+        
+        utils.DebugPrint("Received CarRadioMessage:",
+        "\nVehicle:", IsValid(vehicle) and vehicle:GetClass() or "invalid",
+        "\nValidation Flag:", isValid)
+    
+        if not isValid then
+            return
+        end
+
+        playCarEnterAnim()
+    end)
+end
+
+hook.Add("InitPostEntity", "RadioInitializeNetworking", initializeNetworking)
+hook.Add("OnReloaded", "RadioInitializeNetworking", initializeNetworking)
+
 hook.Add("Think", "UpdateStreamValidityCache", function()
-    StreamManager:UpdateValidityCache()
+    if StreamManager then
+        StreamManager:UpdateValidityCache()
+    end
 end)
 
 hook.Add("Think", "UpdateUIReferences", function()
-    UIReferenceTracker:Update()
+    if UIReferenceTracker then
+        UIReferenceTracker:Update()
+    end
+end)
+
+hook.Add("Think", "RadioAnimationsThink", function()
+    if Misc and Misc.Animations then
+        Misc.Animations:Think()
+    end
 end)
