@@ -1296,6 +1296,13 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
     stationListPanel:Clear()
     if resetSearch then searchBox:SetText("") end
 
+    -- Reset scroll position when changing views
+    local sbar = stationListPanel:GetVBar()
+    if sbar then
+        sbar:SetScroll(0)
+        sbar:InvalidateLayout()
+    end
+
     local filterText = searchBox:GetText():lower()
     local lang = GetConVar("radio_language"):GetString() or "en"
     local selectedCountry = getSafeState("selectedCountry", nil)
