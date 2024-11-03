@@ -103,6 +103,43 @@ local function DebugPrint(...)
     end
 end
 
+local UIReferenceTracker = {
+    references = {},
+    validityCache = {},
+    lastCheck = 0,
+    CHECK_INTERVAL = 0.5,
+    
+    Track = function(self, element, id)
+        self.references[id] = element
+        self.validityCache[id] = true
+    end,
+    
+    Untrack = function(self, id)
+        self.references[id] = nil
+        self.validityCache[id] = nil
+    end,
+    
+    IsValid = function(self, id)
+        return self.validityCache[id] == true
+    end,
+    
+    Update = function(self)
+        local currentTime = CurTime()
+        if (currentTime - self.lastCheck) < self.CHECK_INTERVAL then
+            return
+        end
+        
+        self.lastCheck = currentTime
+        
+        for id, element in pairs(self.references) do
+            self.validityCache[id] = IsValid(element)
+            if not self.validityCache[id] then
+                self.references[id] = nil
+            end
+        end
+    end
+}
+
 hook.Add("OnPlayerChat", "RadioStreamToggleCommands", function(ply, text, teamChat, isDead)
     if ply ~= LocalPlayer() then return end
     
@@ -244,7 +281,7 @@ local function LoadStationData()
                         local station = stations[j]
                         table.insert(StationData[baseCountry], {
                             name = station.n,
-                            displayName = truncateStationName(station.n), -- Add truncated name
+                            displayName = truncateStationName(station.n),
                             url = station.u
                         })
                     end
@@ -533,7 +570,6 @@ local formattedCountryNames = {}
 local stationDataLoaded = false
 local isSearching = false
 
--- Add near the top with other state variables
 local MuteManager = {
     mutedEntities = {},
     originalVolumes = {},
@@ -906,7 +942,6 @@ local function updateRadioVolume(station, distanceSqr, isPlayerInCar, entity)
     end
 end
 
--- Add these helper functions near the top with other local functions
 local function cleanupMessage()
     if messageCleanupTimer then
         timer.Remove(messageCleanupTimer)
@@ -934,10 +969,12 @@ local function createMessageAnimation(panel, startPos, endPos, duration, onCompl
     )
 end
 
--- Update the PrintCarRadioMessage function
+-- Find and replace the PrintCarRadioMessage function with this updated version
 local function PrintCarRadioMessage()
+    -- Clean up any existing message first
     cleanupMessage()
     
+    -- Early validation checks
     if not GetConVar("car_radio_show_messages"):GetBool() then
         DebugPrint("Messages disabled in ConVar")
         return
@@ -948,117 +985,133 @@ local function PrintCarRadioMessage()
         DebugPrint("Message skipped - cooldown active")
         return
     end
+    
+    -- Prevent multiple messages
+    if isMessageAnimating then
+        DebugPrint("Message skipped - animation in progress")
+        return
+    end
 
     lastMessageTime = currentTime
     isMessageAnimating = true
 
+    -- Get key name with fallback
     local openKey = GetConVar("car_radio_open_key"):GetInt()
-    local keyName = Misc.KeyNames:GetKeyName(openKey)
+    local keyName = Misc.KeyNames:GetKeyName(openKey) or "Unknown"
+
+    -- Calculate dimensions
     local scrW, scrH = ScrW(), ScrH()
     local panelWidth = Scale(300)
     local panelHeight = Scale(70)
 
-    local panel = vgui.Create("DButton")
+    -- Create message panel
+    local panel = vgui.Create("DPanel")
     messagePanel = panel
     
-    messageCleanupTimer = "MessageCleanup_" .. tostring(CurTime())
-    timer.Create(messageCleanupTimer, 5, 1, cleanupMessage)
-
+    -- Set up panel properties - Position at absolute right
     panel:SetSize(panelWidth, panelHeight)
-    panel:SetPos(scrW, scrH * 0.2)
-    panel:SetText("")
+    panel:SetPos(scrW, scrH * 0.2) -- Start off screen to the right
     panel:SetAlpha(0)
     panel:MoveToFront()
-
-    local textLabel = vgui.Create("DLabel", panel)
-    textLabel:SetText(Config.Lang["OpenRadio"] or "Open Radio")
-    textLabel:SetFont("Roboto18")
-    textLabel:SetTextColor(Config.UI.TextColor)
-    textLabel:SizeToContents()
-    textLabel:SetPos(Scale(70), panelHeight/2 - textLabel:GetTall()/2)
-
-    -- Optimize animations
-    createMessageAnimation(panel, scrW, scrW - panelWidth, 0.5)
     
-    Misc.Animations:CreateTween(0.3, 0, 255, function(value)
-        return IsValid(panel) and panel:SetAlpha(value)
-    end, nil, nil, panel)
-    
-    timer.Simple(3, function()
-        if not IsValid(panel) then return end
-        
-        if messageCleanupTimer then
-            timer.Remove(messageCleanupTimer)
-            messageCleanupTimer = nil
-        end
-        
-        createMessageAnimation(panel, panel:GetX(), scrW, 0.5)
-        
-        Misc.Animations:CreateTween(0.3, 255, 0, 
-            function(value) return IsValid(panel) and panel:SetAlpha(value) end,
-            cleanupMessage,
-            nil,
-            panel
-        )
-    end)
+    -- Track the panel
+    UIReferenceTracker:Track(panel, "message_panel")
 
-    -- Optimize paint function
-    local nextPulseUpdate = 0
-    local currentPulse = 1
-    
+    -- Paint function for the panel
     panel.Paint = function(self, w, h)
-        if CurTime() > nextPulseUpdate then
-            currentPulse = 1 + math.sin(CurTime() * math.pi * 2) * 0.05
-            nextPulseUpdate = CurTime() + 0.016
-        end
-
-        local bgColor = Config.UI.MessageBackgroundColor
-        if self:IsHovered() then
-            bgColor = Color(
-                math.min(bgColor.r * 1.2, 255),
-                math.min(bgColor.g * 1.2, 255),
-                math.min(bgColor.b * 1.2, 255),
-                bgColor.a or 255
-            )
-        end
-        draw.RoundedBoxEx(12, 0, 0, w, h, bgColor, true, false, true, false)
-
+        if not IsValid(self) then return end
+        
+        -- Background with rounded corners (only round left side)
+        draw.RoundedBoxEx(12, 0, 0, w, h, Config.UI.MessageBackgroundColor, true, false, true, false)
+        
+        -- Key display
         local keyWidth = Scale(40)
         local keyHeight = Scale(30)
         local keyX = Scale(20)
         local keyY = h/2 - keyHeight/2
         
-        local adjustedWidth = keyWidth * currentPulse
-        local adjustedHeight = keyHeight * currentPulse
+        -- Pulse animation for key highlight
+        local pulse = 1 + math.sin(CurTime() * 3) * 0.05
+        local adjustedWidth = keyWidth * pulse
+        local adjustedHeight = keyHeight * pulse
         local adjustedX = keyX - (adjustedWidth - keyWidth) / 2
         local adjustedY = keyY - (adjustedHeight - keyHeight) / 2
         
+        -- Draw key background with pulse
         draw.RoundedBox(6, adjustedX, adjustedY, adjustedWidth, adjustedHeight, 
             Config.UI.KeyHighlightColor)
-
+        
+        -- Draw key text
         draw.SimpleText(keyName, "Roboto18", 
             adjustedX + adjustedWidth/2, 
             adjustedY + adjustedHeight/2, 
             Config.UI.TextColor, 
             TEXT_ALIGN_CENTER, 
             TEXT_ALIGN_CENTER)
-
+        
+        -- Draw message text
+        draw.SimpleText(Config.Lang["OpenRadio"] or "Open Radio", "Roboto18",
+            Scale(70), h/2, Config.UI.TextColor, 
+            TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+        
+        -- Vertical separator line
         surface.SetDrawColor(ColorAlpha(Config.UI.TextColor, 40))
         surface.DrawLine(
-            Scale(70) - Scale(5),
-            h * 0.3,
-            Scale(70) - Scale(5),
-            h * 0.7
+            Scale(70) - Scale(5), h * 0.3,
+            Scale(70) - Scale(5), h * 0.7
         )
     end
 
-    panel.DoClick = function()
-        surface.PlaySound("buttons/button15.wav")
-        openRadioMenu()
-        cleanupMessage()
-    end
-
-    panel.OnRemove = cleanupMessage
+    -- Set up animations
+    local startX = scrW -- Start from screen edge
+    local endX = scrW - panelWidth -- End flush with right edge
+    
+    -- Slide in animation
+    Misc.Animations:CreateTween(0.5, startX, endX, 
+        function(value)
+            if IsValid(panel) then
+                panel:SetPos(value, panel:GetY())
+            end
+        end
+    )
+    
+    -- Fade in animation
+    Misc.Animations:CreateTween(0.3, 0, 255,
+        function(value)
+            if IsValid(panel) then
+                panel:SetAlpha(value)
+            end
+        end
+    )
+    
+    -- Set up auto-hide timer
+    timer.Create("HideRadioMessage", 3, 1, function()
+        if not IsValid(panel) then return end
+        
+        -- Slide out animation - slide to right edge
+        Misc.Animations:CreateTween(0.5, panel:GetX(), scrW,
+            function(value)
+                if IsValid(panel) then
+                    panel:SetPos(value, panel:GetY())
+                end
+            end,
+            function()
+                if IsValid(panel) then
+                    panel:Remove()
+                end
+                isMessageAnimating = false
+            end
+        )
+        
+        -- Fade out animation
+        Misc.Animations:CreateTween(0.3, 255, 0,
+            function(value)
+                if IsValid(panel) then
+                    panel:SetAlpha(value)
+                end
+            end
+        )
+    end)
 end
 
 -- ------------------------------
@@ -3461,43 +3514,6 @@ end)
 hook.Add("Think", "UpdateStreamValidityCache", function()
     StreamManager:UpdateValidityCache()
 end)
-
-local UIReferenceTracker = {
-    references = {},
-    validityCache = {},
-    lastCheck = 0,
-    CHECK_INTERVAL = 0.5,
-    
-    Track = function(self, element, id)
-        self.references[id] = element
-        self.validityCache[id] = true
-    end,
-    
-    Untrack = function(self, id)
-        self.references[id] = nil
-        self.validityCache[id] = nil
-    end,
-    
-    IsValid = function(self, id)
-        return self.validityCache[id] == true
-    end,
-    
-    Update = function(self)
-        local currentTime = CurTime()
-        if (currentTime - self.lastCheck) < self.CHECK_INTERVAL then
-            return
-        end
-        
-        self.lastCheck = currentTime
-        
-        for id, element in pairs(self.references) do
-            self.validityCache[id] = IsValid(element)
-            if not self.validityCache[id] then
-                self.references[id] = nil
-            end
-        end
-    end
-}
 
 hook.Add("Think", "UpdateUIReferences", function()
     UIReferenceTracker:Update()
