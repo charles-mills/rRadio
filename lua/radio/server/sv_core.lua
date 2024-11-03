@@ -10,7 +10,7 @@
 ]]--
 
 local networkStrings = {
-    "PlayCarRadioStation",
+    "QueueStream",
     "StopCarRadioStation",
     "OpenRadioMenu",
     "CarRadioMessage",
@@ -392,14 +392,14 @@ local function StartNewStream(entity, stationName, stationURL, volume)
         "\nURL:", stationURL)
     
     -- Broadcast to clients with truncated name
-    net.Start("PlayCarRadioStation")
+    net.Start("QueueStream")
         net.WriteEntity(entity)
         net.WriteString(displayName)
         net.WriteString(stationURL)
         net.WriteFloat(volume)
     net.Broadcast()
     
-    DebugPrint("Broadcasted PlayCarRadioStation to clients")
+    DebugPrint("Broadcasted QueueStream to clients")
     
     -- Handle boombox specific logic with truncated name
     if utils.IsBoombox(entity) then
@@ -626,7 +626,7 @@ local function SendActiveRadiosToPlayer(ply)
     for entIndex, radio in pairs(ActiveRadios) do
         local entity = Entity(entIndex)
         if IsValid(entity) then
-            net.Start("PlayCarRadioStation")
+            net.Start("QueueStream")
                 net.WriteEntity(entity)
                 net.WriteString(radio.stationName)
                 net.WriteString(radio.url)
@@ -719,10 +719,10 @@ local function GetEntityOwner(entity)
 end
 
 --[[
-    Network Receiver: PlayCarRadioStation
+    Network Receiver: QueueStream
     Handles playing a radio station for vehicles, LVS vehicles, and boomboxes.
 ]]
-net.Receive("PlayCarRadioStation", function(len, ply)
+net.Receive("QueueStream", function(len, ply)
     local currentTime = CurTime()
     if currentTime - (PlayerCooldowns[ply] or 0) < GLOBAL_COOLDOWN then
         return

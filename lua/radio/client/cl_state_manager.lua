@@ -26,8 +26,8 @@ local StateManager = {
     -- Configuration
     Config = {
         dataDir = "rradio",
-        favoriteCountriesFile = "rradio/favorite_countries.json",
-        favoriteStationsFile = "rradio/favorite_stations.json",
+        favoriteCountriesFile = "favorite_countries.json",
+        favoriteStationsFile = "favorite_stations.json",
         maxHistorySize = 100,
         saveInterval = 0.5
     },
@@ -47,9 +47,10 @@ function StateManager:Initialize()
     -- Create data directory if it doesn't exist
     if not file.IsDir(self.Config.dataDir, "DATA") then
         file.CreateDir(self.Config.dataDir)
+        Debug:Log("Created data directory:", self.Config.dataDir)
     end
     
-    -- Initialize state storage
+    -- Initialize state storage with default values
     self._state = {
         favoriteCountries = {},
         favoriteStations = {},
@@ -69,14 +70,64 @@ function StateManager:Initialize()
         lastMessageTime = -math.huge
     }
     
-    self.initialized = true -- Mark as initialized before loading favorites
+    -- Initialize cache
+    self._cache = {
+        favoritesList = nil,
+        countryTranslations = {},
+        lastUpdate = 0
+    }
+    
+    self.initialized = true
     Debug:Log("StateManager initialized successfully")
     
+    -- Create initial favorites files if they don't exist
+    if not file.Exists(self.Config.favoriteCountriesFile, "DATA") then
+        Debug:Log("Creating initial favorites files")
+        local initialData = {
+            countries = {},
+            stations = {},
+            metadata = {
+                version = 2,
+                timestamp = os.time(),
+                checksum = util.CRC("{}{}"),
+                stationCount = 0,
+                countryCount = 0
+            }
+        }
+        
+        file.Write(self.Config.favoriteCountriesFile, util.TableToJSON({}))
+        file.Write(self.Config.favoriteStationsFile, util.TableToJSON({
+            metadata = initialData.metadata,
+            stations = {}
+        }))
+        Debug:Log("Created initial favorites files")
+    end
+    
     -- Load saved data after initialization
-    self:LoadFavorites()
+    local loadSuccess = self:LoadFavorites()
+    if not loadSuccess then
+        Debug:Warning("Failed to load favorites, using empty defaults")
+        -- Ensure we have valid empty states even if load fails
+        self._state.favoriteCountries = {}
+        self._state.favoriteStations = {}
+    end
     
     self:Emit(self.Events.INITIALIZED)
     
+    -- Add shutdown hook
+    hook.Add("ShutDown", "SaveFavoritesOnShutdown", function()
+        Debug:Log("Game shutting down - saving favorites")
+        self:SaveFavorites()
+    end)
+
+    -- Add disconnect hook
+    hook.Add("OnPlayerDisconnected", "SaveFavoritesOnDisconnect", function(ply)
+        if ply == LocalPlayer() then
+            Debug:Log("Player disconnecting - saving favorites")
+            self:SaveFavorites()
+        end
+    end)
+
     return self
 end
 
@@ -125,60 +176,107 @@ function StateManager:SaveFavorites()
 
     Debug:Log("Saving favorites...")
 
-    -- Create backup function
-    local function createBackup(filename)
-        if file.Exists(filename, "DATA") then
-            local content = file.Read(filename, "DATA")
-            if content then
-                file.Write(filename .. ".bak", content)
-                Debug:Log("Created backup for", filename)
-            end
+    -- Ensure data directory exists
+    if not file.IsDir(self.Config.dataDir, "DATA") then
+        Debug:Log("Creating data directory:", self.Config.dataDir)
+        file.CreateDir(self.Config.dataDir)
+        
+        -- Verify directory was created
+        if not file.IsDir(self.Config.dataDir, "DATA") then
+            Debug:Error("Failed to create data directory")
+            Debug:Log("Attempted to create:", self.Config.dataDir)
+            Debug:Log("Current directories:", file.Find("*", "DATA"))
+            return false
         end
     end
 
-    -- Save countries
-    local favCountriesList = {}
+    -- Prepare data structure
+    local favoritesData = {
+        countries = {},
+        stations = {}
+    }
+
+    -- Process countries with validation
     for country, _ in pairs(self._state.favoriteCountries) do
         if type(country) == "string" then
-            table.insert(favCountriesList, country)
+            favoritesData.countries[country] = true
         end
     end
-    
-    local countriesJson = util.TableToJSON(favCountriesList, true)
-    if countriesJson then
-        createBackup(self.Config.favoriteCountriesFile)
-        file.Write(self.Config.favoriteCountriesFile, countriesJson)
-        Debug:Log("Saved favorite countries:", #favCountriesList)
-    else
-        Debug:Error("Failed to serialize favorite countries")
-        return false
-    end
 
-    -- Save stations
-    local favStationsTable = {}
+    -- Process stations with validation
     for country, stations in pairs(self._state.favoriteStations) do
         if type(country) == "string" and type(stations) == "table" then
-            favStationsTable[country] = {}
+            favoritesData.stations[country] = {}
             for stationName, isFavorite in pairs(stations) do
-                if type(stationName) == "string" and type(isFavorite) == "boolean" then
-                    favStationsTable[country][stationName] = isFavorite
+                if type(stationName) == "string" and isFavorite then
+                    favoritesData.stations[country][stationName] = true
                 end
             end
         end
     end
-    
-    local stationsJson = util.TableToJSON(favStationsTable, true)
-    if stationsJson then
-        createBackup(self.Config.favoriteStationsFile)
-        file.Write(self.Config.favoriteStationsFile, stationsJson)
-        Debug:Log("Saved favorite stations:", table.Count(favStationsTable))
-    else
-        Debug:Error("Failed to serialize favorite stations")
+
+    -- Convert to JSON with error handling
+    local countriesJson = util.TableToJSON(favoritesData.countries, true)
+    local stationsJson = util.TableToJSON(favoritesData.stations, true)
+
+    if not countriesJson or not stationsJson then
+        Debug:Error("Failed to convert data to JSON")
         return false
     end
 
-    self:Emit(self.Events.FAVORITES_SAVED)
+    -- Construct full file paths
+    local countriesPath = self.Config.dataDir .. "/" .. self.Config.favoriteCountriesFile
+    local stationsPath = self.Config.dataDir .. "/" .. self.Config.favoriteStationsFile
+
+    Debug:Log("Writing to files...")
+    Debug:Log("Countries path:", countriesPath)
+    Debug:Log("Stations path:", stationsPath)
+
+    -- Create directory structure if it doesn't exist
+    local dirPath = string.GetPathFromFilename(countriesPath)
+    if dirPath and dirPath ~= "" and not file.IsDir(dirPath, "DATA") then
+        Debug:Log("Creating directory structure:", dirPath)
+        file.CreateDir(dirPath)
+    end
+
+    -- Write files with error handling and verification
+    local function writeAndVerify(path, content)
+        -- Write file
+        local writeSuccess = file.Write(path, content)
+        if not writeSuccess then
+            Debug:Error("Failed to write file:", path)
+            Debug:Log("Write permissions check:", file.IsDir(self.Config.dataDir, "DATA"))
+            return false
+        end
+
+        -- Verify content was written
+        local readContent = file.Read(path, "DATA")
+        if not readContent or readContent == "" then
+            Debug:Error("Failed to verify file content:", path)
+            return false
+        end
+
+        return true
+    end
+
+    -- Write countries file
+    if not writeAndVerify(countriesPath, countriesJson) then
+        Debug:Error("Failed to write/verify countries file")
+        return false
+    end
+
+    -- Write stations file
+    if not writeAndVerify(stationsPath, stationsJson) then
+        Debug:Error("Failed to write/verify stations file")
+        return false
+    end
+
     Debug:Log("Favorites saved successfully")
+    Debug:Log("- Countries:", table.Count(favoritesData.countries))
+    Debug:Log("- Stations:", table.Count(favoritesData.stations))
+    Debug:Log("- Countries file size:", string.len(countriesJson))
+    Debug:Log("- Stations file size:", string.len(stationsJson))
+
     return true
 end
 
@@ -190,78 +288,70 @@ function StateManager:LoadFavorites()
     
     Debug:Log("Loading favorites...")
 
-    local function loadFromBackup(filename)
-        if file.Exists(filename .. ".bak", "DATA") then
-            local content = file.Read(filename .. ".bak", "DATA")
-            if content then
-                Debug:Log("Loading from backup:", filename)
-                return util.JSONToTable(content)
-            end
-        end
-        return nil
+    -- Initialize state
+    self._state.favoriteCountries = {}
+    self._state.favoriteStations = {}
+
+    -- Construct full file paths
+    local countriesPath = self.Config.dataDir .. "/" .. self.Config.favoriteCountriesFile
+    local stationsPath = self.Config.dataDir .. "/" .. self.Config.favoriteStationsFile
+
+    -- Read files
+    local countriesContent = file.Read(countriesPath, "DATA")
+    local stationsContent = file.Read(stationsPath, "DATA")
+
+    -- If files don't exist, create them with empty data
+    if not countriesContent then
+        file.Write(countriesPath, "{}")
+        countriesContent = "{}"
     end
-    
-    -- Initialize state if not exists
-    self._state.favoriteCountries = self._state.favoriteCountries or {}
-    self._state.favoriteStations = self._state.favoriteStations or {}
-    
+    if not stationsContent then
+        file.Write(stationsPath, "{}")
+        stationsContent = "{}"
+    end
+
+    -- Parse data
+    local success, countries = pcall(util.JSONToTable, countriesContent)
+    local success2, stations = pcall(util.JSONToTable, stationsContent)
+
+    if not success or not success2 then
+        Debug:Error("Failed to parse favorites data")
+        return false
+    end
+
     -- Load countries
-    if file.Exists(self.Config.favoriteCountriesFile, "DATA") then
-        local content = file.Read(self.Config.favoriteCountriesFile, "DATA")
-        local success, data = pcall(function()
-            return content and util.JSONToTable(content)
-        end)
-        
-        if not success or not data then
-            Debug:Warning("Failed to load favorite countries, attempting backup")
-            data = loadFromBackup(self.Config.favoriteCountriesFile)
-        end
-        
-        if data then
-            self._state.favoriteCountries = {}
-            for _, country in ipairs(data) do
-                if type(country) == "string" then
-                    self._state.favoriteCountries[country] = true
-                end
+    if type(countries) == "table" then
+        for country, value in pairs(countries) do
+            if type(country) == "string" then
+                self._state.favoriteCountries[country] = true
             end
-            Debug:Log("Loaded favorite countries:", table.Count(self._state.favoriteCountries))
         end
     end
-    
+
     -- Load stations
-    if file.Exists(self.Config.favoriteStationsFile, "DATA") then
-        local content = file.Read(self.Config.favoriteStationsFile, "DATA")
-        local success, data = pcall(function()
-            return content and util.JSONToTable(content)
-        end)
-        
-        if not success or not data then
-            Debug:Warning("Failed to load favorite stations, attempting backup")
-            data = loadFromBackup(self.Config.favoriteStationsFile)
-        end
-        
-        if data then
-            self._state.favoriteStations = {}
-            for country, stations in pairs(data) do
-                if type(country) == "string" and type(stations) == "table" then
-                    self._state.favoriteStations[country] = {}
-                    for stationName, isFavorite in pairs(stations) do
-                        if type(stationName) == "string" and type(isFavorite) == "boolean" then
-                            self._state.favoriteStations[country][stationName] = isFavorite
-                        end
+    if type(stations) == "table" then
+        for country, countryStations in pairs(stations) do
+            if type(country) == "string" and type(countryStations) == "table" then
+                self._state.favoriteStations[country] = {}
+                for stationName, isFavorite in pairs(countryStations) do
+                    if type(stationName) == "string" and type(isFavorite) == "boolean" then
+                        self._state.favoriteStations[country][stationName] = isFavorite
                     end
                 end
             end
-            Debug:Log("Loaded favorite stations:", table.Count(self._state.favoriteStations))
         end
     end
-    
+
+    Debug:Log("Loaded favorites successfully")
+    Debug:Log("- Countries:", table.Count(self._state.favoriteCountries))
+    Debug:Log("- Stations:", table.Count(self._state.favoriteStations))
+
+    -- Emit load event
     self:Emit(self.Events.FAVORITES_LOADED, {
         countries = self._state.favoriteCountries,
         stations = self._state.favoriteStations
     })
-    
-    Debug:Log("Favorites loaded successfully")
+
     return true
 end
 
@@ -279,20 +369,31 @@ end
 function StateManager:GetFavoritesList(lang, filterText)
     local cacheKey = lang .. "_" .. (filterText or "")
     
-    -- Check if cache is valid
+    -- Check if cache is valid and recent
     if self._cache.favoritesList and 
        self._cache.favoritesList.key == cacheKey and 
-       self._cache.favoritesList.timestamp > self._lastStateUpdate then
+       (CurTime() - self._cache.favoritesList.timestamp) < 1.0 then
         return self._cache.favoritesList.data
     end
 
+    -- Create optimized favorites list
     local favoritesList = {}
+    local translationCache = {}
     
-    -- Iterate through favorite stations
+    -- Pre-cache translations for better performance
     for country, stations in pairs(self._state.favoriteStations) do
+        translationCache[country] = self:GetTranslatedCountryName(country, lang)
+    end
+
+    -- Build list with filtering
+    local filterLower = filterText and filterText:lower()
+    for country, stations in pairs(self._state.favoriteStations) do
+        local translatedCountry = translationCache[country]
+        
         for stationName, isFavorite in pairs(stations) do
-            if isFavorite and (not filterText or stationName:lower():find(filterText:lower(), 1, true)) then
-                local translatedCountry = self:GetTranslatedCountryName(country, lang)
+            if isFavorite and (not filterLower or 
+               stationName:lower():find(filterLower, 1, true) or
+               translatedCountry:lower():find(filterLower, 1, true)) then
                 table.insert(favoritesList, {
                     station = { name = stationName },
                     country = country,
@@ -302,7 +403,7 @@ function StateManager:GetFavoritesList(lang, filterText)
         end
     end
 
-    -- Sort the list
+    -- Sort with pre-computed translated names
     table.sort(favoritesList, function(a, b)
         if a.countryName == b.countryName then
             return a.station.name < b.station.name
@@ -358,5 +459,13 @@ function StateManager:InitializeStreamEvents(StreamManager)
         end
     end)
 end
+
+local AUTOSAVE_INTERVAL = 60 -- Save every minute
+
+timer.Create("FavoritesAutoSave", AUTOSAVE_INTERVAL, 0, function()
+    if StateManager.initialized then
+        StateManager:SaveFavorites()
+    end
+end)
 
 return StateManager 

@@ -329,16 +329,18 @@ local function LoadPermanentBoomboxes(isReload)
             
             DebugPrint("Broadcasted radio status update")
             
-            -- Start playback on clients
-            net.Start("PlayCarRadioStation")
+            -- Tell clients to start playback using QueueStream
+            -- This will trigger the client-side StreamManager
+            net.Start("QueueStream")
                 net.WriteEntity(ent)
                 net.WriteString(row.station_name)
                 net.WriteString(row.station_url)
                 net.WriteFloat(row.volume)
             net.Broadcast()
             
-            DebugPrint("Broadcasted PlayCarRadioStation")
+            DebugPrint("Broadcasted QueueStream")
 
+            -- Update server-side tracking
             if AddActiveRadio then
                 AddActiveRadio(ent, row.station_name, row.station_url, row.volume)
                 DebugPrint("Added to active radios")

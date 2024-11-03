@@ -141,16 +141,10 @@ function StreamManager:CreateStream(entity, data)
         return false 
     end
     
-    -- Check rate limit
-    local currentTime = CurTime()
-    if (currentTime - self.RateLimit.lastCreate) < self.RateLimit.CREATE_INTERVAL then
-        Debug:Warning("Stream creation rate limited for entity:", entity)
-        return false
-    end
-    
-    self.RateLimit.lastCreate = currentTime
-    
     local entIndex = entity:EntIndex()
+    Debug:Log("Creating stream for entity", entIndex)
+    Debug:Log("- Name:", data.name)
+    Debug:Log("- URL:", data.url)
     
     -- Clean up existing stream if present
     self:CleanupStream(entIndex)
@@ -178,38 +172,32 @@ function StreamManager:CreateStream(entity, data)
     
     -- Initialize sound stream
     sound.PlayURL(data.url, "3d noblock", function(stream, errorID, errorName)
-        if not self:IsValid(entIndex) then
+        -- Check if stream entry still exists
+        if not self._streams[entIndex] then
+            Debug:Log("Stream entry no longer exists for", entIndex)
             if IsValid(stream) then stream:Stop() end
             return false
         end
-        
+
+        -- Handle stream creation failure
         if not IsValid(stream) then
-            self:TransitionState(entIndex, self.States.ERROR, {
-                errorId = errorID,
-                errorName = errorName,
-                attempt = self._streams[entIndex].retryCount + 1
-            })
+            Debug:Error("Failed to create stream:", errorName)
             self:HandleStreamError(entIndex, errorID, errorName)
             return false
         end
         
-        -- Configure stream with proper state transitions
-        if not self:TransitionState(entIndex, self.States.CONNECTING) then
-            stream:Stop()
-            return false
-        end
+        Debug:Log("Stream created successfully for", entIndex)
         
+        -- Store stream reference before any other operations
+        self._streams[entIndex].stream = stream
+        self._streams[entIndex].state = self.States.CONNECTING
+        
+        Debug:Log("Stream state updated to CONNECTING for", entIndex)
+        
+        -- Configure stream
         stream:SetPos(entity:GetPos())
         stream:Set3DFadeDistance(data.minDist or 200, data.maxDist or 1000)
         stream:SetVolume(data.volume or 1)
-        
-        -- Update stream state
-        self._streams[entIndex].stream = stream
-        
-        if not self:TransitionState(entIndex, self.States.BUFFERING) then
-            stream:Stop()
-            return false
-        end
         
         -- Start playback
         local success, err = pcall(function()
@@ -217,22 +205,15 @@ function StreamManager:CreateStream(entity, data)
         end)
         
         if not success then
-            self:TransitionState(entIndex, self.States.ERROR, {
-                errorType = "playback_error",
-                error = err
-            })
+            Debug:Error("Failed to start playback:", err)
             self:HandleStreamError(entIndex, "playback_error", err)
             return false
         end
         
-        -- Mark as playing
-        if not self:TransitionState(entIndex, self.States.PLAYING, {
-            startedAt = CurTime(),
-            volume = data.volume
-        }) then
-            stream:Stop()
-            return false
-        end
+        -- Update state to playing
+        self._streams[entIndex].state = self.States.PLAYING
+        
+        Debug:Log("Stream state updated to PLAYING for", entIndex)
         
         -- Emit success events
         self:Emit(self.Events.STREAM_STARTED, entity, data)
@@ -252,14 +233,17 @@ function StreamManager:HandleStreamError(entIndex, errorID, errorName)
     local streamData = self._streams[entIndex]
     if not streamData then return end
     
-    -- Log error
-    print(string.format("[StreamManager] Stream error for entity %d: %s (%s)", 
-        entIndex, errorName, errorID))
+    Debug:Error("Stream error for entity", entIndex)
+    Debug:Error("- Error ID:", errorID)
+    Debug:Error("- Error Name:", errorName)
+    Debug:Error("- Retry Count:", streamData.retryCount)
     
     -- Check retry attempts
     if streamData.retryCount < self.Config.MAX_RETRIES then
         streamData.retryCount = streamData.retryCount + 1
-        streamData.status = "retrying"
+        streamData.state = self.States.RETRYING
+        
+        Debug:Log("Retrying stream creation", streamData.retryCount, "of", self.Config.MAX_RETRIES)
         
         -- Emit retry event
         self:Emit(self.Events.STREAM_RETRY, streamData.entity, streamData.retryCount)
@@ -271,6 +255,7 @@ function StreamManager:HandleStreamError(entIndex, errorID, errorName)
             end
         end)
     else
+        Debug:Log("Max retries reached, cleaning up stream", entIndex)
         -- Clean up after max retries
         self:CleanupStream(entIndex)
         
@@ -347,15 +332,30 @@ function StreamManager:CleanupStream(entIndex)
 end
 
 function StreamManager:IsValid(entIndex)
-    local currentTime = CurTime()
+    local streamData = self._streams[entIndex]
+    if not streamData then return false end
     
-    -- Check cache freshness
-    if not self._lastValidityCheck or 
-       (currentTime - self._lastValidityCheck) >= self.Config.VALIDITY_CHECK_INTERVAL then
-        self:UpdateValidityCache()
+    -- Always check entity validity
+    if not IsValid(streamData.entity) then return false end
+    
+    -- During initialization or connecting states, don't require valid stream
+    if streamData.state == self.States.INITIALIZING or 
+       streamData.state == self.States.CONNECTING then
+        Debug:Log("Stream in initialization/connecting state for", entIndex)
+        return true
     end
     
-    return self._validityCache[entIndex] == true
+    -- For playing state, require valid stream
+    if streamData.state == self.States.PLAYING then
+        local isValid = IsValid(streamData.stream)
+        if not isValid then
+            Debug:Log("Invalid stream for playing state", entIndex)
+        end
+        return isValid
+    end
+    
+    -- For other states, don't require valid stream yet
+    return true
 end
 
 function StreamManager:UpdateValidityCache()
@@ -363,13 +363,31 @@ function StreamManager:UpdateValidityCache()
     self._validityCache = {}
     
     for entIndex, streamData in pairs(self._streams) do
-        if IsValid(streamData.entity) and 
-           (not streamData.stream or IsValid(streamData.stream)) then
-            self._validityCache[entIndex] = true
-        else
-            -- Queue cleanup for invalid streams
-            self:CleanupStream(entIndex)
+        -- Only validate entity initially
+        if not IsValid(streamData.entity) then
+            Debug:Log("Invalid entity in validity cache update for", entIndex)
+            self:QueueCleanup(entIndex, "invalid_entity")
+            continue
         end
+        
+        -- Set cache based on state
+        if streamData.state == self.States.INITIALIZING or 
+           streamData.state == self.States.CONNECTING then
+            Debug:Log("Stream in initialization/connecting state for", entIndex)
+            self._validityCache[entIndex] = true
+            continue
+        end
+        
+        -- For playing state, check stream validity
+        if streamData.state == self.States.PLAYING then
+            if not IsValid(streamData.stream) then
+                Debug:Log("Invalid stream in playing state for", entIndex)
+                self:QueueCleanup(entIndex, "invalid_stream_playing")
+                continue
+            end
+        end
+        
+        self._validityCache[entIndex] = true
     end
 end
 

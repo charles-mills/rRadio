@@ -645,8 +645,7 @@ local function playStation(entity, station, volume)
     })
 
     if success then
-        -- Update server state
-        net.Start("PlayCarRadioStation")
+        net.Start("QueueStream")
             net.WriteEntity(entity)
             net.WriteString(utils.truncateStationName(station.name))
             net.WriteString(station.url)
@@ -3019,10 +3018,10 @@ net.Receive("UpdateRadioStatus", function()
 end)
 
 --[[
-    Network Receiver: PlayCarRadioStation
+    Network Receiver: QueueStream
     Handles playing a radio station on the client.
 ]]
-net.Receive("PlayCarRadioStation", function()
+net.Receive("QueueStream", function()
     if not streamsEnabled then return end
     
     local entity = net.ReadEntity()
@@ -3037,7 +3036,7 @@ net.Receive("PlayCarRadioStation", function()
     local url = net.ReadString()
     local volume = net.ReadFloat()
 
-    utils.DebugPrint("Received PlayCarRadioStation", 
+    utils.DebugPrint("Received QueueStream", 
         "\nEntity:", entity,
         "\nClass:", entity:GetClass(),
         "\nStation:", stationName,

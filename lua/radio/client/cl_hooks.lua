@@ -29,6 +29,67 @@ local lastUpdates = {
     animation = 0
 }
 
+-- Add near the top with other local functions:
+
+local function UpdateStreamVolume(stream, distanceSqr, isPlayerInCar, entity)
+    if not IsValid(stream) or not IsValid(entity) then return end
+
+    local entityConfig = utils.GetEntityConfig(entity)
+    if not entityConfig then return end
+
+    -- Early distance check
+    local maxDist = entityConfig.MaxHearingDistance()
+    if distanceSqr > (maxDist * maxDist) then
+        stream:SetVolume(0)
+        return
+    end
+
+    -- Get the user-set volume
+    local userVolume = math.Clamp(
+        entity:GetNWFloat("Volume", entityConfig.Volume()),
+        0,
+        Config.MaxVolume()
+    )
+
+    if userVolume <= 0.02 then
+        stream:SetVolume(0)
+        return
+    end
+
+    -- Check mute state
+    local entIndex = entity:EntIndex()
+    if MuteManager and MuteManager:IsMuted(entIndex) then
+        stream:SetVolume(0)
+        return
+    end
+
+    -- If player is in the vehicle, use full user-set volume and disable 3D
+    if isPlayerInCar then
+        stream:Set3DEnabled(false)
+        stream:SetVolume(userVolume)
+        return
+    end
+
+    -- Enable 3D audio for external listeners
+    stream:Set3DEnabled(true)
+    local minDist = entityConfig.MinVolumeDistance()
+    
+    -- Configure 3D sound properties
+    stream:Set3DCone(180, 360, 0.8)
+    stream:Set3DFadeDistance(minDist, maxDist)
+    stream:SetPlaybackRate(1.0)
+    
+    -- Calculate volume falloff
+    local finalVolume = userVolume
+    if distanceSqr > minDist * minDist then
+        local dist = math.sqrt(distanceSqr)
+        local falloff = 1 - math.pow((dist - minDist) / (maxDist - minDist), 0.75)
+        finalVolume = userVolume * math.Clamp(falloff, 0, 1)
+    end
+
+    stream:SetVolume(finalVolume)
+end
+
 -- Consolidated Think hook
 local function RadioSystemThink()
     local currentTime = CurTime()
@@ -37,9 +98,51 @@ local function RadioSystemThink()
     if (currentTime - lastUpdates.stream) >= TIMING.STREAM_UPDATE then
         lastUpdates.stream = currentTime
         
+        local ply = LocalPlayer()
+        local plyPos = ply:GetPos()
+        
         for entIndex, streamData in pairs(StreamManager._streams) do
-            if StreamManager:IsValid(entIndex) then
-                StreamManager:UpdateStreamPosition(entIndex)
+            -- Skip streams that are still initializing
+            if streamData.state == StreamManager.States.INITIALIZING then
+                Debug:Log("Skipping initialization-state stream:", entIndex)
+                continue
+            end
+
+            -- Skip streams that are connecting
+            if streamData.state == StreamManager.States.CONNECTING then
+                Debug:Log("Skipping connecting-state stream:", entIndex)
+                continue
+            end
+
+            local entity = streamData.entity
+            local stream = streamData.stream
+
+            -- Only validate streams that should be playing
+            if streamData.state == StreamManager.States.PLAYING then
+                if not IsValid(stream) then
+                    Debug:Log("Stream validation failed for playing stream", entIndex)
+                    Debug:Log("- Stream exists:", stream ~= nil)
+                    Debug:Log("- Stream state:", stream and stream:GetState() or "nil")
+                    StreamManager:QueueCleanup(entIndex, "invalid_stream")
+                    continue
+                end
+
+                -- Update position and volume only for valid playing streams
+                stream:SetPos(entity:GetPos())
+                
+                -- Calculate distance and player state
+                local distanceSqr = plyPos:DistToSqr(entity:GetPos())
+                local isPlayerInCar = false
+                
+                if entity:IsVehicle() then
+                    local vehicle = utils.GetVehicle(entity)
+                    if IsValid(vehicle) then
+                        isPlayerInCar = (vehicle:GetDriver() == ply)
+                    end
+                end
+                
+                -- Update volume
+                UpdateStreamVolume(stream, distanceSqr, isPlayerInCar, entity)
             end
         end
     end
@@ -128,10 +231,18 @@ end
 -- Initialize networking
 local function InitializeNetworking()
     -- Station playback messages
-    net.Receive("PlayCarRadioStation", function()
-        if not StateManager:GetState("streamsEnabled") then return end
+    net.Receive("QueueStream", function()
+        if not StateManager:GetState("streamsEnabled") then
+            Debug:Log("Streams are disabled, ignoring QueueStream")
+            return
+        end
         
         local entity = net.ReadEntity()
+        Debug:Log("QueueStream received")
+        Debug:Log("- Entity:", entity)
+        Debug:Log("- Entity valid:", IsValid(entity))
+        Debug:Log("- Entity class:", entity and entity:GetClass() or "nil")
+        
         if not IsValid(entity) then return end
         
         entity = utils.GetVehicle(entity) or entity
@@ -141,7 +252,7 @@ local function InitializeNetworking()
         local url = net.ReadString()
         local volume = net.ReadFloat()
         
-        Debug:Log("Received PlayCarRadioStation:", entity, stationName)
+        Debug:Log("Received QueueStream:", entity, stationName)
         
         local entityConfig = utils.GetEntityConfig(entity)
         if not entityConfig then
