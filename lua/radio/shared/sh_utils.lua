@@ -15,6 +15,14 @@ utils.VehicleClasses = {
     ["prop_vehicle_jeep"] = true,
     ["prop_vehicle_airboat"] = true,
     ["gmod_sent_vehicle_fphysics_base"] = true, -- Simfphys
+    ["wac_hc_base"] = true,                     -- WAC Aircraft
+    ["wac_pl_base"] = true,                     -- WAC Aircraft
+    ["lunasflightschool_basescript"] = true,    -- LFS
+    ["sent_sakarias_car_base"] = true,          -- SCars
+    ["lvs_base_wheelvehicle"] = true,          -- LVS Wheeled Vehicles
+    ["lvs_base_trackvehicle"] = true,          -- LVS Tracked Vehicles
+    ["lvs_base_airplane"] = true,              -- LVS Aircraft
+    ["lvs_base_helicopter"] = true,            -- LVS Helicopters
 }
 
 utils.SitAnywhereSeats = {
@@ -37,18 +45,40 @@ function utils.GetVehicle(ent)
     
     -- Check parent first (for seats/pods)
     local parent = ent:GetParent()
-    ent = IsValid(parent) and parent or ent
     
-    -- Return nil if it's a SitAnywhere seat
-    if utils.SitAnywhereSeats[ent:GetClass()] then return end
+    -- Special handling for LVS seats
+    if IsValid(parent) then
+        -- Check if parent is an LVS vehicle
+        if parent.LVS or string.StartWith(parent:GetClass(), "lvs_") then
+            return parent
+        end
+        ent = parent
+    end
     
-    -- Check if it's a valid vehicle
-    if utils.VehicleClasses[ent:GetClass()] or 
-       ent:IsVehicle() or 
-       string.StartWith(ent:GetClass(), "lvs_") or 
-       string.StartWith(ent:GetClass(), "ses_") then
+    -- Return nil if it's a SitAnywhere seat (but not if it's part of an LVS vehicle)
+    if utils.SitAnywhereSeats[ent:GetClass()] and not (ent:GetParent().LVS or (IsValid(ent:GetParent()) and string.StartWith(ent:GetParent():GetClass(), "lvs_"))) then 
+        return 
+    end
+    
+    -- Check if entity itself is an LVS vehicle
+    if ent.LVS or string.StartWith(ent:GetClass(), "lvs_") then
         return ent
     end
+    
+    -- Check various vehicle frameworks
+    if utils.VehicleClasses[ent:GetClass()] or 
+       ent:IsVehicle() or 
+       string.StartWith(ent:GetClass(), "ses_") or  -- SligWolf
+       (ent.isWacAircraft == true) or              -- WAC
+       (ent.LFS == true) or                        -- LFS
+       (ent.IsScar == true) then                   -- SCars
+        return ent
+    end
+    
+    -- Check for additional framework-specific properties
+    if ent.IsVehicle and ent:IsVehicle() then return ent end
+    if ent.IsSimfphyscar then return ent end
+    if ent.ForceDefaultProperties then return ent end -- Advanced Driver Seat
 end
 
 --[[
@@ -218,10 +248,21 @@ end
 function utils.canUseRadio(entity)
     if not IsValid(entity) then return false end
     
-    -- Check if it's a vehicle
-    if entity:IsVehicle() then
-        -- Add any specific vehicle checks here
-        -- For example, you might want to check if it's a specific type of vehicle
+    -- Get actual vehicle entity
+    local vehicle = utils.GetVehicle(entity)
+    if vehicle then
+        -- Check if vehicle has radio disabled
+        if vehicle.RadioDisabled then return false end
+        
+        -- Check for framework-specific properties
+        if vehicle.isWacAircraft then return true end
+        if vehicle.LFS then return true end
+        if vehicle.IsScar then return true end
+        if vehicle.IsSimfphyscar then return true end
+        if vehicle.LVS then return true end
+        if string.StartWith(vehicle:GetClass(), "lvs_") then return true end
+        
+        -- Default vehicle check
         return true
     end
     
@@ -245,22 +286,13 @@ function utils.isPlayerInVehicle(player, vehicle)
     
     -- Get the actual vehicle entity
     vehicle = utils.GetVehicle(vehicle) or vehicle
+    if not vehicle then return false end
     
-    -- Direct check for player's current vehicle
-    local playerVehicle = player:GetVehicle()
-    if IsValid(playerVehicle) then
-        if playerVehicle == vehicle then
-            return true
-        end
-        
-        -- Check if player's seat belongs to this vehicle
-        local seatParent = playerVehicle:GetParent()
-        if IsValid(seatParent) and seatParent == vehicle then
-            return true
-        end
-    end
+    -- Check if player is the driver
+    local driver = utils.GetVehicleDriver(vehicle)
+    if driver == player then return true end
     
-    -- Check all seats if it's a vehicle
+    -- Check if player is in any of the vehicle's seats
     if vehicle:IsVehicle() then
         for _, seat in pairs(ents.FindByClass("prop_vehicle_prisoner_pod")) do
             if IsValid(seat) and seat:GetParent() == vehicle and seat:GetDriver() == player then
@@ -307,6 +339,49 @@ function utils.truncateStationName(name, maxLength)
         return name
     end
     return string.sub(name, 1, maxLength) .. "..."
+end
+
+--[[
+    Function: GetVehicleDriver
+    Description: Gets the driver of a vehicle across different frameworks
+    @param vehicle (Entity): The vehicle to check
+    @return (Player): The driver of the vehicle, or nil if no driver
+]]
+function utils.GetVehicleDriver(vehicle)
+    if not IsValid(vehicle) then return end
+    
+    -- LVS vehicles
+    if vehicle.LVS or string.StartWith(vehicle:GetClass(), "lvs_") then
+        if vehicle.GetDriver then
+            return vehicle:GetDriver()
+        end
+        -- Some LVS vehicles use different methods
+        if vehicle.GetAIDriver then
+            return vehicle:GetAIDriver()
+        end
+    end
+    
+    -- WAC Aircraft
+    if vehicle.isWacAircraft and vehicle.seats and vehicle.seats[1] then
+        return vehicle.seats[1]:GetDriver()
+    end
+    
+    -- LFS
+    if vehicle.LFS and vehicle.GetDriver then
+        return vehicle:GetDriver()
+    end
+    
+    -- SCars
+    if vehicle.IsScar and vehicle.Driver then
+        return vehicle.Driver
+    end
+    
+    -- Default/Simfphys/Other
+    if vehicle.GetDriver then
+        return vehicle:GetDriver()
+    end
+    
+    return nil
 end
 
 return utils
