@@ -2314,12 +2314,7 @@ local function openSettingsMenu(parentFrame, backButton)
     local githubIcon = vgui.Create("DImage", footer)
     githubIcon:SetSize(Scale(32), Scale(32))
     githubIcon:SetPos(Scale(10), (footerHeight - Scale(32)) / 2)
-    githubIcon:SetImage(MaterialCache:Get("hud/github.png"))
-    githubIcon.Paint = function(self, w, h)
-        surface.SetDrawColor(Config.UI.TextColor)
-        surface.SetMaterial(MaterialCache:Get("hud/github.png"))
-        surface.DrawTexturedRect(0, 0, w, h)
-    end
+    githubIcon:SetImage("materials/hud/github.png")
 
     local contributeTitleLabel = vgui.Create("DLabel", footer)
     contributeTitleLabel:SetText(Config.Lang["Contribute"] or "Want to contribute?")
@@ -2334,6 +2329,12 @@ local function openSettingsMenu(parentFrame, backButton)
     contributeSubLabel:SetTextColor(Config.UI.TextColor)
     contributeSubLabel:SizeToContents()
     contributeSubLabel:SetPos(Scale(50), footerHeight / 2 + Scale(2))
+
+    githubIcon.Paint = function(self, w, h)
+        surface.SetDrawColor(Config.UI.TextColor)
+        surface.SetMaterial(MaterialCache:Get("hud/github.png"))
+        surface.DrawTexturedRect(0, 0, w, h)
+    end
 end
 
 -- ------------------------------
