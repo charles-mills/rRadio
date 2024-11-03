@@ -2486,10 +2486,15 @@ local function openUnauthorizedUI(entity)
         
         local stationName = entity:GetNWString("StationName", "")
         local status = entity:GetNWString("Status", "")
+        local volume = entity:GetNWFloat("Volume", 0.5)
+        local entIndex = entity:EntIndex()
+        local isMuted = MuteManager:IsMuted(entIndex)
         
         if stationName ~= "" then
+            -- Station name with truncation
+            local displayName = utils.truncateStationName(stationName)
             draw.SimpleText(
-                stationName,
+                displayName,
                 "Roboto18",
                 Scale(10),
                 Scale(10),
@@ -2498,15 +2503,58 @@ local function openUnauthorizedUI(entity)
                 TEXT_ALIGN_TOP
             )
             
+            -- Show full name as tooltip if truncated
+            if displayName ~= stationName then
+                if self:IsHovered() then
+                    local x, y = self:LocalToScreen(0, 0)
+                    local tooltip = vgui.Create("DPanel")
+                    tooltip:SetDrawOnTop(true)
+                    tooltip:SetText(stationName)
+                    tooltip:SizeToContents()
+                    tooltip:SetPos(x + Scale(10), y + Scale(10))
+                    timer.Simple(0.01, function() if IsValid(tooltip) then tooltip:Remove() end end)
+                end
+            end
+            
+            -- Status with volume indicator
+            local statusText = status:sub(1,1):upper() .. status:sub(2)
+            if status == "playing" then
+                statusText = statusText .. string.format(" (Volume: %d%%)", math.Round(volume * 100))
+                if isMuted then
+                    statusText = statusText .. " - MUTED"
+                end
+            end
+            
+            -- Status text with color based on state
+            local statusColor = status == "playing" and 
+                (isMuted and Config.UI.CloseButtonColor or Color(100, 255, 100, 255)) or 
+                Config.UI.TextColor
+            
             draw.SimpleText(
-                status:sub(1,1):upper() .. status:sub(2),
+                statusText,
                 "Roboto18",
                 Scale(10),
                 Scale(35),
-                Config.UI.TextColor,
+                statusColor,
                 TEXT_ALIGN_LEFT,
                 TEXT_ALIGN_TOP
             )
+            
+            -- Visual volume indicator
+            if status == "playing" then
+                local barWidth = w - Scale(20)
+                local barHeight = Scale(4)
+                local barY = Scale(52)
+                
+                -- Background bar
+                draw.RoundedBox(2, Scale(10), barY, barWidth, barHeight, 
+                    ColorAlpha(Config.UI.ScrollbarColor, 100))
+                
+                -- Volume bar
+                local volWidth = barWidth * volume
+                draw.RoundedBox(2, Scale(10), barY, volWidth, barHeight,
+                    isMuted and Config.UI.CloseButtonColor or Config.UI.AccentColor)
+            end
         else
             draw.SimpleText(
                 Config.Lang["NoStation"] or "No Station Playing",
@@ -2517,6 +2565,12 @@ local function openUnauthorizedUI(entity)
                 TEXT_ALIGN_CENTER,
                 TEXT_ALIGN_CENTER
             )
+        end
+    end
+
+    infoPanel.Think = function(self)
+        if IsValid(entity) and entity:GetNWString("Status", "") == "playing" then
+            self:InvalidateLayout()
         end
     end
 
