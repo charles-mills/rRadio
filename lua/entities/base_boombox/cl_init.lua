@@ -1,6 +1,6 @@
 include("shared.lua")
 local Config = include("radio/shared/sh_config.lua")
-local Themes = include("radio/client/cl_themes.lua")
+local Themes = include("radio/client/cl_theme_manager.lua")
 
 local HUD = {
     FADE_DISTANCE = {

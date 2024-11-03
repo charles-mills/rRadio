@@ -389,7 +389,7 @@ end)
 -- Add Settings module to Modules table
 Modules.Settings = {
     -- Store theme and language managers
-    themeModule = include("radio/client/cl_themes.lua"),
+    themeModule = include("radio/client/cl_theme_manager.lua"),
     languageManager = include("radio/client/lang/cl_language_manager.lua"),
 
     -- Create base ConVars

@@ -44,7 +44,7 @@ end
 --          Imports
 -- ------------------------------
 local LanguageManager = include("radio/client/lang/cl_language_manager.lua")
-local themes = include("radio/client/cl_themes.lua") or {}
+local themes = include("radio/client/cl_theme_manager.lua") or {}
 
 -- ------------------------------
 --      Configuration Tables
