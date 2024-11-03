@@ -80,10 +80,46 @@ local isMessageAnimating = false
 
 local favoritesMenuOpen = false
 
+local MaterialCache = {
+    cache = {},
+    paths = {
+        "hud/vol_mute.png",
+        "hud/vol_down.png",
+        "hud/vol_up.png",
+        "hud/radio.png",
+        "hud/close.png",
+        "hud/settings.png",
+        "hud/return.png",
+        "hud/star.png",
+        "hud/star_full.png",
+        "hud/github.png"
+    },
+    
+    Initialize = function(self)
+        for _, path in ipairs(self.paths) do
+            self.cache[path] = Material(path, "smooth")
+        end
+    end,
+    
+    Get = function(self, path)
+        if not self.cache[path] then
+            self.cache[path] = Material(path, "smooth")
+        end
+        return self.cache[path]
+    end,
+    
+    Clear = function(self)
+        self.cache = {}
+    end
+}
+
+-- Initialize material cache
+MaterialCache:Initialize()
+
 local VOLUME_ICONS = {
-    MUTE = Material("hud/vol_mute.png", "smooth"),
-    LOW = Material("hud/vol_down.png", "smooth"),
-    HIGH = Material("hud/vol_up.png", "smooth")
+    MUTE = MaterialCache:Get("hud/vol_mute.png"),
+    LOW = MaterialCache:Get("hud/vol_down.png"),
+    HIGH = MaterialCache:Get("hud/vol_up.png")
 }
 
 local lastPermissionMessage = 0
@@ -1065,7 +1101,7 @@ local function createStarIcon(parent, country, station, updateList)
     -- Update star icon color
     starIcon.Paint = function(self, w, h)
         surface.SetDrawColor(Config.UI.FavoriteStarColor)
-        surface.SetMaterial(Material(isFavorite and "hud/star_full.png" or "hud/star.png"))
+        surface.SetMaterial(MaterialCache:Get(isFavorite and "hud/star_full.png" or "hud/star.png"))
         surface.DrawTexturedRect(0, 0, w, h)
     end
 
@@ -1362,7 +1398,7 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
             favoritesButton:SetTextInset(Scale(40), 0)
 
             favoritesButton.PaintOver = function(self, w, h)
-                surface.SetMaterial(Material("hud/star_full.png"))
+                surface.SetMaterial(MaterialCache:Get("hud/star_full.png"))
                 surface.SetDrawColor(Config.UI.TextColor)
                 
                 local iconSize = Scale(24)
@@ -2278,10 +2314,10 @@ local function openSettingsMenu(parentFrame, backButton)
     local githubIcon = vgui.Create("DImage", footer)
     githubIcon:SetSize(Scale(32), Scale(32))
     githubIcon:SetPos(Scale(10), (footerHeight - Scale(32)) / 2)
-    githubIcon:SetImage("hud/github.png")
+    githubIcon:SetImage(MaterialCache:Get("hud/github.png"))
     githubIcon.Paint = function(self, w, h)
         surface.SetDrawColor(Config.UI.TextColor)
-        surface.SetMaterial(Material("hud/github.png"))
+        surface.SetMaterial(MaterialCache:Get("hud/github.png"))
         surface.DrawTexturedRect(0, 0, w, h)
     end
 
@@ -2377,7 +2413,7 @@ openRadioMenu = function(openSettings)
         local iconOffsetY = headerHeight/2 - iconSize/2
 
         -- Draw the icon
-        surface.SetMaterial(Material("hud/radio.png"))
+        surface.SetMaterial(MaterialCache:Get("hud/radio.png"))
         surface.SetDrawColor(Config.UI.TextColor)
         surface.DrawTexturedRect(iconOffsetX, iconOffsetY, iconSize, iconSize)
 
@@ -2670,7 +2706,7 @@ openRadioMenu = function(openSettings)
         end
     )
     closeButton.Paint = function(self, w, h)
-        surface.SetMaterial(Material("hud/close.png"))
+        surface.SetMaterial(MaterialCache:Get("hud/close.png"))
         surface.SetDrawColor(ColorAlpha(Config.UI.IconColor, 255 * (0.5 + 0.5 * self.lerp)))
         surface.DrawTexturedRect(0, 0, w, h)
     end
@@ -2696,7 +2732,7 @@ openRadioMenu = function(openSettings)
         end
     )
     settingsButton.Paint = function(self, w, h)
-        surface.SetMaterial(Material("hud/settings.png"))
+        surface.SetMaterial(MaterialCache:Get("hud/settings.png"))
         surface.SetDrawColor(ColorAlpha(Config.UI.IconColor, 255 * (0.5 + 0.5 * self.lerp)))
         surface.DrawTexturedRect(0, 0, w, h)
     end
@@ -2746,7 +2782,7 @@ openRadioMenu = function(openSettings)
     )
     backButton.Paint = function(self, w, h)
         if self:IsVisible() then
-            surface.SetMaterial(Material("hud/return.png"))
+            surface.SetMaterial(MaterialCache:Get("hud/return.png"))
             surface.SetDrawColor(ColorAlpha(Config.UI.IconColor, 255 * (0.5 + 0.5 * self.lerp)))
             surface.DrawTexturedRect(0, 0, w, h)
         end
