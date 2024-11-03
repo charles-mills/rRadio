@@ -78,18 +78,33 @@ surface.CreateFont("BoomboxHUDSmall", {
     extended = true
 })
 
-local function LerpColor(t, col1, col2) -- Utility functions
-    return Color(Lerp(t, col1.r, col2.r), Lerp(t, col1.g, col2.g), Lerp(t, col1.b, col2.b), Lerp(t, col1.a or 255, col2.a or 255))
+local function LerpColor(t, col1, col2)
+    -- Pre-calculate alpha to avoid unnecessary Lerp call if both alphas are 255
+    local alpha = (col1.a ~= 255 or col2.a ~= 255) and 
+        Lerp(t, col1.a or 255, col2.a or 255) or 255
+    
+    return Color(
+        Lerp(t, col1.r, col2.r),
+        Lerp(t, col1.g, col2.g),
+        Lerp(t, col1.b, col2.b),
+        alpha
+    )
 end
 
-local function createAnimationState() -- Animation state
-    return {
-        progress = 0,
-        textOffset = 0,
-        lastStatus = "",
-        statusTransition = 0,
-        equalizerHeights = {0, 0, 0}
-    }
+-- Cache frequently used values
+local sin, cos, min, max = math.sin, math.cos, math.min, math.max
+local ColorAlpha = ColorAlpha
+local SimpleText = draw.SimpleText
+local RoundedBox = draw.RoundedBox
+
+-- Reusable color objects to avoid creating new ones
+local tempColor = Color(0, 0, 0)
+local function GetColorAlpha(color, alpha)
+    tempColor.r = color.r
+    tempColor.g = color.g
+    tempColor.b = color.b
+    tempColor.a = alpha
+    return tempColor
 end
 
 BoomboxStatuses = BoomboxStatuses or {}
@@ -182,14 +197,22 @@ function ENT:DrawModernHUD(status, stationName, alpha)
     local text = self:GetDisplayText(status, stationName)
     surface.SetFont("BoomboxHUD")
     local textWidth = surface.GetTextSize(text)
+    
+    -- Cache calculated values
+    local padding = HUD.DIMENSIONS.PADDING
+    local iconSize = HUD.DIMENSIONS.ICON_SIZE
     local minWidth = 380
-    local widthMultiplier = 1.0
-    local width = math.max(textWidth + HUD.DIMENSIONS.PADDING * 3 + HUD.DIMENSIONS.ICON_SIZE, minWidth) * widthMultiplier
+    local width = max(textWidth + padding * 3 + iconSize, minWidth)
     local height = HUD.DIMENSIONS.HEIGHT * 1.5
-    self:DrawBackground(width, height, alpha) -- Draw background
-    local lineHeight = 2 -- Draw accent line at the bottom
-    draw.RoundedBox(0, -width / 2, height / 2 - lineHeight, width, lineHeight, ColorAlpha(HUD.COLORS.ACCENT, alpha * 0.8))
-    self:DrawContent(text, width, height, status, alpha) -- Draw status indicator and text
+    
+    self:DrawBackground(width, height, alpha)
+    
+    -- Draw accent line at bottom
+    local lineHeight = 2
+    RoundedBox(0, -width / 2, height / 2 - lineHeight, width, lineHeight, 
+        GetColorAlpha(HUD.COLORS.ACCENT, alpha * 0.8))
+    
+    self:DrawContent(text, width, height, status, alpha)
 end
 
 function ENT:GetDisplayText(status, stationName)
@@ -215,31 +238,45 @@ function ENT:DrawBackground(width, height, alpha)
 end
 
 function ENT:DrawContent(text, width, height, status, alpha)
-    local x = -width / 2 + HUD.DIMENSIONS.PADDING
+    local padding = HUD.DIMENSIONS.PADDING
+    local iconSize = HUD.DIMENSIONS.ICON_SIZE
+    local x = -width / 2 + padding
     local y = -height / 2
-    local indicatorColor = self:GetStatusColor(status) -- Get the status color first
-    local indicatorX = x -- Status indicator and equalizer position (fixed at left)
+    
+    -- Cache status color
+    local indicatorColor = self:GetStatusColor(status)
+    local indicatorX = x
+
     if status == "playing" then
         self:DrawEqualizer(indicatorX, y + height / 2, alpha, indicatorColor)
     else
-        draw.RoundedBox(2, indicatorX, y + height / 3, 4, height / 3, ColorAlpha(indicatorColor, alpha))
+        RoundedBox(2, indicatorX, y + height / 3, 4, height / 3, 
+            GetColorAlpha(indicatorColor, alpha))
     end
 
-    local textX = x + HUD.DIMENSIONS.PADDING * 2 + HUD.DIMENSIONS.ICON_SIZE + 8 -- Fixed text position (after equalizer/indicator)
-    local maxTextWidth = width - (HUD.DIMENSIONS.PADDING * 4 + HUD.DIMENSIONS.ICON_SIZE + 16) -- Clip text if too long
+    local textX = x + padding * 2 + iconSize + 8
+    local maxTextWidth = width - (padding * 4 + iconSize + 16)
+
+    -- Optimize text clipping
     local clippedText = text
     surface.SetFont("BoomboxHUD")
     local textWidth = surface.GetTextSize(text)
+    
     if textWidth > maxTextWidth then
-        while textWidth > maxTextWidth and #clippedText > 0 do
-            clippedText = string.sub(clippedText, 1, #clippedText - 1) -- Keep shortening the text until it fits
-            textWidth = surface.GetTextSize(clippedText .. "...")
-        end
-
-        clippedText = clippedText .. "..."
+        local ratio = maxTextWidth / textWidth
+        local targetLength = math.floor(#text * ratio) - 3 -- Account for "..."
+        clippedText = string.sub(text, 1, targetLength) .. "..."
     end
 
-    draw.SimpleText(clippedText, "BoomboxHUD", textX, y + height / 2, ColorAlpha(HUD.COLORS.TEXT, alpha * self.anim.statusTransition), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER) -- Draw text
+    SimpleText(
+        clippedText, 
+        "BoomboxHUD", 
+        textX, 
+        y + height / 2, 
+        GetColorAlpha(HUD.COLORS.TEXT, alpha * self.anim.statusTransition),
+        TEXT_ALIGN_LEFT, 
+        TEXT_ALIGN_CENTER
+    )
 end
 
 function ENT:GetStatusColor(status)
@@ -254,11 +291,11 @@ function ENT:GetStatusColor(status)
 end
 
 function ENT:DrawEqualizer(x, y, alpha, color)
-    if not self.anim then -- Ensure animation state exists
+    if not self.anim then
         self.anim = createAnimationState()
     end
 
-    if not self.anim.equalizerHeights then -- Ensure equalizer heights are initialized
+    if not self.anim.equalizerHeights then
         self.anim.equalizerHeights = {0, 0, 0}
     end
 
@@ -266,9 +303,9 @@ function ENT:DrawEqualizer(x, y, alpha, color)
     local spacing = 4
     local maxHeight = HUD.DIMENSIONS.HEIGHT * 0.7
     local volume = entityVolumes[self] or 1
-    self:UpdateEqualizerHeights(volume, FrameTime()) -- Update equalizer heights
+    self:UpdateEqualizerHeights(volume, FrameTime())
     for i = 1, HUD.EQUALIZER.BARS do
-        local height = maxHeight * (self.anim.equalizerHeights[i] or 0) -- Add fallback value
+        local height = maxHeight * (self.anim.equalizerHeights[i] or 0)
         draw.RoundedBox(1, x + (i - 1) * (barWidth + spacing), y - height / 2, barWidth, height, ColorAlpha(color, alpha))
     end
 end

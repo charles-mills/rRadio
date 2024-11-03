@@ -339,7 +339,6 @@ local function LoadPermanentBoomboxes(isReload)
             
             DebugPrint("Broadcasted PlayCarRadioStation")
 
-            -- Add to active radios
             if AddActiveRadio then
                 AddActiveRadio(ent, row.station_name, row.station_url, row.volume)
                 DebugPrint("Added to active radios")
