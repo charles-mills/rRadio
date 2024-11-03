@@ -5,7 +5,7 @@
                  It defines global variables, ConVars, and functions used across both
                  client and server. This includes settings for boomboxes, vehicle radios,
                  UI themes, language options, and various other customizable parameters.
-    Date: October 30, 2024
+    Date: November 3, 2024
 ]]--
 
 --[[
@@ -53,12 +53,9 @@ local keyCodeMapping = include("radio/client/cl_key_names.lua") or {}
 
 -- Radio Stations Data
 Config.RadioStations = {}
-
--- UI Localization
 Config.Lang = {}
-
--- UI Themes and Settings
 Config.UI = {}
+Config.MaxStationNameLength = 40
 
 -- ------------------------------
 --         ConVars Setup

@@ -1,5 +1,5 @@
 include("shared.lua")
-include("radio/shared/sh_config.lua")
+local Config = include("radio/shared/sh_config.lua")
 local Themes = include("radio/client/cl_themes.lua")
 
 local HUD = {
@@ -28,7 +28,8 @@ local HUD = {
         ACCENT = Color(0, 255, 128),
         TEXT = Color(255, 255, 255),
         INACTIVE = Color(180, 180, 180)
-    }
+    },
+    TRUNCATE_LENGTH = 30
 }
 
 local GOLDEN_HUD = {
@@ -357,6 +358,11 @@ function ENT:Draw()
     local statusData = BoomboxStatuses[entIndex] or {}
     local status = statusData.stationStatus or self:GetNWString("Status", "stopped")
     local stationName = statusData.stationName or self:GetNWString("StationName", "")
+
+    if (#stationName > HUD.TRUNCATE_LENGTH) then
+        stationName = utils.truncateStationName(stationName, HUD.TRUNCATE_LENGTH)
+    end
+
     local alpha = self:CalculateVisibility()
     if alpha <= 0 then return end
     
@@ -423,8 +429,9 @@ function ENT:GetDisplayText(status, stationName)
     elseif status == "tuning" then
         local baseText = Config.Lang["TuningIn"] or "Tuning in"
         local dots = string.rep(".", math.floor(CurTime() * 2) % 4)
-        return baseText .. dots .. string.rep(" ", 3 - #dots) -- Keep consistent width with spaces
+        return baseText .. dots .. string.rep(" ", 3 - #dots)
     else
+        -- Use the station name as-is since it's already truncated from the server
         return stationName ~= "" and stationName or "Radio"
     end
 end
