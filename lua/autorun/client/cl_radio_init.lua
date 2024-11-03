@@ -19,7 +19,6 @@ end
 
 -- Load UI and language dependencies
 include("radio/client/cl_themes.lua")
-include("radio/client/cl_settings.lua")
 include("radio/client/cl_misc.lua")
 -- Load core after all dependencies
 include("radio/client/cl_core.lua")
