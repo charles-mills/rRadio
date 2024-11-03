@@ -226,22 +226,14 @@ end
 
 -- Optimized animation updates
 function ENT:UpdateAnimations(status, dt)
+    if not self or not IsValid(self) then return end
+    
+    -- Ensure animation state exists
     if not self.anim then
         self.anim = createAnimationState()
     end
     
-    -- Check if distant update is needed
-    local distSqr = LocalPlayer():GetPos():DistToSqr(self:GetPos())
-    local isDistant = distSqr > (HUD.FADE_DISTANCE.START * HUD.FADE_DISTANCE.START)
-    
-    if isDistant and self.lastUpdate and 
-       (RealTime() - self.lastUpdate) < DISTANT_UPDATE_INTERVAL then
-        return
-    end
-    
-    self.lastUpdate = RealTime()
-    
-    -- Rest of animation update logic...
+    -- Rest of the existing UpdateAnimations code...
     local targetProgress = (status == "playing" or status == "tuning") and 1 or 0
     self.anim.progress = Lerp(dt * HUD.ANIMATION.SPEED, self.anim.progress, targetProgress)
     
@@ -330,6 +322,8 @@ end)
 
 function ENT:Initialize()
     self:SetRenderBounds(self:OBBMins(), self:OBBMaxs())
+    
+    -- Always create animation state
     self.anim = createAnimationState()
     
     -- Initialize status if not already set
@@ -340,6 +334,11 @@ function ENT:Initialize()
             stationName = self:GetNWString("StationName", ""),
             isPlaying = self:GetNWBool("IsPlaying", false)
         }
+    end
+    
+    -- Ensure UpdateAnimations method exists
+    if not self.UpdateAnimations then
+        self.UpdateAnimations = ENT.UpdateAnimations
     end
 end
 
@@ -546,20 +545,37 @@ function ENT:DrawEqualizer(x, y, alpha, color)
     end
 end
 
--- Make sure these hooks are present and working with the optimizations
+-- Remove the old Think hook first
+hook.Remove("Think", "UpdateBoomboxAnimations")
+
+-- Add the new optimized Think hook
 hook.Add("Think", "UpdateBoomboxAnimations", function()
     -- Update animations only for visible boomboxes
     for _, ent in ipairs(ents.FindByClass("boombox")) do
         if IsValid(ent) and ent:GetPos():DistToSqr(LocalPlayer():GetPos()) <= (HUD.FADE_DISTANCE.END * HUD.FADE_DISTANCE.END) then
+            -- Ensure animation state exists
+            if not ent.anim then
+                ent.anim = createAnimationState()
+            end
+            
             local status = ent:GetNWString("Status", "stopped")
-            ent:UpdateAnimations(status, FrameTime())
+            if ent.UpdateAnimations then -- Check if method exists
+                ent:UpdateAnimations(status, FrameTime())
+            end
         end
     end
     
     for _, ent in ipairs(ents.FindByClass("golden_boombox")) do
         if IsValid(ent) and ent:GetPos():DistToSqr(LocalPlayer():GetPos()) <= (HUD.FADE_DISTANCE.END * HUD.FADE_DISTANCE.END) then
+            -- Ensure animation state exists
+            if not ent.anim then
+                ent.anim = createAnimationState()
+            end
+            
             local status = ent:GetNWString("Status", "stopped")
-            ent:UpdateAnimations(status, FrameTime())
+            if ent.UpdateAnimations then -- Check if method exists
+                ent:UpdateAnimations(status, FrameTime())
+            end
         end
     end
 end)

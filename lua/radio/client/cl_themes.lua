@@ -10,9 +10,9 @@
 local DEFAULT_FRAME_SIZE = { width = 600, height = 800 }
 
 local ThemeFactory = {
-    defaultTheme = "midnight",
+    defaultTheme = "dark",
     
-    createTheme = function(self, name, baseColors)
+    createTheme = function(self, name, baseColors, category)
         if not baseColors then 
             print("[Radio Theme] No base colors provided for theme:", name)
             return nil 
@@ -48,6 +48,7 @@ local ThemeFactory = {
         
         local theme = {
             name = name,
+            category = category or "other",
             FrameSize = DEFAULT_FRAME_SIZE,
             BackgroundColor = baseColors.background,
             HeaderColor = baseColors.header,
@@ -161,7 +162,7 @@ safeAddTheme("midnight", ThemeFactory:createTheme("midnight", {
     favoriteStar = Color(255, 215, 0),
     messageBackground = Color(25, 25, 55, 230),
     keyHighlight = Color(40, 40, 80)
-}))
+}, "main"))
 
 safeAddTheme("retro", ThemeFactory:createTheme("retro", {
     background = Color(245, 225, 185),
@@ -184,7 +185,7 @@ safeAddTheme("retro", ThemeFactory:createTheme("retro", {
     favoriteStar = Color(210, 170, 90),
     messageBackground = Color(225, 205, 165, 230),
     keyHighlight = Color(205, 185, 145)
-}))
+}, "main"))
 
 safeAddTheme("nord", ThemeFactory:createTheme("nord", {
     background = Color(46, 52, 64),
@@ -207,7 +208,7 @@ safeAddTheme("nord", ThemeFactory:createTheme("nord", {
     favoriteStar = Color(235, 203, 139),
     messageBackground = Color(67, 76, 94, 230),
     keyHighlight = Color(76, 86, 106)
-}))
+}, "main"))
 
 safeAddTheme("dracula", ThemeFactory:createTheme("dracula", {
     background = Color(40, 42, 54),
@@ -230,7 +231,7 @@ safeAddTheme("dracula", ThemeFactory:createTheme("dracula", {
     favoriteStar = Color(241, 250, 140),
     messageBackground = Color(68, 71, 90, 230),
     keyHighlight = Color(98, 114, 164)
-}))
+}, "main"))
 
 safeAddTheme("material", ThemeFactory:createTheme("material", {
     background = Color(38, 50, 56),
@@ -253,7 +254,7 @@ safeAddTheme("material", ThemeFactory:createTheme("material", {
     favoriteStar = Color(255, 235, 59),
     messageBackground = Color(69, 90, 100, 230),
     keyHighlight = Color(84, 110, 122)
-}))
+}, "main"))
 
 safeAddTheme("gruvbox", ThemeFactory:createTheme("gruvbox", {
     background = Color(40, 40, 40),
@@ -276,7 +277,7 @@ safeAddTheme("gruvbox", ThemeFactory:createTheme("gruvbox", {
     favoriteStar = Color(250, 189, 47),
     messageBackground = Color(80, 73, 69, 230),
     keyHighlight = Color(102, 92, 84)
-}))
+}, "main"))
 
 safeAddTheme("tokyonight", ThemeFactory:createTheme("tokyonight", {
     background = Color(26, 27, 38),
@@ -299,7 +300,7 @@ safeAddTheme("tokyonight", ThemeFactory:createTheme("tokyonight", {
     favoriteStar = Color(224, 175, 104),
     messageBackground = Color(41, 46, 66, 230),
     keyHighlight = Color(52, 59, 88)
-}))
+}, "main"))
 
 safeAddTheme("dark", ThemeFactory:createTheme("dark", {
     background = Color(18, 18, 24),
@@ -322,7 +323,7 @@ safeAddTheme("dark", ThemeFactory:createTheme("dark", {
     favoriteStar = Color(255, 215, 0),
     messageBackground = Color(28, 28, 36, 230),
     keyHighlight = Color(35, 35, 45)
-}))
+}, "main"))
 
 safeAddTheme("cyberpunk", ThemeFactory:createTheme("cyberpunk", {
     background = Color(13, 13, 34),
@@ -345,7 +346,7 @@ safeAddTheme("cyberpunk", ThemeFactory:createTheme("cyberpunk", {
     favoriteStar = Color(255, 255, 0),
     messageBackground = Color(25, 25, 55, 230),
     keyHighlight = Color(35, 35, 75)
-}))
+}, "strange"))
 
 safeAddTheme("sunset", ThemeFactory:createTheme("sunset", {
     background = Color(35, 15, 35),
@@ -368,7 +369,7 @@ safeAddTheme("sunset", ThemeFactory:createTheme("sunset", {
     favoriteStar = Color(255, 215, 145),
     messageBackground = Color(82, 42, 50, 230),
     keyHighlight = Color(125, 55, 55)
-}))
+}, "other"))
 
 safeAddTheme("forest", ThemeFactory:createTheme("forest", {
     background = Color(22, 33, 22),
@@ -391,7 +392,7 @@ safeAddTheme("forest", ThemeFactory:createTheme("forest", {
     favoriteStar = Color(238, 208, 113),
     messageBackground = Color(33, 49, 33, 230),
     keyHighlight = Color(41, 61, 41)
-}))
+}, "other"))
 
 safeAddTheme("ocean", ThemeFactory:createTheme("ocean", {
     background = Color(15, 25, 35),
@@ -414,7 +415,7 @@ safeAddTheme("ocean", ThemeFactory:createTheme("ocean", {
     favoriteStar = Color(255, 198, 88),
     messageBackground = Color(25, 42, 58, 230),
     keyHighlight = Color(32, 54, 75)
-}))
+}, "other"))
 
 safeAddTheme("monochrome", ThemeFactory:createTheme("monochrome", {
     background = Color(12, 12, 12),
@@ -437,7 +438,7 @@ safeAddTheme("monochrome", ThemeFactory:createTheme("monochrome", {
     favoriteStar = Color(255, 255, 255),
     messageBackground = Color(24, 24, 24, 230),
     keyHighlight = Color(32, 32, 32)
-}))
+}, "main"))
 
 safeAddTheme("neon", ThemeFactory:createTheme("neon", {
     background = Color(10, 10, 15),
@@ -460,7 +461,99 @@ safeAddTheme("neon", ThemeFactory:createTheme("neon", {
     favoriteStar = Color(255, 255, 0),
     messageBackground = Color(20, 20, 30, 230),
     keyHighlight = Color(25, 25, 37)
-}))
+}, "strange"))
+
+safeAddTheme("synthwave", ThemeFactory:createTheme("synthwave", {
+    background = Color(20, 10, 30),
+    header = Color(30, 15, 45),
+    text = Color(255, 236, 255),
+    button = Color(40, 20, 60),
+    buttonHover = Color(60, 30, 90),
+    playing = Color(128, 0, 128),
+    close = Color(30, 15, 45),
+    closeHover = Color(90, 30, 90),
+    scrollbar = Color(40, 20, 60),
+    scrollbarGrip = Color(255, 83, 255),
+    search = Color(30, 15, 45),
+    accent = Color(0, 255, 255),
+    separator = Color(60, 30, 90),
+    icon = Color(255, 236, 255, 220),
+    volumeSlider = Color(255, 83, 255),
+    volumeKnob = Color(128, 0, 128),
+    statusIndicator = Color(0, 255, 255),
+    favoriteStar = Color(255, 210, 0),
+    messageBackground = Color(40, 20, 60, 230),
+    keyHighlight = Color(60, 30, 90)
+}, "strange"))
+
+safeAddTheme("arctic", ThemeFactory:createTheme("arctic", {
+    background = Color(235, 240, 245),
+    header = Color(220, 225, 235),
+    text = Color(45, 55, 72),
+    button = Color(210, 217, 230),
+    buttonHover = Color(190, 200, 220),
+    playing = Color(170, 180, 210),
+    close = Color(220, 225, 235),
+    closeHover = Color(190, 200, 220),
+    scrollbar = Color(210, 217, 230),
+    scrollbarGrip = Color(145, 160, 190),
+    search = Color(220, 225, 235),
+    accent = Color(100, 130, 180),
+    separator = Color(190, 200, 220),
+    icon = Color(45, 55, 72, 220),
+    volumeSlider = Color(100, 130, 180),
+    volumeKnob = Color(170, 180, 210),
+    statusIndicator = Color(80, 160, 190),
+    favoriteStar = Color(240, 180, 0),
+    messageBackground = Color(210, 217, 230, 230),
+    keyHighlight = Color(190, 200, 220)
+}, "other"))
+
+safeAddTheme("coffee", ThemeFactory:createTheme("coffee", {
+    background = Color(40, 30, 25),
+    header = Color(50, 38, 32),
+    text = Color(225, 210, 195),
+    button = Color(65, 48, 40),
+    buttonHover = Color(85, 62, 52),
+    playing = Color(95, 70, 58),
+    close = Color(50, 38, 32),
+    closeHover = Color(85, 62, 52),
+    scrollbar = Color(65, 48, 40),
+    scrollbarGrip = Color(120, 90, 75),
+    search = Color(50, 38, 32),
+    accent = Color(180, 140, 100),
+    separator = Color(85, 62, 52),
+    icon = Color(225, 210, 195, 220),
+    volumeSlider = Color(180, 140, 100),
+    volumeKnob = Color(95, 70, 58),
+    statusIndicator = Color(160, 120, 80),
+    favoriteStar = Color(230, 190, 140),
+    messageBackground = Color(65, 48, 40, 230),
+    keyHighlight = Color(85, 62, 52)
+}, "other"))
+
+safeAddTheme("matrix", ThemeFactory:createTheme("matrix", {
+    background = Color(0, 10, 0),
+    header = Color(0, 20, 0),
+    text = Color(0, 255, 0),
+    button = Color(0, 30, 0),
+    buttonHover = Color(0, 40, 0),
+    playing = Color(0, 50, 0),
+    close = Color(0, 20, 0),
+    closeHover = Color(0, 40, 0),
+    scrollbar = Color(0, 30, 0),
+    scrollbarGrip = Color(0, 180, 0),
+    search = Color(0, 20, 0),
+    accent = Color(0, 255, 0),
+    separator = Color(0, 40, 0),
+    icon = Color(0, 255, 0, 220),
+    volumeSlider = Color(0, 255, 0),
+    volumeKnob = Color(0, 50, 0),
+    statusIndicator = Color(0, 255, 0),
+    favoriteStar = Color(180, 255, 0),
+    messageBackground = Color(0, 30, 0, 230),
+    keyHighlight = Color(0, 40, 0)
+}, "strange"))
 
 CreateClientConVar("radio_theme", ThemeFactory:getDefaultTheme(), true, false, "Select the theme for the radio UI.")
 
