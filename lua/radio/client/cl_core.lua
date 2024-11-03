@@ -169,6 +169,26 @@ end
 -- ------------------------------
 
 --[[
+    Function: truncateStationName
+    Truncates a station name to a maximum length and adds ellipsis if needed.
+    This is for display purposes and data storage.
+
+    Parameters:
+    - name: The station name to truncate
+    - maxLength: (optional) Maximum length before truncation, defaults to 15
+
+    Returns:
+    - The truncated name with ellipsis if needed
+]]
+local function truncateStationName(name, maxLength)
+    maxLength = maxLength or 15
+    if string.len(name) <= maxLength then
+        return name
+    end
+    return string.sub(name, 1, maxLength) .. "..."
+end
+
+--[[
     Function: LoadStationData
     Loads station data from files asynchronously to prevent UI freezing.
     Uses chunked loading with progress tracking.
@@ -226,6 +246,7 @@ local function LoadStationData()
                         local station = stations[j]
                         table.insert(StationData[baseCountry], {
                             name = station.n,
+                            displayName = truncateStationName(station.n), -- Add truncated name
                             url = station.u
                         })
                     end
@@ -472,11 +493,9 @@ end
     Includes error handling, validation, and backup system.
 ]]
 local function saveFavorites()
-    -- Update StateManager state
     StateManager:SetState("favoriteCountries", favoriteCountries)
     StateManager:SetState("favoriteStations", favoriteStations)
-    
-    -- Save through StateManager
+
     return StateManager:SaveFavorites()
 end
 
@@ -622,10 +641,13 @@ local function playStation(entity, station, volume)
     local function startNewStream()
         if not IsValid(entity) then return end
 
-        -- Update server state
+        -- Truncate station name before sending to server
+        local displayName = utils.truncateStationName(station.name)
+
+        -- Update server state with truncated name
         net.Start("PlayCarRadioStation")
             net.WriteEntity(entity)
-            net.WriteString(station.name)
+            net.WriteString(displayName) -- Send truncated name
             net.WriteString(station.url)
             net.WriteFloat(volume)
         net.SendToServer()
@@ -1107,6 +1129,91 @@ local function createStarIcon(parent, country, station, updateList)
     return starIcon
 end
 
+--[[
+    Function: createTooltip
+    Creates a themed tooltip for a panel.
+    
+    Parameters:
+    - panel: The panel to attach the tooltip to
+    - text: The text to display in the tooltip
+]]
+local function createTooltip(panel, text)
+    local tooltip
+    
+    panel.OnCursorEntered = function(self)
+        if not IsValid(tooltip) and text and #text > 0 then
+            tooltip = vgui.Create("DPanel")
+            tooltip:SetDrawOnTop(true)
+            
+            -- Calculate text size
+            surface.SetFont("Roboto18")
+            local textWidth, textHeight = surface.GetTextSize(text)
+            
+            -- Add padding
+            local padding = Scale(10)
+            tooltip:SetSize(textWidth + padding * 2, textHeight + padding * 2)
+            
+            -- Position tooltip below cursor
+            local x, y = gui.MousePos()
+            tooltip:SetPos(x + Scale(10), y + Scale(10))
+            
+            -- Ensure tooltip stays on screen
+            local screenW, screenH = ScrW(), ScrH()
+            if x + tooltip:GetWide() + Scale(10) > screenW then
+                tooltip:SetPos(screenW - tooltip:GetWide() - Scale(10), y + Scale(10))
+            end
+            if y + tooltip:GetTall() + Scale(10) > screenH then
+                tooltip:SetPos(tooltip:GetX(), y - tooltip:GetTall() - Scale(10))
+            end
+            
+            tooltip.Paint = function(self, w, h)
+                -- Background with subtle shadow
+                for i = 1, 5 do
+                    local alpha = math.max(0, 20 - i * 4)
+                    surface.SetDrawColor(0, 0, 0, alpha)
+                    draw.RoundedBox(8, -i, i, w + i*2, h, Color(0, 0, 0, alpha))
+                end
+                
+                -- Main background
+                draw.RoundedBox(8, 0, 0, w, h, Config.UI.MessageBackgroundColor)
+                
+                -- Text
+                draw.SimpleText(
+                    text,
+                    "Roboto18",
+                    padding,
+                    h/2,
+                    Config.UI.TextColor,
+                    TEXT_ALIGN_LEFT,
+                    TEXT_ALIGN_CENTER
+                )
+            end
+            
+            -- Remove tooltip when panel is removed
+            panel.OnRemove = function()
+                if IsValid(tooltip) then
+                    tooltip:Remove()
+                end
+            end
+        end
+    end
+    
+    panel.OnCursorExited = function(self)
+        if IsValid(tooltip) then
+            tooltip:Remove()
+            tooltip = nil
+        end
+    end
+    
+    -- Ensure cleanup
+    panel.Think = function(self)
+        if IsValid(tooltip) and not self:IsHovered() then
+            tooltip:Remove()
+            tooltip = nil
+        end
+    end
+end
+
 -- ------------------------------
 --      UI Population
 -- ------------------------------
@@ -1309,9 +1416,12 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
         local favoritesList = StateManager:GetFavoritesList(lang, filterText)
 
         for _, favorite in ipairs(favoritesList) do
+            local displayName = favorite.countryName .. " - " .. utils.truncateStationName(favorite.station.name)
+            local fullName = favorite.countryName .. " - " .. favorite.station.name
+            
             local stationButton = createStyledButton(
                 stationListPanel,
-                favorite.countryName .. " - " .. favorite.station.name,
+                displayName,
                 function(button)
                     local currentTime = CurTime()
                     -- Get last station time with a default value of 0
@@ -1342,6 +1452,11 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                 end
             )
 
+            -- Add tooltip if name is truncated
+            if displayName ~= fullName then
+                createTooltip(stationButton, fullName)
+            end
+
             createStarIcon(stationButton, favorite.country, favorite.station, updateList)
         end
     else
@@ -1368,9 +1483,10 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
         -- Create station buttons
         for _, stationData in ipairs(stationsList) do
             local station = stationData.station
+            local displayName = utils.truncateStationName(station.name)
             local stationButton = createStyledButton(
                 stationListPanel,
-                station.name,
+                displayName,
                 function(button)
                     local currentTime = CurTime()
                     -- Get last station time with a default value of 0
@@ -1400,6 +1516,11 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                     updateList()
                 end
             )
+
+            -- Add tooltip if name is truncated
+            if displayName ~= station.name then
+                createTooltip(stationButton, station.name)
+            end
 
             stationButton.Paint = function(self, w, h)
                 local entity = LocalPlayer().currentRadioEntity
@@ -2683,6 +2804,7 @@ end)
 net.Receive("UpdateRadioStatus", function()
     local entity = net.ReadEntity()
     local stationName = net.ReadString()
+    local displayName = truncateStationName(stationName)
     local isPlaying = net.ReadBool()
     local status = net.ReadString()
 
@@ -2692,6 +2814,7 @@ net.Receive("UpdateRadioStatus", function()
     local statusData = {
         stationStatus = status,
         stationName = stationName,
+        displayName = displayName,
         isPlaying = isPlaying
     }
 

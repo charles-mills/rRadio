@@ -287,4 +287,24 @@ function utils.playErrorSound(type)
     end
 end
 
+--[[
+    Function: truncateStationName
+    Truncates a station name to a maximum length and adds ellipsis if needed.
+    This is for display purposes only and doesn't modify the actual station data.
+
+    Parameters:
+    - name: The station name to truncate
+    - maxLength: (optional) Maximum length before truncation, defaults to 15
+
+    Returns:
+    - The truncated name with ellipsis if needed
+]]
+function utils.truncateStationName(name, maxLength)
+    maxLength = maxLength or Config.MaxStationNameLength
+    if string.len(name) <= maxLength then
+        return name
+    end
+    return string.sub(name, 1, maxLength) .. "..."
+end
+
 return utils

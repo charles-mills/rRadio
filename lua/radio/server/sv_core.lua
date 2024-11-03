@@ -381,30 +381,33 @@ local function StartNewStream(entity, stationName, stationURL, volume)
         "\nVolume:", volume,
         "\nIsPermanent:", entity:GetNWBool("IsPermanent"))
 
-    AddActiveRadio(entity, stationName, stationURL, volume)
+    -- Truncate station name for display
+    local displayName = utils.truncateStationName(stationName)
+
+    AddActiveRadio(entity, displayName, stationURL, volume)
     DebugPrint("Added to ActiveRadios:",
         "\nEntity:", entity,
-        "\nStation:", stationName,
+        "\nStation:", displayName,
         "\nURL:", stationURL)
     
-    -- Broadcast to clients
+    -- Broadcast to clients with truncated name
     net.Start("PlayCarRadioStation")
         net.WriteEntity(entity)
-        net.WriteString(stationName)
+        net.WriteString(displayName)
         net.WriteString(stationURL)
         net.WriteFloat(volume)
     net.Broadcast()
     
     DebugPrint("Broadcasted PlayCarRadioStation to clients")
     
-    -- Handle boombox specific logic
+    -- Handle boombox specific logic with truncated name
     if utils.IsBoombox(entity) then
-        utils.setRadioStatus(entity, "tuning", stationName)
+        utils.setRadioStatus(entity, "tuning", displayName)
         
         TimerManager:create("StationUpdate_" .. entIndex, STATION_TUNING_DELAY, 1, function()
             if IsValid(entity) then
-                utils.setRadioStatus(entity, "playing", stationName)
-                DebugPrint("Updated boombox status to playing", entity, stationName)
+                utils.setRadioStatus(entity, "playing", displayName)
+                DebugPrint("Updated boombox status to playing", entity, displayName)
                 
                 -- Update database if this is a permanent boombox
                 if entity:GetNWBool("IsPermanent") and SavePermanentBoombox then
