@@ -17,6 +17,7 @@ local themeModule = include("radio/client/cl_themes.lua")
 local keyCodeMapping = include("radio/client/cl_key_names.lua")
 local utils = include("radio/shared/sh_utils.lua")
 local Misc = include("radio/client/cl_misc.lua")
+local Settings = include("radio/client/cl_settings.lua")
 
 if not StateManager then
     error("[rRadio] Failed to load StateManager")
@@ -285,7 +286,6 @@ local function updateStationCount()
     return count
 end
 
--- Update the StreamManager definition
 local StreamManager = {
     activeStreams = {},
     cleanupQueue = {},
@@ -1679,12 +1679,11 @@ local function openSettingsMenu(parentFrame, backButton)
     
     addDropdown(Config.Lang["SelectTheme"] or "Select Theme", themeChoices, currentThemeName, function(_, _, value)
         local lowerValue = value:lower()
-        if themeModule.themes and themeModule.themes[lowerValue] then
-            RunConsoleCommand("radio_theme", lowerValue)
-            Config.UI = themeModule.themes[lowerValue]
-            
-            StateManager:SetState("currentTheme", lowerValue)
-            StateManager:Emit(StateManager.Events.THEME_CHANGED, lowerValue)
+        if themeModule.themes[lowerValue] then
+            RunConsoleCommand("radio_theme", lowerValue) // Set convar first
+            timer.Simple(0, function() // Wait for convar to update
+                Settings.applyTheme(lowerValue)  // Use Settings.applyTheme instead of just applyTheme
+            end)
             
             -- Safely close and reopen the menu
             if IsValid(parentFrame) then

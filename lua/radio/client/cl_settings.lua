@@ -20,7 +20,15 @@ CreateClientConVar("car_radio_open_key", "21", true, false, "Select the key to o
 local function applyTheme(themeName)
     if themeModule.themes[themeName] and themeModule.factory:validateTheme(themeModule.themes[themeName]) then
         Config.UI = themeModule.themes[themeName]
+        
+        -- Debug print
+        print("[Radio] Applying theme:", themeName)
+        
+        -- Fire theme change hook
         hook.Run("ThemeChanged", themeName)
+        
+        -- Notify all clients
+        hook.Run("RadioThemeChanged", themeName)
     else
         print("[rRadio] Invalid theme name:", themeName)
         -- Fallback to default theme
@@ -125,8 +133,10 @@ hook.Add("PopulateToolMenu", "AddThemeAndVolumeSelectionMenu", function()
         themeDropdown.OnSelect = function(panel, index, value)
             local lowerValue = value:lower()
             if themeModule.themes[lowerValue] then
-                applyTheme(lowerValue)
                 RunConsoleCommand("radio_theme", lowerValue)
+                timer.Simple(0, function()
+                    applyTheme(lowerValue)
+                end)
             end
         end
 
@@ -222,3 +232,9 @@ hook.Add("PopulateToolMenu", "AddThemeAndVolumeSelectionMenu", function()
         panel:AddItem(showTextCheckbox)
     end)
 end)
+
+return {
+    applyTheme = applyTheme,
+    applyLanguage = applyLanguage,
+    loadSavedSettings = loadSavedSettings
+}

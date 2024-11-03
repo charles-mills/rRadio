@@ -1,5 +1,7 @@
 include("shared.lua")
 include("radio/shared/sh_config.lua")
+local Themes = include("radio/client/cl_themes.lua")
+
 local HUD = {
     FADE_DISTANCE = {
         START = 400,
@@ -28,6 +30,37 @@ local HUD = {
         INACTIVE = Color(180, 180, 180)
     }
 }
+
+local function UpdateHUDColors()
+    local themeName = GetConVar("radio_theme"):GetString()
+    local currentTheme = Themes.themes[themeName]
+    
+    if not currentTheme then 
+        print("[Boombox] Warning: Theme not found:", themeName)
+        currentTheme = Themes.themes[Themes.factory:getDefaultTheme()]
+    end
+    
+    if not currentTheme then
+        print("[Boombox] Error: Could not load default theme")
+        return
+    end
+    
+    print("[Boombox] Updating HUD colors with theme:", themeName)
+    
+    HUD.COLORS = {
+        BACKGROUND = currentTheme.BackgroundColor,
+        ACCENT = currentTheme.AccentColor,
+        TEXT = currentTheme.TextColor,
+        INACTIVE = currentTheme.ScrollbarColor
+    }
+end
+
+hook.Add("ThemeChanged", "UpdateBoomboxHUDColors", function(themeName)
+    print("[Boombox] Theme changed to:", themeName)
+    timer.Simple(0, UpdateHUDColors)
+end)
+
+timer.Simple(0, UpdateHUDColors)
 
 surface.CreateFont("BoomboxHUD", {
     font = "Roboto",
