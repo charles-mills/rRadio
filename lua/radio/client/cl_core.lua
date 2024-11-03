@@ -1484,14 +1484,112 @@ local function openSettingsMenu(parentFrame, backButton)
         local dropdown = vgui.Create("DComboBox", container)
         dropdown:Dock(RIGHT)
         dropdown:SetWide(Scale(150))
-        dropdown:DockMargin(0, Scale(5), Scale(10), Scale(5))
+        dropdown:DockMargin(0, Scale(10), Scale(10), Scale(10))
         dropdown:SetValue(currentValue)
         dropdown:SetTextColor(Config.UI.TextColor)
         dropdown:SetFont("Roboto18")
-
+        
+        -- Style the dropdown
         dropdown.Paint = function(self, w, h)
+            -- Main background
             draw.RoundedBox(6, 0, 0, w, h, Config.UI.SearchBoxColor)
-            self:DrawTextEntryText(Config.UI.TextColor, Config.UI.ButtonHoverColor, Config.UI.TextColor)
+            
+            -- Draw arrow indicator
+            surface.SetDrawColor(Config.UI.TextColor)
+            local arrowSize = Scale(8)
+            local margin = Scale(8)
+            local x = w - arrowSize - margin
+            local y = h/2 - arrowSize/2
+            
+            surface.DrawLine(x, y, x + arrowSize/2, y + arrowSize)
+            surface.DrawLine(x + arrowSize/2, y + arrowSize, x + arrowSize, y)
+        end
+        
+        -- Style the dropdown choices
+        dropdown.OpenMenu = function(self, pControlOpener)
+            if IsValid(self.Menu) then
+                self.Menu:Remove()
+                self.Menu = nil
+            end
+
+            local menu = DermaMenu()
+            menu:SetMinimumWidth(self:GetWide())
+            
+            -- Create scroll panel for menu content
+            local scrollPanel = vgui.Create("DScrollPanel", menu)
+            scrollPanel:Dock(FILL)
+            local maxHeight = Scale(300)
+            
+            -- Style scrollbar
+            local sbar = scrollPanel:GetVBar()
+            sbar:SetWide(Scale(8))
+            sbar:SetHideButtons(true)
+            function sbar:Paint(w, h) 
+                draw.RoundedBox(4, 0, 0, w, h, Config.UI.ScrollbarColor) 
+            end
+            function sbar.btnGrip:Paint(w, h) 
+                draw.RoundedBox(4, 0, 0, w, h, Config.UI.ScrollbarGripColor) 
+            end
+            
+            -- Style menu
+            menu.Paint = function(_, w, h)
+                draw.RoundedBox(6, 0, 0, w, h, Config.UI.SearchBoxColor)
+                surface.SetDrawColor(Config.UI.ButtonColor)
+                surface.DrawRect(0, 0, w, 1)
+            end
+
+            -- Add choices with styling
+            local totalHeight = 0
+            local optionHeight = Scale(30)
+            
+            for _, choice in ipairs(choices) do
+                local panel = vgui.Create("DPanel", scrollPanel)
+                panel:SetTall(optionHeight)
+                panel:Dock(TOP)
+                panel.Paint = function(_, w, h)
+                    if panel:IsHovered() then
+                        draw.RoundedBox(0, 0, 0, w, h, Config.UI.ButtonHoverColor)
+                    end
+                end
+                
+                local button = vgui.Create("DButton", panel)
+                button:Dock(FILL)
+                button:SetText(choice.name)
+                button:SetTextColor(Config.UI.TextColor)
+                button:SetFont("Roboto18")
+                button.Paint = function() end -- No background
+                
+                -- Store the choice data
+                button.choiceData = choice.data
+                
+                button.DoClick = function()
+                    self:SetValue(choice.name)
+                    if onSelect then
+                        onSelect(self, choice.name, button.choiceData)
+                    end
+                    menu:Remove()
+                end
+                
+                totalHeight = totalHeight + optionHeight
+            end
+
+            -- Set menu size
+            local menuHeight = math.min(totalHeight + Scale(2), maxHeight)
+            menu:SetTall(menuHeight)
+            scrollPanel:SetTall(menuHeight)
+
+            -- Position the menu
+            local x, y = self:LocalToScreen(0, self:GetTall())
+            
+            -- Ensure menu doesn't go off screen
+            local screenH = ScrH()
+            if y + menuHeight > screenH then
+                y = y - menuHeight - self:GetTall() -- Show above instead
+            end
+            
+            menu:SetPos(x, y)
+            menu:MakePopup()
+            self.Menu = menu
         end
 
         for _, choice in ipairs(choices) do
@@ -1532,7 +1630,6 @@ local function openSettingsMenu(parentFrame, backButton)
         label:SizeToContents()
         label:SetPos(Scale(40), (container:GetTall() - label:GetTall()) / 2)
 
-        -- Add state management and validation
         checkbox.OnChange = function(self, value)
             if not ConVarExists(convar) then
                 print("[rRadio] Warning: ConVar " .. convar .. " does not exist")
@@ -1616,16 +1713,12 @@ local function openSettingsMenu(parentFrame, backButton)
     addDropdown(Config.Lang["SelectLanguage"] or "Select Language", languageChoices, currentLanguageName, function(_, _, name, data)
         if not data then return end
         
-        -- Simple validation by checking if the language exists in available languages
-        if not availableLanguages[data] then
-            print("[rRadio] Warning: Invalid language selected:", data)
-            return
-        end
-
+        -- Update convar and language
         RunConsoleCommand("radio_language", data)
         LanguageManager:SetLanguage(data)
         Config.Lang = LanguageManager.translations[data]
         
+        -- Update state
         StateManager:SetState("currentLanguage", data)
         StateManager:Emit(StateManager.Events.LANGUAGE_CHANGED, data)
 
@@ -1636,7 +1729,7 @@ local function openSettingsMenu(parentFrame, backButton)
         stationDataLoaded = false
         LoadStationData()
 
-        -- Safely close and reopen the menu
+        -- Close and reopen menu
         if IsValid(currentFrame) then
             currentFrame:Close()
             timer.Simple(0.1, function()
@@ -1645,29 +1738,80 @@ local function openSettingsMenu(parentFrame, backButton)
                     StateManager:SetState("selectedCountry", nil)
                     StateManager:SetState("settingsMenuOpen", false)
                     StateManager:SetState("favoritesMenuOpen", false)
-                    
                     openRadioMenu(true)
                 end
             end)
         end
     end)
 
+    -- Key Selection
     addHeader(Config.Lang["SelectKeyToOpenRadioMenu"] or "Select Key to Open Radio Menu")
     local keyChoices = {}
-    if keyCodeMapping then
-        for keyCode, keyName in pairs(keyCodeMapping) do
-            table.insert(keyChoices, {name = keyName, data = keyCode})
+
+    -- Sort keys into categories
+    local letterKeys = {}
+    local numberKeys = {}
+    local functionKeys = {}
+    local otherKeys = {}
+
+    for keyCode, keyName in pairs(keyCodeMapping) do
+        if type(keyName) == "string" then
+            local entry = {code = keyCode, name = keyName}
+            
+            if keyName:match("^%a$") then -- Single letter
+                table.insert(letterKeys, entry)
+            elseif keyName:match("^%d$") then -- Single number
+                table.insert(numberKeys, entry)
+            elseif keyName:match("^F%d+$") then -- Function keys
+                table.insert(functionKeys, entry)
+            else
+                table.insert(otherKeys, entry)
+            end
         end
-        table.sort(keyChoices, function(a, b) return a.name < b.name end)
-    else
-        table.insert(keyChoices, {name = "K", data = KEY_K})
+    end
+
+    -- Sort each category
+    table.sort(letterKeys, function(a, b) return a.name < b.name end)
+    table.sort(numberKeys, function(a, b) return tonumber(a.name) < tonumber(b.name) end)
+    table.sort(functionKeys, function(a, b) 
+        return tonumber(a.name:match("%d+")) < tonumber(b.name:match("%d+"))
+    end)
+    table.sort(otherKeys, function(a, b) return a.name < b.name end)
+
+    -- Combine all categories in desired order
+    local sortedKeys = {}
+    for _, key in ipairs(letterKeys) do table.insert(sortedKeys, key) end
+    for _, key in ipairs(numberKeys) do table.insert(sortedKeys, key) end
+    for _, key in ipairs(functionKeys) do table.insert(sortedKeys, key) end
+    for _, key in ipairs(otherKeys) do table.insert(sortedKeys, key) end
+
+    -- Convert to choices format
+    for _, key in ipairs(sortedKeys) do
+        table.insert(keyChoices, {
+            name = key.name,
+            data = key.code -- Use the actual key code directly
+        })
     end
 
     local currentKey = GetConVar("car_radio_open_key"):GetInt()
-    local currentKeyName = (keyCodeMapping and keyCodeMapping[currentKey]) or "K"
+    local currentKeyName = keyCodeMapping[currentKey] or "K"
 
-    addDropdown(Config.Lang["SelectKey"] or "Select Key", keyChoices, currentKeyName, function(_, _, _, data)
+    addDropdown(Config.Lang["SelectKey"] or "Select Key", keyChoices, currentKeyName, function(_, _, name, data)
+        -- data is now the actual key code
+        if not data then return end
+        
+        -- Update convar with the key code
         RunConsoleCommand("car_radio_open_key", data)
+        
+        -- Update state
+        StateManager:SetState("lastKeyPress", 0)
+        StateManager:Emit(StateManager.Events.KEY_CHANGED, {
+            key = data,
+            keyName = name
+        })
+        
+        -- Play feedback sound
+        surface.PlaySound("buttons/button15.wav")
     end)
 
     addHeader(Config.Lang["GeneralOptions"] or "General Options")
