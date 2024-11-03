@@ -23,7 +23,6 @@ end
 StateManager:Initialize()
 
 local function getSafeState(key, default)
-    -- We can simplify this since StateManager is already checked in Initialize
     if not StateManager or not StateManager.initialized then
         return default
     end
@@ -32,7 +31,6 @@ local function getSafeState(key, default)
 end
 
 local function setSafeState(key, value)
-    -- Similarly simplify this
     if not StateManager or not StateManager.initialized then
         return
     end
@@ -73,7 +71,6 @@ local MaterialCache = {
     },
     
     Get = function(self, path)
-        -- No need to check cache first since Material() caches internally
         self.cache[path] = self.cache[path] or Material(path, "smooth")
         return self.cache[path]
     end,
@@ -909,59 +906,63 @@ local function updateRadioVolume(station, distanceSqr, isPlayerInCar, entity)
     end
 end
 
---[[
-    Function: PrintCarRadioMessage
-    Displays an animated notification about how to open the car radio.
-]]
-local function PrintCarRadioMessage()
-    -- Clean up any existing timer
+-- Add these helper functions near the top with other local functions
+local function cleanupMessage()
     if messageCleanupTimer then
         timer.Remove(messageCleanupTimer)
         messageCleanupTimer = nil
     end
-
-    if not GetConVar("car_radio_show_messages"):GetBool() then return end
     
-    -- Force cleanup any existing message
     if IsValid(messagePanel) then
         messagePanel:Remove()
-        messagePanel = nil
     end
+    messagePanel = nil
+    isMessageAnimating = false
+end
+
+local function createMessageAnimation(panel, startPos, endPos, duration, onComplete)
+    return Misc.Animations:CreateTween(
+        duration,
+        startPos,
+        endPos,
+        function(value)
+            return IsValid(panel) and panel:SetPos(value, panel:GetY())
+        end,
+        onComplete,
+        nil,
+        panel
+    )
+end
+
+-- Update the PrintCarRadioMessage function
+local function PrintCarRadioMessage()
+    cleanupMessage()
     
-    -- Reset animation state
-    if isMessageAnimating then
-        isMessageAnimating = false
+    if not GetConVar("car_radio_show_messages"):GetBool() then
+        DebugPrint("Messages disabled in ConVar")
+        return
     end
     
     local currentTime = CurTime()
-    local cooldownTime = Config.MessageCooldown()
-
-    if currentTime - (lastMessageTime or 0) < cooldownTime then return end
+    if currentTime - (lastMessageTime or 0) < Config.MessageCooldown() then
+        DebugPrint("Message skipped - cooldown active")
+        return
+    end
 
     lastMessageTime = currentTime
     isMessageAnimating = true
 
     local openKey = GetConVar("car_radio_open_key"):GetInt()
     local keyName = Misc.KeyNames:GetKeyName(openKey)
-
     local scrW, scrH = ScrW(), ScrH()
     local panelWidth = Scale(300)
     local panelHeight = Scale(70)
+
     local panel = vgui.Create("DButton")
     messagePanel = panel
     
-    -- Create unique timer name
-    messageCleanupTimer = "MessageCleanup_" .. tostring(panel) .. "_" .. tostring(CurTime())
-    
-    -- Add emergency cleanup timer
-    timer.Create(messageCleanupTimer, 5, 1, function()
-        if IsValid(panel) then
-            panel:Remove()
-        end
-        isMessageAnimating = false
-        messagePanel = nil
-        messageCleanupTimer = nil
-    end)
+    messageCleanupTimer = "MessageCleanup_" .. tostring(CurTime())
+    timer.Create(messageCleanupTimer, 5, 1, cleanupMessage)
 
     panel:SetSize(panelWidth, panelHeight)
     panel:SetPos(scrW, scrH * 0.2)
@@ -970,89 +971,77 @@ local function PrintCarRadioMessage()
     panel:MoveToFront()
 
     local textLabel = vgui.Create("DLabel", panel)
-    textLabel:SetText("Play Radio")
+    textLabel:SetText(Config.Lang["OpenRadio"] or "Open Radio")
     textLabel:SetFont("Roboto18")
     textLabel:SetTextColor(Config.UI.TextColor)
     textLabel:SizeToContents()
     textLabel:SetPos(Scale(70), panelHeight/2 - textLabel:GetTall()/2)
+
+    -- Optimize animations
+    createMessageAnimation(panel, scrW, scrW - panelWidth, 0.5)
     
-    -- Store panel reference
-    local panelRef = panel
-    
-    -- Slide in animation
-    Misc.Animations:CreateTween(0.5, scrW, scrW - panelWidth, function(value)
-        if IsValid(panelRef) then
-            panelRef:SetPos(value, scrH * 0.2)
-        end
-    end)
-    
-    -- Fade in animation
     Misc.Animations:CreateTween(0.3, 0, 255, function(value)
-        if IsValid(panelRef) then
-            panelRef:SetAlpha(value)
-        end
-    end)
+        return IsValid(panel) and panel:SetAlpha(value)
+    end, nil, nil, panel)
     
-    -- Auto hide after delay
     timer.Simple(3, function()
-        if IsValid(panelRef) then
-            -- Slide out animation
-            Misc.Animations:CreateTween(0.5, panelRef:GetX(), scrW, function(value)
-                if IsValid(panelRef) then
-                    panelRef:SetPos(value, scrH * 0.2)
-                end
-            end)
-            
-            -- Fade out animation
-            Misc.Animations:CreateTween(0.3, 255, 0, function(value)
-                if IsValid(panelRef) then
-                    panelRef:SetAlpha(value)
-                end
-            end, function()
-                if IsValid(panelRef) then
-                    panelRef:Remove()
-                end
-                isMessageAnimating = false
-            end)
+        if not IsValid(panel) then return end
+        
+        if messageCleanupTimer then
+            timer.Remove(messageCleanupTimer)
+            messageCleanupTimer = nil
         end
+        
+        createMessageAnimation(panel, panel:GetX(), scrW, 0.5)
+        
+        Misc.Animations:CreateTween(0.3, 255, 0, 
+            function(value) return IsValid(panel) and panel:SetAlpha(value) end,
+            cleanupMessage,
+            nil,
+            panel
+        )
     end)
 
-    panel.DoClick = function()
-        surface.PlaySound("buttons/button15.wav")
-        openRadioMenu()
-        isMessageAnimating = false
-        if IsValid(panel) then
-            panel:Remove()
-        end
-    end
-
+    -- Optimize paint function
+    local nextPulseUpdate = 0
+    local currentPulse = 1
+    
     panel.Paint = function(self, w, h)
+        if CurTime() > nextPulseUpdate then
+            currentPulse = 1 + math.sin(CurTime() * math.pi * 2) * 0.05
+            nextPulseUpdate = CurTime() + 0.016
+        end
+
         local bgColor = Config.UI.MessageBackgroundColor
-        local hoverBrightness = self:IsHovered() and 1.2 or 1
-        bgColor = Color(
-            math.min(bgColor.r * hoverBrightness, 255),
-            math.min(bgColor.g * hoverBrightness, 255),
-            math.min(bgColor.b * hoverBrightness, 255),
-            bgColor.a or 255
-        )
-        
+        if self:IsHovered() then
+            bgColor = Color(
+                math.min(bgColor.r * 1.2, 255),
+                math.min(bgColor.g * 1.2, 255),
+                math.min(bgColor.b * 1.2, 255),
+                bgColor.a or 255
+            )
+        end
         draw.RoundedBoxEx(12, 0, 0, w, h, bgColor, true, false, true, false)
 
         local keyWidth = Scale(40)
         local keyHeight = Scale(30)
         local keyX = Scale(20)
         local keyY = h/2 - keyHeight/2
-        local pulseScale = 1 + math.sin(CurTime() * math.pi * 2) * 0.05
-        local adjustedKeyWidth = keyWidth * pulseScale
-        local adjustedKeyHeight = keyHeight * pulseScale
-        local adjustedKeyX = keyX - (adjustedKeyWidth - keyWidth) / 2
-        local adjustedKeyY = keyY - (adjustedKeyHeight - keyHeight) / 2
         
-        draw.RoundedBox(6, adjustedKeyX, adjustedKeyY, adjustedKeyWidth, adjustedKeyHeight, 
+        local adjustedWidth = keyWidth * currentPulse
+        local adjustedHeight = keyHeight * currentPulse
+        local adjustedX = keyX - (adjustedWidth - keyWidth) / 2
+        local adjustedY = keyY - (adjustedHeight - keyHeight) / 2
+        
+        draw.RoundedBox(6, adjustedX, adjustedY, adjustedWidth, adjustedHeight, 
             Config.UI.KeyHighlightColor)
 
-        draw.SimpleText(keyName, "Roboto18", adjustedKeyX + adjustedKeyWidth/2, adjustedKeyY + adjustedKeyHeight/2, 
-            Config.UI.TextColor, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+        draw.SimpleText(keyName, "Roboto18", 
+            adjustedX + adjustedWidth/2, 
+            adjustedY + adjustedHeight/2, 
+            Config.UI.TextColor, 
+            TEXT_ALIGN_CENTER, 
+            TEXT_ALIGN_CENTER)
 
         surface.SetDrawColor(ColorAlpha(Config.UI.TextColor, 40))
         surface.DrawLine(
@@ -1063,30 +1052,14 @@ local function PrintCarRadioMessage()
         )
     end
 
-    panel.OnRemove = function()
-        isMessageAnimating = false
-        if messagePanel == panel then
-            messagePanel = nil
-        end
-        if messageCleanupTimer then
-            timer.Remove(messageCleanupTimer)
-            messageCleanupTimer = nil
-        end
+    panel.DoClick = function()
+        surface.PlaySound("buttons/button15.wav")
+        openRadioMenu()
+        cleanupMessage()
     end
-end
 
--- Add cleanup hook
-hook.Add("ShutDown", "CleanupRadioMessage", function()
-    if IsValid(messagePanel) then
-        messagePanel:Remove()
-    end
-    if messageCleanupTimer then
-        timer.Remove(messageCleanupTimer)
-        messageCleanupTimer = nil
-    end
-    isMessageAnimating = false
-    messagePanel = nil
-end)
+    panel.OnRemove = cleanupMessage
+end
 
 -- ------------------------------
 --      UI Helper Functions
@@ -2610,7 +2583,6 @@ local function openUnauthorizedUI(entity)
         end
     end
 
-    -- Close and settings buttons
     local buttonSize = Scale(25)
     local topMargin = Scale(7)
     local buttonPadding = Scale(5)
@@ -3349,11 +3321,19 @@ end)
 
 -- Add this net receiver near the other net message handlers
 net.Receive("CarRadioMessage", function()
-    DebugPrint("Client: Received CarRadioMessage")
+    local vehicle = net.ReadEntity()
+    local isValid = net.ReadBool()
     
-    if GetConVar("car_radio_show_messages"):GetBool() then
-        PrintCarRadioMessage()
+    DebugPrint("Received CarRadioMessage:",
+        "\nVehicle:", IsValid(vehicle) and vehicle:GetClass() or "invalid",
+        "\nValidation Flag:", isValid)
+    
+    if not isValid then
+        DebugPrint("Message rejected - invalid validation flag")
+        return
     end
+    
+    PrintCarRadioMessage()
 end)
 
 net.Receive("RadioConfigUpdate", function()
