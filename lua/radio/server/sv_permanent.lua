@@ -330,14 +330,14 @@ local function LoadPermanentBoomboxes(isReload)
             DebugPrint("Broadcasted radio status update")
             
             -- Start playback on clients
-            net.Start("PlayCarRadioStation")
+            net.Start("QueueStream")
                 net.WriteEntity(ent)
                 net.WriteString(row.station_name)
                 net.WriteString(row.station_url)
                 net.WriteFloat(row.volume)
             net.Broadcast()
             
-            DebugPrint("Broadcasted PlayCarRadioStation")
+            DebugPrint("Broadcasted QueueStream")
 
             if AddActiveRadio then
                 AddActiveRadio(ent, row.station_name, row.station_url, row.volume)

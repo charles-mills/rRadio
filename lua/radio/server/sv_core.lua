@@ -10,10 +10,10 @@
 ]]--
 
 local networkStrings = {
-    "PlayCarRadioStation",
-    "StopCarRadioStation",
+    "QueueStream",
+    "StopStream",
     "OpenRadioMenu",
-    "CarRadioMessage",
+    "PlayCarEnterAnimation",
     "UpdateRadioStatus",
     "UpdateRadioVolume",
     "MakeBoomboxPermanent",
@@ -392,14 +392,14 @@ local function StartNewStream(entity, stationName, stationURL, volume)
         "\nURL:", stationURL)
     
     -- Broadcast to clients with truncated name
-    net.Start("PlayCarRadioStation")
+    net.Start("QueueStream")
         net.WriteEntity(entity)
         net.WriteString(displayName)
         net.WriteString(stationURL)
         net.WriteFloat(volume)
     net.Broadcast()
     
-    DebugPrint("Broadcasted PlayCarRadioStation to clients")
+    DebugPrint("Broadcasted QueueStream to clients")
     
     -- Handle boombox specific logic with truncated name
     if utils.IsBoombox(entity) then
@@ -626,7 +626,7 @@ local function SendActiveRadiosToPlayer(ply)
     for entIndex, radio in pairs(ActiveRadios) do
         local entity = Entity(entIndex)
         if IsValid(entity) then
-            net.Start("PlayCarRadioStation")
+            net.Start("QueueStream")
                 net.WriteEntity(entity)
                 net.WriteString(radio.stationName)
                 net.WriteString(radio.url)
@@ -719,10 +719,10 @@ local function GetEntityOwner(entity)
 end
 
 --[[
-    Network Receiver: PlayCarRadioStation
+    Network Receiver: QueueStream
     Handles playing a radio station for vehicles, LVS vehicles, and boomboxes.
 ]]
-net.Receive("PlayCarRadioStation", function(len, ply)
+net.Receive("QueueStream", function(len, ply)
     local currentTime = CurTime()
     if currentTime - (PlayerCooldowns[ply] or 0) < GLOBAL_COOLDOWN then
         return
@@ -756,7 +756,7 @@ net.Receive("PlayCarRadioStation", function(len, ply)
         
         -- Stop any existing playback
         if ActiveRadios[entIndex] then
-            net.Start("StopCarRadioStation")
+            net.Start("StopStream")
                 net.WriteEntity(actualEntity)
             net.Broadcast()
 
@@ -772,10 +772,10 @@ end)
 
 
 --[[
-    Network Receiver: StopCarRadioStation
+    Network Receiver: StopStream
     Handles stopping a radio station for vehicles, LVS vehicles, and boomboxes.
 ]]
-net.Receive("StopCarRadioStation", function(len, ply)
+net.Receive("StopStream", function(len, ply)
     local entity = net.ReadEntity()
     if not IsValid(entity) then return end
 
@@ -791,7 +791,7 @@ net.Receive("StopCarRadioStation", function(len, ply)
         utils.setRadioStatus(entity, "stopped")
         RemoveActiveRadio(entity)
 
-        net.Start("StopCarRadioStation")
+        net.Start("StopStream")
             net.WriteEntity(entity)
         net.Broadcast()
 
@@ -821,7 +821,7 @@ net.Receive("StopCarRadioStation", function(len, ply)
 
         RemoveActiveRadio(radioEntity)
 
-        net.Start("StopCarRadioStation")
+        net.Start("StopStream")
             net.WriteEntity(radioEntity)
         net.Broadcast()
 
@@ -839,7 +839,7 @@ net.Receive("RequestRadioMessage", function(len, ply)
 
     if not utils.canUseRadio(vehicle) then return end
 
-    net.Start("CarRadioMessage")
+    net.Start("PlayCarEnterAnimation")
         net.WriteEntity(vehicle)
         net.WriteBool(true)
     net.Send(ply)
@@ -1382,10 +1382,10 @@ hook.Add("PlayerEnteredVehicle", "RadioVehicleHandling", function(ply, vehicle)
     end
 
     -- Send message to client with validation data
-    net.Start("CarRadioMessage")
+    net.Start("PlayCarEnterAnimation")
         net.WriteEntity(actualVehicle)
         net.WriteBool(true) -- Validation flag
     net.Send(ply)
     
-    DebugPrint("Sent CarRadioMessage to client for player:", ply:Nick())
+    DebugPrint("Sent PlayCarEnterAnimation to client for player:", ply:Nick())
 end)

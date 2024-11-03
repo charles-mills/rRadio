@@ -94,7 +94,7 @@ end
 
 -- Function to stop the radio
 function ENT:StopRadio()
-    net.Start("StopCarRadioStation")
+    net.Start("StopStream")
         net.WriteEntity(self)
     net.Broadcast()
 end
