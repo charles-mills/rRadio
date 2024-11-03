@@ -16,7 +16,6 @@ local LanguageManager = include("radio/client/lang/cl_language_manager.lua")
 local themeModule = include("radio/client/cl_themes.lua")
 local utils = include("radio/shared/sh_utils.lua")
 local Misc = include("radio/client/cl_misc.lua")
-local Settings = include("radio/client/cl_settings.lua")
 
 if not StateManager then
     error("[rRadio] Failed to load StateManager")
@@ -2004,7 +2003,7 @@ local function openSettingsMenu(parentFrame, backButton)
         if themeModule.themes[lowerValue] then
             RunConsoleCommand("radio_theme", lowerValue)
             timer.Simple(0, function()
-                Settings.applyTheme(lowerValue)
+                Misc.Settings:ApplyTheme(lowerValue)
             end)
             
             -- Safely close and reopen the menu
@@ -2146,7 +2145,7 @@ local function openSettingsMenu(parentFrame, backButton)
                     if choice.data then
                         RunConsoleCommand("radio_theme", choice.data)
                         timer.Simple(0, function()
-                            Settings.applyTheme(choice.data)
+                            Misc.Settings:ApplyTheme(choice.data)
                         end)
                         
                         if IsValid(parentFrame) then
