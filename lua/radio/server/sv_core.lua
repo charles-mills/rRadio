@@ -1355,21 +1355,36 @@ end)
 hook.Add("PlayerEnteredVehicle", "RadioVehicleHandling", function(ply, vehicle)
     -- Get actual vehicle using utility function
     local actualVehicle = utils.GetVehicle(vehicle)
-    if not actualVehicle then return end
     
-    utils.DebugPrint("Server: Vehicle Entry Detected",
+    DebugPrint("PlayerEnteredVehicle triggered:",
         "\nPlayer:", ply:Nick(),
-        "\nVehicle:", vehicle,
-        "\nActual Vehicle:", actualVehicle,
-        "\nClass:", actualVehicle:GetClass())
-    
-    -- Don't show radio message for sit anywhere seats or vehicles that can't use radio
-    if utils.isSitAnywhereSeat(vehicle) or not utils.canUseRadio(actualVehicle) then
-        utils.DebugPrint("Server: Skipping message - seat type or radio capability check failed")
+        "\nVehicle Class:", vehicle:GetClass(),
+        "\nActual Vehicle:", actualVehicle and actualVehicle:GetClass() or "none",
+        "\nIs SitAnywhere:", utils.isSitAnywhereSeat(vehicle) and "yes" or "no",
+        "\nCan Use Radio:", actualVehicle and utils.canUseRadio(actualVehicle) and "yes" or "no",
+        "\nMessage Cooldown:", GetConVar("radio_message_cooldown"):GetFloat())
+
+    if not actualVehicle then
+        DebugPrint("No actual vehicle found - skipping message")
         return
     end
     
-    -- Send message to client
+    -- Don't show radio message for sit anywhere seats or vehicles that can't use radio
+    if utils.isSitAnywhereSeat(vehicle) then
+        DebugPrint("Skipping message - SitAnywhere seat detected")
+        return
+    end
+
+    if not utils.canUseRadio(actualVehicle) then
+        DebugPrint("Skipping message - Vehicle cannot use radio")
+        return
+    end
+
+    -- Send message to client with validation data
     net.Start("CarRadioMessage")
+        net.WriteEntity(actualVehicle)
+        net.WriteBool(true) -- Validation flag
     net.Send(ply)
+    
+    DebugPrint("Sent CarRadioMessage to client for player:", ply:Nick())
 end)
