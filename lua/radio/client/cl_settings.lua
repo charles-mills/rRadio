@@ -8,7 +8,6 @@
     Date: October 30, 2024
 ]]--
 
-local keyCodeMapping = include("radio/client/cl_key_names.lua")
 local themeModule = include("radio/client/cl_themes.lua")
 local languageManager = include("radio/client/lang/cl_language_manager.lua")
 
@@ -72,7 +71,7 @@ local function sortKeys()
     local numericKeys = {}
     local otherKeys = {}
 
-    for keyCode, keyName in pairs(keyCodeMapping) do
+    for keyCode, keyName in pairs(Misc.KeyNames) do
         if #keyName == 1 and keyName:match("%a") then
             table.insert(singleLetterKeys, {name = keyName, code = keyCode})
         elseif keyName:match("^%d$") then
@@ -193,8 +192,9 @@ hook.Add("PopulateToolMenu", "AddThemeAndVolumeSelectionMenu", function()
         end
 
         local currentKey = GetConVar("car_radio_open_key"):GetInt()
-        if keyCodeMapping[currentKey] then
-            keyDropdown:SetValue(keyCodeMapping[currentKey])
+        local currentKeyName = Misc.KeyNames:GetKeyName(currentKey)
+        if currentKeyName then
+            keyDropdown:SetValue(currentKeyName)
         end
 
         keyDropdown.OnSelect = function(panel, index, value, data)
