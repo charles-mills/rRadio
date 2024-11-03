@@ -3141,7 +3141,7 @@ hook.Add("Think", "OpenCarRadioMenu", function()
     
     -- Get current time and last press time with proper default
     local currentTime = CurTime()
-    local keyPressDelay = 0.2 -- Define delay constant
+    local keyPressDelay = 0.2
     local lastPress = getSafeState("lastKeyPress", 0)
 
     -- Check if key is pressed and enough time has passed
@@ -3164,17 +3164,34 @@ hook.Add("Think", "OpenCarRadioMenu", function()
         return
     end
 
-    -- Check vehicle state
+    -- Check if player is in a vehicle
     local vehicle = ply:GetVehicle()
-    if not IsValid(vehicle) then return end
+    if not IsValid(vehicle) then 
+        DebugPrint("No valid vehicle found")
+        return 
+    end
     
-    -- Validate that it's not a sit anywhere seat
-    if utils.isSitAnywhereSeat(vehicle) then
+    -- Check if it's a valid vehicle (not a Sit Anywhere seat)
+    if vehicle:GetClass() == "prop_vehicle_prisoner_pod" and not vehicle:GetParent():IsVehicle() then
+        DebugPrint("Invalid vehicle type (Sit Anywhere seat)")
         return
     end
 
-    -- Open menu if all checks pass
-    ply.currentRadioEntity = vehicle
+    -- Get the actual vehicle entity
+    local actualVehicle = vehicle
+    if vehicle:GetParent():IsVehicle() then
+        actualVehicle = vehicle:GetParent()
+    end
+
+    -- Validate that the vehicle can use radio
+    if not utils.canUseRadio(actualVehicle) then
+        DebugPrint("Vehicle cannot use radio")
+        return
+    end
+
+    -- Set current radio entity and open menu
+    ply.currentRadioEntity = actualVehicle
+    StateManager:SetState("currentRadioEntity", actualVehicle)
     openRadioMenu()
 end)
 

@@ -218,17 +218,19 @@ end
 function utils.canUseRadio(entity)
     if not IsValid(entity) then return false end
     
+    -- Check if it's a vehicle
+    if entity:IsVehicle() then
+        -- Add any specific vehicle checks here
+        -- For example, you might want to check if it's a specific type of vehicle
+        return true
+    end
+    
     -- Check if it's a boombox
-    if utils.IsBoombox(entity) then return true end
+    if entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox" then
+        return true
+    end
     
-    -- Get the actual vehicle entity
-    local vehicle = utils.GetVehicle(entity)
-    if not vehicle then return false end
-    
-    -- Check if it's a sit anywhere seat
-    if utils.isSitAnywhereSeat(vehicle) then return false end
-    
-    return true
+    return false
 end
 
 --[[
