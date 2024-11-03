@@ -9,16 +9,22 @@
     Date: November 01, 2024
 ]]--
 
-util.AddNetworkString("PlayCarRadioStation")
-util.AddNetworkString("StopCarRadioStation")
-util.AddNetworkString("OpenRadioMenu")
-util.AddNetworkString("CarRadioMessage")
-util.AddNetworkString("UpdateRadioStatus")
-util.AddNetworkString("UpdateRadioVolume")
-util.AddNetworkString("MakeBoomboxPermanent")
-util.AddNetworkString("RemoveBoomboxPermanent")
-util.AddNetworkString("BoomboxPermanentConfirmation")
-util.AddNetworkString("RadioConfigUpdate")
+local networkStrings = {
+    "PlayCarRadioStation",
+    "StopCarRadioStation",
+    "OpenRadioMenu",
+    "CarRadioMessage",
+    "UpdateRadioStatus",
+    "UpdateRadioVolume",
+    "MakeBoomboxPermanent",
+    "RemoveBoomboxPermanent",
+    "BoomboxPermanentConfirmation",
+    "RadioConfigUpdate"
+}
+
+for _, str in ipairs(networkStrings) do
+    util.AddNetworkString(str)
+end
 
 -- Core constants
 local GLOBAL_COOLDOWN = 0.1
@@ -345,6 +351,13 @@ hook.Add("PlayerDisconnected", "CleanupPlayerRadioData", function(ply)
     end
 end)
 
+-- Add near the start of the file after includes
+local function DebugPrint(...)
+    if GetConVar("radio_debug"):GetBool() then
+        print("[rRadio Debug Server]", ...)
+    end
+end
+
 --[[ 
     Function: StartNewStream
     Initiates a new stream for the specified entity, handling the necessary network communication and state updates.
@@ -362,8 +375,19 @@ local function StartNewStream(entity, stationName, stationURL, volume)
     if not IsValid(entity) then return end
     local entIndex = entity:EntIndex()
     
+    DebugPrint("Starting new stream",
+        "\nEntity:", entity,
+        "\nStation:", stationName,
+        "\nURL:", stationURL,
+        "\nVolume:", volume,
+        "\nIsPermanent:", entity:GetNWBool("IsPermanent"))
+    
     -- Add to active radios
     AddActiveRadio(entity, stationName, stationURL, volume)
+    DebugPrint("Added to ActiveRadios:",
+        "\nEntity:", entity,
+        "\nStation:", stationName,
+        "\nURL:", stationURL)
     
     -- Broadcast to clients
     net.Start("PlayCarRadioStation")
@@ -373,6 +397,8 @@ local function StartNewStream(entity, stationName, stationURL, volume)
         net.WriteFloat(volume)
     net.Broadcast()
     
+    DebugPrint("Broadcasted PlayCarRadioStation to clients")
+    
     -- Handle boombox specific logic
     if utils.IsBoombox(entity) then
         utils.setRadioStatus(entity, "tuning", stationName)
@@ -380,6 +406,17 @@ local function StartNewStream(entity, stationName, stationURL, volume)
         TimerManager:create("StationUpdate_" .. entIndex, STATION_TUNING_DELAY, 1, function()
             if IsValid(entity) then
                 utils.setRadioStatus(entity, "playing", stationName)
+                DebugPrint("Updated boombox status to playing", entity, stationName)
+                
+                -- Update database if this is a permanent boombox
+                if entity:GetNWBool("IsPermanent") and SavePermanentBoombox then
+                    timer.Simple(0.5, function()
+                        if IsValid(entity) then
+                            DebugPrint("Saving permanent boombox state to database")
+                            SavePermanentBoombox(entity)
+                        end
+                    end)
+                end
             end
             return true
         end)
