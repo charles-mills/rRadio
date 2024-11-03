@@ -10,19 +10,16 @@ AddCSLuaFile("radio/client/cl_state_manager.lua")
 AddCSLuaFile("radio/shared/sh_utils.lua")
 AddCSLuaFile("radio/client/cl_misc.lua")
 
--- Dynamically include all radio station data files
 local dataFiles = file.Find("radio/client/stations/data_*.lua", "LUA")
 for _, filename in ipairs(dataFiles) do
     AddCSLuaFile("radio/client/stations/" .. filename)
 end
 
--- Dynamically include all language files
 local langFiles = file.Find("radio/client/lang/*.lua", "LUA")
 for _, filename in ipairs(langFiles) do
     AddCSLuaFile("radio/client/lang/" .. filename)
 end
 
--- Include the server-side radio logic
 include("radio/server/sv_core.lua")
 
 -- Add resources
@@ -55,7 +52,6 @@ resource.AddFile("materials/hud/vol_mute.png")
 resource.AddFile("materials/hud/volume.png")
 
 -- Add CSLuaFiles for boombox entities
-AddCSLuaFile("entities/base_boombox/init.lua")
 AddCSLuaFile("entities/base_boombox/cl_init.lua")
 AddCSLuaFile("entities/base_boombox/shared.lua")
 AddCSLuaFile("entities/boombox/shared.lua")

@@ -9,6 +9,13 @@
     Date: October 30, 2024
 ]]--
 
+-- Debug print function definition
+local function DebugPrint(...)
+    if GetConVar("radio_debug"):GetBool() then
+        print("[rRadio Debug Permanent]", ...)
+    end
+end
+
 -- Create the ConVar for boombox permanence
 CreateConVar("boombox_permanent", "0", FCVAR_ARCHIVE + FCVAR_REPLICATED, "Toggle boombox permanence")
 
@@ -77,6 +84,7 @@ end
 -- Function to add or update a permanent boombox in the database
 local function SavePermanentBoombox(ent)
     if not IsValid(ent) then 
+        DebugPrint("Invalid entity passed to SavePermanentBoombox")
         return 
     end
 
@@ -84,6 +92,7 @@ local function SavePermanentBoombox(ent)
     if not sql.TableExists("permanent_boomboxes") then
         InitializeDatabase()  -- Try to create the table
         if not sql.TableExists("permanent_boomboxes") then
+            DebugPrint("Failed to create/find permanent_boomboxes table")
             return
         end
     end
@@ -98,36 +107,60 @@ local function SavePermanentBoombox(ent)
     local stationURL = ""
     local volume = ent:GetNWFloat("Volume", 1.0)
 
-    -- Check ActiveRadios table first
+    -- Changed order: Check ActiveRadios first as it should have the most recent info
     if ActiveRadios and ActiveRadios[entIndex] then
         stationName = sanitize(ActiveRadios[entIndex].stationName or "")
         stationURL = sanitize(ActiveRadios[entIndex].url or "")
+        DebugPrint("Got station info from ActiveRadios:", 
+            "\nName:", stationName,
+            "\nURL:", stationURL)
+        
+        -- If we got valid info from ActiveRadios, don't check other sources
+        if stationName ~= "" and stationURL ~= "" then
+            goto continue_save
+        end
     end
 
-    -- If no URL found in ActiveRadios, check BoomboxStatuses
-    if (stationURL == "" or stationName == "") and BoomboxStatuses and BoomboxStatuses[entIndex] then
-        if stationURL == "" then
-            stationURL = sanitize(BoomboxStatuses[entIndex].url or "")
+    -- Fallback to networked values next
+    if stationName == "" or stationURL == "" then
+        stationName = sanitize(ent:GetNWString("StationName", ""))
+        stationURL = sanitize(ent:GetNWString("StationURL", ""))
+        DebugPrint("Got station info from networked vars:", 
+            "\nName:", stationName,
+            "\nURL:", stationURL)
+        
+        -- If we got valid info from networked vars, don't check BoomboxStatuses
+        if stationName ~= "" and stationURL ~= "" then
+            goto continue_save
         end
+    end
+
+    -- Last resort: check BoomboxStatuses
+    if (stationURL == "" or stationName == "") and BoomboxStatuses and BoomboxStatuses[entIndex] then
         if stationName == "" then
             stationName = sanitize(BoomboxStatuses[entIndex].stationName or "")
         end
+        if stationURL == "" then
+            stationURL = sanitize(BoomboxStatuses[entIndex].url or "")
+        end
+        DebugPrint("Got station info from BoomboxStatuses:", 
+            "\nName:", stationName,
+            "\nURL:", stationURL)
     end
 
-    -- Fallback to networked values if still no info
-    if stationURL == "" or stationName == "" then
-        if stationName == "" then
-            stationName = sanitize(ent:GetNWString("StationName", ""))
-        end
-        if stationURL == "" then
-            stationURL = sanitize(ent:GetNWString("StationURL", ""))
-        end
-    end
+    ::continue_save::
+
+    DebugPrint("Final station info for save:",
+        "\nName:", stationName,
+        "\nURL:", stationURL,
+        "\nVolume:", volume,
+        "\nSource: ActiveRadios")
 
     local permanentID = ent:GetNWString("PermanentID", "")
     if permanentID == "" then
         permanentID = GeneratePermanentID()
         ent:SetNWString("PermanentID", permanentID)
+        DebugPrint("Generated new permanent ID:", permanentID)
     end
 
     -- Check if the boombox already exists for this map
@@ -194,6 +227,8 @@ end
 
 -- Function to load and spawn all permanent boomboxes from the database
 local function LoadPermanentBoomboxes(isReload)    
+    DebugPrint("Loading permanent boomboxes", "isReload:", isReload)
+
     -- Clear the tracking tables
     table.Empty(spawnedBoomboxes)
     table.Empty(spawnedBoomboxesByPosition)
@@ -206,6 +241,7 @@ local function LoadPermanentBoomboxes(isReload)
     end
 
     if not sql.TableExists("permanent_boomboxes") then
+        DebugPrint("No permanent_boomboxes table found")
         return
     end
 
@@ -213,23 +249,34 @@ local function LoadPermanentBoomboxes(isReload)
     local result = sql.Query(loadQuery)
     
     if not result then
+        DebugPrint("No permanent boomboxes found for map:", currentMap)
         return
     end
     
+    DebugPrint("Found", #result, "permanent boomboxes to load")
+    
     for i, row in ipairs(result) do
+        DebugPrint("Loading boombox", i, 
+            "\nID:", row.permanent_id,
+            "\nStation:", row.station_name,
+            "\nURL:", row.station_url)
+
         -- Check if this boombox has already been spawned by ID
         if spawnedBoomboxes[row.permanent_id] then
+            DebugPrint("Skipping already spawned boombox:", row.permanent_id)
             continue
         end
 
         -- Check if a boombox already exists at this position
         local posKey = string.format("%.2f,%.2f,%.2f", row.pos_x, row.pos_y, row.pos_z)
         if spawnedBoomboxesByPosition[posKey] then
+            DebugPrint("Skipping boombox at existing position:", posKey)
             continue
         end
 
         local ent = ents.Create("boombox")
         if not IsValid(ent) then
+            DebugPrint("Failed to create boombox entity")
             continue
         end
 
@@ -238,12 +285,6 @@ local function LoadPermanentBoomboxes(isReload)
         ent:SetAngles(Angle(row.angle_pitch, row.angle_yaw, row.angle_roll))
         ent:Spawn()
         ent:Activate()
-
-        -- Freeze the boombox
-        local phys = ent:GetPhysicsObject()
-        if IsValid(phys) then
-            phys:EnableMotion(false)
-        end
 
         -- Set networked variables
         ent:SetNWString("PermanentID", row.permanent_id)
@@ -255,8 +296,15 @@ local function LoadPermanentBoomboxes(isReload)
         ent.IsPermanent = true
         ent:SetNWBool("IsPermanent", true)
 
+        DebugPrint("Created permanent boombox", 
+            "\nEntity:", ent,
+            "\nStation:", row.station_name,
+            "\nURL:", row.station_url)
+
         -- Start playing the radio
         if row.station_url ~= "" then
+            DebugPrint("Starting radio playback for permanent boombox")
+            
             -- Set networked variables first
             ent:SetNWString("StationName", row.station_name)
             ent:SetNWString("StationURL", row.station_url)
@@ -279,6 +327,8 @@ local function LoadPermanentBoomboxes(isReload)
                 net.WriteString("playing")
             net.Broadcast()
             
+            DebugPrint("Broadcasted radio status update")
+            
             -- Start playback on clients
             net.Start("PlayCarRadioStation")
                 net.WriteEntity(ent)
@@ -286,10 +336,14 @@ local function LoadPermanentBoomboxes(isReload)
                 net.WriteString(row.station_url)
                 net.WriteFloat(row.volume)
             net.Broadcast()
+            
+            DebugPrint("Broadcasted PlayCarRadioStation")
 
-            -- Add to active radios
             if AddActiveRadio then
                 AddActiveRadio(ent, row.station_name, row.station_url, row.volume)
+                DebugPrint("Added to active radios")
+            else
+                DebugPrint("Warning: AddActiveRadio function not available")
             end
         end
 

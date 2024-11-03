@@ -51,7 +51,6 @@ function ENT:Initialize()
     self.IsPermanent = false
 end
 
--- Add Use function to handle interaction
 function ENT:Use(activator, caller)
     if not IsValid(activator) or not activator:IsPlayer() then return end
     
@@ -72,7 +71,6 @@ function ENT:Use(activator, caller)
     end
 end
 
--- Spawn function called when the entity is created
 function ENT:SpawnFunction(ply, tr, className)
     if not tr.Hit then return end
 

@@ -9,16 +9,22 @@
     Date: November 01, 2024
 ]]--
 
-util.AddNetworkString("PlayCarRadioStation")
-util.AddNetworkString("StopCarRadioStation")
-util.AddNetworkString("OpenRadioMenu")
-util.AddNetworkString("CarRadioMessage")
-util.AddNetworkString("UpdateRadioStatus")
-util.AddNetworkString("UpdateRadioVolume")
-util.AddNetworkString("MakeBoomboxPermanent")
-util.AddNetworkString("RemoveBoomboxPermanent")
-util.AddNetworkString("BoomboxPermanentConfirmation")
-util.AddNetworkString("RadioConfigUpdate")
+local networkStrings = {
+    "PlayCarRadioStation",
+    "StopCarRadioStation",
+    "OpenRadioMenu",
+    "CarRadioMessage",
+    "UpdateRadioStatus",
+    "UpdateRadioVolume",
+    "MakeBoomboxPermanent",
+    "RemoveBoomboxPermanent",
+    "BoomboxPermanentConfirmation",
+    "RadioConfigUpdate"
+}
+
+for _, str in ipairs(networkStrings) do
+    util.AddNetworkString(str)
+end
 
 -- Core constants
 local GLOBAL_COOLDOWN = 0.1
@@ -287,7 +293,24 @@ local TimerManager = {
     end
 }
 
--- Consolidated cleanup function
+--[[
+    Function: RemoveActiveRadio
+    Removes a radio from the active radios list.
+    Parameters:
+    - entity: The entity representing the radio.
+]]
+local function RemoveActiveRadio(entity)
+    if not IsValid(entity) then return end
+    local entIndex = entity:EntIndex()
+    ActiveRadios[entIndex] = nil
+    
+    -- Clean up any associated timers
+    if timer.Exists("StationUpdate_" .. entIndex) then
+        timer.Remove("StationUpdate_" .. entIndex)
+    end
+end
+
+-- Move this function definition before any code that uses it
 local function CleanupEntity(entity)
     if not IsValid(entity) then return end
     local entIndex = entity:EntIndex()
@@ -311,7 +334,9 @@ local function CleanupEntity(entity)
     end
 end
 
-hook.Add("EntityRemoved", "RadioSystemCleanup", CleanupEntity)
+hook.Add("EntityRemoved", "RadioSystemCleanup", function(entity)
+    CleanupEntity(entity)
+end)
 
 hook.Add("PlayerDisconnected", "CleanupPlayerRadioData", function(ply)
     PlayerRetryAttempts[ply] = nil
@@ -325,6 +350,12 @@ hook.Add("PlayerDisconnected", "CleanupPlayerRadioData", function(ply)
         end
     end
 end)
+
+local function DebugPrint(...)
+    if GetConVar("radio_debug"):GetBool() then
+        print("[rRadio Debug Server]", ...)
+    end
+end
 
 --[[ 
     Function: StartNewStream
@@ -343,24 +374,50 @@ local function StartNewStream(entity, stationName, stationURL, volume)
     if not IsValid(entity) then return end
     local entIndex = entity:EntIndex()
     
-    -- Add to active radios
-    AddActiveRadio(entity, stationName, stationURL, volume)
+    DebugPrint("Starting new stream",
+        "\nEntity:", entity,
+        "\nStation:", stationName,
+        "\nURL:", stationURL,
+        "\nVolume:", volume,
+        "\nIsPermanent:", entity:GetNWBool("IsPermanent"))
+
+    -- Truncate station name for display
+    local displayName = utils.truncateStationName(stationName)
+
+    AddActiveRadio(entity, displayName, stationURL, volume)
+    DebugPrint("Added to ActiveRadios:",
+        "\nEntity:", entity,
+        "\nStation:", displayName,
+        "\nURL:", stationURL)
     
-    -- Broadcast to clients
+    -- Broadcast to clients with truncated name
     net.Start("PlayCarRadioStation")
         net.WriteEntity(entity)
-        net.WriteString(stationName)
+        net.WriteString(displayName)
         net.WriteString(stationURL)
         net.WriteFloat(volume)
     net.Broadcast()
     
-    -- Handle boombox specific logic
+    DebugPrint("Broadcasted PlayCarRadioStation to clients")
+    
+    -- Handle boombox specific logic with truncated name
     if utils.IsBoombox(entity) then
-        utils.setRadioStatus(entity, "tuning", stationName)
+        utils.setRadioStatus(entity, "tuning", displayName)
         
         TimerManager:create("StationUpdate_" .. entIndex, STATION_TUNING_DELAY, 1, function()
             if IsValid(entity) then
-                utils.setRadioStatus(entity, "playing", stationName)
+                utils.setRadioStatus(entity, "playing", displayName)
+                DebugPrint("Updated boombox status to playing", entity, displayName)
+                
+                -- Update database if this is a permanent boombox
+                if entity:GetNWBool("IsPermanent") and SavePermanentBoombox then
+                    timer.Simple(0.5, function()
+                        if IsValid(entity) then
+                            DebugPrint("Saving permanent boombox state to database")
+                            SavePermanentBoombox(entity)
+                        end
+                    end)
+                end
             end
             return true
         end)
@@ -532,16 +589,6 @@ local function AddActiveRadio(entity, stationName, url, volume)
 end
 
 --[[
-    Function: RemoveActiveRadio
-    Removes a radio from the active radios list.
-    Parameters:
-    - entity: The entity representing the radio.
-]]
-local function RemoveActiveRadio(entity)
-    ActiveRadios[entity:EntIndex()] = nil
-end
-
---[[
     Function: SendActiveRadiosToPlayer
     Sends active radios to a specific player with limited retries.
     Parameters:
@@ -629,7 +676,6 @@ hook.Add("PlayerEnteredVehicle", "RadioVehicleHandling", function(ply, vehicle)
     end
 end)
 
--- Add hook for new vehicles
 hook.Add("OnEntityCreated", "InitializeVehicleStatus", function(ent)
     timer.Simple(0, function()
         if IsValid(ent) and utils.GetVehicle(ent) then
@@ -734,8 +780,7 @@ net.Receive("PlayCarRadioStation", function(len, ply)
             net.Start("StopCarRadioStation")
                 net.WriteEntity(actualEntity)
             net.Broadcast()
-            
-            -- Add delay before starting new stream
+
             TimerManager:create("StartStream_" .. entIndex, STREAM_RETRY_DELAY, 1, function()
                 StartNewStream(actualEntity, stationName, stationURL, volume)
                 return true
