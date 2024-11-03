@@ -12,7 +12,6 @@
 --          Imports
 -- ------------------------------
 include("radio/shared/sh_config.lua")
-local LanguageManager = include("radio/client/lang/cl_language_manager.lua")
 local themeModule = include("radio/client/cl_theme_manager.lua")
 local utils = include("radio/shared/sh_utils.lua")
 local Misc = include("radio/client/cl_misc.lua")
@@ -712,7 +711,7 @@ local function formatCountryName(name)
         return formattedCountryNames[cacheKey]
     end
 
-    local translatedName = LanguageManager:GetCountryTranslation(lang, name)
+    local translatedName = Misc.Language:GetCountryTranslation(lang, name)
 
     formattedCountryNames[cacheKey] = translatedName
     return translatedName
@@ -1506,7 +1505,7 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                 return first:upper() .. rest:lower()
             end)
             
-            local translatedCountry = LanguageManager:GetCountryTranslation(lang, formattedCountry) or formattedCountry
+            local translatedCountry = Misc.Language:GetCountryTranslation(lang, formattedCountry) or formattedCountry
 
             if filterText == "" or translatedCountry:lower():find(filterText, 1, true) then
                 local isFavorite = getSafeState("favoriteCountries", {})[country] or false
@@ -1566,8 +1565,15 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
         local favoritesList = StateManager:GetFavoritesList(lang, filterText)
 
         for _, favorite in ipairs(favoritesList) do
-            local displayName = favorite.countryName .. " - " .. utils.truncateStationName(favorite.station.name)
-            local fullName = favorite.countryName .. " - " .. favorite.station.name
+            -- Format the country name before displaying
+            local formattedCountry = favorite.countryName:gsub("_", " "):gsub("(%a)([%w_']*)", function(first, rest)
+                return first:upper() .. rest:lower()
+            end)
+            -- Get translated country name
+            local translatedCountry = Misc.Language:GetCountryTranslation(lang, formattedCountry) or formattedCountry
+            
+            local displayName = translatedCountry .. " - " .. utils.truncateStationName(favorite.station.name)
+            local fullName = translatedCountry .. " - " .. favorite.station.name
             
             local stationButton = createStyledButton(
                 stationListPanel,
@@ -2189,7 +2195,7 @@ local function openSettingsMenu(parentFrame, backButton)
     -- Language Selection
     addHeader(Config.Lang["LanguageSelection"] or "Language Selection")
     local languageChoices = {}
-    local availableLanguages = LanguageManager:GetAvailableLanguages()
+    local availableLanguages = Misc.Language:GetAvailableLanguages()
     
     if type(availableLanguages) == "table" then
         for code, name in pairs(availableLanguages) do
@@ -2202,7 +2208,7 @@ local function openSettingsMenu(parentFrame, backButton)
     end
 
     local currentLanguage = GetConVar("radio_language"):GetString()
-    local currentLanguageName = LanguageManager:GetLanguageName(currentLanguage)
+    local currentLanguageName = Misc.Language:GetLanguageName(currentLanguage)
 
     addDropdown(Config.Lang["SelectLanguage"] or "Select Language", languageChoices, currentLanguageName, function(_, _, name, data)
         print("[rRadio Debug] Language Selection:")
@@ -2224,8 +2230,8 @@ local function openSettingsMenu(parentFrame, backButton)
             print("  - Verified language convar:", GetConVar("radio_language"):GetString())
         end)
         
-        LanguageManager:SetLanguage(data)
-        Config.Lang = LanguageManager.translations[data]
+        Misc.Language:SetLanguage(data)
+        Config.Lang = Misc.Language.translations[data]
         
         -- Update state
         StateManager:SetState("currentLanguage", data)
@@ -2748,7 +2754,7 @@ openRadioMenu = function(openSettings)
                 local formattedCountry = currentCountry:gsub("_", " "):gsub("(%a)([%w_']*)", function(a, b)
                     return string.upper(a) .. string.lower(b) 
                 end)
-                headerText = LanguageManager:GetCountryTranslation(lang, formattedCountry) or formattedCountry
+                headerText = Misc.Language:GetCountryTranslation(lang, formattedCountry) or formattedCountry
             end
         else
             headerText = Config.Lang["SelectCountry"] or "Select Country"
