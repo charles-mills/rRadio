@@ -345,7 +345,7 @@ hook.Add("PlayerDisconnected", "CleanupPlayerRadioData", function(ply)
     
     -- Clean up any entities owned by this player
     for _, ent in ipairs(ents.GetAll()) do
-        if utils.GetEntityOwner(ent) == ply then
+        if utils.getOwner(ent) == ply then
             CleanupEntity(ent)
         end
     end
@@ -662,27 +662,6 @@ local function UpdateVehicleStatus(vehicle)
     
     return isSitAnywhere
 end
-
-hook.Add("PlayerEnteredVehicle", "RadioVehicleHandling", function(ply, vehicle)
-    local veh = utils.GetVehicle(vehicle)
-    if not veh then return end
-    
-    -- Don't show radio message for sit anywhere seats
-    if utils.isSitAnywhereSeat(vehicle) then return end
-    
-    if not UpdateVehicleStatus(vehicle) then
-        net.Start("CarRadioMessage")
-        net.Send(ply)
-    end
-end)
-
-hook.Add("OnEntityCreated", "InitializeVehicleStatus", function(ent)
-    timer.Simple(0, function()
-        if IsValid(ent) and utils.GetVehicle(ent) then
-            UpdateVehicleStatus(ent)
-        end
-    end)
-end)
 
 --[[
     Function: IsLVSVehicle
@@ -1337,7 +1316,7 @@ hook.Add("PlayerDisconnected", "CleanupPlayerRadioData", function(ply)
     
     -- Clean up any entities owned by this player
     for _, ent in ipairs(ents.GetAll()) do
-        if utils.GetEntityOwner(ent) == ply then
+        if utils.getOwner(ent) == ply then
             CleanupEntity(ent)
         end
     end
@@ -1370,4 +1349,27 @@ end)
 hook.Add("EntityRemoved", "CleanupRadioVolume", function(entity)
     local entIndex = entity:EntIndex()
     EntityVolumes[entIndex] = nil
+end)
+
+-- Keep this hook but make it more robust
+hook.Add("PlayerEnteredVehicle", "RadioVehicleHandling", function(ply, vehicle)
+    -- Get actual vehicle using utility function
+    local actualVehicle = utils.GetVehicle(vehicle)
+    if not actualVehicle then return end
+    
+    utils.DebugPrint("Server: Vehicle Entry Detected",
+        "\nPlayer:", ply:Nick(),
+        "\nVehicle:", vehicle,
+        "\nActual Vehicle:", actualVehicle,
+        "\nClass:", actualVehicle:GetClass())
+    
+    -- Don't show radio message for sit anywhere seats or vehicles that can't use radio
+    if utils.isSitAnywhereSeat(vehicle) or not utils.canUseRadio(actualVehicle) then
+        utils.DebugPrint("Server: Skipping message - seat type or radio capability check failed")
+        return
+    end
+    
+    -- Send message to client
+    net.Start("CarRadioMessage")
+    net.Send(ply)
 end)

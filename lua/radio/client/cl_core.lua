@@ -23,18 +23,8 @@ end
 StateManager:Initialize()
 
 local function getSafeState(key, default)
-    if not StateManager then
-        print("[rRadio] Warning: StateManager not initialized when getting state:", key)
-        return default
-    end
-    
-    if not StateManager.initialized then
-        print("[rRadio] Warning: StateManager not yet initialized when getting state:", key)
-        return default
-    end
-    
-    if not StateManager.GetState then
-        print("[rRadio] Warning: StateManager.GetState not available when getting state:", key)
+    -- We can simplify this since StateManager is already checked in Initialize
+    if not StateManager or not StateManager.initialized then
         return default
     end
     
@@ -42,18 +32,8 @@ local function getSafeState(key, default)
 end
 
 local function setSafeState(key, value)
-    if not StateManager then
-        print("[rRadio] Warning: StateManager not initialized when setting state:", key)
-        return
-    end
-    
-    if not StateManager.initialized then
-        print("[rRadio] Warning: StateManager not yet initialized when setting state:", key)
-        return
-    end
-    
-    if not StateManager.SetState then
-        print("[rRadio] Warning: StateManager.SetState not available when setting state:", key)
+    -- Similarly simplify this
+    if not StateManager or not StateManager.initialized then
         return
     end
     
@@ -92,27 +72,12 @@ local MaterialCache = {
         "hud/github.png"
     },
     
-    Initialize = function(self)
-        for _, path in ipairs(self.paths) do
-            self.cache[path] = Material(path, "smooth")
-        end
-    end,
-    
     Get = function(self, path)
-        if not self.cache[path] then
-            self.cache[path] = Material(path, "smooth")
-        end
+        -- No need to check cache first since Material() caches internally
+        self.cache[path] = self.cache[path] or Material(path, "smooth")
         return self.cache[path]
     end,
-    
-    Clear = function(self)
-        self.cache = {}
-    end
 }
-
--- Initialize material cache
-MaterialCache:Initialize()
-
 local VOLUME_ICONS = {
     MUTE = MaterialCache:Get("hud/vol_mute.png"),
     LOW = MaterialCache:Get("hud/vol_down.png"),
@@ -368,6 +333,7 @@ local StreamManager = {
         self._lastValidityCheck = currentTime
         self._validityCache = {}
         
+        -- Combine IsValid checks
         for entIndex, streamData in pairs(self.activeStreams) do
             if IsValid(streamData.entity) and IsValid(streamData.stream) then
                 self._validityCache[entIndex] = true
@@ -948,14 +914,29 @@ end
     Displays an animated notification about how to open the car radio.
 ]]
 local function PrintCarRadioMessage()
+    -- Clean up any existing timer
+    if messageCleanupTimer then
+        timer.Remove(messageCleanupTimer)
+        messageCleanupTimer = nil
+    end
+
     if not GetConVar("car_radio_show_messages"):GetBool() then return end
+    
+    -- Force cleanup any existing message
+    if IsValid(messagePanel) then
+        messagePanel:Remove()
+        messagePanel = nil
+    end
+    
+    -- Reset animation state
+    if isMessageAnimating then
+        isMessageAnimating = false
+    end
     
     local currentTime = CurTime()
     local cooldownTime = Config.MessageCooldown()
 
-    if isMessageAnimating or (lastMessageTime and currentTime - lastMessageTime < cooldownTime) then
-        return
-    end
+    if currentTime - (lastMessageTime or 0) < cooldownTime then return end
 
     lastMessageTime = currentTime
     isMessageAnimating = true
@@ -967,6 +948,21 @@ local function PrintCarRadioMessage()
     local panelWidth = Scale(300)
     local panelHeight = Scale(70)
     local panel = vgui.Create("DButton")
+    messagePanel = panel
+    
+    -- Create unique timer name
+    messageCleanupTimer = "MessageCleanup_" .. tostring(panel) .. "_" .. tostring(CurTime())
+    
+    -- Add emergency cleanup timer
+    timer.Create(messageCleanupTimer, 5, 1, function()
+        if IsValid(panel) then
+            panel:Remove()
+        end
+        isMessageAnimating = false
+        messagePanel = nil
+        messageCleanupTimer = nil
+    end)
+
     panel:SetSize(panelWidth, panelHeight)
     panel:SetPos(scrW, scrH * 0.2)
     panel:SetText("")
@@ -980,34 +976,30 @@ local function PrintCarRadioMessage()
     textLabel:SizeToContents()
     textLabel:SetPos(Scale(70), panelHeight/2 - textLabel:GetTall()/2)
     
-    -- Slide in animation with safety check
+    -- Store panel reference
     local panelRef = panel
+    
+    -- Slide in animation
     Misc.Animations:CreateTween(0.5, scrW, scrW - panelWidth, function(value)
         if IsValid(panelRef) then
             panelRef:SetPos(value, scrH * 0.2)
-        else
-            return false -- Stop animation if panel is invalid
         end
     end)
     
-    -- Fade in animation with safety check
+    -- Fade in animation
     Misc.Animations:CreateTween(0.3, 0, 255, function(value)
         if IsValid(panelRef) then
             panelRef:SetAlpha(value)
-        else
-            return false
         end
     end)
     
-    -- Auto hide after delay with safety checks
+    -- Auto hide after delay
     timer.Simple(3, function()
         if IsValid(panelRef) then
             -- Slide out animation
             Misc.Animations:CreateTween(0.5, panelRef:GetX(), scrW, function(value)
                 if IsValid(panelRef) then
                     panelRef:SetPos(value, scrH * 0.2)
-                else
-                    return false
                 end
             end)
             
@@ -1015,28 +1007,23 @@ local function PrintCarRadioMessage()
             Misc.Animations:CreateTween(0.3, 255, 0, function(value)
                 if IsValid(panelRef) then
                     panelRef:SetAlpha(value)
-                else
-                    return false
                 end
             end, function()
                 if IsValid(panelRef) then
                     panelRef:Remove()
                 end
+                isMessageAnimating = false
             end)
         end
     end)
-    
-    local animDuration = 1
-    local showDuration = 2
-    local startTime = CurTime()
-    local alpha = 0
-    local pulseValue = 0
-    local isDismissed = false
 
     panel.DoClick = function()
         surface.PlaySound("buttons/button15.wav")
         openRadioMenu()
-        isDismissed = true
+        isMessageAnimating = false
+        if IsValid(panel) then
+            panel:Remove()
+        end
     end
 
     panel.Paint = function(self, w, h)
@@ -1055,60 +1042,51 @@ local function PrintCarRadioMessage()
         local keyHeight = Scale(30)
         local keyX = Scale(20)
         local keyY = h/2 - keyHeight/2
-        local pulseScale = 1 + math.sin(pulseValue * math.pi * 2) * 0.05
+        local pulseScale = 1 + math.sin(CurTime() * math.pi * 2) * 0.05
         local adjustedKeyWidth = keyWidth * pulseScale
         local adjustedKeyHeight = keyHeight * pulseScale
         local adjustedKeyX = keyX - (adjustedKeyWidth - keyWidth) / 2
         local adjustedKeyY = keyY - (adjustedKeyHeight - keyHeight) / 2
         
-        -- Draw key background
         draw.RoundedBox(6, adjustedKeyX, adjustedKeyY, adjustedKeyWidth, adjustedKeyHeight, 
             Config.UI.KeyHighlightColor)
 
-        -- Draw the key name
         draw.SimpleText(keyName, "Roboto18", adjustedKeyX + adjustedKeyWidth/2, adjustedKeyY + adjustedKeyHeight/2, 
             Config.UI.TextColor, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
 
-        -- Draw subtle divider line
-        surface.SetDrawColor(ColorAlpha(Config.UI.TextColor, 40))  -- 40 alpha for subtle effect
+        surface.SetDrawColor(ColorAlpha(Config.UI.TextColor, 40))
         surface.DrawLine(
-            Scale(70) - Scale(5),  -- Slightly left of text
-            h * 0.3,               -- Start from 30% height
-            Scale(70) - Scale(5),  -- Same X position
-            h * 0.7                -- End at 70% height
+            Scale(70) - Scale(5),
+            h * 0.3,
+            Scale(70) - Scale(5),
+            h * 0.7
         )
-    end
-
-    panel.Think = function(self)
-        local time = CurTime() - startTime
-        
-        pulseValue = (pulseValue + FrameTime() * 1.5) % 1
-
-        if time < animDuration then
-            local progress = time / animDuration
-            local easedProgress = math.ease.OutQuint(progress)
-            self:SetPos(Lerp(easedProgress, scrW, scrW - panelWidth), scrH * 0.2)
-            alpha = math.ease.InOutQuad(progress)
-        elseif time < animDuration + showDuration and not isDismissed then
-            alpha = 1
-            self:SetPos(scrW - panelWidth, scrH * 0.2)
-        elseif not isDismissed or time >= animDuration + showDuration then
-            local progress = (time - (animDuration + showDuration)) / animDuration
-            local easedProgress = math.ease.InOutQuint(progress)
-            self:SetPos(Lerp(easedProgress, scrW - panelWidth, scrW), scrH * 0.2)
-            alpha = 1 - math.ease.InOutQuad(progress)
-            
-            if progress >= 1 then
-                isMessageAnimating = false
-                self:Remove()
-            end
-        end
     end
 
     panel.OnRemove = function()
         isMessageAnimating = false
+        if messagePanel == panel then
+            messagePanel = nil
+        end
+        if messageCleanupTimer then
+            timer.Remove(messageCleanupTimer)
+            messageCleanupTimer = nil
+        end
     end
 end
+
+-- Add cleanup hook
+hook.Add("ShutDown", "CleanupRadioMessage", function()
+    if IsValid(messagePanel) then
+        messagePanel:Remove()
+    end
+    if messageCleanupTimer then
+        timer.Remove(messageCleanupTimer)
+        messageCleanupTimer = nil
+    end
+    isMessageAnimating = false
+    messagePanel = nil
+end)
 
 -- ------------------------------
 --      UI Helper Functions
@@ -1257,85 +1235,85 @@ local function createTooltip(panel, text)
     local tooltip
     
     panel.OnCursorEntered = function(self)
-        if not IsValid(tooltip) and text and #text > 0 then
-            tooltip = vgui.Create("DPanel")
-            tooltip:SetDrawOnTop(true)
+        if IsValid(tooltip) or not text or #text == 0 then return end
+        
+        tooltip = vgui.Create("DPanel")
+        tooltip:SetDrawOnTop(true)
+        
+        -- Calculate maximum width based on screen size
+        local maxWidth = math.min(ScrW() * 0.3, Scale(400))
+        local padding = Scale(10)
+        
+        -- Wrap text to fit width
+        local wrappedText = {}
+        local currentLine = ""
+        local words = string.Explode(" ", text)
+        
+        surface.SetFont("Roboto18")
+        for _, word in ipairs(words) do
+            local testLine = currentLine .. (currentLine ~= "" and " " or "") .. word
+            local textWidth = surface.GetTextSize(testLine)
             
-            -- Calculate maximum width based on screen size
-            local maxWidth = math.min(ScrW() * 0.3, Scale(400))
-            local padding = Scale(10)
-            
-            -- Wrap text to fit width
-            local wrappedText = {}
-            local currentLine = ""
-            local words = string.Explode(" ", text)
-            
-            surface.SetFont("Roboto18")
-            for _, word in ipairs(words) do
-                local testLine = currentLine .. (currentLine ~= "" and " " or "") .. word
-                local textWidth = surface.GetTextSize(testLine)
-                
-                if textWidth > maxWidth - (padding * 2) then
-                    table.insert(wrappedText, currentLine)
-                    currentLine = word
-                else
-                    currentLine = testLine
-                end
-            end
-            if currentLine ~= "" then
+            if textWidth > maxWidth - (padding * 2) then
                 table.insert(wrappedText, currentLine)
+                currentLine = word
+            else
+                currentLine = testLine
+            end
+        end
+        if currentLine ~= "" then
+            table.insert(wrappedText, currentLine)
+        end
+        
+        -- Calculate height based on number of lines
+        local _, lineHeight = surface.GetTextSize("TEST")
+        local textHeight = #wrappedText * lineHeight
+        
+        -- Set tooltip size
+        tooltip:SetSize(maxWidth, textHeight + padding * 2)
+        
+        -- Position tooltip below cursor
+        local x, y = gui.MousePos()
+        tooltip:SetPos(x + Scale(10), y + Scale(10))
+        
+        -- Ensure tooltip stays on screen
+        local screenW, screenH = ScrW(), ScrH()
+        if x + tooltip:GetWide() + Scale(10) > screenW then
+            tooltip:SetPos(screenW - tooltip:GetWide() - Scale(10), y + Scale(10))
+        end
+        if y + tooltip:GetTall() + Scale(10) > screenH then
+            tooltip:SetPos(tooltip:GetX(), y - tooltip:GetTall() - Scale(10))
+        end
+        
+        tooltip.Paint = function(self, w, h)
+            -- Background with subtle shadow
+            for i = 1, 5 do
+                local alpha = math.max(0, 20 - i * 4)
+                surface.SetDrawColor(0, 0, 0, alpha)
+                draw.RoundedBox(8, -i, i, w + i*2, h, Color(0, 0, 0, alpha))
             end
             
-            -- Calculate height based on number of lines
-            local _, lineHeight = surface.GetTextSize("TEST")
-            local textHeight = #wrappedText * lineHeight
+            -- Main background
+            draw.RoundedBox(8, 0, 0, w, h, Config.UI.MessageBackgroundColor)
             
-            -- Set tooltip size
-            tooltip:SetSize(maxWidth, textHeight + padding * 2)
-            
-            -- Position tooltip below cursor
-            local x, y = gui.MousePos()
-            tooltip:SetPos(x + Scale(10), y + Scale(10))
-            
-            -- Ensure tooltip stays on screen
-            local screenW, screenH = ScrW(), ScrH()
-            if x + tooltip:GetWide() + Scale(10) > screenW then
-                tooltip:SetPos(screenW - tooltip:GetWide() - Scale(10), y + Scale(10))
+            -- Draw wrapped text
+            for i, line in ipairs(wrappedText) do
+                draw.SimpleText(
+                    line,
+                    "Roboto18",
+                    padding,
+                    padding + (i-1) * lineHeight,
+                    Config.UI.TextColor,
+                    TEXT_ALIGN_LEFT,
+                    TEXT_ALIGN_TOP
+                )
             end
-            if y + tooltip:GetTall() + Scale(10) > screenH then
-                tooltip:SetPos(tooltip:GetX(), y - tooltip:GetTall() - Scale(10))
-            end
-            
-            tooltip.Paint = function(self, w, h)
-                -- Background with subtle shadow
-                for i = 1, 5 do
-                    local alpha = math.max(0, 20 - i * 4)
-                    surface.SetDrawColor(0, 0, 0, alpha)
-                    draw.RoundedBox(8, -i, i, w + i*2, h, Color(0, 0, 0, alpha))
-                end
-                
-                -- Main background
-                draw.RoundedBox(8, 0, 0, w, h, Config.UI.MessageBackgroundColor)
-                
-                -- Draw wrapped text
-                for i, line in ipairs(wrappedText) do
-                    draw.SimpleText(
-                        line,
-                        "Roboto18",
-                        padding,
-                        padding + (i-1) * lineHeight,
-                        Config.UI.TextColor,
-                        TEXT_ALIGN_LEFT,
-                        TEXT_ALIGN_TOP
-                    )
-                end
-            end
-            
-            -- Remove tooltip when panel is removed
-            panel.OnRemove = function()
-                if IsValid(tooltip) then
-                    tooltip:Remove()
-                end
+        end
+        
+        -- Remove tooltip when panel is removed
+        panel.OnRemove = function()
+            if IsValid(tooltip) then
+                tooltip:Remove()
             end
         end
     end
@@ -1372,6 +1350,12 @@ end
 ]]
 local function populateList(stationListPanel, backButton, searchBox, resetSearch)
     if not stationListPanel then return end
+    
+    local currentState = {
+        selectedCountry = getSafeState("selectedCountry", nil),
+        favoritesMenuOpen = getSafeState("favoritesMenuOpen", false),
+        settingsMenuOpen = getSafeState("settingsMenuOpen", false)
+    }
 
     stationListPanel:Clear()
     if resetSearch then searchBox:SetText("") end
@@ -1385,7 +1369,7 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
 
     local filterText = searchBox:GetText():lower()
     local lang = GetConVar("radio_language"):GetString() or "en"
-    local selectedCountry = getSafeState("selectedCountry", nil)
+    local selectedCountry = currentState.selectedCountry
 
     local function updateList()
         populateList(stationListPanel, backButton, searchBox, false)
@@ -2669,18 +2653,11 @@ openRadioMenu = function(openSettings)
     local ply = LocalPlayer()
     local entity = ply.currentRadioEntity
     
-    if not IsValid(entity) then return end
-    
-    -- Check if entity can use radio
-    if not utils.canUseRadio(entity) then
+    -- Combine all entity validation into one check
+    if not IsValid(entity) or 
+       not utils.canUseRadio(entity) or 
+       (utils.IsBoombox(entity) and not utils.canInteractWithBoombox(ply, entity)) then
         return
-    end
-    
-    if entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox" then
-        if not utils.canInteractWithBoombox(ply, entity) then
-            chat.AddText(Color(255, 0, 0), "You don't have permission to interact with this boombox.")
-            return
-        end
     end
     
     -- Reset states when opening menu
@@ -3370,7 +3347,10 @@ net.Receive("OpenRadioMenu", function()
     end
 end)
 
+-- Add this net receiver near the other net message handlers
 net.Receive("CarRadioMessage", function()
+    DebugPrint("Client: Received CarRadioMessage")
+    
     if GetConVar("car_radio_show_messages"):GetBool() then
         PrintCarRadioMessage()
     end
