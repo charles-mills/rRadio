@@ -95,15 +95,22 @@ function utils.isSitAnywhereSeat(vehicle)
         return true 
     end
     
-    -- Check networked value (set by server)
-    local nwValue = vehicle:GetNWBool("IsSitAnywhereSeat", nil)
-    if nwValue ~= nil then
-        return nwValue
+    -- Check for common SitAnywhere properties
+    if vehicle.IsSitAnywhere or vehicle.SitAnywhere then
+        return true
     end
     
-    -- Server-side check for playerdynseat
-    if SERVER then
-        return vehicle.playerdynseat or false
+    -- Check networked value (set by server)
+    if vehicle:GetNWBool("IsSitAnywhereSeat", false) then
+        return true
+    end
+    
+    -- Check if it's a seat without a valid vehicle parent
+    if vehicle:GetClass() == "prop_vehicle_prisoner_pod" then
+        local parent = vehicle:GetParent()
+        if not IsValid(parent) or not utils.canUseRadio(parent) then
+            return true
+        end
     end
     
     return false
@@ -382,6 +389,17 @@ function utils.GetVehicleDriver(vehicle)
     end
     
     return nil
+end
+
+--[[
+    Function: DebugPrint
+    Description: Prints debug information if the radio_debug convar is enabled
+    @param ...: The arguments to print
+]]
+function utils.DebugPrint(...)
+    if GetConVar("radio_debug"):GetBool() then
+        print("[rRadio Debug]", ...)
+    end
 end
 
 return utils
