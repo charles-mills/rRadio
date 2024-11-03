@@ -1,6 +1,18 @@
 include("shared.lua")
 local Config = include("radio/shared/sh_config.lua")
-local Themes = include("radio/client/cl_themes.lua")
+local utils = include("radio/shared/sh_utils.lua")
+local Misc = include("radio/client/cl_misc.lua")
+local Themes = include("radio/client/cl_theme_manager.lua")
+
+-- Ensure ConVar exists
+CreateClientConVar("boombox_show_text", "1", true, false, "Show or hide the text above the boombox.")
+
+timer.Simple(0, function()
+    if not Misc or not Misc.Language then
+        error("[rRadio] Failed to initialize Language module")
+        return
+    end
+end)
 
 local HUD = {
     FADE_DISTANCE = {
@@ -293,8 +305,6 @@ function ENT:DrawContent(text, width, height, status, alpha)
             textWidthCache = {}
         end
     end
-    
-    -- Rest of drawing logic using cached values...
 end
 
 -- Cleanup hooks
@@ -420,19 +430,22 @@ function ENT:DrawHUD(status, stationName, alpha)
 end
 
 function ENT:GetDisplayText(status, stationName)
+    -- Add safety check for Config.Lang
+    local Lang = Config and Config.Lang or {}
+
     if status == "stopped" then
         if LocalPlayer() == self:GetNWEntity("Owner") or LocalPlayer():IsSuperAdmin() then
-            return Config.Lang["Interact"] or "Press E to Interact"
+            return Lang["Interact"] or "Press E to Interact"
         else
-            return Config.Lang["Paused"] or "PAUSED"
+            return Lang["Paused"] or "PAUSED"
         end
     elseif status == "tuning" then
-        local baseText = Config.Lang["TuningIn"] or "Tuning in"
+        local baseText = Lang["TuningIn"] or "Tuning in"
         local dots = string.rep(".", math.floor(CurTime() * 2) % 4)
         return baseText .. dots .. string.rep(" ", 3 - #dots)
     else
-        -- Use the station name as-is since it's already truncated from the server
-        return stationName ~= "" and stationName or "Radio"
+        -- Use utils.truncateStationName for consistency
+        return stationName ~= "" and utils.truncateStationName(stationName, HUD.TRUNCATE_LENGTH) or "Radio"
     end
 end
 

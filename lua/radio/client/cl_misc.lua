@@ -278,10 +278,440 @@ Modules.PulseEffects = {
     end
 }
 
--- Think hook for animations
+Modules.KeyNames = {
+    [KEY_A] = "A",
+    [KEY_B] = "B",
+    [KEY_C] = "C",
+    [KEY_D] = "D",
+    [KEY_E] = "E",
+    [KEY_F] = "F",
+    [KEY_G] = "G",
+    [KEY_H] = "H",
+    [KEY_I] = "I",
+    [KEY_J] = "J",
+    [KEY_K] = "K",
+    [KEY_L] = "L",
+    [KEY_M] = "M",
+    [KEY_N] = "N",
+    [KEY_O] = "O",
+    [KEY_P] = "P",
+    [KEY_Q] = "Q",
+    [KEY_R] = "R",
+    [KEY_S] = "S",
+    [KEY_T] = "T",
+    [KEY_U] = "U",
+    [KEY_V] = "V",
+    [KEY_W] = "W",
+    [KEY_X] = "X",
+    [KEY_Y] = "Y",
+    [KEY_Z] = "Z",
+    [KEY_0] = "0",
+    [KEY_1] = "1",
+    [KEY_2] = "2",
+    [KEY_3] = "3",
+    [KEY_4] = "4",
+    [KEY_5] = "5",
+    [KEY_6] = "6",
+    [KEY_7] = "7",
+    [KEY_8] = "8",
+    [KEY_9] = "9",
+    [KEY_PAD_0] = "NP 0",
+    [KEY_PAD_1] = "NP 1",
+    [KEY_PAD_2] = "NP 2",
+    [KEY_PAD_3] = "NP 3",
+    [KEY_PAD_4] = "NP 4",
+    [KEY_PAD_5] = "NP 5",
+    [KEY_PAD_6] = "NP 6",
+    [KEY_PAD_7] = "NP 7",
+    [KEY_PAD_8] = "NP 8",
+    [KEY_PAD_9] = "NP 9",
+    [KEY_PAD_DIVIDE] = "NP /",
+    [KEY_PAD_MULTIPLY] = "NP *",
+    [KEY_PAD_MINUS] = "NP -",
+    [KEY_PAD_PLUS] = "NP +",
+    [KEY_PAD_ENTER] = "NP Enter",
+    [KEY_PAD_DECIMAL] = "NP .",
+    [KEY_LSHIFT] = "L Shift",
+    [KEY_RSHIFT] = "R Shift",
+    [KEY_LALT] = "L Alt",
+    [KEY_RALT] = "R Alt",
+    [KEY_LCONTROL] = "L Ctrl",
+    [KEY_RCONTROL] = "R Ctrl",
+    [KEY_SPACE] = "Space",
+    [KEY_ENTER] = "Enter",
+    [KEY_BACKSPACE] = "Backspace",
+    [KEY_TAB] = "Tab",
+    [KEY_CAPSLOCK] = "Caps Lock",
+    [KEY_ESCAPE] = "Escape",
+    [KEY_SCROLLLOCK] = "Scroll Lock",
+    [KEY_INSERT] = "Insert",
+    [KEY_DELETE] = "Delete",
+    [KEY_HOME] = "Home",
+    [KEY_END] = "End",
+    [KEY_PAGEUP] = "Page Up",
+    [KEY_PAGEDOWN] = "Page Down",
+    [KEY_BREAK] = "Break",
+    [KEY_NUMLOCK] = "Num Lock",
+    [KEY_SEMICOLON] = ";",
+    [KEY_EQUAL] = "=",
+    [KEY_MINUS] = "-",
+    [KEY_COMMA] = ",",
+    [KEY_PERIOD] = ".",
+    [KEY_SLASH] = "/",
+    [KEY_BACKSLASH] = "\\",
+    [KEY_BACKQUOTE] = "`",
+    [KEY_F1] = "F1",
+    [KEY_F2] = "F2",
+    [KEY_F3] = "F3",
+    [KEY_F4] = "F4",
+    [KEY_F5] = "F5",
+    [KEY_F6] = "F6",
+    [KEY_F7] = "F7",
+    [KEY_F8] = "F8",
+    [KEY_F9] = "F9",
+    [KEY_F10] = "F10",
+    [KEY_F11] = "F11",
+    [KEY_F12] = "F12",
+    [KEY_CAPSLOCKTOGGLE] = "Caps Lock",
+    [KEY_NUMLOCKTOGGLE] = "Num Lock",
+    [KEY_LAST] = "Last Key",
+
+    GetKeyName = function(self, keyCode)
+        return self[keyCode] or "UNKNOWN"
+    end
+}
+
 hook.Add("Think", "RadioMiscModulesThink", function()
     Modules.Animations:Think()
     Modules.PulseEffects:Think()
+end)
+
+Modules.Language = {
+    currentLanguage = "en",
+    languages = {
+        de = "Deutsch",
+        en = "English",
+        es = "Español",
+        fr = "Français",
+        it = "Italiano",
+        ja = "日本語",
+        ko = "한국어",
+        pt_br = "Português (Brasil)",
+        ru = "Русский",
+        zh_cn = "简体中文",
+        tr = "Türkçe",
+    },
+    
+    translations = {},
+    countryTranslations = {},
+
+    Initialize = function(self)
+        -- Load base translations
+        self:LoadTranslations()
+        -- Set initial language
+        self:SetLanguage(GetConVar("radio_language"):GetString() or "en")
+    end,
+
+    LoadTranslations = function(self)
+        -- Load base translations
+        self.translations = include("radio/client/lang/cl_localisation_strings.lua") or {}
+        -- Load country translations
+        local translationsA = include("radio/client/lang/cl_country_translations_a.lua") or {}
+        local translationsB = include("radio/client/lang/cl_country_translations_b.lua") or {}
+        
+        -- Merge country translations
+        for lang, translations in pairs(translationsA) do
+            if type(translations) == "table" then
+                self.countryTranslations[lang] = self.countryTranslations[lang] or {}
+                table.Merge(self.countryTranslations[lang], translations)
+            end
+        end
+        
+        for lang, translations in pairs(translationsB) do
+            if type(translations) == "table" then
+                self.countryTranslations[lang] = self.countryTranslations[lang] or {}
+                table.Merge(self.countryTranslations[lang], translations)
+            end
+        end
+    end,
+
+    SetLanguage = function(self, lang)
+        if not self.languages[lang] then
+            print("[rRadio] Invalid language code:", lang)
+            lang = "en"
+        end
+        
+        self.currentLanguage = lang
+        
+        -- Update Config.Lang reference
+        if Config then
+            Config.Lang = self.translations[lang] or {}
+        end
+        
+        -- Notify state change
+        if StateManager then
+            StateManager:SetState("currentLanguage", lang)
+            StateManager:Emit(StateManager.Events.LANGUAGE_CHANGED, lang)
+        end
+    end,
+
+    GetLanguageName = function(self, code)
+        return self.languages[code] or "Unknown"
+    end,
+
+    GetAvailableLanguages = function(self)
+        return self.languages
+    end,
+
+    GetCountryTranslation = function(self, lang, country)
+        if not self.countryTranslations[lang] then return country end
+        return self.countryTranslations[lang][country] or country
+    end,
+
+    -- Helper function to add translations
+    AddTranslations = function(self, lang, translations)
+        self.translations[lang] = self.translations[lang] or {}
+        table.Merge(self.translations[lang], translations)
+    end,
+
+    -- Helper function to add country translations
+    AddCountryTranslations = function(self, lang, translations)
+        self.countryTranslations[lang] = self.countryTranslations[lang] or {}
+        table.Merge(self.countryTranslations[lang], translations)
+    end
+}
+
+-- Initialize Language module
+Modules.Language:Initialize()
+
+-- Then define Settings module
+Modules.Settings = {
+    themeModule = include("radio/client/cl_theme_manager.lua"),
+
+    -- Create base ConVars
+    Initialize = function(self)
+        CreateClientConVar("car_radio_show_messages", "1", true, false, "Enable or disable car radio messages.")
+        CreateClientConVar("radio_language", "en", true, false, "Select the language for the radio UI.")
+        CreateClientConVar("boombox_show_text", "1", true, false, "Show or hide the text above the boombox.")
+        CreateClientConVar("car_radio_open_key", "21", true, false, "Select the key to open the car radio menu.")
+    end,
+
+    -- Theme management
+    ApplyTheme = function(self, themeName)
+        if self.themeModule.themes[themeName] and self.themeModule.factory:validateTheme(self.themeModule.themes[themeName]) then
+            Config.UI = self.themeModule.themes[themeName]
+            
+            -- Debug print
+            print("[Radio] Applying theme:", themeName)
+            
+            -- Fire theme change hooks
+            hook.Run("ThemeChanged", themeName)
+            hook.Run("RadioThemeChanged", themeName)
+        else
+            print("[rRadio] Invalid theme name:", themeName)
+            -- Fallback to default theme
+            local defaultTheme = self.themeModule.factory:getDefaultTheme()
+            Config.UI = self.themeModule.factory:getDefaultThemeData()
+            RunConsoleCommand("radio_theme", defaultTheme)
+        end
+    end,
+
+    -- Language management
+    ApplyLanguage = function(self, languageCode)
+        if Modules.Language.languages[languageCode] then
+            Modules.Language:SetLanguage(languageCode)
+        else
+            print("[rRadio] Invalid language code:", languageCode)
+        end
+    end,
+
+    -- Load saved settings
+    LoadSavedSettings = function(self)
+        local themeName = GetConVar("radio_theme"):GetString()
+        self:ApplyTheme(themeName)
+
+        local languageCode = GetConVar("radio_language"):GetString()
+        self:ApplyLanguage(languageCode)
+    end,
+
+    -- Populate tool menu
+    PopulateToolMenu = function(self)
+        spawnmenu.AddToolMenuOption("Utilities", "rlib", "ThemeVolumeSelection", "rRadio Settings", "", "", function(panel)
+            panel:ClearControls()
+            panel:DockPadding(10, 0, 30, 10)
+
+            -- Theme selection
+            self:AddThemeSelection(panel)
+            
+            -- Language selection
+            self:AddLanguageSelection(panel)
+            
+            -- Key selection
+            self:AddKeySelection(panel)
+            
+            -- General options
+            self:AddGeneralOptions(panel)
+        end)
+    end,
+
+    -- Helper functions for tool menu
+    AddThemeSelection = function(self, panel)
+        local header = self:CreateHeader(panel, "Theme Selection")
+        local dropdown = self:CreateDropdown(panel, "Select Theme")
+        
+        for themeName, _ in pairs(self.themeModule.themes) do
+            dropdown:AddChoice(themeName:gsub("^%l", string.upper))
+        end
+
+        local currentTheme = GetConVar("radio_theme"):GetString()
+        if currentTheme and self.themeModule.themes[currentTheme] then
+            dropdown:SetValue(currentTheme:gsub("^%l", string.upper))
+        end
+
+        dropdown.OnSelect = function(_, _, value)
+            local lowerValue = value:lower()
+            if self.themeModule.themes[lowerValue] then
+                RunConsoleCommand("radio_theme", lowerValue)
+                timer.Simple(0, function()
+                    self:ApplyTheme(lowerValue)
+                end)
+            end
+        end
+    end,
+
+    AddLanguageSelection = function(self, panel)
+        local header = self:CreateHeader(panel, "Language Selection")
+        local dropdown = self:CreateDropdown(panel, "Select Language")
+        
+        for code, name in pairs(Modules.Language.languages) do
+            dropdown:AddChoice(name, code)
+        end
+
+        local currentLanguage = GetConVar("radio_language"):GetString()
+        if currentLanguage and Modules.Language.languages[currentLanguage] then
+            dropdown:SetValue(Modules.Language.languages[currentLanguage])
+        end
+
+        dropdown.OnSelect = function(_, _, _, data)
+            self:ApplyLanguage(data)
+            RunConsoleCommand("radio_language", data)
+        end
+    end,
+
+    AddKeySelection = function(self, panel)
+        local header = self:CreateHeader(panel, "Select Key to Open Radio Menu")
+        local dropdown = self:CreateDropdown(panel, "Select Key")
+        
+        local sortedKeys = self:SortKeys()
+        for _, key in ipairs(sortedKeys) do
+            dropdown:AddChoice(key.name, key.code)
+        end
+
+        local currentKey = GetConVar("car_radio_open_key"):GetInt()
+        local currentKeyName = Modules.KeyNames:GetKeyName(currentKey)
+        if currentKeyName then
+            dropdown:SetValue(currentKeyName)
+        end
+
+        dropdown.OnSelect = function(_, _, _, data)
+            RunConsoleCommand("car_radio_open_key", data)
+        end
+    end,
+
+    AddGeneralOptions = function(self, panel)
+        local header = self:CreateHeader(panel, "General Options")
+        
+        local chatMessageCheckbox = self:CreateCheckbox(panel, "Show Car Radio Messages", "car_radio_show_messages")
+        local showTextCheckbox = self:CreateCheckbox(panel, "Show Boombox Hover Text", "boombox_show_text")
+    end,
+
+    -- UI Helper functions
+    CreateHeader = function(self, panel, text)
+        local header = vgui.Create("DLabel", panel)
+        header:SetText(text)
+        header:SetFont("Trebuchet18")
+        header:SetTextColor(Color(50, 50, 50))
+        header:Dock(TOP)
+        header:DockMargin(0, 20, 0, 5)
+        panel:AddItem(header)
+        return header
+    end,
+
+    CreateDropdown = function(self, panel, placeholder)
+        local dropdown = vgui.Create("DComboBox", panel)
+        dropdown:SetValue(placeholder)
+        dropdown:Dock(TOP)
+        dropdown:SetTall(30)
+        dropdown:DockMargin(0, 0, 0, 5)
+        panel:AddItem(dropdown)
+        return dropdown
+    end,
+
+    CreateCheckbox = function(self, panel, text, convar)
+        local checkbox = vgui.Create("DCheckBoxLabel", panel)
+        checkbox:SetText(text)
+        checkbox:SetConVar(convar)
+        checkbox:Dock(TOP)
+        checkbox:DockMargin(0, 0, 0, 5)
+        checkbox:SetTextColor(Color(0, 0, 0))
+        checkbox:SetValue(GetConVar(convar):GetBool())
+        panel:AddItem(checkbox)
+        return checkbox
+    end,
+
+    -- Key sorting helper
+    SortKeys = function(self)
+        local letterKeys = {}
+        local numberKeys = {}
+        local functionKeys = {}
+        local otherKeys = {}
+
+        for keyCode, keyName in pairs(Modules.KeyNames) do
+            if type(keyName) == "string" and keyCode ~= "GetKeyName" then
+                local entry = {code = tonumber(keyCode), name = keyName}
+                
+                if keyName:match("^%a$") then
+                    table.insert(letterKeys, entry)
+                elseif keyName:match("^%d$") then
+                    table.insert(numberKeys, entry)
+                elseif keyName:match("^F%d+$") then
+                    table.insert(functionKeys, entry)
+                else
+                    table.insert(otherKeys, entry)
+                end
+            end
+        end
+
+        table.sort(letterKeys, function(a, b) return a.name < b.name end)
+        table.sort(numberKeys, function(a, b) return tonumber(a.name) < tonumber(b.name) end)
+        table.sort(functionKeys, function(a, b) 
+            return tonumber(a.name:match("%d+")) < tonumber(b.name:match("%d+"))
+        end)
+        table.sort(otherKeys, function(a, b) return a.name < b.name end)
+
+        local sortedKeys = {}
+        for _, key in ipairs(letterKeys) do table.insert(sortedKeys, key) end
+        for _, key in ipairs(numberKeys) do table.insert(sortedKeys, key) end
+        for _, key in ipairs(functionKeys) do table.insert(sortedKeys, key) end
+        for _, key in ipairs(otherKeys) do table.insert(sortedKeys, key) end
+
+        return sortedKeys
+    end
+}
+
+-- Add hooks
+hook.Add("InitPostEntity", "ApplySavedThemeAndLanguageOnJoin", function()
+    Modules.Settings:LoadSavedSettings()
+end)
+
+hook.Add("PopulateToolMenu", "AddThemeAndVolumeSelectionMenu", function()
+    Modules.Settings:PopulateToolMenu()
+end)
+
+hook.Add("LanguageUpdated", "UpdateCountryListOnLanguageChange", function()
+    if radioMenuOpen then
+        populateList(stationListPanel, backButton, searchBox, true)
+    end
 end)
 
 return Modules 

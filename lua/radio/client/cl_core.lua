@@ -12,12 +12,9 @@
 --          Imports
 -- ------------------------------
 include("radio/shared/sh_config.lua")
-local LanguageManager = include("radio/client/lang/cl_language_manager.lua")
-local themeModule = include("radio/client/cl_themes.lua")
-local keyCodeMapping = include("radio/client/cl_key_names.lua")
+local themeModule = include("radio/client/cl_theme_manager.lua")
 local utils = include("radio/shared/sh_utils.lua")
 local Misc = include("radio/client/cl_misc.lua")
-local Settings = include("radio/client/cl_settings.lua")
 
 if not StateManager then
     error("[rRadio] Failed to load StateManager")
@@ -121,6 +118,9 @@ local VOLUME_ICONS = {
     LOW = MaterialCache:Get("hud/vol_down.png"),
     HIGH = MaterialCache:Get("hud/vol_up.png")
 }
+
+local unauthorizedUIOpen = false
+local isBoomboxMuted = {}
 
 local lastPermissionMessage = 0
 local PERMISSION_MESSAGE_COOLDOWN = 3
@@ -570,6 +570,79 @@ local formattedCountryNames = {}
 local stationDataLoaded = false
 local isSearching = false
 
+-- Add near the top with other state variables
+local MuteManager = {
+    mutedEntities = {},
+    originalVolumes = {},
+    
+    IsMuted = function(self, entIndex)
+        return self.mutedEntities[entIndex] == true
+    end,
+    
+    MuteEntity = function(self, entIndex, entity)
+        if not IsValid(entity) then return end
+        
+        -- Store original volume for unmuting
+        local streamData = StreamManager.activeStreams[entIndex]
+        if streamData and IsValid(streamData.stream) then
+            self.originalVolumes[entIndex] = streamData.stream:GetVolume()
+        else
+            self.originalVolumes[entIndex] = entityVolumes[entity] or 0.5
+        end
+        
+        self.mutedEntities[entIndex] = true
+        
+        -- Apply mute immediately
+        if streamData and IsValid(streamData.stream) then
+            streamData.stream:SetVolume(0)
+        end
+        
+        -- Emit state change event
+        StateManager:Emit(StateManager.Events.BOOMBOX_MUTE_CHANGED, {
+            entity = entity,
+            muted = true
+        })
+    end,
+    
+    UnmuteEntity = function(self, entIndex, entity)
+        if not IsValid(entity) then return end
+        
+        local originalVolume = self.originalVolumes[entIndex] or entityVolumes[entity] or 0.5
+        self.mutedEntities[entIndex] = nil
+        self.originalVolumes[entIndex] = nil
+        
+        -- Restore volume
+        local streamData = StreamManager.activeStreams[entIndex]
+        if streamData and IsValid(streamData.stream) then
+            streamData.stream:SetVolume(originalVolume)
+        end
+        
+        -- Emit state change event
+        StateManager:Emit(StateManager.Events.BOOMBOX_MUTE_CHANGED, {
+            entity = entity,
+            muted = false
+        })
+    end,
+    
+    CleanupEntity = function(self, entIndex)
+        self.mutedEntities[entIndex] = nil
+        self.originalVolumes[entIndex] = nil
+    end,
+    
+    -- Handle volume updates while maintaining mute state
+    HandleVolumeUpdate = function(self, entity, newVolume)
+        local entIndex = entity:EntIndex()
+        
+        if self:IsMuted(entIndex) then
+            -- Update stored original volume but keep muted
+            self.originalVolumes[entIndex] = newVolume
+            return 0 -- Return 0 to maintain mute
+        end
+        
+        return newVolume -- Return original volume if not muted
+    end
+}
+
 -- ------------------------------
 --      Helper Functions
 -- ------------------------------
@@ -638,7 +711,7 @@ local function formatCountryName(name)
         return formattedCountryNames[cacheKey]
     end
 
-    local translatedName = LanguageManager:GetCountryTranslation(lang, name)
+    local translatedName = Misc.Language:GetCountryTranslation(lang, name)
 
     formattedCountryNames[cacheKey] = translatedName
     return translatedName
@@ -829,6 +902,13 @@ local function updateRadioVolume(station, distanceSqr, isPlayerInCar, entity)
         return
     end
 
+    -- Check mute state before proceeding
+    local entIndex = entity:EntIndex()
+    if MuteManager:IsMuted(entIndex) then
+        station:SetVolume(0)
+        return
+    end
+
     -- If player is in the vehicle, use full user-set volume and disable 3D
     if isPlayerInCar then
         station:Set3DEnabled(false)
@@ -881,7 +961,7 @@ local function PrintCarRadioMessage()
     isMessageAnimating = true
 
     local openKey = GetConVar("car_radio_open_key"):GetInt()
-    local keyName = GetKeyName(openKey)
+    local keyName = Misc.KeyNames:GetKeyName(openKey)
 
     local scrW, scrH = ScrW(), ScrH()
     local panelWidth = Scale(300)
@@ -1425,7 +1505,7 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                 return first:upper() .. rest:lower()
             end)
             
-            local translatedCountry = LanguageManager:GetCountryTranslation(lang, formattedCountry) or formattedCountry
+            local translatedCountry = Misc.Language:GetCountryTranslation(lang, formattedCountry) or formattedCountry
 
             if filterText == "" or translatedCountry:lower():find(filterText, 1, true) then
                 local isFavorite = getSafeState("favoriteCountries", {})[country] or false
@@ -1485,8 +1565,15 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
         local favoritesList = StateManager:GetFavoritesList(lang, filterText)
 
         for _, favorite in ipairs(favoritesList) do
-            local displayName = favorite.countryName .. " - " .. utils.truncateStationName(favorite.station.name)
-            local fullName = favorite.countryName .. " - " .. favorite.station.name
+            -- Format the country name before displaying
+            local formattedCountry = favorite.countryName:gsub("_", " "):gsub("(%a)([%w_']*)", function(first, rest)
+                return first:upper() .. rest:lower()
+            end)
+            -- Get translated country name
+            local translatedCountry = Misc.Language:GetCountryTranslation(lang, formattedCountry) or formattedCountry
+            
+            local displayName = translatedCountry .. " - " .. utils.truncateStationName(favorite.station.name)
+            local fullName = translatedCountry .. " - " .. favorite.station.name
             
             local stationButton = createStyledButton(
                 stationListPanel,
@@ -1922,7 +2009,7 @@ local function openSettingsMenu(parentFrame, backButton)
         if themeModule.themes[lowerValue] then
             RunConsoleCommand("radio_theme", lowerValue)
             timer.Simple(0, function()
-                Settings.applyTheme(lowerValue)
+                Misc.Settings:ApplyTheme(lowerValue)
             end)
             
             -- Safely close and reopen the menu
@@ -2064,7 +2151,7 @@ local function openSettingsMenu(parentFrame, backButton)
                     if choice.data then
                         RunConsoleCommand("radio_theme", choice.data)
                         timer.Simple(0, function()
-                            Settings.applyTheme(choice.data)
+                            Misc.Settings:ApplyTheme(choice.data)
                         end)
                         
                         if IsValid(parentFrame) then
@@ -2108,7 +2195,7 @@ local function openSettingsMenu(parentFrame, backButton)
     -- Language Selection
     addHeader(Config.Lang["LanguageSelection"] or "Language Selection")
     local languageChoices = {}
-    local availableLanguages = LanguageManager:GetAvailableLanguages()
+    local availableLanguages = Misc.Language:GetAvailableLanguages()
     
     if type(availableLanguages) == "table" then
         for code, name in pairs(availableLanguages) do
@@ -2121,7 +2208,7 @@ local function openSettingsMenu(parentFrame, backButton)
     end
 
     local currentLanguage = GetConVar("radio_language"):GetString()
-    local currentLanguageName = LanguageManager:GetLanguageName(currentLanguage)
+    local currentLanguageName = Misc.Language:GetLanguageName(currentLanguage)
 
     addDropdown(Config.Lang["SelectLanguage"] or "Select Language", languageChoices, currentLanguageName, function(_, _, name, data)
         print("[rRadio Debug] Language Selection:")
@@ -2143,8 +2230,8 @@ local function openSettingsMenu(parentFrame, backButton)
             print("  - Verified language convar:", GetConVar("radio_language"):GetString())
         end)
         
-        LanguageManager:SetLanguage(data)
-        Config.Lang = LanguageManager.translations[data]
+        Misc.Language:SetLanguage(data)
+        Config.Lang = Misc.Language.translations[data]
         
         -- Update state
         StateManager:SetState("currentLanguage", data)
@@ -2181,8 +2268,8 @@ local function openSettingsMenu(parentFrame, backButton)
     local functionKeys = {}
     local otherKeys = {}
 
-    for keyCode, keyName in pairs(keyCodeMapping) do
-        if type(keyName) == "string" then
+    for keyCode, keyName in pairs(Misc.KeyNames) do
+        if type(keyName) == "string" and keyCode ~= "GetKeyName" then
             local entry = {code = tonumber(keyCode), name = keyName}
             
             if keyName:match("^%a$") then
@@ -2220,7 +2307,7 @@ local function openSettingsMenu(parentFrame, backButton)
     end
 
     local currentKey = GetConVar("car_radio_open_key"):GetInt()
-    local currentKeyName = keyCodeMapping[currentKey] or "K"
+    local currentKeyName = Misc.KeyNames:GetKeyName(currentKey)
 
     addDropdown(Config.Lang["SelectKey"] or "Select Key", keyChoices, currentKeyName, function(panel, _, name, data)
         print("[rRadio Debug] Key Selection:")
@@ -2247,7 +2334,7 @@ local function openSettingsMenu(parentFrame, backButton)
         -- Verify convar was set
         timer.Simple(0.1, function()
             print("  - Verified key convar:", GetConVar("car_radio_open_key"):GetInt())
-            print("  - Key name for verified code:", keyCodeMapping[GetConVar("car_radio_open_key"):GetInt()])
+            print("  - Key name for verified code:", Misc.KeyNames:GetKeyName(GetConVar("car_radio_open_key"):GetInt()))
         end)
         
         -- Update state
@@ -2341,6 +2428,230 @@ local function openSettingsMenu(parentFrame, backButton)
         surface.SetDrawColor(Config.UI.TextColor)
         surface.SetMaterial(MaterialCache:Get("hud/github.png"))
         surface.DrawTexturedRect(0, 0, w, h)
+    end
+end
+
+--[[
+    Function: openUnauthorizedUI
+    Opens a limited UI for users without boombox permissions.
+    Shows current station, mute controls, and settings access.
+]]
+local function openUnauthorizedUI(entity)
+    if unauthorizedUIOpen then return end
+    if not IsValid(entity) then return end
+    
+    unauthorizedUIOpen = true
+    
+    local frame = vgui.Create("DFrame")
+    currentFrame = frame
+    frame:SetTitle("")
+    frame:SetSize(Scale(Config.UI.FrameSize.width), Scale(200))
+    frame:Center()
+    frame:SetDraggable(false)
+    frame:ShowCloseButton(false)
+    frame:MakePopup()
+    
+    frame.OnClose = function()
+        unauthorizedUIOpen = false
+    end
+
+    frame.Paint = function(self, w, h)
+        -- Background
+        draw.RoundedBox(8, 0, 0, w, h, Config.UI.BackgroundColor)
+        draw.RoundedBoxEx(8, 0, 0, w, Scale(40), Config.UI.HeaderColor, true, true, false, false)
+
+        -- Header icon and text
+        local headerHeight = Scale(40)
+        local iconSize = Scale(25)
+        local iconOffsetX = Scale(10)
+        local iconOffsetY = headerHeight/2 - iconSize/2
+
+        surface.SetMaterial(MaterialCache:Get("hud/radio.png"))
+        surface.SetDrawColor(Config.UI.TextColor)
+        surface.DrawTexturedRect(iconOffsetX, iconOffsetY, iconSize, iconSize)
+
+        draw.SimpleText(
+            Config.Lang["UnauthorizedAccess"] or "Unauthorized Access", 
+            "HeaderFont", 
+            iconOffsetX + iconSize + Scale(5), 
+            headerHeight/2, 
+            Config.UI.TextColor, 
+            TEXT_ALIGN_LEFT, 
+            TEXT_ALIGN_CENTER
+        )
+    end
+
+    -- Station info panel
+    local infoPanel = vgui.Create("DPanel", frame)
+    infoPanel:SetPos(Scale(10), Scale(50))
+    infoPanel:SetSize(frame:GetWide() - Scale(20), Scale(60))
+    infoPanel.Paint = function(self, w, h)
+        draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonColor)
+        
+        local stationName = entity:GetNWString("StationName", "")
+        local status = entity:GetNWString("Status", "")
+        local volume = entity:GetNWFloat("Volume", 0.5)
+        local entIndex = entity:EntIndex()
+        local isMuted = MuteManager:IsMuted(entIndex)
+        
+        if stationName ~= "" then
+            -- Station name with truncation
+            local displayName = utils.truncateStationName(stationName)
+            draw.SimpleText(
+                displayName,
+                "Roboto18",
+                Scale(10),
+                Scale(10),
+                Config.UI.TextColor,
+                TEXT_ALIGN_LEFT,
+                TEXT_ALIGN_TOP
+            )
+            
+            -- Show full name as tooltip if truncated
+            if displayName ~= stationName then
+                if self:IsHovered() then
+                    local x, y = self:LocalToScreen(0, 0)
+                    local tooltip = vgui.Create("DPanel")
+                    tooltip:SetDrawOnTop(true)
+                    tooltip:SetText(stationName)
+                    tooltip:SizeToContents()
+                    tooltip:SetPos(x + Scale(10), y + Scale(10))
+                    timer.Simple(0.01, function() if IsValid(tooltip) then tooltip:Remove() end end)
+                end
+            end
+            
+            -- Status with volume indicator
+            local statusText = status:sub(1,1):upper() .. status:sub(2)
+            if status == "playing" then
+                statusText = statusText .. string.format(" (Volume: %d%%)", math.Round(volume * 100))
+                if isMuted then
+                    statusText = statusText .. " - MUTED"
+                end
+            end
+            
+            -- Status text with color based on state
+            local statusColor = status == "playing" and 
+                (isMuted and Config.UI.CloseButtonColor or Color(100, 255, 100, 255)) or 
+                Config.UI.TextColor
+            
+            draw.SimpleText(
+                statusText,
+                "Roboto18",
+                Scale(10),
+                Scale(35),
+                statusColor,
+                TEXT_ALIGN_LEFT,
+                TEXT_ALIGN_TOP
+            )
+            
+            -- Visual volume indicator
+            if status == "playing" then
+                local barWidth = w - Scale(20)
+                local barHeight = Scale(4)
+                local barY = Scale(52)
+                
+                -- Background bar
+                draw.RoundedBox(2, Scale(10), barY, barWidth, barHeight, 
+                    ColorAlpha(Config.UI.ScrollbarColor, 100))
+                
+                -- Volume bar
+                local volWidth = barWidth * volume
+                draw.RoundedBox(2, Scale(10), barY, volWidth, barHeight,
+                    isMuted and Config.UI.CloseButtonColor or Config.UI.AccentColor)
+            end
+        else
+            draw.SimpleText(
+                Config.Lang["NoStation"] or "No Station Playing",
+                "Roboto18",
+                w/2,
+                h/2,
+                Config.UI.TextColor,
+                TEXT_ALIGN_CENTER,
+                TEXT_ALIGN_CENTER
+            )
+        end
+    end
+
+    infoPanel.Think = function(self)
+        if IsValid(entity) and entity:GetNWString("Status", "") == "playing" then
+            self:InvalidateLayout()
+        end
+    end
+
+    -- Mute button
+    local muteButton = vgui.Create("DButton", frame)
+    muteButton:SetPos(Scale(10), Scale(120))
+    muteButton:SetSize(frame:GetWide() - Scale(20), Scale(40))
+    muteButton:SetText("")
+    
+    local isMuted = isBoomboxMuted[entity:EntIndex()] or false
+    
+    muteButton.Paint = function(self, w, h)
+        local bgColor = isMuted and Config.UI.CloseButtonColor or Config.UI.ButtonColor
+        local hoverColor = isMuted and Config.UI.CloseButtonHoverColor or Config.UI.ButtonHoverColor
+        
+        if self:IsHovered() then
+            draw.RoundedBox(8, 0, 0, w, h, hoverColor)
+        else
+            draw.RoundedBox(8, 0, 0, w, h, bgColor)
+        end
+        
+        -- Icon
+        surface.SetMaterial(MaterialCache:Get(isMuted and "hud/vol_mute.png" or "hud/vol_up.png"))
+        surface.SetDrawColor(Config.UI.TextColor)
+        surface.DrawTexturedRect(Scale(10), Scale(8), Scale(24), Scale(24))
+        
+        -- Text
+        draw.SimpleText(
+            isMuted and (Config.Lang["Unmute"] or "Unmute Boombox") or (Config.Lang["Mute"] or "Mute Boombox"),
+            "Roboto18",
+            Scale(44),
+            h/2,
+            Config.UI.TextColor,
+            TEXT_ALIGN_LEFT,
+            TEXT_ALIGN_CENTER
+        )
+    end
+    
+    muteButton.DoClick = function()
+        surface.PlaySound("buttons/button15.wav")
+        local entIndex = entity:EntIndex()
+        
+        if MuteManager:IsMuted(entIndex) then
+            MuteManager:UnmuteEntity(entIndex, entity)
+            isMuted = false
+        else
+            MuteManager:MuteEntity(entIndex, entity)
+            isMuted = true
+        end
+    end
+
+    -- Close and settings buttons
+    local buttonSize = Scale(25)
+    local topMargin = Scale(7)
+    local buttonPadding = Scale(5)
+
+    local closeButton = vgui.Create("DButton", frame)
+    closeButton:SetPos(frame:GetWide() - buttonSize - Scale(10), topMargin)
+    closeButton:SetSize(buttonSize, buttonSize)
+    closeButton:SetText("")
+    closeButton.lerp = 0
+    
+    closeButton.Paint = function(self, w, h)
+        if self:IsHovered() then
+            self.lerp = math.Approach(self.lerp, 1, FrameTime() * 5)
+        else
+            self.lerp = math.Approach(self.lerp, 0, FrameTime() * 5)
+        end
+        
+        surface.SetMaterial(MaterialCache:Get("hud/close.png"))
+        surface.SetDrawColor(ColorAlpha(Config.UI.IconColor, 255 * (0.5 + 0.5 * self.lerp)))
+        surface.DrawTexturedRect(0, 0, w, h)
+    end
+    
+    closeButton.DoClick = function()
+        surface.PlaySound("buttons/lightswitch2.wav")
+        frame:Close()
     end
 end
 
@@ -2443,7 +2754,7 @@ openRadioMenu = function(openSettings)
                 local formattedCountry = currentCountry:gsub("_", " "):gsub("(%a)([%w_']*)", function(a, b)
                     return string.upper(a) .. string.lower(b) 
                 end)
-                headerText = LanguageManager:GetCountryTranslation(lang, formattedCountry) or formattedCountry
+                headerText = Misc.Language:GetCountryTranslation(lang, formattedCountry) or formattedCountry
             end
         else
             headerText = Config.Lang["SelectCountry"] or "Select Country"
@@ -3019,11 +3330,14 @@ net.Receive("OpenRadioMenu", function()
                 openRadioMenu()
             end
         else
-            -- Rate-limited permission message
+            -- Show unauthorized UI instead of just a chat message
             if currentTime - lastPermissionMessage >= PERMISSION_MESSAGE_COOLDOWN then
                 chat.AddText(Color(255, 0, 0), "You don't have permission to interact with this boombox.")
                 lastPermissionMessage = currentTime
                 StateManager:SetState("lastPermissionMessage", currentTime)
+                
+                -- Open unauthorized UI
+                openUnauthorizedUI(ent)
             end
         end
     end

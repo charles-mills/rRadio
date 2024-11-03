@@ -1,11 +1,8 @@
 print("[rRadio] Starting server-side initialization")
 
 AddCSLuaFile("radio/shared/sh_config.lua")
-AddCSLuaFile("radio/client/lang/cl_language_manager.lua")
 AddCSLuaFile("radio/client/cl_core.lua")
-AddCSLuaFile("radio/client/cl_settings.lua")
-AddCSLuaFile("radio/client/cl_themes.lua")
-AddCSLuaFile("radio/client/cl_key_names.lua")
+AddCSLuaFile("radio/client/cl_theme_manager.lua")
 AddCSLuaFile("radio/client/cl_state_manager.lua")
 AddCSLuaFile("radio/shared/sh_utils.lua")
 AddCSLuaFile("radio/client/cl_misc.lua")
