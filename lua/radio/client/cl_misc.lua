@@ -386,11 +386,107 @@ hook.Add("Think", "RadioMiscModulesThink", function()
     Modules.PulseEffects:Think()
 end)
 
--- Add Settings module to Modules table
+Modules.Language = {
+    currentLanguage = "en",
+    languages = {
+        de = "Deutsch",
+        en = "English",
+        es = "Español",
+        fr = "Français",
+        it = "Italiano",
+        ja = "日本語",
+        ko = "한국어",
+        pt_br = "Português (Brasil)",
+        ru = "Русский",
+        zh_cn = "简体中文",
+        tr = "Türkçe",
+    },
+    
+    translations = {},
+    countryTranslations = {},
+
+    Initialize = function(self)
+        -- Load base translations
+        self:LoadTranslations()
+        -- Set initial language
+        self:SetLanguage(GetConVar("radio_language"):GetString() or "en")
+    end,
+
+    LoadTranslations = function(self)
+        -- Load base translations
+        self.translations = include("radio/client/lang/cl_localisation_strings.lua") or {}
+        -- Load country translations
+        local translationsA = include("radio/client/lang/cl_country_translations_a.lua") or {}
+        local translationsB = include("radio/client/lang/cl_country_translations_b.lua") or {}
+        
+        -- Merge country translations
+        for lang, translations in pairs(translationsA) do
+            if type(translations) == "table" then
+                self.countryTranslations[lang] = self.countryTranslations[lang] or {}
+                table.Merge(self.countryTranslations[lang], translations)
+            end
+        end
+        
+        for lang, translations in pairs(translationsB) do
+            if type(translations) == "table" then
+                self.countryTranslations[lang] = self.countryTranslations[lang] or {}
+                table.Merge(self.countryTranslations[lang], translations)
+            end
+        end
+    end,
+
+    SetLanguage = function(self, lang)
+        if not self.languages[lang] then
+            print("[rRadio] Invalid language code:", lang)
+            lang = "en"
+        end
+        
+        self.currentLanguage = lang
+        
+        -- Update Config.Lang reference
+        if Config then
+            Config.Lang = self.translations[lang] or {}
+        end
+        
+        -- Notify state change
+        if StateManager then
+            StateManager:SetState("currentLanguage", lang)
+            StateManager:Emit(StateManager.Events.LANGUAGE_CHANGED, lang)
+        end
+    end,
+
+    GetLanguageName = function(self, code)
+        return self.languages[code] or "Unknown"
+    end,
+
+    GetAvailableLanguages = function(self)
+        return self.languages
+    end,
+
+    GetCountryTranslation = function(self, lang, country)
+        if not self.countryTranslations[lang] then return country end
+        return self.countryTranslations[lang][country] or country
+    end,
+
+    -- Helper function to add translations
+    AddTranslations = function(self, lang, translations)
+        self.translations[lang] = self.translations[lang] or {}
+        table.Merge(self.translations[lang], translations)
+    end,
+
+    -- Helper function to add country translations
+    AddCountryTranslations = function(self, lang, translations)
+        self.countryTranslations[lang] = self.countryTranslations[lang] or {}
+        table.Merge(self.countryTranslations[lang], translations)
+    end
+}
+
+-- Initialize Language module
+Modules.Language:Initialize()
+
+-- Then define Settings module
 Modules.Settings = {
-    -- Store theme and language managers
     themeModule = include("radio/client/cl_theme_manager.lua"),
-    languageManager = include("radio/client/lang/cl_language_manager.lua"),
 
     -- Create base ConVars
     Initialize = function(self)
@@ -422,10 +518,8 @@ Modules.Settings = {
 
     -- Language management
     ApplyLanguage = function(self, languageCode)
-        if self.languageManager.languages[languageCode] then
-            Config.Lang = self.languageManager.translations[languageCode]
-            hook.Run("LanguageChanged", languageCode)
-            hook.Run("LanguageUpdated")
+        if Modules.Language.languages[languageCode] then
+            Modules.Language:SetLanguage(languageCode)
         else
             print("[rRadio] Invalid language code:", languageCode)
         end
@@ -489,13 +583,13 @@ Modules.Settings = {
         local header = self:CreateHeader(panel, "Language Selection")
         local dropdown = self:CreateDropdown(panel, "Select Language")
         
-        for code, name in pairs(self.languageManager.languages) do
+        for code, name in pairs(Modules.Language.languages) do
             dropdown:AddChoice(name, code)
         end
 
         local currentLanguage = GetConVar("radio_language"):GetString()
-        if currentLanguage and self.languageManager.languages[currentLanguage] then
-            dropdown:SetValue(self.languageManager.languages[currentLanguage])
+        if currentLanguage and Modules.Language.languages[currentLanguage] then
+            dropdown:SetValue(Modules.Language.languages[currentLanguage])
         end
 
         dropdown.OnSelect = function(_, _, _, data)
@@ -604,9 +698,6 @@ Modules.Settings = {
         return sortedKeys
     end
 }
-
--- Initialize settings
-Modules.Settings:Initialize()
 
 -- Add hooks
 hook.Add("InitPostEntity", "ApplySavedThemeAndLanguageOnJoin", function()
