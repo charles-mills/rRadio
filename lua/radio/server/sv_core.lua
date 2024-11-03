@@ -26,6 +26,24 @@ for _, str in ipairs(networkStrings) do
     util.AddNetworkString(str)
 end
 
+-- Add network string
+util.AddNetworkString("RequestRadioMessage")
+
+-- Handle client requests for radio messages
+net.Receive("RequestRadioMessage", function(len, ply)
+    local vehicle = net.ReadEntity()
+    if not IsValid(vehicle) then return end
+    
+    -- Validate vehicle
+    if not utils.canUseRadio(vehicle) then return end
+    
+    -- Send message to client
+    net.Start("CarRadioMessage")
+        net.WriteEntity(vehicle)
+        net.WriteBool(true) -- Validation flag
+    net.Send(ply)
+end)
+
 -- Core constants
 local GLOBAL_COOLDOWN = 0.1
 local VOLUME_UPDATE_DEBOUNCE_TIME = 0.1

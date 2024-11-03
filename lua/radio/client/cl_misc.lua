@@ -14,7 +14,6 @@ local Modules = {}
 Modules.Animations = {
     activeTweens = {},
     nextId = 1,
-    panelTweens = {}, -- Track tweens by panel
     
     -- Easing functions
     Easing = {
@@ -33,8 +32,7 @@ Modules.Animations = {
         end
     },
     
-    -- Add panel tracking to CreateTween
-    CreateTween = function(self, duration, from, to, onUpdate, onComplete, easing, panel)
+    CreateTween = function(self, duration, from, to, onUpdate, onComplete, easing)
         local id = self.nextId
         self.nextId = self.nextId + 1
         
@@ -46,72 +44,34 @@ Modules.Animations = {
             onUpdate = onUpdate,
             onComplete = onComplete,
             easing = easing or self.Easing.OutQuint,
-            completed = false,
-            panel = panel -- Track associated panel
+            completed = false
         }
-        
-        -- Track tween by panel if provided
-        if IsValid(panel) then
-            self.panelTweens[panel] = self.panelTweens[panel] or {}
-            table.insert(self.panelTweens[panel], id)
-        end
         
         return id
     end,
     
-    -- Add cleanup for specific panel
-    CleanupForPanel = function(self, panel)
-        if not IsValid(panel) then return end
-        
-        if self.panelTweens[panel] then
-            for _, tweenId in ipairs(self.panelTweens[panel]) do
-                self:StopTween(tweenId)
-            end
-            self.panelTweens[panel] = nil
-        end
-    end,
-    
-    -- Update StopTween to handle panel tracking
     StopTween = function(self, id)
-        local tween = self.activeTweens[id]
-        if tween and IsValid(tween.panel) then
-            local panelTweens = self.panelTweens[tween.panel]
-            if panelTweens then
-                table.RemoveByValue(panelTweens, id)
-                if #panelTweens == 0 then
-                    self.panelTweens[tween.panel] = nil
-                end
-            end
-        end
         self.activeTweens[id] = nil
     end,
     
-    -- Update Think function with better cleanup
     Think = function(self)
         local currentTime = CurTime()
-        local tweensToRemove = {}
         
         for id, tween in pairs(self.activeTweens) do
             if not tween.completed then
-                -- Check if panel is still valid
-                if tween.panel and not IsValid(tween.panel) then
-                    table.insert(tweensToRemove, id)
-                    continue
-                end
-                
                 local progress = math.Clamp((currentTime - tween.startTime) / tween.duration, 0, 1)
                 local easedProgress = tween.easing(progress)
                 
                 if type(tween.from) == "number" then
                     local current = Lerp(easedProgress, tween.from, tween.to)
                     if tween.onUpdate(current) == false then
-                        table.insert(tweensToRemove, id)
+                        self.activeTweens[id] = nil
                         continue
                     end
                 elseif IsColor(tween.from) then
                     local current = LerpColor(easedProgress, tween.from, tween.to)
                     if tween.onUpdate(current) == false then
-                        table.insert(tweensToRemove, id)
+                        self.activeTweens[id] = nil
                         continue
                     end
                 end
@@ -121,14 +81,9 @@ Modules.Animations = {
                     if tween.onComplete then
                         tween.onComplete()
                     end
-                    table.insert(tweensToRemove, id)
+                    self.activeTweens[id] = nil
                 end
             end
-        end
-        
-        -- Clean up completed or invalid tweens
-        for _, id in ipairs(tweensToRemove) do
-            self:StopTween(id)
         end
     end
 }
@@ -142,6 +97,15 @@ Modules.Transitions = {
     SlideElement = function(self, element, duration, direction, onComplete)
         if not IsValid(element) then return end
         
+        -- Validate parameters
+        if type(duration) ~= "number" then
+            duration = 0.3 -- Default duration if invalid
+        end
+        
+        -- Cache element reference and validity state
+        local elementRef = element
+        local isValid = true
+        
         local startX = direction == "in" and element:GetWide() or 0
         local endX = direction == "in" and 0 or -element:GetWide()
         
@@ -153,24 +117,36 @@ Modules.Transitions = {
             startX,
             endX,
             function(value)
-                if IsValid(element) then
-                    element:SetPos(value, element:GetY())
-                    return true
+                -- Single validity check that updates cached state
+                if isValid and not IsValid(elementRef) then
+                    isValid = false
+                    return false
                 end
-                return false
+                
+                if isValid then
+                    elementRef:SetPos(value, elementRef:GetY())
+                end
             end,
             function()
-                if IsValid(element) and onComplete then
+                if isValid and onComplete then
                     onComplete()
                 end
             end,
-            Modules.Animations.Easing.OutQuint,
-            element -- Pass the panel reference
+            Modules.Animations.Easing.OutQuint
         )
     end,
     
     FadeElement = function(self, element, direction, duration, onComplete)
         if not IsValid(element) then return end
+        
+        -- Validate parameters
+        if type(duration) ~= "number" then
+            duration = 0.2 -- Default duration if invalid
+        end
+        
+        -- Cache element reference and validity state
+        local elementRef = element
+        local isValid = true
         
         local startAlpha = direction == "in" and 0 or 255
         local endAlpha = direction == "in" and 255 or 0
@@ -182,19 +158,22 @@ Modules.Transitions = {
             startAlpha,
             endAlpha,
             function(value)
-                if IsValid(element) then
-                    element:SetAlpha(value)
-                    return true
+                -- Single validity check that updates cached state
+                if isValid and not IsValid(elementRef) then
+                    isValid = false
+                    return false
                 end
-                return false
+                
+                if isValid then
+                    elementRef:SetAlpha(value)
+                end
             end,
             function()
-                if IsValid(element) and onComplete then
+                if isValid and onComplete then
                     onComplete()
                 end
             end,
-            Modules.Animations.Easing.OutQuint,
-            element -- Pass the panel reference
+            Modules.Animations.Easing.OutQuint
         )
     end
 }
