@@ -1207,6 +1207,7 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                 stationListPanel,
                 Config.Lang["FavoriteStations"] or "Favorite Stations",
                 function()
+                    surface.PlaySound("garrysmod/content_downloaded.wav") -- Cheerful notification sound
                     StateManager:SetState("selectedCountry", "favorites")
                     StateManager:SetState("favoritesMenuOpen", true)
                     selectedCountry = "favorites"
@@ -1272,6 +1273,7 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                 country.translated, -- Use translated name for display
                 function()
                     local countryCode = country.original
+                    surface.PlaySound("ui/buttonclick.wav") -- Add navigation sound
                     StateManager:SetState("selectedCountry", countryCode)
                     selectedCountry = countryCode
                     
@@ -1563,9 +1565,13 @@ local function openSettingsMenu(parentFrame, backButton)
                 button.choiceData = choice.data
                 
                 button.DoClick = function()
+                    print("[rRadio Debug] Button Click:")
+                    print("  - Choice name:", choice.name)
+                    print("  - Choice data:", choice.data)
+                    
                     self:SetValue(choice.name)
                     if onSelect then
-                        onSelect(self, choice.name, button.choiceData)
+                        onSelect(self, nil, choice.name, choice.data) -- Pass name and data correctly
                     end
                     menu:Remove()
                 end
@@ -1711,16 +1717,32 @@ local function openSettingsMenu(parentFrame, backButton)
     local currentLanguageName = LanguageManager:GetLanguageName(currentLanguage)
 
     addDropdown(Config.Lang["SelectLanguage"] or "Select Language", languageChoices, currentLanguageName, function(_, _, name, data)
-        if not data then return end
+        print("[rRadio Debug] Language Selection:")
+        print("  - Selected Name:", name)
+        print("  - Language Code:", data)
+        print("  - Current Language:", GetConVar("radio_language"):GetString())
+        
+        if not data then 
+            print("  - Error: No language code provided")
+            return 
+        end
         
         -- Update convar and language
         RunConsoleCommand("radio_language", data)
+        print("  - Set language convar to:", data)
+        
+        -- Verify convar was set
+        timer.Simple(0.1, function()
+            print("  - Verified language convar:", GetConVar("radio_language"):GetString())
+        end)
+        
         LanguageManager:SetLanguage(data)
         Config.Lang = LanguageManager.translations[data]
         
         -- Update state
         StateManager:SetState("currentLanguage", data)
         StateManager:Emit(StateManager.Events.LANGUAGE_CHANGED, data)
+        print("  - Language state updated")
 
         -- Reset cached country names
         StateManager:SetState("formattedCountryNames", {})
@@ -1744,11 +1766,9 @@ local function openSettingsMenu(parentFrame, backButton)
         end
     end)
 
-    -- Key Selection
     addHeader(Config.Lang["SelectKeyToOpenRadioMenu"] or "Select Key to Open Radio Menu")
     local keyChoices = {}
 
-    -- Sort keys into categories
     local letterKeys = {}
     local numberKeys = {}
     local functionKeys = {}
@@ -1756,13 +1776,13 @@ local function openSettingsMenu(parentFrame, backButton)
 
     for keyCode, keyName in pairs(keyCodeMapping) do
         if type(keyName) == "string" then
-            local entry = {code = keyCode, name = keyName}
+            local entry = {code = tonumber(keyCode), name = keyName}
             
-            if keyName:match("^%a$") then -- Single letter
+            if keyName:match("^%a$") then
                 table.insert(letterKeys, entry)
-            elseif keyName:match("^%d$") then -- Single number
+            elseif keyName:match("^%d$") then
                 table.insert(numberKeys, entry)
-            elseif keyName:match("^F%d+$") then -- Function keys
+            elseif keyName:match("^F%d+$") then
                 table.insert(functionKeys, entry)
             else
                 table.insert(otherKeys, entry)
@@ -1770,7 +1790,7 @@ local function openSettingsMenu(parentFrame, backButton)
         end
     end
 
-    -- Sort each category
+    -- Sort categories (same as before)
     table.sort(letterKeys, function(a, b) return a.name < b.name end)
     table.sort(numberKeys, function(a, b) return tonumber(a.name) < tonumber(b.name) end)
     table.sort(functionKeys, function(a, b) 
@@ -1778,7 +1798,6 @@ local function openSettingsMenu(parentFrame, backButton)
     end)
     table.sort(otherKeys, function(a, b) return a.name < b.name end)
 
-    -- Combine all categories in desired order
     local sortedKeys = {}
     for _, key in ipairs(letterKeys) do table.insert(sortedKeys, key) end
     for _, key in ipairs(numberKeys) do table.insert(sortedKeys, key) end
@@ -1789,26 +1808,48 @@ local function openSettingsMenu(parentFrame, backButton)
     for _, key in ipairs(sortedKeys) do
         table.insert(keyChoices, {
             name = key.name,
-            data = key.code -- Use the actual key code directly
+            data = key.code
         })
     end
 
     local currentKey = GetConVar("car_radio_open_key"):GetInt()
     local currentKeyName = keyCodeMapping[currentKey] or "K"
 
-    addDropdown(Config.Lang["SelectKey"] or "Select Key", keyChoices, currentKeyName, function(_, _, name, data)
-        -- data is now the actual key code
-        if not data then return end
+    addDropdown(Config.Lang["SelectKey"] or "Select Key", keyChoices, currentKeyName, function(panel, _, name, data)
+        print("[rRadio Debug] Key Selection:")
+        print("  - Selected Name:", name)
+        print("  - Key Code:", data)
+        print("  - Current Key:", GetConVar("car_radio_open_key"):GetInt())
         
-        -- Update convar with the key code
-        RunConsoleCommand("car_radio_open_key", data)
+        if not data then 
+            print("  - Error: No key code provided")
+            return 
+        end
+        
+        -- Ensure we have a number
+        local keyCode = tonumber(data)
+        if not keyCode then
+            print("  - Error: Invalid key code format:", data)
+            return
+        end
+        
+        -- Use RunConsoleCommand instead of SetInt
+        print("  - Setting key convar to:", keyCode)
+        RunConsoleCommand("car_radio_open_key", keyCode)
+        
+        -- Verify convar was set
+        timer.Simple(0.1, function()
+            print("  - Verified key convar:", GetConVar("car_radio_open_key"):GetInt())
+            print("  - Key name for verified code:", keyCodeMapping[GetConVar("car_radio_open_key"):GetInt()])
+        end)
         
         -- Update state
         StateManager:SetState("lastKeyPress", 0)
         StateManager:Emit(StateManager.Events.KEY_CHANGED, {
-            key = data,
+            key = keyCode,
             keyName = name
         })
+        print("  - Key state updated")
         
         -- Play feedback sound
         surface.PlaySound("buttons/button15.wav")
@@ -1979,8 +2020,8 @@ openRadioMenu = function(openSettings)
         -- Get current language and state
         local lang = GetConVar("radio_language"):GetString() or "en"
         local currentCountry = getSafeState("selectedCountry", nil)
-        local isSettingsOpen = getSafeState("settingsMenuOpen", false)
-        local isFavoritesOpen = getSafeState("favoritesMenuOpen", false)
+        local isSettingsOpen = settingsMenuOpen -- Use local variable instead of state
+        local isFavoritesOpen = favoritesMenuOpen -- Use local variable instead of state
 
         -- Determine header text
         local headerText
@@ -1991,7 +2032,7 @@ openRadioMenu = function(openSettings)
                 headerText = Config.Lang["FavoriteStations"] or "Favorite Stations"
             else
                 -- Format and translate country name
-                local formattedCountry = currentCountry:gsub("_", " "):gsub("(%a)([%w_']*)", function(a, b) 
+                local formattedCountry = currentCountry:gsub("_", " "):gsub("(%a)([%w_']*)", function(a, b)
                     return string.upper(a) .. string.lower(b) 
                 end)
                 headerText = LanguageManager:GetCountryTranslation(lang, formattedCountry) or formattedCountry
@@ -2307,10 +2348,9 @@ openRadioMenu = function(openSettings)
         Color(0, 0, 0, 0), 
         Config.UI.ButtonHoverColor, 
         function()
-            surface.PlaySound("buttons/lightswitch2.wav")
+            surface.PlaySound("ui/buttonrollover.wav") -- Add different sound for going back
             
             if settingsMenuOpen then
-                -- Remove settings instantly
                 settingsMenuOpen = false
                 StateManager:SetState("settingsMenuOpen", false)
                 if IsValid(settingsFrame) then
@@ -2318,7 +2358,6 @@ openRadioMenu = function(openSettings)
                     settingsFrame = nil
                 end
                 
-                -- Show main content immediately
                 searchBox:SetVisible(true)
                 stationListPanel:SetVisible(true)
                 
@@ -2326,10 +2365,8 @@ openRadioMenu = function(openSettings)
                 backButton:SetVisible(currentCountry ~= nil)
                 backButton:SetEnabled(currentCountry ~= nil)
             else
-                -- Handle country/favorites navigation
                 local currentCountry = StateManager:GetState("selectedCountry")
                 if currentCountry then
-                    -- Instantly switch back to country list
                     StateManager:SetState("selectedCountry", nil)
                     StateManager:SetState("favoritesMenuOpen", false)
                     selectedCountry = nil
