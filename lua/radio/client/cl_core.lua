@@ -3164,24 +3164,29 @@ hook.Add("Think", "OpenCarRadioMenu", function()
         return
     end
 
-    -- Check if player is in a vehicle
-    local vehicle = ply:GetVehicle()
-    if not IsValid(vehicle) then 
-        DebugPrint("No valid vehicle found")
+    -- Get the player's current vehicle/seat
+    local currentSeat = ply:GetVehicle()
+    if not IsValid(currentSeat) then 
+        DebugPrint("No valid seat found")
         return 
     end
-    
-    -- Check if it's a valid vehicle (not a Sit Anywhere seat)
-    if vehicle:GetClass() == "prop_vehicle_prisoner_pod" and not vehicle:GetParent():IsVehicle() then
-        DebugPrint("Invalid vehicle type (Sit Anywhere seat)")
+
+    -- Get the actual vehicle using our utility function
+    local actualVehicle = utils.GetVehicle(currentSeat)
+    if not actualVehicle then
+        DebugPrint("No valid vehicle found from seat:", currentSeat:GetClass())
+        if IsValid(currentSeat:GetParent()) then
+            DebugPrint("Parent class:", currentSeat:GetParent():GetClass())
+        end
         return
     end
 
-    -- Get the actual vehicle entity
-    local actualVehicle = vehicle
-    if vehicle:GetParent():IsVehicle() then
-        actualVehicle = vehicle:GetParent()
-    end
+    -- Debug info
+    DebugPrint("Vehicle Info:", 
+        "\nClass:", actualVehicle:GetClass(),
+        "\nLVS:", actualVehicle.LVS and "true" or "false",
+        "\nParent:", IsValid(actualVehicle:GetParent()) and actualVehicle:GetParent():GetClass() or "none",
+        "\nIsVehicle:", actualVehicle:IsVehicle() and "true" or "false")
 
     -- Validate that the vehicle can use radio
     if not utils.canUseRadio(actualVehicle) then
@@ -3246,6 +3251,10 @@ net.Receive("PlayCarRadioStation", function()
     local entity = net.ReadEntity()
     if not IsValid(entity) then return end
 
+    -- Get actual vehicle entity if needed
+    entity = utils.GetVehicle(entity) or entity
+    if not IsValid(entity) then return end
+
     local entIndex = entity:EntIndex()
     local stationName = net.ReadString()
     local url = net.ReadString()
@@ -3253,10 +3262,10 @@ net.Receive("PlayCarRadioStation", function()
 
     DebugPrint("Received PlayCarRadioStation", 
         "\nEntity:", entity,
+        "\nClass:", entity:GetClass(),
         "\nStation:", stationName,
         "\nURL:", url,
-        "\nVolume:", volume,
-        "\nIsPermanent:", entity:GetNWBool("IsPermanent"))
+        "\nVolume:", volume)
 
     -- Update local state immediately
     if not BoomboxStatuses[entIndex] then
@@ -3288,7 +3297,8 @@ net.Receive("PlayCarRadioStation", function()
         if not StreamManager:RegisterStream(entity, station, {
             name = stationName,
             url = url,
-            volume = volume
+            volume = volume,
+            startTime = CurTime()
         }) then
             station:Stop()
             return
@@ -3407,6 +3417,14 @@ hook.Add("VehicleChanged", "RadioVehicleCleanup", function(ply, old, new)
     if not new then
         ply.currentRadioEntity = nil
         StateManager:SetState("currentRadioEntity", nil)
+        return
+    end
+
+    -- Get actual vehicle entity
+    local actualVehicle = utils.GetVehicle(new)
+    if actualVehicle then
+        ply.currentRadioEntity = actualVehicle
+        StateManager:SetState("currentRadioEntity", actualVehicle)
     end
 end)
 
