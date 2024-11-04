@@ -2340,7 +2340,7 @@ local function openSettingsMenu(parentFrame, backButton)
                 end
 
                 if value then
-                    net.Start("MakeBoomboxPermanent")
+                    net.Start("rRadio_MakeBoomboxPermanent")
                         net.WriteEntity(currentEntity)
                     net.SendToServer()
                 else
