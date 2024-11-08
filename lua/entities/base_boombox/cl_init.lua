@@ -132,7 +132,7 @@ end
 
 BoomboxStatuses = BoomboxStatuses or {}
 local entityVolumes = {} -- Cached values
-net.Receive("UpdateRadioVolume", function()
+net.Receive("rRadio_UpdateRadioVolume", function()
     local entity = net.ReadEntity() -- Network message handler
     local volume = net.ReadFloat()
     if IsValid(entity) then entityVolumes[entity:EntIndex()] = volume end

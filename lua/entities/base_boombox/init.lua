@@ -58,7 +58,7 @@ function ENT:Use(activator, caller)
     
     -- Check if the player is the owner or a superadmin
     if activator == owner or activator:IsSuperAdmin() then
-        net.Start("OpenRadioMenu")
+        net.Start("rRadio_OpenRadioPlayer")
             net.WriteEntity(self)
         net.Send(activator)
     else
@@ -94,7 +94,7 @@ end
 
 -- Function to stop the radio
 function ENT:StopRadio()
-    net.Start("StopCarRadioStation")
+    net.Start("rRadio_StopStream")
         net.WriteEntity(self)
     net.Broadcast()
 end
