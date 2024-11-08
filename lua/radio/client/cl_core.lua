@@ -23,18 +23,7 @@ end
 StateManager:Initialize()
 
 local function getSafeState(key, default)
-    if not StateManager then
-        print("[rRadio] Warning: StateManager not initialized when getting state:", key)
-        return default
-    end
-    
-    if not StateManager.initialized then
-        print("[rRadio] Warning: StateManager not yet initialized when getting state:", key)
-        return default
-    end
-    
-    if not StateManager.GetState then
-        print("[rRadio] Warning: StateManager.GetState not available when getting state:", key)
+    if not StateManager or not StateManager.initialized then
         return default
     end
     
@@ -42,18 +31,7 @@ local function getSafeState(key, default)
 end
 
 local function setSafeState(key, value)
-    if not StateManager then
-        print("[rRadio] Warning: StateManager not initialized when setting state:", key)
-        return
-    end
-    
-    if not StateManager.initialized then
-        print("[rRadio] Warning: StateManager not yet initialized when setting state:", key)
-        return
-    end
-    
-    if not StateManager.SetState then
-        print("[rRadio] Warning: StateManager.SetState not available when setting state:", key)
+    if not StateManager or not StateManager.initialized then
         return
     end
     
@@ -67,7 +45,7 @@ local lastKeyPress = getSafeState("lastKeyPress", 0)
 
 local currentFrame = nil
 local settingsMenuOpen = false
-local openRadioMenu
+local rRadio_OpenRadioPlayer
 
 local lastIconUpdate = 0
 local iconUpdateDelay = 0.1
@@ -92,27 +70,11 @@ local MaterialCache = {
         "hud/github.png"
     },
     
-    Initialize = function(self)
-        for _, path in ipairs(self.paths) do
-            self.cache[path] = Material(path, "smooth")
-        end
-    end,
-    
     Get = function(self, path)
-        if not self.cache[path] then
-            self.cache[path] = Material(path, "smooth")
-        end
+        self.cache[path] = self.cache[path] or Material(path, "smooth")
         return self.cache[path]
     end,
-    
-    Clear = function(self)
-        self.cache = {}
-    end
 }
-
--- Initialize material cache
-MaterialCache:Initialize()
-
 local VOLUME_ICONS = {
     MUTE = MaterialCache:Get("hud/vol_mute.png"),
     LOW = MaterialCache:Get("hud/vol_down.png"),
@@ -135,11 +97,42 @@ local isLoadingStations = false
 local STATION_CHUNK_SIZE = 100
 local loadingProgress = 0
 
-local function DebugPrint(...)
-    if GetConVar("radio_debug"):GetBool() then
-        print("[rRadio Debug Client]", ...)
+local UIReferenceTracker = {
+    references = {},
+    validityCache = {},
+    lastCheck = 0,
+    CHECK_INTERVAL = 0.5,
+    
+    Track = function(self, element, id)
+        self.references[id] = element
+        self.validityCache[id] = true
+    end,
+    
+    Untrack = function(self, id)
+        self.references[id] = nil
+        self.validityCache[id] = nil
+    end,
+    
+    IsValid = function(self, id)
+        return self.validityCache[id] == true
+    end,
+    
+    Update = function(self)
+        local currentTime = CurTime()
+        if (currentTime - self.lastCheck) < self.CHECK_INTERVAL then
+            return
+        end
+        
+        self.lastCheck = currentTime
+        
+        for id, element in pairs(self.references) do
+            self.validityCache[id] = IsValid(element)
+            if not self.validityCache[id] then
+                self.references[id] = nil
+            end
+        end
     end
-end
+}
 
 hook.Add("OnPlayerChat", "RadioStreamToggleCommands", function(ply, text, teamChat, isDead)
     if ply ~= LocalPlayer() then return end
@@ -179,26 +172,6 @@ hook.Add("OnPlayerChat", "RadioStreamToggleCommands", function(ply, text, teamCh
         return true
     end
 end)
-
-local function transitionContent(panel, direction, onComplete)
-    if not IsValid(panel) then return end
-    
-    -- Store panel reference
-    local panelRef = panel
-    
-    -- Use the Transitions module for sliding with safety check
-    Misc.Transitions:SlideElement(panel, 0.3, direction, function()
-        if IsValid(panelRef) and onComplete then
-            onComplete()
-        end
-    end)
-    
-    -- Handle fade effect with safety check
-    Misc.Transitions:FadeElement(panel, direction, 0.2, function()
-        if not IsValid(panelRef) then return false end
-    end)
-end
-
 
 -- ------------------------------
 --      Station Data Loading
@@ -282,7 +255,7 @@ local function LoadStationData()
                         local station = stations[j]
                         table.insert(StationData[baseCountry], {
                             name = station.n,
-                            displayName = truncateStationName(station.n), -- Add truncated name
+                            displayName = truncateStationName(station.n),
                             url = station.u
                         })
                     end
@@ -368,6 +341,7 @@ local StreamManager = {
         self._lastValidityCheck = currentTime
         self._validityCache = {}
         
+        -- Combine IsValid checks
         for entIndex, streamData in pairs(self.activeStreams) do
             if IsValid(streamData.entity) and IsValid(streamData.stream) then
                 self._validityCache[entIndex] = true
@@ -473,21 +447,21 @@ local function LerpColor(t, col1, col2)
 end
 
 --[[
-    Function: reopenRadioMenu
+    Function: rerRadio_OpenRadioPlayer
     Reopens the radio menu with optional settings flag.
 
     Parameters:
     - openSettingsMenuFlag: Boolean to determine if settings menu should be opened.
 ]]
-local function reopenRadioMenu(openSettingsMenuFlag)
-    if openRadioMenu then
+local function rerRadio_OpenRadioPlayer(openSettingsMenuFlag)
+    if rRadio_OpenRadioPlayer then
         if IsValid(LocalPlayer()) and LocalPlayer().currentRadioEntity then
             timer.Simple(0.1, function()
-                openRadioMenu(openSettingsMenuFlag)
+                rRadio_OpenRadioPlayer(openSettingsMenuFlag)
             end)
         end
     else
-        print("Error: openRadioMenu function not found")
+        print("Error: rRadio_OpenRadioPlayer function not found")
     end
 end
 
@@ -570,7 +544,6 @@ local formattedCountryNames = {}
 local stationDataLoaded = false
 local isSearching = false
 
--- Add near the top with other state variables
 local MuteManager = {
     mutedEntities = {},
     originalVolumes = {},
@@ -754,7 +727,7 @@ local function playStation(entity, station, volume)
         local displayName = utils.truncateStationName(station.name)
 
         -- Update server state with truncated name
-        net.Start("PlayCarRadioStation")
+        net.Start("rRadio_QueueStream")
             net.WriteEntity(entity)
             net.WriteString(displayName) -- Send truncated name
             net.WriteString(station.url)
@@ -853,7 +826,7 @@ local function playStation(entity, station, volume)
     -- Stop current playback first
     if currentlyPlayingStations[entity] then
         -- Stop on server
-        net.Start("StopCarRadioStation")
+        net.Start("rRadio_StopStream")
             net.WriteEntity(entity)
         net.SendToServer()
 
@@ -877,10 +850,10 @@ end
 
 
 --[[
-    Function: updateRadioVolume
+    Function: rRadio_UpdateRadioVolume
     Updates the volume of the radio station based on distance and whether the player is in the car.
 ]]
-local function updateRadioVolume(station, distanceSqr, isPlayerInCar, entity)
+local function rRadio_UpdateRadioVolume(station, distanceSqr, isPlayerInCar, entity)
     local entityConfig = getEntityConfig(entity)
     if not entityConfig then 
         print("[rRadio] Warning: No entity config found for", entity)
@@ -943,171 +916,163 @@ local function updateRadioVolume(station, distanceSqr, isPlayerInCar, entity)
     end
 end
 
---[[
-    Function: PrintCarRadioMessage
-    Displays an animated notification about how to open the car radio.
-]]
-local function PrintCarRadioMessage()
+local function cleanupMessage()
+    if messageCleanupTimer then
+        timer.Remove(messageCleanupTimer)
+        messageCleanupTimer = nil
+    end
+    
+    if IsValid(messagePanel) then
+        messagePanel:Remove()
+    end
+    messagePanel = nil
+    isMessageAnimating = false
+end
+
+local function createMessageAnimation(panel, startPos, endPos, duration, onComplete)
+    return Misc.Animations:CreateTween(
+        duration,
+        startPos,
+        endPos,
+        function(value)
+            return IsValid(panel) and panel:SetPos(value, panel:GetY())
+        end,
+        onComplete,
+        nil,
+        panel
+    )
+end
+
+local function playCarEnterAnim()
     if not GetConVar("car_radio_show_messages"):GetBool() then return end
+
+    cleanupMessage()
     
     local currentTime = CurTime()
-    local cooldownTime = Config.MessageCooldown()
+    if currentTime - (lastMessageTime or 0) < Config.MessageCooldown() then return end
 
-    if isMessageAnimating or (lastMessageTime and currentTime - lastMessageTime < cooldownTime) then
-        return
-    end
+    if isMessageAnimating then return end
 
     lastMessageTime = currentTime
     isMessageAnimating = true
 
     local openKey = GetConVar("car_radio_open_key"):GetInt()
-    local keyName = Misc.KeyNames:GetKeyName(openKey)
+    local keyName = Misc.KeyNames:GetKeyName(openKey) or "Unknown"
 
     local scrW, scrH = ScrW(), ScrH()
     local panelWidth = Scale(300)
     local panelHeight = Scale(70)
-    local panel = vgui.Create("DButton")
+
+    local panel = vgui.Create("DPanel")
+    messagePanel = panel
+
     panel:SetSize(panelWidth, panelHeight)
     panel:SetPos(scrW, scrH * 0.2)
-    panel:SetText("")
     panel:SetAlpha(0)
     panel:MoveToFront()
+    panel:SetZPos(32767)
+    panel:ParentToHUD()
+    panel:SetPaintedManually(false)
+    panel:SetVisible(true)
+    panel:SetEnabled(true)
 
-    local textLabel = vgui.Create("DLabel", panel)
-    textLabel:SetText("Play Radio")
-    textLabel:SetFont("Roboto18")
-    textLabel:SetTextColor(Config.UI.TextColor)
-    textLabel:SizeToContents()
-    textLabel:SetPos(Scale(70), panelHeight/2 - textLabel:GetTall()/2)
-    
-    -- Slide in animation with safety check
-    local panelRef = panel
-    Misc.Animations:CreateTween(0.5, scrW, scrW - panelWidth, function(value)
-        if IsValid(panelRef) then
-            panelRef:SetPos(value, scrH * 0.2)
-        else
-            return false -- Stop animation if panel is invalid
-        end
-    end)
-    
-    -- Fade in animation with safety check
-    Misc.Animations:CreateTween(0.3, 0, 255, function(value)
-        if IsValid(panelRef) then
-            panelRef:SetAlpha(value)
-        else
-            return false
-        end
-    end)
-    
-    -- Auto hide after delay with safety checks
-    timer.Simple(3, function()
-        if IsValid(panelRef) then
-            -- Slide out animation
-            Misc.Animations:CreateTween(0.5, panelRef:GetX(), scrW, function(value)
-                if IsValid(panelRef) then
-                    panelRef:SetPos(value, scrH * 0.2)
-                else
-                    return false
-                end
-            end)
-            
-            -- Fade out animation
-            Misc.Animations:CreateTween(0.3, 255, 0, function(value)
-                if IsValid(panelRef) then
-                    panelRef:SetAlpha(value)
-                else
-                    return false
-                end
-            end, function()
-                if IsValid(panelRef) then
-                    panelRef:Remove()
-                end
-            end)
-        end
-    end)
-    
-    local animDuration = 1
-    local showDuration = 2
-    local startTime = CurTime()
-    local alpha = 0
-    local pulseValue = 0
-    local isDismissed = false
-
-    panel.DoClick = function()
-        surface.PlaySound("buttons/button15.wav")
-        openRadioMenu()
-        isDismissed = true
+    panel.SetVisible = function(self, state)
+        if not state then return end
+        self.BaseClass.SetVisible(self, true)
     end
 
+    UIReferenceTracker:Track(panel, "message_panel")
+
     panel.Paint = function(self, w, h)
-        local bgColor = Config.UI.MessageBackgroundColor
-        local hoverBrightness = self:IsHovered() and 1.2 or 1
-        bgColor = Color(
-            math.min(bgColor.r * hoverBrightness, 255),
-            math.min(bgColor.g * hoverBrightness, 255),
-            math.min(bgColor.b * hoverBrightness, 255),
-            bgColor.a or 255
-        )
-        
-        draw.RoundedBoxEx(12, 0, 0, w, h, bgColor, true, false, true, false)
+        if not IsValid(self) then return end
+
+        draw.RoundedBoxEx(12, 0, 0, w, h, Config.UI.MessageBackgroundColor, true, false, true, false)
 
         local keyWidth = Scale(40)
         local keyHeight = Scale(30)
         local keyX = Scale(20)
         local keyY = h/2 - keyHeight/2
-        local pulseScale = 1 + math.sin(pulseValue * math.pi * 2) * 0.05
-        local adjustedKeyWidth = keyWidth * pulseScale
-        local adjustedKeyHeight = keyHeight * pulseScale
-        local adjustedKeyX = keyX - (adjustedKeyWidth - keyWidth) / 2
-        local adjustedKeyY = keyY - (adjustedKeyHeight - keyHeight) / 2
         
-        -- Draw key background
-        draw.RoundedBox(6, adjustedKeyX, adjustedKeyY, adjustedKeyWidth, adjustedKeyHeight, 
+        local pulse = 1 + math.sin(CurTime() * 3) * 0.05
+        local adjustedWidth = keyWidth * pulse
+        local adjustedHeight = keyHeight * pulse
+        local adjustedX = keyX - (adjustedWidth - keyWidth) / 2
+        local adjustedY = keyY - (adjustedHeight - keyHeight) / 2
+
+        draw.RoundedBox(6, adjustedX, adjustedY, adjustedWidth, adjustedHeight, 
             Config.UI.KeyHighlightColor)
 
-        -- Draw the key name
-        draw.SimpleText(keyName, "Roboto18", adjustedKeyX + adjustedKeyWidth/2, adjustedKeyY + adjustedKeyHeight/2, 
-            Config.UI.TextColor, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+        draw.SimpleText(keyName, "Roboto18", 
+            adjustedX + adjustedWidth/2, 
+            adjustedY + adjustedHeight/2, 
+            Config.UI.TextColor, 
+            TEXT_ALIGN_CENTER, 
+            TEXT_ALIGN_CENTER)
 
-        -- Draw subtle divider line
-        surface.SetDrawColor(ColorAlpha(Config.UI.TextColor, 40))  -- 40 alpha for subtle effect
+        draw.SimpleText(Config.Lang["OpenRadio"] or "Open Radio", "Roboto18",
+            Scale(70), h/2, Config.UI.TextColor, 
+            TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+
+        surface.SetDrawColor(ColorAlpha(Config.UI.TextColor, 40))
         surface.DrawLine(
-            Scale(70) - Scale(5),  -- Slightly left of text
-            h * 0.3,               -- Start from 30% height
-            Scale(70) - Scale(5),  -- Same X position
-            h * 0.7                -- End at 70% height
+            Scale(70) - Scale(5), h * 0.3,
+            Scale(70) - Scale(5), h * 0.7
         )
     end
 
-    panel.Think = function(self)
-        local time = CurTime() - startTime
-        
-        pulseValue = (pulseValue + FrameTime() * 1.5) % 1
+    local startX = scrW
+    local endX = scrW - panelWidth
+    
+    if not IsValid(panel) then return end
 
-        if time < animDuration then
-            local progress = time / animDuration
-            local easedProgress = math.ease.OutQuint(progress)
-            self:SetPos(Lerp(easedProgress, scrW, scrW - panelWidth), scrH * 0.2)
-            alpha = math.ease.InOutQuad(progress)
-        elseif time < animDuration + showDuration and not isDismissed then
-            alpha = 1
-            self:SetPos(scrW - panelWidth, scrH * 0.2)
-        elseif not isDismissed or time >= animDuration + showDuration then
-            local progress = (time - (animDuration + showDuration)) / animDuration
-            local easedProgress = math.ease.InOutQuint(progress)
-            self:SetPos(Lerp(easedProgress, scrW - panelWidth, scrW), scrH * 0.2)
-            alpha = 1 - math.ease.InOutQuad(progress)
-            
-            if progress >= 1 then
-                isMessageAnimating = false
-                self:Remove()
-            end
+    local startTime = CurTime()
+    local duration = 0.5
+    local startAlpha = 0
+    local endAlpha = 255
+
+    panel.Think = function(self)
+        if not self:IsValid() then cleanupMessage() return end
+        
+        local currentTime = CurTime()
+        local delta = math.Clamp((currentTime - startTime) / duration, 0, 1)
+
+        local newX = Lerp(delta, startX, endX)
+        local newAlpha = Lerp(delta, startAlpha, endAlpha)
+        
+        self:SetPos(newX, self:GetY())
+        self:SetAlpha(newAlpha)
+        
+        if delta >= 1 then
+            timer.Create("HideRadioMessage", 3, 1, function()
+                if not IsValid(self) then return end
+                
+                local hideStartTime = CurTime()
+                local hideStartX = self:GetX()
+                
+                self.Think = function()
+                    if not IsValid(self) then return end
+                    
+                    local hideDelta = math.Clamp((CurTime() - hideStartTime) / duration, 0, 1)
+                    
+                    local hideX = Lerp(hideDelta, hideStartX, scrW)
+                    local hideAlpha = Lerp(hideDelta, endAlpha, 0)
+                    
+                    self:SetPos(hideX, self:GetY())
+                    self:SetAlpha(hideAlpha)
+                    
+                    if hideDelta >= 1 then
+                        self:Remove()
+                        isMessageAnimating = false
+                    end
+                end
+            end)
+
+            self.Think = nil
         end
     end
 
-    panel.OnRemove = function()
-        isMessageAnimating = false
-    end
+    panel:SetPos(startX, panel:GetY())
+    panel:SetAlpha(startAlpha)
 end
 
 -- ------------------------------
@@ -1257,85 +1222,85 @@ local function createTooltip(panel, text)
     local tooltip
     
     panel.OnCursorEntered = function(self)
-        if not IsValid(tooltip) and text and #text > 0 then
-            tooltip = vgui.Create("DPanel")
-            tooltip:SetDrawOnTop(true)
+        if IsValid(tooltip) or not text or #text == 0 then return end
+        
+        tooltip = vgui.Create("DPanel")
+        tooltip:SetDrawOnTop(true)
+        
+        -- Calculate maximum width based on screen size
+        local maxWidth = math.min(ScrW() * 0.3, Scale(400))
+        local padding = Scale(10)
+        
+        -- Wrap text to fit width
+        local wrappedText = {}
+        local currentLine = ""
+        local words = string.Explode(" ", text)
+        
+        surface.SetFont("Roboto18")
+        for _, word in ipairs(words) do
+            local testLine = currentLine .. (currentLine ~= "" and " " or "") .. word
+            local textWidth = surface.GetTextSize(testLine)
             
-            -- Calculate maximum width based on screen size
-            local maxWidth = math.min(ScrW() * 0.3, Scale(400))
-            local padding = Scale(10)
-            
-            -- Wrap text to fit width
-            local wrappedText = {}
-            local currentLine = ""
-            local words = string.Explode(" ", text)
-            
-            surface.SetFont("Roboto18")
-            for _, word in ipairs(words) do
-                local testLine = currentLine .. (currentLine ~= "" and " " or "") .. word
-                local textWidth = surface.GetTextSize(testLine)
-                
-                if textWidth > maxWidth - (padding * 2) then
-                    table.insert(wrappedText, currentLine)
-                    currentLine = word
-                else
-                    currentLine = testLine
-                end
-            end
-            if currentLine ~= "" then
+            if textWidth > maxWidth - (padding * 2) then
                 table.insert(wrappedText, currentLine)
+                currentLine = word
+            else
+                currentLine = testLine
+            end
+        end
+        if currentLine ~= "" then
+            table.insert(wrappedText, currentLine)
+        end
+        
+        -- Calculate height based on number of lines
+        local _, lineHeight = surface.GetTextSize("TEST")
+        local textHeight = #wrappedText * lineHeight
+        
+        -- Set tooltip size
+        tooltip:SetSize(maxWidth, textHeight + padding * 2)
+        
+        -- Position tooltip below cursor
+        local x, y = gui.MousePos()
+        tooltip:SetPos(x + Scale(10), y + Scale(10))
+        
+        -- Ensure tooltip stays on screen
+        local screenW, screenH = ScrW(), ScrH()
+        if x + tooltip:GetWide() + Scale(10) > screenW then
+            tooltip:SetPos(screenW - tooltip:GetWide() - Scale(10), y + Scale(10))
+        end
+        if y + tooltip:GetTall() + Scale(10) > screenH then
+            tooltip:SetPos(tooltip:GetX(), y - tooltip:GetTall() - Scale(10))
+        end
+        
+        tooltip.Paint = function(self, w, h)
+            -- Background with subtle shadow
+            for i = 1, 5 do
+                local alpha = math.max(0, 20 - i * 4)
+                surface.SetDrawColor(0, 0, 0, alpha)
+                draw.RoundedBox(8, -i, i, w + i*2, h, Color(0, 0, 0, alpha))
             end
             
-            -- Calculate height based on number of lines
-            local _, lineHeight = surface.GetTextSize("TEST")
-            local textHeight = #wrappedText * lineHeight
+            -- Main background
+            draw.RoundedBox(8, 0, 0, w, h, Config.UI.MessageBackgroundColor)
             
-            -- Set tooltip size
-            tooltip:SetSize(maxWidth, textHeight + padding * 2)
-            
-            -- Position tooltip below cursor
-            local x, y = gui.MousePos()
-            tooltip:SetPos(x + Scale(10), y + Scale(10))
-            
-            -- Ensure tooltip stays on screen
-            local screenW, screenH = ScrW(), ScrH()
-            if x + tooltip:GetWide() + Scale(10) > screenW then
-                tooltip:SetPos(screenW - tooltip:GetWide() - Scale(10), y + Scale(10))
+            -- Draw wrapped text
+            for i, line in ipairs(wrappedText) do
+                draw.SimpleText(
+                    line,
+                    "Roboto18",
+                    padding,
+                    padding + (i-1) * lineHeight,
+                    Config.UI.TextColor,
+                    TEXT_ALIGN_LEFT,
+                    TEXT_ALIGN_TOP
+                )
             end
-            if y + tooltip:GetTall() + Scale(10) > screenH then
-                tooltip:SetPos(tooltip:GetX(), y - tooltip:GetTall() - Scale(10))
-            end
-            
-            tooltip.Paint = function(self, w, h)
-                -- Background with subtle shadow
-                for i = 1, 5 do
-                    local alpha = math.max(0, 20 - i * 4)
-                    surface.SetDrawColor(0, 0, 0, alpha)
-                    draw.RoundedBox(8, -i, i, w + i*2, h, Color(0, 0, 0, alpha))
-                end
-                
-                -- Main background
-                draw.RoundedBox(8, 0, 0, w, h, Config.UI.MessageBackgroundColor)
-                
-                -- Draw wrapped text
-                for i, line in ipairs(wrappedText) do
-                    draw.SimpleText(
-                        line,
-                        "Roboto18",
-                        padding,
-                        padding + (i-1) * lineHeight,
-                        Config.UI.TextColor,
-                        TEXT_ALIGN_LEFT,
-                        TEXT_ALIGN_TOP
-                    )
-                end
-            end
-            
-            -- Remove tooltip when panel is removed
-            panel.OnRemove = function()
-                if IsValid(tooltip) then
-                    tooltip:Remove()
-                end
+        end
+        
+        -- Remove tooltip when panel is removed
+        panel.OnRemove = function()
+            if IsValid(tooltip) then
+                tooltip:Remove()
             end
         end
     end
@@ -1372,6 +1337,12 @@ end
 ]]
 local function populateList(stationListPanel, backButton, searchBox, resetSearch)
     if not stationListPanel then return end
+    
+    local currentState = {
+        selectedCountry = getSafeState("selectedCountry", nil),
+        favoritesMenuOpen = getSafeState("favoritesMenuOpen", false),
+        settingsMenuOpen = getSafeState("settingsMenuOpen", false)
+    }
 
     stationListPanel:Clear()
     if resetSearch then searchBox:SetText("") end
@@ -1385,7 +1356,7 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
 
     local filterText = searchBox:GetText():lower()
     local lang = GetConVar("radio_language"):GetString() or "en"
-    local selectedCountry = getSafeState("selectedCountry", nil)
+    local selectedCountry = currentState.selectedCountry
 
     local function updateList()
         populateList(stationListPanel, backButton, searchBox, false)
@@ -1700,7 +1671,6 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                 end
             end
 
-            -- Always use raw country code when creating star icons
             createStarIcon(stationButton, selectedCountry, station, updateList)
         end
 
@@ -1846,7 +1816,7 @@ local function openSettingsMenu(parentFrame, backButton)
                     
                     self:SetValue(choice.name)
                     if onSelect then
-                        onSelect(self, nil, choice.name, choice.data) -- Pass name and data correctly
+                        onSelect(self, nil, choice.name, choice.data)
                     end
                     menu:Remove()
                 end
@@ -1861,11 +1831,10 @@ local function openSettingsMenu(parentFrame, backButton)
 
             -- Position the menu
             local x, y = self:LocalToScreen(0, self:GetTall())
-            
-            -- Ensure menu doesn't go off screen
+
             local screenH = ScrH()
             if y + menuHeight > screenH then
-                y = y - menuHeight - self:GetTall() -- Show above instead
+                y = y - menuHeight - self:GetTall()
             end
             
             menu:SetPos(x, y)
@@ -2016,7 +1985,7 @@ local function openSettingsMenu(parentFrame, backButton)
             if IsValid(parentFrame) then
                 parentFrame:Close()
                 timer.Simple(0.1, function()
-                    reopenRadioMenu(true)
+                    rerRadio_OpenRadioPlayer(true)
                 end)
             end
         else
@@ -2157,7 +2126,7 @@ local function openSettingsMenu(parentFrame, backButton)
                         if IsValid(parentFrame) then
                             parentFrame:Close()
                             timer.Simple(0.1, function()
-                                reopenRadioMenu(true)
+                                rerRadio_OpenRadioPlayer(true)
                             end)
                         end
                     end
@@ -2249,18 +2218,18 @@ local function openSettingsMenu(parentFrame, backButton)
         if IsValid(currentFrame) then
             currentFrame:Close()
             timer.Simple(0.1, function()
-                if openRadioMenu then
+                if rRadio_OpenRadioPlayer then
                     radioMenuOpen = false
                     StateManager:SetState("selectedCountry", nil)
                     StateManager:SetState("settingsMenuOpen", false)
                     StateManager:SetState("favoritesMenuOpen", false)
-                    openRadioMenu(true)
+                    rRadio_OpenRadioPlayer(true)
                 end
             end)
         end
     end)
 
-    addHeader(Config.Lang["SelectKeyToOpenRadioMenu"] or "Select Key to Open Radio Menu")
+    addHeader(Config.Lang["SelectKeyTorRadio_OpenRadioPlayer"] or "Select Key to Open Radio Menu")
     local keyChoices = {}
 
     local letterKeys = {}
@@ -2371,17 +2340,17 @@ local function openSettingsMenu(parentFrame, backButton)
                 end
 
                 if value then
-                    net.Start("MakeBoomboxPermanent")
+                    net.Start("rRadio_MakeBoomboxPermanent")
                         net.WriteEntity(currentEntity)
                     net.SendToServer()
                 else
-                    net.Start("RemoveBoomboxPermanent")
+                    net.Start("rRadio_RemoveBoomboxPermanent")
                         net.WriteEntity(currentEntity)
                     net.SendToServer()
                 end
             end
 
-            net.Receive("BoomboxPermanentConfirmation", function()
+            net.Receive("rRadio_BoomboxPermanentConfirmation", function()
                 local message = net.ReadString()
                 chat.AddText(Color(0, 255, 0), "[Boombox] ", Color(255, 255, 255), message)
                 if string.find(message, "marked as permanent") then
@@ -2626,7 +2595,6 @@ local function openUnauthorizedUI(entity)
         end
     end
 
-    -- Close and settings buttons
     local buttonSize = Scale(25)
     local topMargin = Scale(7)
     local buttonPadding = Scale(5)
@@ -2660,27 +2628,20 @@ end
 -- ------------------------------
 
 --[[
-    Function: openRadioMenu
+    Function: rRadio_OpenRadioPlayer
     Opens the radio menu UI for the player.
 ]]
-openRadioMenu = function(openSettings)
+rRadio_OpenRadioPlayer = function(openSettings)
     if radioMenuOpen then return end
     
     local ply = LocalPlayer()
     local entity = ply.currentRadioEntity
     
-    if not IsValid(entity) then return end
-    
-    -- Check if entity can use radio
-    if not utils.canUseRadio(entity) then
+    -- Combine all entity validation into one check
+    if not IsValid(entity) or 
+       not utils.canUseRadio(entity) or 
+       (utils.IsBoombox(entity) and not utils.canInteractWithBoombox(ply, entity)) then
         return
-    end
-    
-    if entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox" then
-        if not utils.canInteractWithBoombox(ply, entity) then
-            chat.AddText(Color(255, 0, 0), "You don't have permission to interact with this boombox.")
-            return
-        end
     end
     
     -- Reset states when opening menu
@@ -2848,7 +2809,7 @@ openRadioMenu = function(openSettings)
             entity = utils.GetVehicle(entity) or entity
             
             -- Send stop request to server
-            net.Start("StopCarRadioStation")
+            net.Start("rRadio_StopStream")
                 net.WriteEntity(entity)
             net.SendToServer()
             
@@ -2991,7 +2952,7 @@ openRadioMenu = function(openSettings)
         local currentTime = CurTime()
         if currentTime - lastServerUpdate >= 0.1 then
             lastServerUpdate = currentTime
-            net.Start("UpdateRadioVolume")
+            net.Start("rRadio_UpdateRadioVolume")
                 net.WriteEntity(entity)
                 net.WriteFloat(value)
             net.SendToServer()
@@ -3120,18 +3081,14 @@ openRadioMenu = function(openSettings)
         populateList(stationListPanel, backButton, searchBox, false)
     end
 
-    _G.openRadioMenu = openRadioMenu
+    _G.rRadio_OpenRadioPlayer = rRadio_OpenRadioPlayer
 end
 
 -- ------------------------------
 --      Hooks and Net Messages
 -- ------------------------------
 
---[[
-    Hook: Think
-    Opens the car radio menu when the player presses the designated key.
-]]
-hook.Add("Think", "OpenCarRadioMenu", function()
+hook.Add("Think", "OpenRadioPlayerMenu", function()
     local openKey = GetConVar("car_radio_open_key"):GetInt()
     local ply = LocalPlayer()
     
@@ -3141,7 +3098,7 @@ hook.Add("Think", "OpenCarRadioMenu", function()
     
     -- Get current time and last press time with proper default
     local currentTime = CurTime()
-    local keyPressDelay = 0.2 -- Define delay constant
+    local keyPressDelay = 0.2
     local lastPress = getSafeState("lastKeyPress", 0)
 
     -- Check if key is pressed and enough time has passed
@@ -3164,25 +3121,47 @@ hook.Add("Think", "OpenCarRadioMenu", function()
         return
     end
 
-    -- Check vehicle state
-    local vehicle = ply:GetVehicle()
-    if not IsValid(vehicle) then return end
-    
-    -- Validate that it's not a sit anywhere seat
-    if utils.isSitAnywhereSeat(vehicle) then
+    -- Get the player's current vehicle/seat
+    local currentSeat = ply:GetVehicle()
+    if not IsValid(currentSeat) then 
+        utils.DebugPrint("No valid seat found")
+        return 
+    end
+
+    -- Get the actual vehicle using our utility function
+    local actualVehicle = utils.GetVehicle(currentSeat)
+    if not actualVehicle then
+        utils.DebugPrint("No valid vehicle found from seat:", currentSeat:GetClass())
+        if IsValid(currentSeat:GetParent()) then
+            utils.DebugPrint("Parent class:", currentSeat:GetParent():GetClass())
+        end
         return
     end
 
-    -- Open menu if all checks pass
-    ply.currentRadioEntity = vehicle
-    openRadioMenu()
+    -- Debug info
+    utils.DebugPrint("Vehicle Info:", 
+        "\nClass:", actualVehicle:GetClass(),
+        "\nLVS:", actualVehicle.LVS and "true" or "false",
+        "\nParent:", IsValid(actualVehicle:GetParent()) and actualVehicle:GetParent():GetClass() or "none",
+        "\nIsVehicle:", actualVehicle:IsVehicle() and "true" or "false")
+
+    -- Validate that the vehicle can use radio
+    if not utils.canUseRadio(actualVehicle) then
+        utils.DebugPrint("Vehicle cannot use radio")
+        return
+    end
+
+    -- Set current radio entity and open menu
+    ply.currentRadioEntity = actualVehicle
+    StateManager:SetState("currentRadioEntity", actualVehicle)
+    rRadio_OpenRadioPlayer()
 end)
 
 --[[
-    Network Receiver: UpdateRadioStatus
+    Network Receiver: rRadio_UpdateRadioStatus
     Updates the status of the boombox.
 ]]
-net.Receive("UpdateRadioStatus", function()
+net.Receive("rRadio_UpdateRadioStatus", function()
     local entity = net.ReadEntity()
     local stationName = net.ReadString()
     local displayName = truncateStationName(stationName)
@@ -3220,13 +3199,17 @@ net.Receive("UpdateRadioStatus", function()
 end)
 
 --[[
-    Network Receiver: PlayCarRadioStation
+    Network Receiver: rRadio_QueueStream
     Handles playing a radio station on the client.
 ]]
-net.Receive("PlayCarRadioStation", function()
+net.Receive("rRadio_QueueStream", function()
     if not streamsEnabled then return end
     
     local entity = net.ReadEntity()
+    if not IsValid(entity) then return end
+
+    -- Get actual vehicle entity if needed
+    entity = utils.GetVehicle(entity) or entity
     if not IsValid(entity) then return end
 
     local entIndex = entity:EntIndex()
@@ -3234,12 +3217,12 @@ net.Receive("PlayCarRadioStation", function()
     local url = net.ReadString()
     local volume = net.ReadFloat()
 
-    DebugPrint("Received PlayCarRadioStation", 
+    utils.DebugPrint("Received rRadio_QueueStream", 
         "\nEntity:", entity,
+        "\nClass:", entity:GetClass(),
         "\nStation:", stationName,
         "\nURL:", url,
-        "\nVolume:", volume,
-        "\nIsPermanent:", entity:GetNWBool("IsPermanent"))
+        "\nVolume:", volume)
 
     -- Update local state immediately
     if not BoomboxStatuses[entIndex] then
@@ -3271,7 +3254,8 @@ net.Receive("PlayCarRadioStation", function()
         if not StreamManager:RegisterStream(entity, station, {
             name = stationName,
             url = url,
-            volume = volume
+            volume = volume,
+            startTime = CurTime()
         }) then
             station:Stop()
             return
@@ -3285,7 +3269,7 @@ net.Receive("PlayCarRadioStation", function()
 end)
 
 -- Update the stop handler
-net.Receive("StopCarRadioStation", function()
+net.Receive("rRadio_StopStream", function()
     local entity = net.ReadEntity()
     if not IsValid(entity) then return end
     
@@ -3310,10 +3294,10 @@ net.Receive("StopCarRadioStation", function()
 end)
 
 --[[
-    Network Receiver: OpenRadioMenu
+    Network Receiver: rRadio_OpenRadioPlayer
     Opens the radio menu for a given entity.
 ]]
-net.Receive("OpenRadioMenu", function()
+net.Receive("rRadio_OpenRadioPlayer", function()
     local ent = net.ReadEntity()
     if not IsValid(ent) then return end
 
@@ -3327,7 +3311,7 @@ net.Receive("OpenRadioMenu", function()
             StateManager:SetState("currentRadioEntity", ent)
             
             if not radioMenuOpen then
-                openRadioMenu()
+                rRadio_OpenRadioPlayer()
             end
         else
             -- Show unauthorized UI instead of just a chat message
@@ -3343,13 +3327,7 @@ net.Receive("OpenRadioMenu", function()
     end
 end)
 
-net.Receive("CarRadioMessage", function()
-    if GetConVar("car_radio_show_messages"):GetBool() then
-        PrintCarRadioMessage()
-    end
-end)
-
-net.Receive("RadioConfigUpdate", function()
+net.Receive("rRadio_RadioConfigUpdate", function()
     -- Update all active radio volumes with validation
     for entity, source in pairs(currentRadioSources) do
         if IsValid(entity) and IsValid(source) then
@@ -3390,6 +3368,14 @@ hook.Add("VehicleChanged", "RadioVehicleCleanup", function(ply, old, new)
     if not new then
         ply.currentRadioEntity = nil
         StateManager:SetState("currentRadioEntity", nil)
+        return
+    end
+
+    -- Get actual vehicle entity
+    local actualVehicle = utils.GetVehicle(new)
+    if actualVehicle then
+        ply.currentRadioEntity = actualVehicle
+        StateManager:SetState("currentRadioEntity", actualVehicle)
     end
 end)
 
@@ -3444,7 +3430,6 @@ hook.Add("Think", "UpdateStreamPositions", function()
         end
     end
 
-    -- Use cached valid streams
     for entIndex, streamData in pairs(validStreams) do
         local entity = streamData.entity
         local stream = streamData.stream
@@ -3459,51 +3444,44 @@ hook.Add("Think", "UpdateStreamPositions", function()
             isPlayerInCar = (vehicle:GetDriver() == ply)
         end
         
-        updateRadioVolume(stream, distanceSqr, isPlayerInCar, entity)
+        rRadio_UpdateRadioVolume(stream, distanceSqr, isPlayerInCar, entity)
     end
 end)
 
-hook.Add("Think", "UpdateStreamValidityCache", function()
-    StreamManager:UpdateValidityCache()
-end)
-
-local UIReferenceTracker = {
-    references = {},
-    validityCache = {},
-    lastCheck = 0,
-    CHECK_INTERVAL = 0.5,
+local function initializeNetworking()
+    net.Receive("rRadio_PlayCarEnterAnimation", function()
+        local vehicle = net.ReadEntity()
+        local isValid = net.ReadBool()
+        
+        utils.DebugPrint("Received rRadio_PlayCarEnterAnimation:",
+        "\nVehicle:", IsValid(vehicle) and vehicle:GetClass() or "invalid",
+        "\nValidation Flag:", isValid)
     
-    Track = function(self, element, id)
-        self.references[id] = element
-        self.validityCache[id] = true
-    end,
-    
-    Untrack = function(self, id)
-        self.references[id] = nil
-        self.validityCache[id] = nil
-    end,
-    
-    IsValid = function(self, id)
-        return self.validityCache[id] == true
-    end,
-    
-    Update = function(self)
-        local currentTime = CurTime()
-        if (currentTime - self.lastCheck) < self.CHECK_INTERVAL then
+        if not isValid then
             return
         end
-        
-        self.lastCheck = currentTime
-        
-        for id, element in pairs(self.references) do
-            self.validityCache[id] = IsValid(element)
-            if not self.validityCache[id] then
-                self.references[id] = nil
-            end
-        end
+
+        playCarEnterAnim()
+    end)
+end
+
+hook.Add("InitPostEntity", "RadioInitializeNetworking", initializeNetworking)
+hook.Add("OnReloaded", "RadioInitializeNetworking", initializeNetworking)
+
+hook.Add("Think", "UpdateStreamValidityCache", function()
+    if StreamManager then
+        StreamManager:UpdateValidityCache()
     end
-}
+end)
 
 hook.Add("Think", "UpdateUIReferences", function()
-    UIReferenceTracker:Update()
+    if UIReferenceTracker then
+        UIReferenceTracker:Update()
+    end
+end)
+
+hook.Add("Think", "RadioAnimationsThink", function()
+    if Misc and Misc.Animations then
+        Misc.Animations:Think()
+    end
 end)

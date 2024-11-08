@@ -320,7 +320,7 @@ local function LoadPermanentBoomboxes(isReload)
             }
             
             -- Broadcast status update to clients
-            net.Start("UpdateRadioStatus")
+            net.Start("rRadio_UpdateRadioStatus")
                 net.WriteEntity(ent)
                 net.WriteString(row.station_name)
                 net.WriteBool(true)
@@ -330,14 +330,14 @@ local function LoadPermanentBoomboxes(isReload)
             DebugPrint("Broadcasted radio status update")
             
             -- Start playback on clients
-            net.Start("PlayCarRadioStation")
+            net.Start("rRadio_QueueStream")
                 net.WriteEntity(ent)
                 net.WriteString(row.station_name)
                 net.WriteString(row.station_url)
                 net.WriteFloat(row.volume)
             net.Broadcast()
             
-            DebugPrint("Broadcasted PlayCarRadioStation")
+            DebugPrint("Broadcasted rRadio_QueueStream")
 
             if AddActiveRadio then
                 AddActiveRadio(ent, row.station_name, row.station_url, row.volume)
@@ -367,8 +367,8 @@ hook.Add("PostCleanupMap", "LoadPermanentBoomboxes", function()
     end)
 end)
 
--- Network Receiver: MakeBoomboxPermanent
-net.Receive("MakeBoomboxPermanent", function(len, ply)
+-- Network Receiver: rRadio_MakeBoomboxPermanent
+net.Receive("rRadio_MakeBoomboxPermanent", function(len, ply)
     if not IsValid(ply) or not ply:IsSuperAdmin() then
         ply:ChatPrint("You do not have permission to perform this action.")
         return
@@ -394,13 +394,13 @@ net.Receive("MakeBoomboxPermanent", function(len, ply)
     SavePermanentBoombox(ent)
 
     -- Send confirmation to client
-    net.Start("BoomboxPermanentConfirmation")
+    net.Start("rRadio_BoomboxPermanentConfirmation")
         net.WriteString("Boombox has been marked as permanent.")
     net.Send(ply)
 end)
 
--- Network Receiver: RemoveBoomboxPermanent
-net.Receive("RemoveBoomboxPermanent", function(len, ply)
+-- Network Receiver: rRadio_RemoveBoomboxPermanent
+net.Receive("rRadio_RemoveBoomboxPermanent", function(len, ply)
     if not IsValid(ply) or not ply:IsSuperAdmin() then
         ply:ChatPrint("You do not have permission to perform this action.")
         return
@@ -431,7 +431,7 @@ net.Receive("RemoveBoomboxPermanent", function(len, ply)
     end
 
     -- Send confirmation to client
-    net.Start("BoomboxPermanentConfirmation")
+    net.Start("rRadio_BoomboxPermanentConfirmation")
         net.WriteString("Boombox permanence has been removed.")
     net.Send(ply)
 end)

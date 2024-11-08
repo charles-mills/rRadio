@@ -299,7 +299,7 @@ function Config.ReloadConVars()
 
     -- Notify clients of the update if we're on the server
     if SERVER then
-        net.Start("RadioConfigUpdate")
+        net.Start("rRadio_RadioConfigUpdate")
         net.Broadcast()
     end
 
@@ -330,7 +330,7 @@ end
 
 if CLIENT then
     -- Handle config updates from server
-    net.Receive("RadioConfigUpdate", function()
+    net.Receive("rRadio_RadioConfigUpdate", function()
         Config.ReloadConVars()
     end)
 end
