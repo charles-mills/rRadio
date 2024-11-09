@@ -55,6 +55,25 @@ Config.Lang = {}
 Config.UI = {}
 Config.MaxStationNameLength = 40
 
+Config.AdminPanel = {
+    -- Usergroups that can access the admin panel
+    AllowedGroups = {
+        ["superadmin"] = true,
+        ["admin"] = true
+    },
+    
+    -- Function to check if a player can access the admin panel
+    CanAccess = function(ply)
+        if not IsValid(ply) then return false end
+        
+        -- Always allow superadmins regardless of config
+        if ply:IsSuperAdmin() then return true end
+        
+        -- Check if player's usergroup is in allowed groups
+        return Config.AdminPanel.AllowedGroups[ply:GetUserGroup()] == true
+    end
+}
+
 -- ------------------------------
 --         ConVars Setup
 -- ------------------------------
