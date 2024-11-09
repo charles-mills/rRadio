@@ -14,8 +14,7 @@ local Modules = {}
 Modules.Animations = {
     activeTweens = {},
     nextId = 1,
-    
-    -- Easing functions
+
     Easing = {
         OutQuint = function(x)
             return 1 - math.pow(1 - x, 5)
@@ -229,13 +228,10 @@ Modules.Effects = {
     end
 }
 
--- Update the PulseEffects module to handle menu-wide pulses
 Modules.PulseEffects = {
     menuPulse = nil,
     
-    -- Simplified pulse creation for menu
     CreateMenuPulse = function(self, duration)
-        -- Only allow one menu pulse at a time for performance
         if self.menuPulse then return end
         
         self.menuPulse = {
@@ -245,8 +241,7 @@ Modules.PulseEffects = {
             updateInterval = 0.016 -- ~60fps cap
         }
     end,
-    
-    -- Optimized think function
+
     Think = function(self)
         if not self.menuPulse then return end
         
@@ -279,99 +274,48 @@ Modules.PulseEffects = {
 }
 
 Modules.KeyNames = {
-    [KEY_A] = "A",
-    [KEY_B] = "B",
-    [KEY_C] = "C",
-    [KEY_D] = "D",
-    [KEY_E] = "E",
-    [KEY_F] = "F",
-    [KEY_G] = "G",
-    [KEY_H] = "H",
-    [KEY_I] = "I",
-    [KEY_J] = "J",
-    [KEY_K] = "K",
-    [KEY_L] = "L",
-    [KEY_M] = "M",
-    [KEY_N] = "N",
-    [KEY_O] = "O",
-    [KEY_P] = "P",
-    [KEY_Q] = "Q",
-    [KEY_R] = "R",
-    [KEY_S] = "S",
-    [KEY_T] = "T",
-    [KEY_U] = "U",
-    [KEY_V] = "V",
-    [KEY_W] = "W",
-    [KEY_X] = "X",
-    [KEY_Y] = "Y",
+    -- Letters
+    [KEY_A] = "A", [KEY_B] = "B", [KEY_C] = "C", [KEY_D] = "D", [KEY_E] = "E",
+    [KEY_F] = "F", [KEY_G] = "G", [KEY_H] = "H", [KEY_I] = "I", [KEY_J] = "J",
+    [KEY_K] = "K", [KEY_L] = "L", [KEY_M] = "M", [KEY_N] = "N", [KEY_O] = "O",
+    [KEY_P] = "P", [KEY_Q] = "Q", [KEY_R] = "R", [KEY_S] = "S", [KEY_T] = "T",
+    [KEY_U] = "U", [KEY_V] = "V", [KEY_W] = "W", [KEY_X] = "X", [KEY_Y] = "Y",
     [KEY_Z] = "Z",
-    [KEY_0] = "0",
-    [KEY_1] = "1",
-    [KEY_2] = "2",
-    [KEY_3] = "3",
-    [KEY_4] = "4",
-    [KEY_5] = "5",
-    [KEY_6] = "6",
-    [KEY_7] = "7",
-    [KEY_8] = "8",
-    [KEY_9] = "9",
-    [KEY_PAD_0] = "NP 0",
-    [KEY_PAD_1] = "NP 1",
-    [KEY_PAD_2] = "NP 2",
-    [KEY_PAD_3] = "NP 3",
-    [KEY_PAD_4] = "NP 4",
-    [KEY_PAD_5] = "NP 5",
-    [KEY_PAD_6] = "NP 6",
-    [KEY_PAD_7] = "NP 7",
-    [KEY_PAD_8] = "NP 8",
-    [KEY_PAD_9] = "NP 9",
-    [KEY_PAD_DIVIDE] = "NP /",
-    [KEY_PAD_MULTIPLY] = "NP *",
-    [KEY_PAD_MINUS] = "NP -",
-    [KEY_PAD_PLUS] = "NP +",
-    [KEY_PAD_ENTER] = "NP Enter",
+
+    -- Numbers
+    [KEY_0] = "0", [KEY_1] = "1", [KEY_2] = "2", [KEY_3] = "3", [KEY_4] = "4",
+    [KEY_5] = "5", [KEY_6] = "6", [KEY_7] = "7", [KEY_8] = "8", [KEY_9] = "9",
+
+    -- Numpad
+    [KEY_PAD_0] = "NP 0", [KEY_PAD_1] = "NP 1", [KEY_PAD_2] = "NP 2",
+    [KEY_PAD_3] = "NP 3", [KEY_PAD_4] = "NP 4", [KEY_PAD_5] = "NP 5",
+    [KEY_PAD_6] = "NP 6", [KEY_PAD_7] = "NP 7", [KEY_PAD_8] = "NP 8",
+    [KEY_PAD_9] = "NP 9", [KEY_PAD_DIVIDE] = "NP /", [KEY_PAD_MULTIPLY] = "NP *",
+    [KEY_PAD_MINUS] = "NP -", [KEY_PAD_PLUS] = "NP +", [KEY_PAD_ENTER] = "NP Enter",
     [KEY_PAD_DECIMAL] = "NP .",
-    [KEY_LSHIFT] = "L Shift",
-    [KEY_RSHIFT] = "R Shift",
-    [KEY_LALT] = "L Alt",
-    [KEY_RALT] = "R Alt",
-    [KEY_LCONTROL] = "L Ctrl",
-    [KEY_RCONTROL] = "R Ctrl",
-    [KEY_SPACE] = "Space",
-    [KEY_ENTER] = "Enter",
-    [KEY_BACKSPACE] = "Backspace",
-    [KEY_TAB] = "Tab",
-    [KEY_CAPSLOCK] = "Caps Lock",
-    [KEY_ESCAPE] = "Escape",
-    [KEY_SCROLLLOCK] = "Scroll Lock",
-    [KEY_INSERT] = "Insert",
-    [KEY_DELETE] = "Delete",
-    [KEY_HOME] = "Home",
-    [KEY_END] = "End",
-    [KEY_PAGEUP] = "Page Up",
-    [KEY_PAGEDOWN] = "Page Down",
-    [KEY_BREAK] = "Break",
-    [KEY_NUMLOCK] = "Num Lock",
-    [KEY_SEMICOLON] = ";",
-    [KEY_EQUAL] = "=",
-    [KEY_MINUS] = "-",
-    [KEY_COMMA] = ",",
-    [KEY_PERIOD] = ".",
-    [KEY_SLASH] = "/",
-    [KEY_BACKSLASH] = "\\",
-    [KEY_BACKQUOTE] = "`",
-    [KEY_F1] = "F1",
-    [KEY_F2] = "F2",
-    [KEY_F3] = "F3",
-    [KEY_F4] = "F4",
-    [KEY_F5] = "F5",
-    [KEY_F6] = "F6",
-    [KEY_F7] = "F7",
-    [KEY_F8] = "F8",
-    [KEY_F9] = "F9",
-    [KEY_F10] = "F10",
-    [KEY_F11] = "F11",
-    [KEY_F12] = "F12",
+
+    -- Modifiers
+    [KEY_LSHIFT] = "L Shift", [KEY_RSHIFT] = "R Shift",
+    [KEY_LALT] = "L Alt", [KEY_RALT] = "R Alt",
+    [KEY_LCONTROL] = "L Ctrl", [KEY_RCONTROL] = "R Ctrl",
+
+    -- Common keys
+    [KEY_SPACE] = "Space", [KEY_ENTER] = "Enter", [KEY_BACKSPACE] = "Backspace",
+    [KEY_TAB] = "Tab", [KEY_CAPSLOCK] = "Caps Lock", [KEY_ESCAPE] = "Escape",
+    [KEY_SCROLLLOCK] = "Scroll Lock", [KEY_INSERT] = "Insert", [KEY_DELETE] = "Delete",
+    [KEY_HOME] = "Home", [KEY_END] = "End", [KEY_PAGEUP] = "Page Up",
+    [KEY_PAGEDOWN] = "Page Down", [KEY_BREAK] = "Break", [KEY_NUMLOCK] = "Num Lock",
+
+    -- Symbols
+    [KEY_SEMICOLON] = ";", [KEY_EQUAL] = "=", [KEY_MINUS] = "-", [KEY_COMMA] = ",",
+    [KEY_PERIOD] = ".", [KEY_SLASH] = "/", [KEY_BACKSLASH] = "\\", [KEY_BACKQUOTE] = "`",
+
+    -- Function keys
+    [KEY_F1] = "F1", [KEY_F2] = "F2", [KEY_F3] = "F3", [KEY_F4] = "F4",
+    [KEY_F5] = "F5", [KEY_F6] = "F6", [KEY_F7] = "F7", [KEY_F8] = "F8",
+    [KEY_F9] = "F9", [KEY_F10] = "F10", [KEY_F11] = "F11", [KEY_F12] = "F12",
+
+    -- Toggle states
     [KEY_CAPSLOCKTOGGLE] = "Caps Lock",
     [KEY_NUMLOCKTOGGLE] = "Num Lock",
     [KEY_LAST] = "Last Key",
@@ -380,11 +324,6 @@ Modules.KeyNames = {
         return self[keyCode] or "UNKNOWN"
     end
 }
-
-hook.Add("Think", "RadioMiscModulesThink", function()
-    Modules.Animations:Think()
-    Modules.PulseEffects:Think()
-end)
 
 Modules.Language = {
     currentLanguage = "en",
@@ -494,6 +433,8 @@ Modules.Settings = {
         CreateClientConVar("radio_language", "en", true, false, "Select the language for the radio UI.")
         CreateClientConVar("boombox_show_text", "1", true, false, "Show or hide the text above the boombox.")
         CreateClientConVar("car_radio_open_key", "21", true, false, "Select the key to open the car radio menu.")
+        CreateClientConVar("radio_max_vehicle_volume", "1", true, false, "Maximum volume for vehicle radios (0-1)")
+        CreateClientConVar("radio_max_boombox_volume", "1", true, false, "Maximum volume for boomboxes (0-1)")
     end,
 
     -- Theme management
@@ -623,6 +564,92 @@ Modules.Settings = {
         
         local chatMessageCheckbox = self:CreateCheckbox(panel, "Show Car Radio Messages", "car_radio_show_messages")
         local showTextCheckbox = self:CreateCheckbox(panel, "Show Boombox Hover Text", "boombox_show_text")
+        
+        -- Volume Limits Section
+        local volumeHeader = self:CreateHeader(panel, "Volume Limits")
+        
+        -- Vehicle volume slider
+        local vehicleVolume = vgui.Create("DNumSlider", panel)
+        vehicleVolume:SetText("Vehicles")
+        vehicleVolume:SetMin(0)
+        vehicleVolume:SetMax(1)
+        vehicleVolume:SetDecimals(2)
+        vehicleVolume:SetConVar("radio_max_vehicle_volume")
+        vehicleVolume:SetDefaultValue(1)
+        vehicleVolume:SetDark(true)
+        vehicleVolume:Dock(TOP)
+        vehicleVolume:DockMargin(0, 5, 0, 5)
+        vehicleVolume.OnValueChanged = function(_, value)
+            -- Clamp value between 0 and 1
+            value = math.Clamp(value, 0, 1)
+            RunConsoleCommand("radio_max_vehicle_volume", tostring(value))
+            
+            -- Immediately enforce new limit on all active vehicle streams
+            if StreamManager and StreamManager.activeStreams then
+                for _, streamData in pairs(StreamManager.activeStreams) do
+                    if IsValid(streamData.entity) and IsValid(streamData.stream) and streamData.entity:IsVehicle() then
+                        local currentVolume = streamData.stream:GetVolume()
+                        if currentVolume > value then
+                            streamData.stream:SetVolume(value)
+                        end
+                    end
+                end
+            end
+        end
+        panel:AddItem(vehicleVolume)
+        
+        -- Boombox volume slider
+        local boomboxVolume = vgui.Create("DNumSlider", panel)
+        boomboxVolume:SetText("Boomboxes")
+        boomboxVolume:SetMin(0)
+        boomboxVolume:SetMax(1)
+        boomboxVolume:SetDecimals(2)
+        boomboxVolume:SetConVar("radio_max_boombox_volume")
+        boomboxVolume:SetDefaultValue(1)
+        boomboxVolume:SetDark(true)
+        boomboxVolume:Dock(TOP)
+        boomboxVolume:DockMargin(0, 5, 0, 15)
+        boomboxVolume.OnValueChanged = function(_, value)
+            -- Clamp value between 0 and 1
+            value = math.Clamp(value, 0, 1)
+            RunConsoleCommand("radio_max_boombox_volume", tostring(value))
+            
+            -- Immediately enforce new limit on all active boombox streams
+            if StreamManager and StreamManager.activeStreams then
+                for _, streamData in pairs(StreamManager.activeStreams) do
+                    if IsValid(streamData.entity) and IsValid(streamData.stream) and 
+                       (streamData.entity:GetClass() == "boombox" or streamData.entity:GetClass() == "golden_boombox") then
+                        local currentVolume = streamData.stream:GetVolume()
+                        if currentVolume > value then
+                            streamData.stream:SetVolume(value)
+                        end
+                    end
+                end
+            end
+        end
+        panel:AddItem(boomboxVolume)
+        
+        -- Help text
+        local helpText = vgui.Create("DLabel", panel)
+        helpText:SetText("These volume limits only affect your client and override server settings.")
+        helpText:SetTextColor(Color(100, 100, 100))
+        helpText:SetWrap(true)
+        helpText:SetAutoStretchVertical(true)
+        helpText:Dock(TOP)
+        helpText:DockMargin(5, 0, 5, 15)
+        helpText:SetContentAlignment(7)
+        panel:AddItem(helpText)
+        
+        -- Add divider
+        local divider = vgui.Create("DPanel", panel)
+        divider:SetTall(1)
+        divider:Dock(TOP)
+        divider:DockMargin(0, 5, 0, 5)
+        divider.Paint = function(self, w, h)
+            surface.SetDrawColor(200, 200, 200, 100)
+            surface.DrawRect(0, 0, w, h)
+        end
+        panel:AddItem(divider)
     end,
 
     -- UI Helper functions
@@ -696,10 +723,30 @@ Modules.Settings = {
         for _, key in ipairs(otherKeys) do table.insert(sortedKeys, key) end
 
         return sortedKeys
+    end,
+
+    GetMaxVolume = function(self, entity)
+        if not IsValid(entity) then return 1 end
+        
+        -- Create ConVars if they don't exist
+        if not GetConVar("radio_max_vehicle_volume") then
+            CreateClientConVar("radio_max_vehicle_volume", "1", true, false, "Maximum volume for vehicle radios (0-1)")
+        end
+        if not GetConVar("radio_max_boombox_volume") then
+            CreateClientConVar("radio_max_boombox_volume", "1", true, false, "Maximum volume for boomboxes (0-1)")
+        end
+        
+        -- Get appropriate volume limit based on entity type
+        if entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox" then
+            return GetConVar("radio_max_boombox_volume"):GetFloat()
+        elseif entity:IsVehicle() then
+            return GetConVar("radio_max_vehicle_volume"):GetFloat()
+        end
+        
+        return 1 -- Default fallback
     end
 }
 
--- Add hooks
 hook.Add("InitPostEntity", "ApplySavedThemeAndLanguageOnJoin", function()
     Modules.Settings:LoadSavedSettings()
 end)
@@ -711,6 +758,29 @@ end)
 hook.Add("LanguageUpdated", "UpdateCountryListOnLanguageChange", function()
     if radioMenuOpen then
         populateList(stationListPanel, backButton, searchBox, true)
+    end
+end)
+
+hook.Add("Think", "EnforceRadioVolumeLimits", function()
+    if not StreamManager or not StreamManager.activeStreams then return end
+    
+    -- Only check every 3 seconds for background enforcement
+    if not Modules.Settings.nextVolumeCheck or CurTime() > Modules.Settings.nextVolumeCheck then
+        Modules.Settings.nextVolumeCheck = CurTime() + 3
+        
+        local vehicleMax = GetConVar("radio_max_vehicle_volume"):GetFloat()
+        local boomboxMax = GetConVar("radio_max_boombox_volume"):GetFloat()
+        
+        for entIndex, streamData in pairs(StreamManager.activeStreams) do
+            if IsValid(streamData.entity) and IsValid(streamData.stream) then
+                local maxVolume = streamData.entity:IsVehicle() and vehicleMax or boomboxMax
+                local currentVolume = streamData.stream:GetVolume()
+                
+                if currentVolume > maxVolume then
+                    streamData.stream:SetVolume(maxVolume)
+                end
+            end
+        end
     end
 end)
 
