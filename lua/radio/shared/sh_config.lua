@@ -1,20 +1,6 @@
---[[
-    Radio Addon Shared Configuration
-    Author: Charles Mills
-    Description: This file contains the main configuration settings for the Radio Addon.
-                 It defines global variables, ConVars, and functions used across both
-                 client and server. This includes settings for boomboxes, vehicle radios,
-                 UI themes, language options, and various other customizable parameters.
-    Date: November 3, 2024
-]]--
-
---[[
-
-Resource management configuration is available in sv_resource_manager.lua
-
-]]--
-
 local Config = {}
+
+-- Almost all configurable is possible via convars, use radio_help for more information.
 
 -- ------------------------------
 --    ConVar Management
