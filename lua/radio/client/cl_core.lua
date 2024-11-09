@@ -1165,8 +1165,7 @@ local function createStarIcon(parent, country, station, updateList)
         (not station and getSafeState("favoriteCountries", {})[country])
 
     starIcon:SetImage(isFavorite and "hud/star_full.png" or "hud/star.png")
-    
-    -- Update star icon color
+
     starIcon.Paint = function(self, w, h)
         surface.SetDrawColor(Config.UI.FavoriteStarColor)
         surface.SetMaterial(MaterialCache:Get(isFavorite and "hud/star_full.png" or "hud/star.png"))
@@ -1480,10 +1479,10 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
 
             favoritesButton.PaintOver = function(self, w, h)
                 surface.SetMaterial(MaterialCache:Get("hud/star_full.png"))
-                surface.SetDrawColor(Config.UI.TextColor)
+                surface.SetDrawColor(Config.UI.FavoriteStarColor)
                 
                 local iconSize = Scale(24)
-                local iconX = Scale(8)
+                local iconX = Scale(12)
                 local iconY = (h - iconSize) / 2
                 
                 surface.DrawTexturedRect(iconX, iconY, iconSize, iconSize)
