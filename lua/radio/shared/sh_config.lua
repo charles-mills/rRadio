@@ -1,6 +1,6 @@
 local Config = {}
 
--- Almost all configurable is possible via convars, use radio_help for more information.
+-- Almost all configuration is possible via convars, use radio_help for more information.
 
 Config.RegisteredConVars = {
     server = {},
