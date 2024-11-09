@@ -20,11 +20,16 @@ local networkStrings = {
     "rRadio_RemoveBoomboxPermanent",
     "rRadio_BoomboxPermanentConfirmation",
     "rRadio_RadioConfigUpdate",
-    "rRadio_RequestCarEnterAnim"
+    "rRadio_RequestCarEnterAnim",
     "rRadio_OpenAdminPanel",
-    "rRadio_UpdateAdminPanel", 
+    "rRadio_UpdateAdminPanel",
     "rRadio_AdminAction",
-    "rRadio_AdminNotification"
+    "rRadio_AdminNotification",
+    "rRadio_RequestBanList",
+    "rRadio_SendBanList",
+    "rRadio_RevokeBan",
+    "rRadio_CheckBan",
+    "rRadio_BanCheckResult"
 }
 
 for _, str in ipairs(networkStrings) do
@@ -43,8 +48,8 @@ local RETRY_COOLDOWN = 1.0
 local CLEANUP_INTERVAL = 300 -- 5 minutes
 
 -- State tables
-_G.ActiveRadios = {}  -- Make it globally accessible
-local ActiveRadios = _G.ActiveRadios  -- Local reference for this file
+_G.ActiveRadios = {}
+local ActiveRadios = _G.ActiveRadios
 local PlayerRetryAttempts = {}
 local PlayerCooldowns = {}
 local EntityVolumes = {}
@@ -768,10 +773,10 @@ net.Receive("rRadio_QueueStream", function(len, ply)
     local entIndex = actualEntity:EntIndex()
     
     -- Check for temp ban before proceeding
-    local isBanned, banData = TempBans:IsBanned(ply:SteamID())
+    local isBanned, banData, timeLeft = TempBans:IsBanned(ply:SteamID())
     if isBanned then
-        local timeLeft = math.ceil((banData.expires - os.time()) / 60)
-        ply:ChatPrint(string.format("[Radio] You are temporarily banned from using the radio system. Time remaining: %d minutes", timeLeft))
+        local timeLeftMinutes = math.ceil(timeLeft / 60)
+        ply:ChatPrint(string.format("[Radio] You are temporarily banned from using the radio system. Time remaining: %d minutes", timeLeftMinutes))
         return
     end
     
@@ -1184,6 +1189,10 @@ local radioCommands = {
     vehicle_min_distance = {
         desc = "Sets the distance at which vehicle radio volume starts to drop off",
         example = "500"
+    },
+    animation_on_car_enter = {
+        desc = "Enable or disable the radio animation when entering vehicles",
+        example = "1"
     }
 }
 
@@ -1383,6 +1392,9 @@ hook.Add("EntityRemoved", "CleanupRadioVolume", function(entity)
 end)
 
 hook.Add("PlayerEnteredVehicle", "RadioVehicleHandling", function(ply, vehicle)
+    -- Add check for animation config
+    if not Config.AnimationOnCarEnter() then return end
+    
     local actualVehicle = utils.GetVehicle(vehicle)
     
     DebugPrint("PlayerEnteredVehicle triggered:",
@@ -1391,7 +1403,8 @@ hook.Add("PlayerEnteredVehicle", "RadioVehicleHandling", function(ply, vehicle)
         "\nActual Vehicle:", actualVehicle and actualVehicle:GetClass() or "none",
         "\nIs SitAnywhere:", utils.isSitAnywhereSeat(vehicle) and "yes" or "no",
         "\nCan Use Radio:", actualVehicle and utils.canUseRadio(actualVehicle) and "yes" or "no",
-        "\nMessage Cooldown:", GetConVar("radio_message_cooldown"):GetFloat())
+        "\nMessage Cooldown:", GetConVar("radio_message_cooldown"):GetFloat(),
+        "\nAnimation Enabled:", Config.AnimationOnCarEnter() and "yes" or "no")
 
     if not actualVehicle then
         DebugPrint("No actual vehicle found - skipping message")
@@ -1431,3 +1444,19 @@ hook.Add("RadioPreStreamStart", "CheckAdminPermissions", function(ply, entity)
 end)
 
 _G.RemoveActiveRadio = RemoveActiveRadio
+
+-- Add this network receiver
+net.Receive("rRadio_CheckBan", function(len, ply)
+    if not IsValid(ply) then return end
+    
+    local isBanned, banData, timeLeft = TempBans:IsBanned(ply:SteamID())
+    
+    net.Start("rRadio_BanCheckResult")
+        net.WriteBool(not isBanned)
+    net.Send(ply)
+    
+    if isBanned then
+        local timeLeftMinutes = math.ceil(timeLeft / 60)
+        ply:ChatPrint(string.format("[Radio] You are temporarily banned from using the radio system. Time remaining: %d minutes", timeLeftMinutes))
+    end
+end)

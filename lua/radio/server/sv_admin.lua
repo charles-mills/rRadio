@@ -34,12 +34,13 @@ local TempBans = {
         local ban = self.bans[steamID]
         if not ban then return false end
         
-        if CurTime() >= ban.expires then
+        local timeLeft = ban.expires - CurTime()
+        if timeLeft <= 0 then
             self:RemoveBan(steamID)
             return false
         end
         
-        return true, ban
+        return true, ban, timeLeft
     end,
     
     SaveBans = function(self)
@@ -59,13 +60,13 @@ local TempBans = {
         end
         
         local data = util.TableToJSON(storageData)
-        file.Write("radio/tempbans.txt", data)
+        file.Write("rradio/tempbans.txt", data)
     end,
     
     LoadBans = function(self)
-        if not file.Exists("radio/tempbans.txt", "DATA") then return end
+        if not file.Exists("rradio/tempbans.txt", "DATA") then return end
         
-        local data = file.Read("radio/tempbans.txt", "DATA")
+        local data = file.Read("rradio/tempbans.txt", "DATA")
         local storageData = util.JSONToTable(data) or {}
         
         -- Convert stored relative times to current CurTime values
@@ -85,6 +86,61 @@ local TempBans = {
         end
         
         self:SaveBans() -- Clean up storage by removing expired bans
+    end,
+    
+    GetActiveBans = function(self)
+        local bans = {}
+        local currentTime = CurTime()
+        
+        for steamID, banData in pairs(self.bans) do
+            -- Only include active bans
+            if currentTime < banData.expires then
+                local timeLeft = banData.expires - currentTime
+                table.insert(bans, {
+                    steamID = steamID,
+                    admin = banData.admin,
+                    duration = banData.duration,
+                    timeLeft = timeLeft,
+                    expires = banData.expires,
+                    startTime = banData.startTime
+                })
+            end
+        end
+        
+        -- Sort by time remaining (ascending)
+        table.sort(bans, function(a, b)
+            return a.timeLeft < b.timeLeft
+        end)
+        
+        return bans
+    end,
+    
+    RevokeBan = function(self, steamID, adminName)
+        if not self.bans[steamID] then return false end
+        
+        -- Get player name before removing ban
+        local targetName = "Unknown"
+        local targetPly = player.GetBySteamID(steamID)
+        if IsValid(targetPly) then
+            targetName = targetPly:Nick()
+        end
+        
+        self:RemoveBan(steamID)
+        
+        -- Notify online admins
+        for _, ply in ipairs(player.GetAll()) do
+            if Config.AdminPanel.CanAccess(ply) then
+                SendAdminNotification(ply, string.format("Admin %s revoked ban for %s (%s)", 
+                    adminName, targetName, steamID), Color(0, 255, 0))
+            end
+        end
+        
+        -- Notify unbanned player if online
+        if IsValid(targetPly) then
+            targetPly:ChatPrint("[Radio] Your radio ban has been revoked by " .. adminName)
+        end
+        
+        return true
     end
 }
 
@@ -101,11 +157,11 @@ hook.Add("RadioPreStreamStart", "CheckRadioTempBan", function(ply)
     if not IsValid(ply) then return end
     
     local steamID = ply:SteamID()
-    local isBanned, banData = TempBans:IsBanned(steamID)
+    local isBanned, banData, timeLeft = TempBans:IsBanned(steamID)
     
     if isBanned then
-        local timeLeft = math.ceil((banData.expires - os.time()) / 60)
-        ply:ChatPrint(string.format("[Radio] You are temporarily banned from using the radio system. Time remaining: %d minutes", timeLeft))
+        local timeLeftMinutes = math.ceil(timeLeft / 60)
+        ply:ChatPrint(string.format("[Radio] You are temporarily banned from using the radio system. Time remaining: %d minutes", timeLeftMinutes))
         return false
     end
 end)

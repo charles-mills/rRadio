@@ -2,20 +2,19 @@ local Config = {}
 
 -- Almost all configurable is possible via convars, use radio_help for more information.
 
--- ------------------------------
---    ConVar Management
--- ------------------------------
-
--- Table to store all registered ConVars
 Config.RegisteredConVars = {
     server = {},
     client = {}
 }
 
--- Function declarations that use RegisteredConVars
 local function CreateServerConVar(name, default, helpText)
     Config.RegisteredConVars.server[name] = default
-    return CreateConVar(name, default, {FCVAR_ARCHIVE, FCVAR_REPLICATED, FCVAR_NOTIFY}, helpText)
+    return CreateConVar(name, default, {
+        FCVAR_ARCHIVE,      -- Save the value
+        FCVAR_REPLICATED,   -- Replicate to clients
+        FCVAR_NOTIFY,       -- Notify clients of changes
+        FCVAR_PROTECTED     -- Only allow changes from server console or superadmins
+    }, helpText)
 end
 
 local function EnsureConVar(name, default, flags, helpText)
@@ -26,20 +25,24 @@ local function EnsureConVar(name, default, flags, helpText)
     return GetConVar(name)
 end
 
--- ------------------------------
---          Imports
--- ------------------------------
 local themes = include("radio/client/cl_theme_manager.lua") or {}
-
--- ------------------------------
---      Configuration Tables
--- ------------------------------
 
 -- Radio Stations Data
 Config.RadioStations = {}
 Config.Lang = {}
 Config.UI = {}
 Config.MaxStationNameLength = 40
+
+Config.Sound3D = {
+    -- Inner angle in degrees (full volume within this cone)
+    InnerAngle = 180,
+    
+    -- Outer angle in degrees (reduced volume outside inner angle, up to this angle)
+    OuterAngle = 360,
+    
+    -- Volume multiplier for sounds outside the inner cone (0-1)
+    OuterVolume = 0.8
+}
 
 Config.AdminPanel = {
     -- Usergroups that can access the admin panel
@@ -59,10 +62,6 @@ Config.AdminPanel = {
         return Config.AdminPanel.AllowedGroups[ply:GetUserGroup()] == true
     end
 }
-
--- ------------------------------
---         ConVars Setup
--- ------------------------------
 
 -- Language Selection ConVar
 local languageConVar = EnsureConVar(
@@ -126,6 +125,13 @@ local vehicleMaxDistCvar = CreateServerConVar("radio_vehicle_max_distance", "800
 local vehicleMinDistCvar = CreateServerConVar("radio_vehicle_min_distance", "500", "Distance at which vehicle radio volume starts to drop off")
 local vehicleFalloffCvar = CreateServerConVar("radio_vehicle_falloff", "2.0", "Audio falloff exponent for vehicle radios")
 
+-- Animation on car enter
+local animationOnCarEnterCvar = CreateServerConVar(
+    "radio_animation_on_car_enter",
+    "1",
+    "Enable or disable the radio animation when entering vehicles (0/1)"
+)
+
 -- Update Config tables based on ConVars
 Config.Boombox = {
     Volume = function() return boomboxVolumeCvar:GetFloat() end,
@@ -158,6 +164,11 @@ Config.VehicleRadio = {
 Config.MessageCooldown = function() return messageCooldownCvar:GetFloat() end
 Config.MaxVolume = function() return maxVolumeCvar:GetFloat() end
 Config.VolumeAttenuationExponent = 0.8
+
+-- Animation on car enter
+Config.AnimationOnCarEnter = function() 
+    return animationOnCarEnterCvar:GetBool() 
+end
 
 -- ------------------------------
 --         Language Setup
