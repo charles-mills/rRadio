@@ -18,6 +18,7 @@ for _, filename in ipairs(langFiles) do
 end
 
 include("radio/server/sv_core.lua")
+TempBans = include("radio/server/sv_admin.lua")
 
 -- Add resources
 resource.AddFile("models/rammel/boombox.mdl")

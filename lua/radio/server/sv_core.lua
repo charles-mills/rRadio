@@ -21,6 +21,10 @@ local networkStrings = {
     "rRadio_BoomboxPermanentConfirmation",
     "rRadio_RadioConfigUpdate",
     "rRadio_RequestCarEnterAnim"
+    "rRadio_OpenAdminPanel",
+    "rRadio_UpdateAdminPanel", 
+    "rRadio_AdminAction",
+    "rRadio_AdminNotification"
 }
 
 for _, str in ipairs(networkStrings) do
@@ -39,7 +43,8 @@ local RETRY_COOLDOWN = 1.0
 local CLEANUP_INTERVAL = 300 -- 5 minutes
 
 -- State tables
-local ActiveRadios = {}
+_G.ActiveRadios = {}  -- Make it globally accessible
+local ActiveRadios = _G.ActiveRadios  -- Local reference for this file
 local PlayerRetryAttempts = {}
 local PlayerCooldowns = {}
 local EntityVolumes = {}
@@ -316,6 +321,9 @@ local function CleanupEntity(entity)
     if not IsValid(entity) then return end
     local entIndex = entity:EntIndex()
     
+    -- Clear radio starter
+    entity.RadioStartedBy = nil
+    
     -- Clean up timers
     TimerManager:cleanup("_" .. entIndex)
     
@@ -371,9 +379,21 @@ end
     Returns:
     - None: This function does not return a value, but it updates the state and broadcasts the stream request to clients.
 ]]
-local function StartNewStream(entity, stationName, stationURL, volume)
+local function StartNewStream(entity, stationName, stationURL, volume, ply)
     if not IsValid(entity) then return end
     local entIndex = entity:EntIndex()
+    
+    -- Store who started this stream
+    entity.RadioStartedBy = ply
+    
+    -- Add start time to ActiveRadios
+    ActiveRadios[entIndex] = {
+        stationName = stationName,
+        url = stationURL,
+        volume = volume,
+        startTime = CurTime(),
+        owner = ply
+    }
     
     DebugPrint("Starting new stream",
         "\nEntity:", entity,
@@ -747,6 +767,14 @@ net.Receive("rRadio_QueueStream", function(len, ply)
 
     local entIndex = actualEntity:EntIndex()
     
+    -- Check for temp ban before proceeding
+    local isBanned, banData = TempBans:IsBanned(ply:SteamID())
+    if isBanned then
+        local timeLeft = math.ceil((banData.expires - os.time()) / 60)
+        ply:ChatPrint(string.format("[Radio] You are temporarily banned from using the radio system. Time remaining: %d minutes", timeLeft))
+        return
+    end
+    
     -- Handle the stream request
     ResourceManager:RequestStream(ply, actualEntity, stationURL, function(success, error)
         if not success then
@@ -761,11 +789,11 @@ net.Receive("rRadio_QueueStream", function(len, ply)
             net.Broadcast()
 
             TimerManager:create("StartStream_" .. entIndex, STREAM_RETRY_DELAY, 1, function()
-                StartNewStream(actualEntity, stationName, stationURL, volume)
+                StartNewStream(actualEntity, stationName, stationURL, volume, ply)
                 return true
             end)
         else
-            StartNewStream(actualEntity, stationName, stationURL, volume)
+            StartNewStream(actualEntity, stationName, stationURL, volume, ply)
         end
     end)
 end)
@@ -1389,3 +1417,17 @@ hook.Add("PlayerEnteredVehicle", "RadioVehicleHandling", function(ply, vehicle)
     
     DebugPrint("Sent rRadio_PlayCarEnterAnimation to client for player:", ply:Nick())
 end)
+
+-- Add near other hooks
+hook.Add("RadioPreStreamStart", "CheckAdminPermissions", function(ply, entity)
+    -- Check temp bans
+    local isBanned, banData = TempBans:IsBanned(ply:SteamID())
+    if isBanned then
+        local timeLeft = math.ceil((banData.expires - os.time()) / 60)
+        ply:ChatPrint(string.format("[Radio] You are temporarily banned from using the radio system. Time remaining: %d minutes", timeLeft))
+        return false
+    end
+    return true
+end)
+
+_G.RemoveActiveRadio = RemoveActiveRadio

@@ -490,7 +490,89 @@ Modules.Settings = {
             -- Key selection
             self:AddKeySelection(panel)
             
-            -- General options
+            -- Volume Limits (moved above General Options)
+            local volumeHeader = self:CreateHeader(panel, "Volume Limits")
+            
+            -- Vehicle volume slider
+            local vehicleVolume = vgui.Create("DNumSlider", panel)
+            vehicleVolume:SetText("Vehicles")
+            vehicleVolume:SetMin(0)
+            vehicleVolume:SetMax(1)
+            vehicleVolume:SetDecimals(2)
+            vehicleVolume:SetConVar("radio_max_vehicle_volume")
+            vehicleVolume:SetDefaultValue(1)
+            vehicleVolume:SetDark(true)
+            vehicleVolume:Dock(TOP)
+            vehicleVolume:DockMargin(0, 5, 0, 5)
+            vehicleVolume.OnValueChanged = function(_, value)
+                value = math.Clamp(value, 0, 1)
+                RunConsoleCommand("radio_max_vehicle_volume", tostring(value))
+                
+                if StreamManager and StreamManager.activeStreams then
+                    for _, streamData in pairs(StreamManager.activeStreams) do
+                        if IsValid(streamData.entity) and IsValid(streamData.stream) and streamData.entity:IsVehicle() then
+                            local currentVolume = streamData.stream:GetVolume()
+                            if currentVolume > value then
+                                streamData.stream:SetVolume(value)
+                            end
+                        end
+                    end
+                end
+            end
+            panel:AddItem(vehicleVolume)
+            
+            -- Boombox volume slider
+            local boomboxVolume = vgui.Create("DNumSlider", panel)
+            boomboxVolume:SetText("Boomboxes")
+            boomboxVolume:SetMin(0)
+            boomboxVolume:SetMax(1)
+            boomboxVolume:SetDecimals(2)
+            boomboxVolume:SetConVar("radio_max_boombox_volume")
+            boomboxVolume:SetDefaultValue(1)
+            boomboxVolume:SetDark(true)
+            boomboxVolume:Dock(TOP)
+            boomboxVolume:DockMargin(0, 5, 0, 5)
+            boomboxVolume.OnValueChanged = function(_, value)
+                value = math.Clamp(value, 0, 1)
+                RunConsoleCommand("radio_max_boombox_volume", tostring(value))
+                
+                if StreamManager and StreamManager.activeStreams then
+                    for _, streamData in pairs(StreamManager.activeStreams) do
+                        if IsValid(streamData.entity) and IsValid(streamData.stream) and 
+                           (streamData.entity:GetClass() == "boombox" or streamData.entity:GetClass() == "golden_boombox") then
+                            local currentVolume = streamData.stream:GetVolume()
+                            if currentVolume > value then
+                                streamData.stream:SetVolume(value)
+                            end
+                        end
+                    end
+                end
+            end
+            panel:AddItem(boomboxVolume)
+            
+            -- Volume limits help text
+            local helpText = vgui.Create("DLabel", panel)
+            helpText:SetText("These volume limits only affect your client and override server settings.")
+            helpText:SetTextColor(Color(100, 100, 100))
+            helpText:SetWrap(true)
+            helpText:SetAutoStretchVertical(true)
+            helpText:Dock(TOP)
+            helpText:DockMargin(5, 0, 5, 15)
+            helpText:SetContentAlignment(7)
+            panel:AddItem(helpText)
+            
+            -- Add divider
+            local divider = vgui.Create("DPanel", panel)
+            divider:SetTall(1)
+            divider:Dock(TOP)
+            divider:DockMargin(0, 5, 0, 5)
+            divider.Paint = function(self, w, h)
+                surface.SetDrawColor(200, 200, 200, 100)
+                surface.DrawRect(0, 0, w, h)
+            end
+            panel:AddItem(divider)
+            
+            -- General options (moved below Volume Limits)
             self:AddGeneralOptions(panel)
         end)
     end,
@@ -564,92 +646,6 @@ Modules.Settings = {
         
         local chatMessageCheckbox = self:CreateCheckbox(panel, "Show Car Radio Messages", "car_radio_show_messages")
         local showTextCheckbox = self:CreateCheckbox(panel, "Show Boombox Hover Text", "boombox_show_text")
-        
-        -- Volume Limits Section
-        local volumeHeader = self:CreateHeader(panel, "Volume Limits")
-        
-        -- Vehicle volume slider
-        local vehicleVolume = vgui.Create("DNumSlider", panel)
-        vehicleVolume:SetText("Vehicles")
-        vehicleVolume:SetMin(0)
-        vehicleVolume:SetMax(1)
-        vehicleVolume:SetDecimals(2)
-        vehicleVolume:SetConVar("radio_max_vehicle_volume")
-        vehicleVolume:SetDefaultValue(1)
-        vehicleVolume:SetDark(true)
-        vehicleVolume:Dock(TOP)
-        vehicleVolume:DockMargin(0, 5, 0, 5)
-        vehicleVolume.OnValueChanged = function(_, value)
-            -- Clamp value between 0 and 1
-            value = math.Clamp(value, 0, 1)
-            RunConsoleCommand("radio_max_vehicle_volume", tostring(value))
-            
-            -- Immediately enforce new limit on all active vehicle streams
-            if StreamManager and StreamManager.activeStreams then
-                for _, streamData in pairs(StreamManager.activeStreams) do
-                    if IsValid(streamData.entity) and IsValid(streamData.stream) and streamData.entity:IsVehicle() then
-                        local currentVolume = streamData.stream:GetVolume()
-                        if currentVolume > value then
-                            streamData.stream:SetVolume(value)
-                        end
-                    end
-                end
-            end
-        end
-        panel:AddItem(vehicleVolume)
-        
-        -- Boombox volume slider
-        local boomboxVolume = vgui.Create("DNumSlider", panel)
-        boomboxVolume:SetText("Boomboxes")
-        boomboxVolume:SetMin(0)
-        boomboxVolume:SetMax(1)
-        boomboxVolume:SetDecimals(2)
-        boomboxVolume:SetConVar("radio_max_boombox_volume")
-        boomboxVolume:SetDefaultValue(1)
-        boomboxVolume:SetDark(true)
-        boomboxVolume:Dock(TOP)
-        boomboxVolume:DockMargin(0, 5, 0, 15)
-        boomboxVolume.OnValueChanged = function(_, value)
-            -- Clamp value between 0 and 1
-            value = math.Clamp(value, 0, 1)
-            RunConsoleCommand("radio_max_boombox_volume", tostring(value))
-            
-            -- Immediately enforce new limit on all active boombox streams
-            if StreamManager and StreamManager.activeStreams then
-                for _, streamData in pairs(StreamManager.activeStreams) do
-                    if IsValid(streamData.entity) and IsValid(streamData.stream) and 
-                       (streamData.entity:GetClass() == "boombox" or streamData.entity:GetClass() == "golden_boombox") then
-                        local currentVolume = streamData.stream:GetVolume()
-                        if currentVolume > value then
-                            streamData.stream:SetVolume(value)
-                        end
-                    end
-                end
-            end
-        end
-        panel:AddItem(boomboxVolume)
-        
-        -- Help text
-        local helpText = vgui.Create("DLabel", panel)
-        helpText:SetText("These volume limits only affect your client and override server settings.")
-        helpText:SetTextColor(Color(100, 100, 100))
-        helpText:SetWrap(true)
-        helpText:SetAutoStretchVertical(true)
-        helpText:Dock(TOP)
-        helpText:DockMargin(5, 0, 5, 15)
-        helpText:SetContentAlignment(7)
-        panel:AddItem(helpText)
-        
-        -- Add divider
-        local divider = vgui.Create("DPanel", panel)
-        divider:SetTall(1)
-        divider:Dock(TOP)
-        divider:DockMargin(0, 5, 0, 5)
-        divider.Paint = function(self, w, h)
-            surface.SetDrawColor(200, 200, 200, 100)
-            surface.DrawRect(0, 0, w, h)
-        end
-        panel:AddItem(divider)
     end,
 
     -- UI Helper functions
