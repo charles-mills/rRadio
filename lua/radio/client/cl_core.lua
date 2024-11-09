@@ -3494,43 +3494,52 @@ end
 hook.Add("InitPostEntity", "RadioInitializeNetworking", initializeNetworking)
 hook.Add("OnReloaded", "RadioInitializeNetworking", initializeNetworking)
 
-hook.Add("Think", "UpdateStreamValidityCache", function()
-    if StreamManager then
-        StreamManager:UpdateValidityCache()
-    end
-end)
+local nextVolumeCheck = 0
+local nextValidityCheck = 0
+local VOLUME_CHECK_INTERVAL = 0.5
+local VALIDITY_CHECK_INTERVAL = 0.25
 
-hook.Add("Think", "UpdateUIReferences", function()
-    if UIReferenceTracker then
-        UIReferenceTracker:Update()
-    end
-end)
-
-hook.Add("Think", "RadioAnimationsThink", function()
-    if Misc and Misc.Animations then
-        Misc.Animations:Think()
-    end
-end)
-
-hook.Add("Think", "EnforceRadioVolumeLimits", function()
-    if not StreamManager or not StreamManager.activeStreams then return end
+hook.Add("Think", "RadioSystemThink", function()
+    local curTime = CurTime()
     
-    -- Only check every 0.5 seconds for background enforcement
-    if not Misc.Settings.nextVolumeCheck or CurTime() > Misc.Settings.nextVolumeCheck then
-        Misc.Settings.nextVolumeCheck = CurTime() + 0.5
+    -- Stream validity and UI reference checks (every 0.25 seconds)
+    if curTime > nextValidityCheck then
+        nextValidityCheck = curTime + VALIDITY_CHECK_INTERVAL
         
-        local vehicleMax = GetConVar("radio_max_vehicle_volume"):GetFloat()
-        local boomboxMax = GetConVar("radio_max_boombox_volume"):GetFloat()
+        -- Update stream validity cache
+        if StreamManager then
+            StreamManager:UpdateValidityCache()
+        end
         
-        for entIndex, streamData in pairs(StreamManager.activeStreams) do
-            if IsValid(streamData.entity) and IsValid(streamData.stream) then
-                local maxVolume = streamData.entity:IsVehicle() and vehicleMax or boomboxMax
-                local currentVolume = streamData.stream:GetVolume()
-                
-                if currentVolume > maxVolume then
-                    streamData.stream:SetVolume(maxVolume)
+        -- Update UI references
+        if UIReferenceTracker then
+            UIReferenceTracker:Update()
+        end
+    end
+    
+    -- Volume limit enforcement (every 0.5 seconds)
+    if curTime > nextVolumeCheck then
+        nextVolumeCheck = curTime + VOLUME_CHECK_INTERVAL
+        
+        if StreamManager and StreamManager.activeStreams then
+            local vehicleMax = GetConVar("radio_max_vehicle_volume"):GetFloat()
+            local boomboxMax = GetConVar("radio_max_boombox_volume"):GetFloat()
+            
+            for entIndex, streamData in pairs(StreamManager.activeStreams) do
+                if IsValid(streamData.entity) and IsValid(streamData.stream) then
+                    local maxVolume = streamData.entity:IsVehicle() and vehicleMax or boomboxMax
+                    local currentVolume = streamData.stream:GetVolume()
+                    
+                    if currentVolume > maxVolume then
+                        streamData.stream:SetVolume(maxVolume)
+                    end
                 end
             end
         end
+    end
+    
+    -- Process animations (every frame)
+    if Misc and Misc.Animations then
+        Misc.Animations:Think()
     end
 end)
