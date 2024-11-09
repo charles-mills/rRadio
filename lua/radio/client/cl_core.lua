@@ -1930,20 +1930,21 @@ local function openSettingsMenu(parentFrame, backButton)
         other = {}
     }
 
-    -- Validate themes table
-    if type(themeModule.themes) == "table" then
-        for themeName, themeData in pairs(themeModule.themes) do
-            if type(themeData) == "table" then
-                local category = themeData.category or "other"
-                table.insert(themeChoices[category], {
-                    name = themeName:gsub("^%l", string.upper),
-                    data = themeName
-                })
-            end
+    -- Modify the theme choices creation to format display names
+    for themeName, themeData in pairs(themeModule.themes) do
+        if type(themeData) == "table" then
+            local category = themeData.category or "other"
+            
+            -- Format display name: remove underscores and title case each word
+            local displayName = themeName:gsub("_", " "):gsub("(%a)([%w_']*)", function(first, rest)
+                return first:upper() .. rest:lower()
+            end)
+            
+            table.insert(themeChoices[category], {
+                name = displayName, -- Use formatted name for display
+                data = themeName    -- Keep original name for internal use
+            })
         end
-    else
-        print("[rRadio] Warning: Themes table is invalid")
-        themeModule.themes = {}
     end
 
     -- Sort themes within each category
@@ -1995,13 +1996,12 @@ local function openSettingsMenu(parentFrame, backButton)
     local currentTheme = GetConVar("radio_theme"):GetString()
     local currentThemeName = currentTheme:gsub("^%l", string.upper)
 
-    -- Modify the dropdown creation to handle categories
-    local themeDropdown = addDropdown(Config.Lang["SelectTheme"] or "Select Theme", finalThemeChoices, currentThemeName, function(_, _, value)
-        local lowerValue = value:lower()
-        if themeModule.themes[lowerValue] then
-            RunConsoleCommand("radio_theme", lowerValue)
+    -- Update the theme dropdown OnSelect handler
+    local themeDropdown = addDropdown(Config.Lang["SelectTheme"] or "Select Theme", finalThemeChoices, currentThemeName, function(_, _, displayName, originalName)
+        if themeModule.themes[originalName] then
+            RunConsoleCommand("radio_theme", originalName)
             timer.Simple(0, function()
-                Misc.Settings:ApplyTheme(lowerValue)
+                Misc.Settings:ApplyTheme(originalName)
             end)
             
             -- Safely close and reopen the menu
@@ -2012,7 +2012,7 @@ local function openSettingsMenu(parentFrame, backButton)
                 end)
             end
         else
-            print("[rRadio] Warning: Invalid theme selected:", value)
+            print("[rRadio] Warning: Invalid theme selected:", originalName)
         end
     end)
 
@@ -3494,52 +3494,43 @@ end
 hook.Add("InitPostEntity", "RadioInitializeNetworking", initializeNetworking)
 hook.Add("OnReloaded", "RadioInitializeNetworking", initializeNetworking)
 
-local nextVolumeCheck = 0
-local nextValidityCheck = 0
-local VOLUME_CHECK_INTERVAL = 0.5
-local VALIDITY_CHECK_INTERVAL = 0.25
-
-hook.Add("Think", "RadioSystemThink", function()
-    local curTime = CurTime()
-    
-    -- Stream validity and UI reference checks (every 0.25 seconds)
-    if curTime > nextValidityCheck then
-        nextValidityCheck = curTime + VALIDITY_CHECK_INTERVAL
-        
-        -- Update stream validity cache
-        if StreamManager then
-            StreamManager:UpdateValidityCache()
-        end
-        
-        -- Update UI references
-        if UIReferenceTracker then
-            UIReferenceTracker:Update()
-        end
+hook.Add("Think", "UpdateStreamValidityCache", function()
+    if StreamManager then
+        StreamManager:UpdateValidityCache()
     end
+end)
+
+hook.Add("Think", "UpdateUIReferences", function()
+    if UIReferenceTracker then
+        UIReferenceTracker:Update()
+    end
+end)
+
+hook.Add("Think", "RadioAnimationsThink", function()
+    if Misc and Misc.Animations then
+        Misc.Animations:Think()
+    end
+end)
+
+hook.Add("Think", "EnforceRadioVolumeLimits", function()
+    if not StreamManager or not StreamManager.activeStreams then return end
     
-    -- Volume limit enforcement (every 0.5 seconds)
-    if curTime > nextVolumeCheck then
-        nextVolumeCheck = curTime + VOLUME_CHECK_INTERVAL
+    -- Only check every 0.5 seconds for background enforcement
+    if not Misc.Settings.nextVolumeCheck or CurTime() > Misc.Settings.nextVolumeCheck then
+        Misc.Settings.nextVolumeCheck = CurTime() + 0.5
         
-        if StreamManager and StreamManager.activeStreams then
-            local vehicleMax = GetConVar("radio_max_vehicle_volume"):GetFloat()
-            local boomboxMax = GetConVar("radio_max_boombox_volume"):GetFloat()
-            
-            for entIndex, streamData in pairs(StreamManager.activeStreams) do
-                if IsValid(streamData.entity) and IsValid(streamData.stream) then
-                    local maxVolume = streamData.entity:IsVehicle() and vehicleMax or boomboxMax
-                    local currentVolume = streamData.stream:GetVolume()
-                    
-                    if currentVolume > maxVolume then
-                        streamData.stream:SetVolume(maxVolume)
-                    end
+        local vehicleMax = GetConVar("radio_max_vehicle_volume"):GetFloat()
+        local boomboxMax = GetConVar("radio_max_boombox_volume"):GetFloat()
+        
+        for entIndex, streamData in pairs(StreamManager.activeStreams) do
+            if IsValid(streamData.entity) and IsValid(streamData.stream) then
+                local maxVolume = streamData.entity:IsVehicle() and vehicleMax or boomboxMax
+                local currentVolume = streamData.stream:GetVolume()
+                
+                if currentVolume > maxVolume then
+                    streamData.stream:SetVolume(maxVolume)
                 end
             end
         end
-    end
-    
-    -- Process animations (every frame)
-    if Misc and Misc.Animations then
-        Misc.Animations:Think()
     end
 end)
