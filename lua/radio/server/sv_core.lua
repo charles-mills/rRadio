@@ -178,7 +178,11 @@ local StateManager = {
     end,
     
     processQueue = function(self, entityIndex)
-        if not self.operations[entityIndex] or #self.operations[entityIndex] == 0 then
+        if not self.operations or not self.operations[entityIndex] then
+            return
+        end
+        
+        if #self.operations[entityIndex] == 0 then
             return
         end
         
@@ -393,37 +397,39 @@ local function CleanupEntity(entity)
     if not IsValid(entity) then return end
     local entIndex = entity:EntIndex()
     
-    StateManager:queueOperation(entIndex, "cleanup", function()
-        -- Clear radio starter
-        entity.RadioStartedBy = nil
+    -- Ensure StateManager exists and has operations table
+    if StateManager and StateManager.operations then
+        StateManager:queueOperation(entIndex, "cleanup", function()
+            -- Clear radio starter
+            entity.RadioStartedBy = nil
+            
+            -- Clean up timers
+            TimerManager:cleanup("_" .. entIndex)
+            
+            -- Clean up volume management
+            VolumeManager:cleanup(entity)
+            EntityVolumes[entIndex] = nil
+            
+            -- Clean up radio status
+            if ActiveRadios[entIndex] then
+                RemoveActiveRadio(entity)
+            end
+            
+            -- Clean up boombox status
+            if utils.IsBoombox(entity) then
+                BoomboxStatuses[entIndex] = nil
+                utils.clearRadioStatus(entity)
+            end
+        end)
         
-        -- Clean up timers
-        TimerManager:cleanup("_" .. entIndex)
-        
-        -- Clean up volume management
-        VolumeManager:cleanup(entity)
-        EntityVolumes[entIndex] = nil
-        
-        -- Clean up radio status
-        if ActiveRadios[entIndex] then
-            RemoveActiveRadio(entity)
-        end
-        
-        -- Clean up boombox status
-        if utils.IsBoombox(entity) then
-            BoomboxStatuses[entIndex] = nil
-            utils.clearRadioStatus(entity)
-        end
-        
-        -- Clean up state management
-        StateManager:cleanup(entIndex)
-    end)
-    
-    StateManager:processQueue(entIndex)
+        StateManager:processQueue(entIndex)
+    end
 end
 
 hook.Add("EntityRemoved", "RadioSystemCleanup", function(entity)
-    CleanupEntity(entity)
+    if IsValid(entity) then
+        CleanupEntity(entity)
+    end
 end)
 
 hook.Add("PlayerDisconnected", "CleanupPlayerRadioData", function(ply)

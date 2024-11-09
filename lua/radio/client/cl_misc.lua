@@ -645,10 +645,9 @@ Modules.Settings = {
         local header = self:CreateHeader(panel, "General Options")
         
         local chatMessageCheckbox = self:CreateCheckbox(panel, "Show Car Radio Messages", "car_radio_show_messages")
-        local showTextCheckbox = self:CreateCheckbox(panel, "Show Boombox Hover Text", "boombox_show_text")
+        local showTextCheckbox = self:CreateCheckbox(panel, "Show Boombox HUD", "boombox_show_text")
     end,
 
-    -- UI Helper functions
     CreateHeader = function(self, panel, text)
         local header = vgui.Create("DLabel", panel)
         header:SetText(text)
