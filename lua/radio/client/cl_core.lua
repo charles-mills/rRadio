@@ -1994,7 +1994,10 @@ local function openSettingsMenu(parentFrame, backButton)
     end
 
     local currentTheme = GetConVar("radio_theme"):GetString()
-    local currentThemeName = currentTheme:gsub("^%l", string.upper)
+    -- Format current theme name the same way as dropdown options
+    local currentThemeName = currentTheme:gsub("_", " "):gsub("(%a)([%w_']*)", function(first, rest)
+        return first:upper() .. rest:lower()
+    end)
 
     -- Update the theme dropdown OnSelect handler
     local themeDropdown = addDropdown(Config.Lang["SelectTheme"] or "Select Theme", finalThemeChoices, currentThemeName, function(_, _, displayName, originalName)

@@ -185,7 +185,7 @@ safeAddTheme("retro", ThemeFactory:createTheme("retro", {
     favoriteStar = Color(210, 170, 90),
     messageBackground = Color(225, 205, 165, 230),
     keyHighlight = Color(205, 185, 145)
-}, "main"))
+}, "other"))
 
 safeAddTheme("nord", ThemeFactory:createTheme("nord", {
     background = Color(46, 52, 64),
@@ -231,7 +231,7 @@ safeAddTheme("dracula", ThemeFactory:createTheme("dracula", {
     favoriteStar = Color(241, 250, 140),
     messageBackground = Color(68, 71, 90, 230),
     keyHighlight = Color(98, 114, 164)
-}, "main"))
+}, "other"))
 
 safeAddTheme("material", ThemeFactory:createTheme("material", {
     background = Color(38, 50, 56),
@@ -277,7 +277,7 @@ safeAddTheme("gruvbox", ThemeFactory:createTheme("gruvbox", {
     favoriteStar = Color(250, 189, 47),
     messageBackground = Color(80, 73, 69, 230),
     keyHighlight = Color(102, 92, 84)
-}, "main"))
+}, "other"))
 
 safeAddTheme("tokyonight", ThemeFactory:createTheme("tokyonight", {
     background = Color(26, 27, 38),
