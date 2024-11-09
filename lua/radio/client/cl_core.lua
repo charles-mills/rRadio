@@ -475,9 +475,18 @@ end
     Returns:
     - The clamped volume.
 ]]
-local function ClampVolume(volume)
-    local maxVolume = Config.MaxVolume()
-    return math.Clamp(volume, 0, maxVolume)
+local function ClampVolume(volume, entity)
+    -- First clamp to server max
+    local serverMax = Config.MaxVolume()
+    volume = math.Clamp(volume, 0, serverMax)
+    
+    -- Then apply client-side limit if entity is valid
+    if IsValid(entity) and Misc and Misc.Settings then
+        local clientMax = Misc.Settings:GetMaxVolume(entity)
+        volume = math.min(volume, clientMax)
+    end
+    
+    return volume
 end
 
 --[[
@@ -710,8 +719,8 @@ local function playStation(entity, station, volume)
         return 
     end
 
-    -- Validate volume range
-    volume = math.Clamp(volume, 0, Config.MaxVolume())
+    -- Apply volume limits
+    volume = ClampVolume(volume, entity)
 
     -- Track retry attempts
     local retryCount = 0
@@ -867,8 +876,8 @@ local function rRadio_UpdateRadioVolume(station, distanceSqr, isPlayerInCar, ent
         return
     end
 
-    -- Get the user-set volume
-    local userVolume = ClampVolume(entity:GetNWFloat("Volume", entityConfig.Volume()))
+    -- Get the user-set volume with client-side limit
+    local userVolume = ClampVolume(entity:GetNWFloat("Volume", entityConfig.Volume()), entity)
 
     if userVolume <= 0.02 then
         station:SetVolume(0)
@@ -2940,6 +2949,8 @@ rRadio_OpenRadioPlayer = function(openSettings)
         entity = utils.GetVehicle(entity) or entity
         value = math.min(value, Config.MaxVolume())
 
+        -- Apply client-side volume limit
+        value = ClampVolume(value, entity)
         entityVolumes[entity] = value
 
         local streamData = StreamManager.activeStreams[entity:EntIndex()]
@@ -2947,8 +2958,6 @@ rRadio_OpenRadioPlayer = function(openSettings)
             streamData.stream:SetVolume(value)
         end
         
-        updateVolumeIcon(volumeIcon, value)
-
         local currentTime = CurTime()
         if currentTime - lastServerUpdate >= 0.1 then
             lastServerUpdate = currentTime
@@ -3483,5 +3492,28 @@ end)
 hook.Add("Think", "RadioAnimationsThink", function()
     if Misc and Misc.Animations then
         Misc.Animations:Think()
+    end
+end)
+
+hook.Add("Think", "EnforceRadioVolumeLimits", function()
+    if not StreamManager or not StreamManager.activeStreams then return end
+    
+    -- Only check every 0.5 seconds for background enforcement
+    if not Misc.Settings.nextVolumeCheck or CurTime() > Misc.Settings.nextVolumeCheck then
+        Misc.Settings.nextVolumeCheck = CurTime() + 0.5
+        
+        local vehicleMax = GetConVar("radio_max_vehicle_volume"):GetFloat()
+        local boomboxMax = GetConVar("radio_max_boombox_volume"):GetFloat()
+        
+        for entIndex, streamData in pairs(StreamManager.activeStreams) do
+            if IsValid(streamData.entity) and IsValid(streamData.stream) then
+                local maxVolume = streamData.entity:IsVehicle() and vehicleMax or boomboxMax
+                local currentVolume = streamData.stream:GetVolume()
+                
+                if currentVolume > maxVolume then
+                    streamData.stream:SetVolume(maxVolume)
+                end
+            end
+        end
     end
 end)
