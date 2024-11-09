@@ -40,6 +40,7 @@ LANG.de["TuningIn"] = "Einstellen"
 LANG.de["Main"] = "Hauptthemen"
 LANG.de["Strange"] = "Seltsame Themen"
 LANG.de["Other"] = "Andere Themen"
+LANG.de["KeySelection"] = "Tastenauswahl"
 
 -- English
 LANG.en["SelectCountry"] = "Select a Country"
@@ -54,6 +55,7 @@ LANG.en["LanguageSelection"] = "Language Selection"
 LANG.en["ThemeSelection"] = "Theme Selection"
 LANG.en["SelectTheme"] = "Select Theme"
 LANG.en["SelectLanguage"] = "Select Language"
+LANG.en["KeySelection"] = "Key Selection"
 LANG.en["SelectKey"] = "Select Key to Open Car Radio Menu"
 LANG.en["GeneralOptions"] = "General Options"
 LANG.en["ShowCarMessages"] = "Show Animation When Entering Vehicle"
@@ -98,7 +100,7 @@ LANG.es["TuningIn"] = "Sintonizando"
 LANG.es["Main"] = "Temas principales"
 LANG.es["Strange"] = "Temas raros"
 LANG.es["Other"] = "Otros temas"
-
+LANG.es["KeySelection"] = "Selección de teclas"
 -- French
 LANG.fr["SelectCountry"] = "Sélectionnez un pays"
 LANG.fr["StopRadio"] = "ARRÊT"
@@ -127,7 +129,7 @@ LANG.fr["TuningIn"] = "Sintonisation"
 LANG.fr["Main"] = "Thèmes principaux"
 LANG.fr["Strange"] = "Thèmes étranges"
 LANG.fr["Other"] = "Autres thèmes"
-
+LANG.fr["KeySelection"] = "Sélection de touches"
 -- Italian
 LANG.it["SelectCountry"] = "Seleziona paese"
 LANG.it["StopRadio"] = "FERMARE"
@@ -156,7 +158,7 @@ LANG.it["TuningIn"] = "Sintonizzazione"
 LANG.it["Main"] = "Temi principali"
 LANG.it["Strange"] = "Temi strani"
 LANG.it["Other"] = "Altri temi"
-
+LANG.it["KeySelection"] = "Selezione delle tastiere"
 -- Japanese
 LANG.ja["SelectCountry"] = "国を選択"
 LANG.ja["StopRadio"] = "停止"
@@ -185,7 +187,7 @@ LANG.ja["TuningIn"] = "調整中"
 LANG.ja["Main"] = "メインテーマ"
 LANG.ja["Strange"] = "奇妙なテーマ"
 LANG.ja["Other"] = "その他のテーマ"
-
+LANG.ja["KeySelection"] = "キー選択"
 -- Korean
 LANG.ko["SelectCountry"] = "국가 선택"
 LANG.ko["StopRadio"] = "정지"
@@ -214,7 +216,7 @@ LANG.ko["TuningIn"] = "Sintonizzazione"
 LANG.ko["Main"] = "메인 테마"
 LANG.ko["Strange"] = "이상한 테마"
 LANG.ko["Other"] = "기타 테마"
-
+LANG.ko["KeySelection"] = "키 선택"
 -- Portuguese (Brazil)
 LANG.pt_br["SelectCountry"] = "Selecionar país"
 LANG.pt_br["StopRadio"] = "PARAR"
@@ -243,6 +245,7 @@ LANG.pt_br["TuningIn"] = "Sintonização"
 LANG.pt_br["Main"] = "Temas principais"
 LANG.pt_br["Strange"] = "Temas raros"
 LANG.pt_br["Other"] = "Outros temas"
+LANG.pt_br["KeySelection"] = "Seleção de teclas"
 
 -- Russian
 LANG.ru["SelectCountry"] = "Выберите страну"
@@ -272,6 +275,7 @@ LANG.ru["TuningIn"] = "Настройка"
 LANG.ru["Main"] = "Основные темы"
 LANG.ru["Strange"] = "Необычные темы"
 LANG.ru["Other"] = "Другие темы"
+LANG.ru["KeySelection"] = "Выбор клавиш"
 
 -- Turkish
 LANG.tr["SelectCountry"] = "Ülke seç"
@@ -301,7 +305,7 @@ LANG.tr["TuningIn"] = "Ayarlıyor"
 LANG.tr["Main"] = "Ana temalar"
 LANG.tr["Strange"] = "Sıradışı temalar"
 LANG.tr["Other"] = "Diğer temalar"
-
+LANG.tr["KeySelection"] = "Tuş seçimi"
 -- Chinese (Simplified)
 LANG.zh_cn["SelectCountry"] = "选择国家"
 LANG.zh_cn["StopRadio"] = "停止"
@@ -330,5 +334,5 @@ LANG.zh_cn["TuningIn"] = "调谐中"
 LANG.zh_cn["Main"] = "主主题"
 LANG.zh_cn["Strange"] = "奇怪的主题"
 LANG.zh_cn["Other"] = "其他主题"
-
+LANG.zh_cn["KeySelection"] = "按键选择"
 return LANG

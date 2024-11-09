@@ -644,7 +644,7 @@ Modules.Settings = {
     AddGeneralOptions = function(self, panel)
         local header = self:CreateHeader(panel, "General Options")
         
-        local chatMessageCheckbox = self:CreateCheckbox(panel, "Show Car Radio Messages", "car_radio_show_messages")
+        local chatMessageCheckbox = self:CreateCheckbox(panel, "Show Animation on Car Enter", "car_radio_show_messages")
         local showTextCheckbox = self:CreateCheckbox(panel, "Show Boombox HUD", "boombox_show_text")
     end,
 

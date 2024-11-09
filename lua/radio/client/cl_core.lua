@@ -1347,44 +1347,12 @@ end
 --      UI Population
 -- ------------------------------
 
---[[
-    Function: populateList
-    Populates the station or country list in the UI.
-
-    Parameters:
-    - stationListPanel: The panel to populate.
-    - backButton: The back button UI element.
-    - searchBox: The search box UI element.
-    - resetSearch: Boolean indicating whether to reset the search box.
-]]
-local function populateList(stationListPanel, backButton, searchBox, resetSearch)
-    if not stationListPanel then return end
+-- List Population Modules
+local ListPopulator = {
+    -- Cache for list items
+    cache = {},
     
-    local currentState = {
-        selectedCountry = getSafeState("selectedCountry", nil),
-        favoritesMenuOpen = getSafeState("favoritesMenuOpen", false),
-        settingsMenuOpen = getSafeState("settingsMenuOpen", false)
-    }
-
-    stationListPanel:Clear()
-    if resetSearch then searchBox:SetText("") end
-
-    -- Reset scroll position when changing views
-    local sbar = stationListPanel:GetVBar()
-    if sbar then
-        sbar:SetScroll(0)
-        sbar:InvalidateLayout()
-    end
-
-    local filterText = searchBox:GetText():lower()
-    local lang = GetConVar("radio_language"):GetString() or "en"
-    local selectedCountry = currentState.selectedCountry
-
-    local function updateList()
-        populateList(stationListPanel, backButton, searchBox, false)
-    end
-
-    local function createStyledButton(parent, text, onClick)
+    createStyledButton = function(parent, text, onClick)
         local button = vgui.Create("DButton", parent)
         button:Dock(TOP)
         button:DockMargin(Scale(10), Scale(5), Scale(10), 0)
@@ -1428,11 +1396,10 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
         button.DoClick = onClick
         
         return button
-    end
+    end,
 
-    -- Create a separator line
-    local function createSeparator()
-        local separator = vgui.Create("DPanel", stationListPanel)
+    createSeparator = function(parent)
+        local separator = vgui.Create("DPanel", parent)
         separator:Dock(TOP)
         separator:DockMargin(Scale(10), Scale(5), Scale(10), Scale(5))
         separator:SetTall(Scale(2))
@@ -1440,9 +1407,9 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
             draw.RoundedBox(0, 0, 0, w, h, Config.UI.SeparatorColor)
         end
         return separator
-    end
+    end,
 
-    if selectedCountry == nil then
+    populateFavorites = function(self, panel, backButton, searchBox)
         local hasFavorites = false
         for country, stations in pairs(favoriteStations) do
             for stationName, isFavorite in pairs(stations) do
@@ -1455,13 +1422,13 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
         end
 
         if hasFavorites then
-            createSeparator()
+            self.createSeparator(panel)
 
-            local favoritesButton = createStyledButton(
-                stationListPanel,
+            local favoritesButton = self.createStyledButton(
+                panel,
                 Config.Lang["FavoriteStations"] or "Favorite Stations",
                 function()
-                    surface.PlaySound("garrysmod/content_downloaded.wav") -- Cheerful notification sound
+                    surface.PlaySound("garrysmod/content_downloaded.wav")
                     StateManager:SetState("selectedCountry", "favorites")
                     StateManager:SetState("favoritesMenuOpen", true)
                     selectedCountry = "favorites"
@@ -1471,48 +1438,41 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                         backButton:SetVisible(true)
                         backButton:SetEnabled(true)
                     end
-                    updateList()
+                    populateList(panel, backButton, searchBox, false)
                 end
             )
 
             favoritesButton:SetTextInset(Scale(40), 0)
-
             favoritesButton.PaintOver = function(self, w, h)
                 surface.SetMaterial(MaterialCache:Get("hud/star_full.png"))
                 surface.SetDrawColor(Config.UI.FavoriteStarColor)
-                
                 local iconSize = Scale(24)
-                local iconX = Scale(12)
-                local iconY = (h - iconSize) / 2
-                
-                surface.DrawTexturedRect(iconX, iconY, iconSize, iconSize)
+                surface.DrawTexturedRect(Scale(12), (h - iconSize) / 2, iconSize, iconSize)
             end
 
-            createSeparator()
+            self.createSeparator(panel)
         end
+    end,
 
+    populateCountries = function(self, panel, backButton, searchBox, filterText)
         local countries = {}
         for country, _ in pairs(StationData) do
-            -- Format and translate the country name
             local formattedCountry = country:gsub("_", " "):gsub("(%a)([%w_']*)", function(first, rest)
                 return first:upper() .. rest:lower()
             end)
             
-            local translatedCountry = Misc.Language:GetCountryTranslation(lang, formattedCountry) or formattedCountry
+            local translatedCountry = Misc.Language:GetCountryTranslation(GetConVar("radio_language"):GetString() or "en", formattedCountry) or formattedCountry
 
             if filterText == "" or translatedCountry:lower():find(filterText, 1, true) then
-                local isFavorite = getSafeState("favoriteCountries", {})[country] or false
-                
-                table.insert(countries, { 
-                    original = country,        -- Original country code
-                    formatted = formattedCountry, -- Formatted but untranslated name
-                    translated = translatedCountry, -- Translated name for display
-                    isPrioritized = isFavorite 
+                table.insert(countries, {
+                    original = country,
+                    formatted = formattedCountry,
+                    translated = translatedCountry,
+                    isPrioritized = getSafeState("favoriteCountries", {})[country] or false
                 })
             end
         end
 
-        -- Sort countries with favorites first, using translated names
         table.sort(countries, function(a, b)
             if a.isPrioritized ~= b.isPrioritized then
                 return a.isPrioritized
@@ -1520,16 +1480,14 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
             return a.translated < b.translated
         end)
 
-        -- Create country buttons
         for _, country in ipairs(countries) do
-            local countryButton = createStyledButton(
-                stationListPanel,
-                country.translated, -- Use translated name for display
+            local countryButton = self.createStyledButton(
+                panel,
+                country.translated,
                 function()
-                    local countryCode = country.original
-                    surface.PlaySound("ui/buttonclick.wav") -- Add navigation sound
-                    StateManager:SetState("selectedCountry", countryCode)
-                    selectedCountry = countryCode
+                    surface.PlaySound("ui/buttonclick.wav")
+                    StateManager:SetState("selectedCountry", country.original)
+                    selectedCountry = country.original
                     
                     if backButton then 
                         backButton:SetVisible(true)
@@ -1540,162 +1498,184 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                         searchBox:SetText("")
                     end
                     
-                    updateList()
+                    populateList(panel, backButton, searchBox, false)
                 end
             )
 
-            -- Pass the raw country code to the star icon
-            createStarIcon(countryButton, country.original, nil, updateList)
+            createStarIcon(countryButton, country.original, nil, function()
+                populateList(panel, backButton, searchBox, false)
+            end)
+        end
+    end,
+
+    populateStations = function(self, panel, country, filterText)
+        -- Special handling for favorites view
+        if country == "favorites" then
+            local favoritesList = {}
+            
+            -- Collect all favorite stations
+            for countryCode, stations in pairs(favoriteStations) do
+                for stationName, isFavorite in pairs(stations) do
+                    if isFavorite then
+                        -- Find the station data in StationData
+                        if StationData[countryCode] then
+                            for _, station in ipairs(StationData[countryCode]) do
+                                if station.name == stationName then
+                                    table.insert(favoritesList, {
+                                        station = station,
+                                        country = countryCode,
+                                        favorite = true
+                                    })
+                                    break
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+
+            -- Apply filter if needed
+            local filteredList = {}
+            for _, data in ipairs(favoritesList) do
+                if filterText == "" or data.station.name:lower():find(filterText, 1, true) then
+                    table.insert(filteredList, data)
+                end
+            end
+
+            -- Sort favorites alphabetically
+            table.sort(filteredList, function(a, b)
+                return (a.station.name or "") < (b.station.name or "")
+            end)
+
+            -- Create buttons for favorite stations
+            for _, data in ipairs(filteredList) do
+                local displayName = utils.truncateStationName(data.station.name)
+                local button = self.createStyledButton(
+                    panel,
+                    displayName,
+                    function()
+                        if (CurTime() - getSafeState("lastStationSelectTime", 0)) < 2 then return end
+
+                        surface.PlaySound("buttons/button17.wav")
+                        local entity = LocalPlayer().currentRadioEntity
+                        if not IsValid(entity) then return end
+
+                        local entityConfig = getEntityConfig(entity)
+                        local volume = entityVolumes[entity] or (entityConfig and entityConfig.Volume()) or 0.5
+                        volume = ClampVolume(volume)
+
+                        playStation(entity, data.station, volume)
+                    end
+                )
+
+                if displayName ~= data.station.name then
+                    createTooltip(button, data.station.name)
+                end
+
+                createStarIcon(button, data.country, data.station, function()
+                    populateList(panel, backButton, searchBox, false)
+                end)
+            end
+
+            -- Show message if no favorites
+            if #filteredList == 0 then
+                local noFavoritesLabel = vgui.Create("DLabel", panel)
+                noFavoritesLabel:SetText(Config.Lang["NoFavorites"] or "No favorite stations found")
+                noFavoritesLabel:SetFont("Roboto18")
+                noFavoritesLabel:SetTextColor(Config.UI.TextColor)
+                noFavoritesLabel:Dock(TOP)
+                noFavoritesLabel:DockMargin(Scale(10), Scale(10), Scale(10), 0)
+                noFavoritesLabel:SetContentAlignment(5)
+                noFavoritesLabel:SetTall(Scale(40))
+            end
+
+        else
+            -- Regular station list handling (unchanged)
+            local stations = StationData[country] or {}
+            local stationsList = {}
+
+            for _, station in ipairs(stations) do
+                if station and station.name and (filterText == "" or station.name:lower():find(filterText, 1, true)) then
+                    local isFavorite = favoriteStations[country] and favoriteStations[country][station.name]
+                    table.insert(stationsList, { station = station, favorite = isFavorite })
+                end
+            end
+
+            table.sort(stationsList, function(a, b)
+                if a.favorite ~= b.favorite then
+                    return a.favorite
+                end
+                return (a.station.name or "") < (b.station.name or "")
+            end)
+
+            for _, stationData in ipairs(stationsList) do
+                self:createStationButton(panel, country, stationData.station)
+            end
+        end
+    end,
+
+    createStationButton = function(self, panel, country, station)
+        local displayName = utils.truncateStationName(station.name)
+        local button = self.createStyledButton(
+            panel,
+            displayName,
+            function()
+                if (CurTime() - getSafeState("lastStationSelectTime", 0)) < 2 then return end
+
+                surface.PlaySound("buttons/button17.wav")
+                local entity = LocalPlayer().currentRadioEntity
+                if not IsValid(entity) then return end
+
+                local entityConfig = getEntityConfig(entity)
+                local volume = entityVolumes[entity] or (entityConfig and entityConfig.Volume()) or 0.5
+                volume = ClampVolume(volume)
+
+                playStation(entity, station, volume)
+            end
+        )
+
+        if displayName ~= station.name then
+            createTooltip(button, station.name)
         end
 
+        createStarIcon(button, country, station, function()
+            populateList(panel, backButton, searchBox, false)
+        end)
+
+        return button
+    end
+}
+
+function populateList(stationListPanel, backButton, searchBox, resetSearch)
+    if not stationListPanel then return end
+    
+    local filterText = (searchBox and searchBox:GetText() or ""):lower()
+    if resetSearch and searchBox then searchBox:SetText("") end
+
+    stationListPanel:Clear()
+    
+    -- Reset scroll position
+    local sbar = stationListPanel:GetVBar()
+    if sbar then
+        sbar:SetScroll(0)
+        sbar:InvalidateLayout()
+    end
+
+    local currentCountry = getSafeState("selectedCountry", nil)
+
+    if currentCountry == nil then
+        ListPopulator:populateFavorites(stationListPanel, backButton, searchBox)
+        ListPopulator:populateCountries(stationListPanel, backButton, searchBox, filterText)
+        
         if backButton then
             backButton:SetVisible(false)
             backButton:SetEnabled(false)
         end
-
-    elseif selectedCountry == "favorites" then
-        -- Get cached favorites list
-        local favoritesList = StateManager:GetFavoritesList(lang, filterText)
-
-        for _, favorite in ipairs(favoritesList) do
-            -- Format the country name before displaying
-            local formattedCountry = favorite.countryName:gsub("_", " "):gsub("(%a)([%w_']*)", function(first, rest)
-                return first:upper() .. rest:lower()
-            end)
-            -- Get translated country name
-            local translatedCountry = Misc.Language:GetCountryTranslation(lang, formattedCountry) or formattedCountry
-            
-            local displayName = translatedCountry .. " - " .. utils.truncateStationName(favorite.station.name)
-            local fullName = translatedCountry .. " - " .. favorite.station.name
-            
-            local stationButton = createStyledButton(
-                stationListPanel,
-                displayName,
-                function(button)
-                    local currentTime = CurTime()
-                    -- Get last station time with a default value of 0
-                    local lastStationTime = getSafeState("lastStationSelectTime", 0)
-                    
-                    -- Ensure we have valid numbers for comparison
-                    if type(currentTime) ~= "number" or type(lastStationTime) ~= "number" then
-                        print("[rRadio] Warning: Invalid time values in station button handler")
-                        lastStationTime = 0
-                    end
-
-                    if (currentTime - lastStationTime) < 2 then return end
-
-                    surface.PlaySound("buttons/button17.wav")
-                    local entity = LocalPlayer().currentRadioEntity
-                    if not IsValid(entity) then return end
-
-                    -- Get and validate volume
-                    local entityConfig = getEntityConfig(entity)
-                    local volume = entityVolumes[entity] or (entityConfig and entityConfig.Volume()) or 0.5
-                    volume = ClampVolume(volume)
-
-                    -- Play the station
-                    playStation(entity, favorite.station, volume)
-                    
-                    -- Update UI
-                    updateList()
-                end
-            )
-
-            -- Add tooltip if name is truncated
-            if displayName ~= fullName then
-                createTooltip(stationButton, fullName)
-            end
-
-            createStarIcon(stationButton, favorite.country, favorite.station, updateList)
-        end
+    elseif currentCountry == "favorites" then
+        ListPopulator:populateStations(stationListPanel, currentCountry, filterText)
     else
-        -- Regular station list for selected country
-        local stations = StationData[selectedCountry] or {}
-        local stationsList = {}
-
-        -- Filter and prepare stations
-        for _, station in ipairs(stations) do
-            if station and station.name and (filterText == "" or station.name:lower():find(filterText, 1, true)) then
-                local isFavorite = favoriteStations[selectedCountry] and favoriteStations[selectedCountry][station.name]
-                table.insert(stationsList, { station = station, favorite = isFavorite })
-            end
-        end
-
-        -- Sort stations (favorites first, then alphabetically)
-        table.sort(stationsList, function(a, b)
-            if a.favorite ~= b.favorite then
-                return a.favorite
-            end
-            return (a.station.name or "") < (b.station.name or "")
-        end)
-
-        -- Create station buttons
-        for _, stationData in ipairs(stationsList) do
-            local station = stationData.station
-            local displayName = utils.truncateStationName(station.name)
-            local stationButton = createStyledButton(
-                stationListPanel,
-                displayName,
-                function(button)
-                    local currentTime = CurTime()
-                    -- Get last station time with a default value of 0
-                    local lastStationTime = getSafeState("lastStationSelectTime", 0)
-                    
-                    -- Ensure we have valid numbers for comparison
-                    if type(currentTime) ~= "number" or type(lastStationTime) ~= "number" then
-                        print("[rRadio] Warning: Invalid time values in station button handler")
-                        lastStationTime = 0
-                    end
-
-                    if (currentTime - lastStationTime) < 2 then return end
-
-                    surface.PlaySound("buttons/button17.wav")
-                    local entity = LocalPlayer().currentRadioEntity
-                    if not IsValid(entity) then return end
-
-                    -- Get and validate volume
-                    local entityConfig = getEntityConfig(entity)
-                    local volume = entityVolumes[entity] or (entityConfig and entityConfig.Volume()) or 0.5
-                    volume = ClampVolume(volume)
-
-                    -- Play the station
-                    playStation(entity, station, volume)
-                    
-                    -- Update UI
-                    updateList()
-                end
-            )
-
-            -- Add tooltip if name is truncated
-            if displayName ~= station.name then
-                createTooltip(stationButton, station.name)
-            end
-
-            stationButton.Paint = function(self, w, h)
-                local entity = LocalPlayer().currentRadioEntity
-                if IsValid(entity) and currentlyPlayingStations[entity] and 
-                   currentlyPlayingStations[entity].name == station.name then
-                    -- Base playing station color
-                    draw.RoundedBox(8, 0, 0, w, h, Config.UI.StatusIndicatorColor)
-                else
-                    draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonColor)
-                    if self:IsHovered() then
-                        draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonHoverColor)
-                    end
-                end
-
-                local streamData = StreamManager.activeStreams[entity:EntIndex()]
-                if streamData then
-                    if streamData.stream and not streamData.stream:IsValid() then
-                        surface.SetDrawColor(Config.UI.CloseButtonColor)
-                        surface.DrawRect(w * 0.9, 0, w * 0.1, h)
-                    end
-                end
-            end
-
-            createStarIcon(stationButton, selectedCountry, station, updateList)
-        end
-
+        ListPopulator:populateStations(stationListPanel, currentCountry, filterText)
+        
         if backButton then
             backButton:SetVisible(true)
             backButton:SetEnabled(true)
@@ -2254,7 +2234,7 @@ local function openSettingsMenu(parentFrame, backButton)
         end
     end)
 
-    addHeader(Config.Lang["SelectKeyTorRadio_OpenRadioPlayer"] or "Select Key to Open Radio Menu")
+    addHeader(Config.Lang["KeySelection"] or "Key Selection")
     local keyChoices = {}
 
     local letterKeys = {}
@@ -2739,7 +2719,7 @@ rRadio_OpenRadioPlayer = function(openSettings)
                 -- Format and translate country name
                 local formattedCountry = currentCountry:gsub("_", " "):gsub("(%a)([%w_']*)", function(a, b)
                     return string.upper(a) .. string.lower(b) 
-                end)
+                end
                 headerText = Misc.Language:GetCountryTranslation(lang, formattedCountry) or formattedCountry
             end
         else
@@ -3496,19 +3476,15 @@ end
 hook.Add("InitPostEntity", "RadioInitializeNetworking", initializeNetworking)
 hook.Add("OnReloaded", "RadioInitializeNetworking", initializeNetworking)
 
-hook.Add("Think", "UpdateStreamValidityCache", function()
+hook.Add("Think", "rRadioMainThink", function()
     if StreamManager then
         StreamManager:UpdateValidityCache()
     end
-end)
 
-hook.Add("Think", "UpdateUIReferences", function()
     if UIReferenceTracker then
         UIReferenceTracker:Update()
     end
-end)
 
-hook.Add("Think", "RadioAnimationsThink", function()
     if Misc and Misc.Animations then
         Misc.Animations:Think()
     end
