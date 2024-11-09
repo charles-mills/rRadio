@@ -126,22 +126,26 @@ local messageCooldownCvar = CreateServerConVar(
 local boomboxVolumeCvar = CreateServerConVar("radio_boombox_volume", "1.0", "Default volume for boomboxes")
 local boomboxMaxDistCvar = CreateServerConVar("radio_boombox_max_distance", "800", "Maximum hearing distance for boomboxes")
 local boomboxMinDistCvar = CreateServerConVar("radio_boombox_min_distance", "500", "Distance at which boombox volume starts to drop off")
+local boomboxFalloffCvar = CreateServerConVar("radio_boombox_falloff", "1.0", "Audio falloff exponent for boomboxes (higher = faster falloff)")
 
 -- Golden Boombox Settings
 local goldenVolumeCvar = CreateServerConVar("radio_golden_boombox_volume", "1.0", "Default volume for golden boomboxes")
 local goldenMaxDistCvar = CreateServerConVar("radio_golden_boombox_max_distance", "350000", "Maximum hearing distance for golden boomboxes")
 local goldenMinDistCvar = CreateServerConVar("radio_golden_boombox_min_distance", "250000", "Distance at which golden boombox volume starts to drop off")
+local goldenFalloffCvar = CreateServerConVar("radio_golden_boombox_falloff", "1.0", "Audio falloff exponent for golden boomboxes")
 
 -- Vehicle Radio Settings
 local vehicleVolumeCvar = CreateServerConVar("radio_vehicle_volume", "1.0", "Default volume for vehicle radios")
 local vehicleMaxDistCvar = CreateServerConVar("radio_vehicle_max_distance", "800", "Maximum hearing distance for vehicle radios")
 local vehicleMinDistCvar = CreateServerConVar("radio_vehicle_min_distance", "500", "Distance at which vehicle radio volume starts to drop off")
+local vehicleFalloffCvar = CreateServerConVar("radio_vehicle_falloff", "2.0", "Audio falloff exponent for vehicle radios")
 
 -- Update Config tables based on ConVars
 Config.Boombox = {
     Volume = function() return boomboxVolumeCvar:GetFloat() end,
     MaxHearingDistance = function() return boomboxMaxDistCvar:GetFloat() end,
     MinVolumeDistance = function() return boomboxMinDistCvar:GetFloat() end,
+    Falloff = function() return boomboxFalloffCvar:GetFloat() end,
     RetryAttempts = 3,
     RetryDelay = 2
 }
@@ -150,6 +154,7 @@ Config.GoldenBoombox = {
     Volume = function() return goldenVolumeCvar:GetFloat() end,
     MaxHearingDistance = function() return goldenMaxDistCvar:GetFloat() end,
     MinVolumeDistance = function() return goldenMinDistCvar:GetFloat() end,
+    Falloff = function() return goldenFalloffCvar:GetFloat() end,
     RetryAttempts = 3,
     RetryDelay = 2
 }
@@ -158,6 +163,7 @@ Config.VehicleRadio = {
     Volume = function() return vehicleVolumeCvar:GetFloat() end,
     MaxHearingDistance = function() return vehicleMaxDistCvar:GetFloat() end,
     MinVolumeDistance = function() return vehicleMinDistCvar:GetFloat() end,
+    Falloff = function() return vehicleFalloffCvar:GetFloat() end,
     RetryAttempts = 3,
     RetryDelay = 2
 }
@@ -171,7 +177,6 @@ Config.VolumeAttenuationExponent = 0.8
 --         Language Setup
 -- ------------------------------
 
--- Function to load and set the current language
 local function loadLanguage()
     if CLIENT then
         local Misc = include("radio/client/cl_misc.lua")
@@ -183,10 +188,8 @@ local function loadLanguage()
     end
 end
 
--- Initialize Language
 loadLanguage()
 
--- Listen for changes in the language ConVar to update localization dynamically
 cvars.AddChangeCallback("radio_language", function(_, _, newValue)
     loadLanguage()
 end)
@@ -195,14 +198,12 @@ end)
 --      Station Data Loading
 -- ------------------------------
 
--- Function to format country names for UI display
 local function formatCountryName(rawName)
     return rawName:gsub("-", " "):gsub("(%a)([%w_']*)", function(first, rest)
         return string.upper(first) .. string.lower(rest)
     end)
 end
 
--- Function to load stations for a specific country
 local function loadStationsForCountry(rawCountryName)
     local formattedName = formatCountryName(rawCountryName)
     local path = "radio/client/stations/" .. rawCountryName .. ".lua"
@@ -348,7 +349,6 @@ if SERVER then
 end
 
 if CLIENT then
-    -- Handle config updates from server
     net.Receive("rRadio_RadioConfigUpdate", function()
         Config.ReloadConVars()
     end)
@@ -407,9 +407,13 @@ function Config.CalculateVolume(entity, player, distanceSqr)
     
     if distance >= maxDist then return 0 end
     
-    -- Linear falloff between min and max distance
-    local falloff = 1 - math.Clamp((distance - entityConfig.MinVolumeDistance()) / 
-                                  (maxDist - entityConfig.MinVolumeDistance()), 0, 1)
+    -- Get falloff exponent from config
+    local falloffExponent = entityConfig.Falloff()
+    
+    -- Calculate falloff with configurable exponent
+    local falloff = math.pow(1 - math.Clamp((distance - entityConfig.MinVolumeDistance()) / 
+                                          (maxDist - entityConfig.MinVolumeDistance()), 0, 1), 
+                            falloffExponent)
     
     return baseVolume * falloff
 end
