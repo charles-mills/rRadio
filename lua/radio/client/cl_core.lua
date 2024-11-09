@@ -719,7 +719,18 @@ local function playStation(entity, station, volume)
         return 
     end
 
-    
+    -- Check if we're banned before attempting to play
+    net.Start("rRadio_CheckBan")
+    net.SendToServer()
+
+    local canPlay = false
+    net.Receive("rRadio_BanCheckResult", function()
+        canPlay = net.ReadBool()
+        if not canPlay then return end
+        
+        -- Rest of the playStation function...
+        -- Move all the existing code here
+    end)
 
     -- Apply volume limits
     volume = ClampVolume(volume, entity)
@@ -902,11 +913,12 @@ local function rRadio_UpdateRadioVolume(station, distanceSqr, isPlayerInCar, ent
 
     station:Set3DEnabled(true)
     local minDist = entityConfig.MinVolumeDistance()
-    
-    -- innerAngle of 180 means full volume in front hemisphere
-    -- outerAngle of 360 means sound can be heard from all directions
-    -- outerVolume of 0.8 means only 20% volume reduction when behind the source
-    station:Set3DCone(180, 360, 0.8)
+
+    station:Set3DCone(
+        Config.Sound3D.InnerAngle,
+        Config.Sound3D.OuterAngle,
+        Config.Sound3D.OuterVolume
+    )
     
     station:Set3DFadeDistance(minDist, maxDist)
     station:SetPlaybackRate(1.0)
@@ -922,7 +934,6 @@ local function rRadio_UpdateRadioVolume(station, distanceSqr, isPlayerInCar, ent
 
     station:SetVolume(finalVolume)
 
-    -- Update stream activity timestamp
     local streamData = StreamManager.activeStreams[entity:EntIndex()]
     if streamData then
         streamData.lastActivity = CurTime()
@@ -2961,6 +2972,9 @@ rRadio_OpenRadioPlayer = function(openSettings)
         if streamData and IsValid(streamData.stream) then
             streamData.stream:SetVolume(value)
         end
+        
+        -- Update volume icon
+        updateVolumeIcon(volumeIcon, value)
         
         local currentTime = CurTime()
         if currentTime - lastServerUpdate >= 0.1 then
