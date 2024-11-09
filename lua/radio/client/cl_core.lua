@@ -926,7 +926,6 @@ local function rRadio_UpdateRadioVolume(station, distanceSqr, isPlayerInCar, ent
     local finalVolume = userVolume
     if distanceSqr > minDist * minDist then
         local dist = math.sqrt(distanceSqr)
-        -- Use configurable falloff exponent
         local falloff = math.pow(1 - math.Clamp((dist - minDist) / (maxDist - minDist), 0, 1), 
                                entityConfig.Falloff())
         finalVolume = userVolume * math.Clamp(falloff, 0, 1)

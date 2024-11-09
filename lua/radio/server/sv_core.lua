@@ -143,7 +143,74 @@ local function ProcessVolumeUpdate(entity, volume, ply)
     return true
 end
 
--- VolumeManager definition
+local StateManager = {
+    locks = {},
+    operations = {},
+    LOCK_TIMEOUT = 5, -- 5 second timeout for locks
+    
+    acquireLock = function(self, entityIndex, operationType)
+        if self.locks[entityIndex] and 
+           (CurTime() - self.locks[entityIndex].timestamp) < self.LOCK_TIMEOUT then
+            return false
+        end
+        
+        self.locks[entityIndex] = {
+            type = operationType,
+            timestamp = CurTime()
+        }
+        return true
+    end,
+    
+    releaseLock = function(self, entityIndex)
+        self.locks[entityIndex] = nil
+    end,
+    
+    queueOperation = function(self, entityIndex, operationType, operation)
+        if not self.operations[entityIndex] then
+            self.operations[entityIndex] = {}
+        end
+        
+        table.insert(self.operations[entityIndex], {
+            type = operationType,
+            func = operation,
+            timestamp = CurTime()
+        })
+    end,
+    
+    processQueue = function(self, entityIndex)
+        if not self.operations[entityIndex] or #self.operations[entityIndex] == 0 then
+            return
+        end
+        
+        if not self:acquireLock(entityIndex, "queue_process") then
+            return
+        end
+        
+        local operation = table.remove(self.operations[entityIndex], 1)
+        
+        -- Execute operation with error handling
+        local success, err = pcall(operation.func)
+        if not success then
+            ErrorNoHalt(string.format("[rRadio] Operation failed: %s\n", err))
+        end
+        
+        self:releaseLock(entityIndex)
+        
+        -- Process next operation if any
+        if #self.operations[entityIndex] > 0 then
+            timer.Simple(0.1, function()
+                self:processQueue(entityIndex)
+            end)
+        end
+    end,
+    
+    cleanup = function(self, entityIndex)
+        self.locks[entityIndex] = nil
+        self.operations[entityIndex] = nil
+    end
+}
+
+-- Modify VolumeManager to use state management
 local VolumeManager = {
     queue = {},
     lastUpdates = {},
@@ -162,23 +229,26 @@ local VolumeManager = {
         
         local entIndex = entity:EntIndex()
         
-        if not self.queue[entIndex] then
-            self.queue[entIndex] = {
-                volume = volume,
-                player = ply,
-                timestamp = CurTime()
-            }
-        else
-            self.queue[entIndex].volume = volume
-            self.queue[entIndex].player = ply
-            self.queue[entIndex].timestamp = CurTime()
-        end
+        StateManager:queueOperation(entIndex, "volume_update", function()
+            if not self.queue[entIndex] then
+                self.queue[entIndex] = {
+                    volume = volume,
+                    player = ply,
+                    timestamp = CurTime()
+                }
+            else
+                self.queue[entIndex].volume = volume
+                self.queue[entIndex].player = ply
+                self.queue[entIndex].timestamp = CurTime()
+            end
+            
+            if not self.lastUpdates[entIndex] or 
+               (CurTime() - self.lastUpdates[entIndex]) >= self.DEBOUNCE_TIME then
+                self:processUpdate(entIndex)
+            end
+        end)
         
-        if not self.lastUpdates[entIndex] or 
-           (CurTime() - self.lastUpdates[entIndex]) >= self.DEBOUNCE_TIME then
-            self:processUpdate(entIndex)
-        end
-        
+        StateManager:processQueue(entIndex)
         return true
     end,
 
@@ -230,10 +300,8 @@ local VolumeManager = {
     end
 }
 
--- Initialize VolumeManager immediately
 VolumeManager:init()
 
--- Required includes
 local utils = include("radio/shared/sh_utils.lua")
 local ResourceManager = include("radio/server/sv_resource_manager.lua")
 
@@ -321,31 +389,37 @@ local function RemoveActiveRadio(entity)
     end
 end
 
--- Move this function definition before any code that uses it
 local function CleanupEntity(entity)
     if not IsValid(entity) then return end
     local entIndex = entity:EntIndex()
     
-    -- Clear radio starter
-    entity.RadioStartedBy = nil
+    StateManager:queueOperation(entIndex, "cleanup", function()
+        -- Clear radio starter
+        entity.RadioStartedBy = nil
+        
+        -- Clean up timers
+        TimerManager:cleanup("_" .. entIndex)
+        
+        -- Clean up volume management
+        VolumeManager:cleanup(entity)
+        EntityVolumes[entIndex] = nil
+        
+        -- Clean up radio status
+        if ActiveRadios[entIndex] then
+            RemoveActiveRadio(entity)
+        end
+        
+        -- Clean up boombox status
+        if utils.IsBoombox(entity) then
+            BoomboxStatuses[entIndex] = nil
+            utils.clearRadioStatus(entity)
+        end
+        
+        -- Clean up state management
+        StateManager:cleanup(entIndex)
+    end)
     
-    -- Clean up timers
-    TimerManager:cleanup("_" .. entIndex)
-    
-    -- Clean up volume management
-    VolumeManager:cleanup(entity)
-    EntityVolumes[entIndex] = nil
-    
-    -- Clean up radio status
-    if ActiveRadios[entIndex] then
-        RemoveActiveRadio(entity)
-    end
-    
-    -- Clean up boombox status
-    if utils.IsBoombox(entity) then
-        BoomboxStatuses[entIndex] = nil
-        utils.clearRadioStatus(entity)
-    end
+    StateManager:processQueue(entIndex)
 end
 
 hook.Add("EntityRemoved", "RadioSystemCleanup", function(entity)
@@ -388,66 +462,57 @@ local function StartNewStream(entity, stationName, stationURL, volume, ply)
     if not IsValid(entity) then return end
     local entIndex = entity:EntIndex()
     
-    -- Store who started this stream
-    entity.RadioStartedBy = ply
-    
-    -- Add start time to ActiveRadios
-    ActiveRadios[entIndex] = {
-        stationName = stationName,
-        url = stationURL,
-        volume = volume,
-        startTime = CurTime(),
-        owner = ply
-    }
-    
-    DebugPrint("Starting new stream",
-        "\nEntity:", entity,
-        "\nStation:", stationName,
-        "\nURL:", stationURL,
-        "\nVolume:", volume,
-        "\nIsPermanent:", entity:GetNWBool("IsPermanent"))
-
-    -- Truncate station name for display
-    local displayName = utils.truncateStationName(stationName)
-
-    AddActiveRadio(entity, displayName, stationURL, volume)
-    DebugPrint("Added to ActiveRadios:",
-        "\nEntity:", entity,
-        "\nStation:", displayName,
-        "\nURL:", stationURL)
-    
-    -- Broadcast to clients with truncated name
-    net.Start("rRadio_QueueStream")
-        net.WriteEntity(entity)
-        net.WriteString(displayName)
-        net.WriteString(stationURL)
-        net.WriteFloat(volume)
-    net.Broadcast()
-    
-    DebugPrint("Broadcasted rRadio_QueueStream to clients")
-    
-    -- Handle boombox specific logic with truncated name
-    if utils.IsBoombox(entity) then
-        utils.setRadioStatus(entity, "tuning", displayName)
+    -- Queue the stream start operation
+    StateManager:queueOperation(entIndex, "stream_start", function()
+        -- Store who started this stream
+        entity.RadioStartedBy = ply
         
-        TimerManager:create("StationUpdate_" .. entIndex, STATION_TUNING_DELAY, 1, function()
-            if IsValid(entity) then
-                utils.setRadioStatus(entity, "playing", displayName)
-                DebugPrint("Updated boombox status to playing", entity, displayName)
-                
-                -- Update database if this is a permanent boombox
-                if entity:GetNWBool("IsPermanent") and SavePermanentBoombox then
-                    timer.Simple(0.5, function()
-                        if IsValid(entity) then
-                            DebugPrint("Saving permanent boombox state to database")
-                            SavePermanentBoombox(entity)
-                        end
-                    end)
+        -- Add start time to ActiveRadios
+        ActiveRadios[entIndex] = {
+            stationName = stationName,
+            url = stationURL,
+            volume = volume,
+            startTime = CurTime(),
+            owner = ply
+        }
+        
+        -- Truncate station name for display
+        local displayName = utils.truncateStationName(stationName)
+        
+        AddActiveRadio(entity, displayName, stationURL, volume)
+        
+        -- Broadcast to clients with truncated name
+        net.Start("rRadio_QueueStream")
+            net.WriteEntity(entity)
+            net.WriteString(displayName)
+            net.WriteString(stationURL)
+            net.WriteFloat(volume)
+        net.Broadcast()
+        
+        -- Handle boombox specific logic
+        if utils.IsBoombox(entity) then
+            utils.setRadioStatus(entity, "tuning", displayName)
+            
+            TimerManager:create("StationUpdate_" .. entIndex, STATION_TUNING_DELAY, 1, function()
+                if IsValid(entity) then
+                    utils.setRadioStatus(entity, "playing", displayName)
+                    
+                    -- Update database if permanent boombox
+                    if entity:GetNWBool("IsPermanent") and SavePermanentBoombox then
+                        timer.Simple(PERMANENT_SAVE_DELAY, function()
+                            if IsValid(entity) then
+                                SavePermanentBoombox(entity)
+                            end
+                        end)
+                    end
                 end
-            end
-            return true
-        end)
-    end
+                return true
+            end)
+        end
+    end)
+    
+    -- Start processing the queue
+    StateManager:processQueue(entIndex)
 end
 
 
@@ -765,42 +830,45 @@ net.Receive("rRadio_QueueStream", function(len, ply)
     local actualEntity = GetVehicleEntity(entity)
     if not IsValid(actualEntity) then return end
     
-    -- Validate permissions
-    if utils.IsBoombox(actualEntity) and not utils.canInteractWithBoombox(ply, actualEntity) then
-        return
-    end
-
     local entIndex = actualEntity:EntIndex()
     
-    -- Check for temp ban before proceeding
-    local isBanned, banData, timeLeft = TempBans:IsBanned(ply:SteamID())
-    if isBanned then
-        local timeLeftMinutes = math.ceil(timeLeft / 60)
-        ply:ChatPrint(string.format("[Radio] You are temporarily banned from using the radio system. Time remaining: %d minutes", timeLeftMinutes))
-        return
-    end
-    
-    -- Handle the stream request
-    ResourceManager:RequestStream(ply, actualEntity, stationURL, function(success, error)
-        if not success then
-            ply:ChatPrint("[rRadio] " .. (error or "Failed to start stream"))
+    StateManager:queueOperation(entIndex, "stream_request", function()
+        -- Check permissions and bans
+        if utils.IsBoombox(actualEntity) and not utils.canInteractWithBoombox(ply, actualEntity) then
+            return
+        end
+
+        local isBanned, banData, timeLeft = TempBans:IsBanned(ply:SteamID())
+        if isBanned then
+            local timeLeftMinutes = math.ceil(timeLeft / 60)
+            ply:ChatPrint(string.format("[Radio] You are temporarily banned. Time remaining: %d minutes", timeLeftMinutes))
             return
         end
         
-        -- Stop any existing playback
-        if ActiveRadios[entIndex] then
-            net.Start("rRadio_StopStream")
-                net.WriteEntity(actualEntity)
-            net.Broadcast()
+        -- Handle the stream request
+        ResourceManager:RequestStream(ply, actualEntity, stationURL, function(success, error)
+            if not success then
+                ply:ChatPrint("[rRadio] " .. (error or "Failed to start stream"))
+                return
+            end
+            
+            -- Stop existing playback and start new stream
+            if ActiveRadios[entIndex] then
+                net.Start("rRadio_StopStream")
+                    net.WriteEntity(actualEntity)
+                net.Broadcast()
 
-            TimerManager:create("StartStream_" .. entIndex, STREAM_RETRY_DELAY, 1, function()
+                TimerManager:create("StartStream_" .. entIndex, STREAM_RETRY_DELAY, 1, function()
+                    StartNewStream(actualEntity, stationName, stationURL, volume, ply)
+                    return true
+                end)
+            else
                 StartNewStream(actualEntity, stationName, stationURL, volume, ply)
-                return true
-            end)
-        else
-            StartNewStream(actualEntity, stationName, stationURL, volume, ply)
-        end
+            end
+        end)
     end)
+    
+    StateManager:processQueue(entIndex)
 end)
 
 
@@ -1422,7 +1490,6 @@ hook.Add("PlayerEnteredVehicle", "RadioVehicleHandling", function(ply, vehicle)
         return
     end
 
-    -- Send message to client with validation data
     net.Start("rRadio_PlayCarEnterAnimation")
         net.WriteEntity(actualVehicle)
         net.WriteBool(true) -- Validation flag
@@ -1431,9 +1498,7 @@ hook.Add("PlayerEnteredVehicle", "RadioVehicleHandling", function(ply, vehicle)
     DebugPrint("Sent rRadio_PlayCarEnterAnimation to client for player:", ply:Nick())
 end)
 
--- Add near other hooks
 hook.Add("RadioPreStreamStart", "CheckAdminPermissions", function(ply, entity)
-    -- Check temp bans
     local isBanned, banData = TempBans:IsBanned(ply:SteamID())
     if isBanned then
         local timeLeft = math.ceil((banData.expires - os.time()) / 60)
@@ -1445,7 +1510,6 @@ end)
 
 _G.RemoveActiveRadio = RemoveActiveRadio
 
--- Add this network receiver
 net.Receive("rRadio_CheckBan", function(len, ply)
     if not IsValid(ply) then return end
     
