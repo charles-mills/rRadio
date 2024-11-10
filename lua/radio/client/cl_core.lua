@@ -719,6 +719,14 @@ local function playStation(entity, station, volume)
         return 
     end
 
+    -- Add URL validation
+    if not Config.IsApprovedStation(station.url) then
+        print("[rRadio] Blocked unauthorized station URL:", station.url)
+        utils.playErrorSound("connection")
+        chat.AddText(Color(255, 0, 0), "[Radio] This station is not in the approved stations list.")
+        return
+    end
+
     -- Check if we're banned before attempting to play
     net.Start("rRadio_CheckBan")
     net.SendToServer()
