@@ -120,7 +120,6 @@ local function processStationURL(url)
     local domain = url:match('^%w+://([^/]+)') or url
     Config.ApprovedStations[url] = true
     Config.StationDomains[domain:lower()] = true
-    print("[rRadio Debug] Added approved station:", url) -- Debug print
 end
 
 function Config.IsApprovedStation(url)
@@ -155,7 +154,6 @@ local function loadStationsForCountry(rawCountryName)
                     end
                 end
             end
-            print(string.format("[rRadio] Loaded stations from %s", path))
         else
             print(string.format("[rRadio] Failed to load stations from %s", path))
         end
@@ -171,7 +169,6 @@ local function initializeStations()
 
     -- Find all data files
     local stationFiles = file.Find("radio/client/stations/data_*.lua", "LUA")
-    print("[rRadio] Found " .. #stationFiles .. " station data files")
 
     -- Load each file
     for _, filename in ipairs(stationFiles) do
@@ -184,7 +181,6 @@ local function initializeStations()
     -- Debug output
     local stationCount = table.Count(Config.ApprovedStations)
     local domainCount = table.Count(Config.StationDomains)
-    print(string.format("[rRadio] Loaded %d approved stations across %d domains", stationCount, domainCount))
 end
 
 -- Call initialization
