@@ -1,20 +1,26 @@
-print("[RADIO] Starting server-side initialization")
+print("[rRadio] Starting server-side initialization")
+
 AddCSLuaFile("radio/shared/sh_config.lua")
-AddCSLuaFile("radio/client/lang/cl_language_manager.lua")
 AddCSLuaFile("radio/client/cl_core.lua")
-AddCSLuaFile("radio/client/cl_settings.lua")
-AddCSLuaFile("radio/client/cl_themes.lua")
-AddCSLuaFile("radio/client/cl_key_names.lua")
+AddCSLuaFile("radio/client/cl_theme_manager.lua")
+AddCSLuaFile("radio/client/cl_state_manager.lua")
 AddCSLuaFile("radio/shared/sh_utils.lua")
+AddCSLuaFile("radio/client/cl_misc.lua")
+
 local dataFiles = file.Find("radio/client/stations/data_*.lua", "LUA")
 for _, filename in ipairs(dataFiles) do
-AddCSLuaFile("radio/client/stations/" .. filename)
+    AddCSLuaFile("radio/client/stations/" .. filename)
 end
+
 local langFiles = file.Find("radio/client/lang/*.lua", "LUA")
 for _, filename in ipairs(langFiles) do
-AddCSLuaFile("radio/client/lang/" .. filename)
+    AddCSLuaFile("radio/client/lang/" .. filename)
 end
+
 include("radio/server/sv_core.lua")
+TempBans = include("radio/server/sv_admin.lua")
+
+-- Add resources
 resource.AddFile("models/rammel/boombox.mdl")
 resource.AddFile("models/rammel/boombox.phy")
 resource.AddFile("models/rammel/boombox.vvd")
@@ -42,25 +48,30 @@ resource.AddFile("materials/hud/vol_down.png")
 resource.AddFile("materials/hud/vol_up.png")
 resource.AddFile("materials/hud/vol_mute.png")
 resource.AddFile("materials/hud/volume.png")
-AddCSLuaFile("entities/base_boombox/init.lua")
+
+-- Add CSLuaFiles for boombox entities
 AddCSLuaFile("entities/base_boombox/cl_init.lua")
 AddCSLuaFile("entities/base_boombox/shared.lua")
 AddCSLuaFile("entities/boombox/shared.lua")
 AddCSLuaFile("entities/golden_boombox/shared.lua")
+
+-- Set up spawnable entities
 list.Set("SpawnableEntities", "boombox", {
-PrintName = "Boombox",
-ClassName = "boombox",
-Category = "Radio",
-AdminOnly = false,
-Model = "models/rammel/boombox.mdl",
-Description = "A basic boombox, ready to play some music!"
+    PrintName = "Boombox",
+    ClassName = "boombox",
+    Category = "Radio",
+    AdminOnly = false,
+    Model = "models/rammel/boombox.mdl",
+    Description = "A basic boombox, ready to play some music!"
 })
+
 list.Set("SpawnableEntities", "golden_boombox", {
-PrintName = "Golden Boombox",
-ClassName = "golden_boombox",
-Category = "Radio",
-AdminOnly = true,
-Model = "models/rammel/boombox.mdl",
-Description = "A boombox with an extreme audio range!"
+    PrintName = "Golden Boombox",
+    ClassName = "golden_boombox",
+    Category = "Radio",
+    AdminOnly = true,
+    Model = "models/rammel/boombox.mdl",
+    Description = "A boombox with an extreme audio range!"
 })
-print("[RADIO] Finished server-side initialization")
+
+print("[rRadio] Finished server-side initialization")
