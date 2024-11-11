@@ -17,10 +17,7 @@ end
 -- Load UI and language dependencies
 include("radio/client/cl_theme_manager.lua")
 local Misc = include("radio/client/cl_misc.lua")
--- Load core after all dependencies
 include("radio/client/cl_core.lua")
-
--- Add admin panel
 include("radio/client/cl_admin.lua")
 
 print("[rRadio] Finished client-side initialization")

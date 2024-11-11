@@ -719,6 +719,14 @@ local function playStation(entity, station, volume)
         return 
     end
 
+    -- Add URL validation
+    if not Config.IsApprovedStation(station.url) then
+        print("[rRadio] Blocked unauthorized station URL:", station.url)
+        utils.playErrorSound("connection")
+        chat.AddText(Color(255, 0, 0), "[Radio] This station is not in the approved stations list.")
+        return
+    end
+
     -- Check if we're banned before attempting to play
     net.Start("rRadio_CheckBan")
     net.SendToServer()
@@ -2697,18 +2705,15 @@ rRadio_OpenRadioPlayer = function(openSettings)
         local iconOffsetX = Scale(10)
         local iconOffsetY = headerHeight/2 - iconSize/2
 
-        -- Draw the icon
         surface.SetMaterial(MaterialCache:Get("hud/radio.png"))
         surface.SetDrawColor(Config.UI.TextColor)
         surface.DrawTexturedRect(iconOffsetX, iconOffsetY, iconSize, iconSize)
 
-        -- Get current language and state
         local lang = GetConVar("radio_language"):GetString() or "en"
         local currentCountry = getSafeState("selectedCountry", nil)
         local isSettingsOpen = settingsMenuOpen -- Use local variable instead of state
         local isFavoritesOpen = favoritesMenuOpen -- Use local variable instead of state
 
-        -- Determine header text
         local headerText
         if isSettingsOpen then
             headerText = Config.Lang["Settings"] or "Settings"
@@ -2719,16 +2724,15 @@ rRadio_OpenRadioPlayer = function(openSettings)
                 -- Format and translate country name
                 local formattedCountry = currentCountry:gsub("_", " "):gsub("(%a)([%w_']*)", function(a, b)
                     return string.upper(a) .. string.lower(b) 
-                end
+                end)
                 headerText = Misc.Language:GetCountryTranslation(lang, formattedCountry) or formattedCountry
             end
         else
             headerText = Config.Lang["SelectCountry"] or "Select Country"
         end
 
-        -- Draw the header text
         draw.SimpleText(headerText, "HeaderFont", iconOffsetX + iconSize + Scale(5), 
-                       headerHeight/2, Config.UI.TextColor, 
+                       headerHeight/2 + Scale(2), Config.UI.TextColor, 
                        TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
     end
 
