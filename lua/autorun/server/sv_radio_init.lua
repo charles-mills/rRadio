@@ -1,5 +1,7 @@
 print("[rRadio] Starting server-side initialization")
 
+resource.AddWorkshop("3318060741")
+
 AddCSLuaFile("radio/shared/sh_config.lua")
 AddCSLuaFile("radio/client/cl_core.lua")
 AddCSLuaFile("radio/client/cl_theme_manager.lua")
@@ -20,7 +22,6 @@ end
 include("radio/server/sv_core.lua")
 TempBans = include("radio/server/sv_admin.lua")
 
--- Add resources
 resource.AddFile("models/rammel/boombox.mdl")
 resource.AddFile("models/rammel/boombox.phy")
 resource.AddFile("models/rammel/boombox.vvd")
@@ -49,13 +50,11 @@ resource.AddFile("materials/hud/vol_up.png")
 resource.AddFile("materials/hud/vol_mute.png")
 resource.AddFile("materials/hud/volume.png")
 
--- Add CSLuaFiles for boombox entities
 AddCSLuaFile("entities/base_boombox/cl_init.lua")
 AddCSLuaFile("entities/base_boombox/shared.lua")
 AddCSLuaFile("entities/boombox/shared.lua")
 AddCSLuaFile("entities/golden_boombox/shared.lua")
 
--- Set up spawnable entities
 list.Set("SpawnableEntities", "boombox", {
     PrintName = "Boombox",
     ClassName = "boombox",
