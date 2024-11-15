@@ -3100,21 +3100,16 @@ end
 --      Hooks and Net Messages
 -- ------------------------------
 
-hook.Add("Think", "OpenRadioPlayerMenu", function()
+hook.Add("PlayerButtonDown", "OpenRadioPlayerMenu", function(ply, button)
+    if not IsValid(ply) or not ply:InVehicle() then return end
+
     local openKey = GetConVar("car_radio_open_key"):GetInt()
-    local ply = LocalPlayer()
+    if button ~= openKey then return end
     
-    -- Validate player and key state
-    if not IsValid(ply) or not openKey then return end
-    if ply:IsTyping() then return end
-    
-    -- Get current time and last press time with proper default
+    -- Check if enough time has passed since last press
     local currentTime = CurTime()
     local keyPressDelay = 0.2
     local lastPress = getSafeState("lastKeyPress", 0)
-
-    -- Check if key is pressed and enough time has passed
-    if not input.IsKeyDown(openKey) then return end
     if (currentTime - lastPress) <= keyPressDelay then return end
     
     -- Update last key press time
