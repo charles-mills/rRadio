@@ -20,28 +20,44 @@ if not StateManager then
     error("[rRadio] Failed to load StateManager")
 end
 
-StateManager:Initialize()
-
-local function getSafeState(key, default)
-    if not StateManager or not StateManager.initialized then
-        return default
+local function initializeState()
+    if not StateManager:Initialize() then
+        error("[rRadio] Failed to initialize StateManager")
     end
-    
-    return StateManager:GetState(key) or default
 end
 
-local function setSafeState(key, value)
-    if not StateManager or not StateManager.initialized then
-        return
-    end
-    
-    StateManager:SetState(key, value)
-end
+initializeState()
 
-local favoriteCountries = getSafeState("favoriteCountries", {})
-local favoriteStations = getSafeState("favoriteStations", {})
-local entityVolumes = getSafeState("entityVolumes", {})
-local lastKeyPress = getSafeState("lastKeyPress", 0)
+local StateCache = {
+    cache = {},
+    Get = function(self, key, default)
+        if not StateManager or not StateManager.initialized then
+            return default
+        end
+        if self.cache[key] == nil then
+            self.cache[key] = StateManager:GetState(key)
+        end
+        return self.cache[key] or default
+    end,
+    Set = function(self, key, value)
+        if not StateManager or not StateManager.initialized then
+            return
+        end
+        self.cache[key] = value
+        StateManager:SetState(key, value)
+    end,
+    Clear = function(self, key)
+        self.cache[key] = nil
+    end,
+    ClearAll = function(self)
+        self.cache = {}
+    end
+}
+
+local favoriteCountries = StateCache:Get("favoriteCountries", {})
+local favoriteStations = StateCache:Get("favoriteStations", {})
+local entityVolumes = StateCache:Get("entityVolumes", {})
+local lastKeyPress = StateCache:Get("lastKeyPress", 0)
 
 local currentFrame = nil
 local settingsMenuOpen = false
@@ -55,7 +71,7 @@ local isMessageAnimating = false
 
 local favoritesMenuOpen = false
 
-local MaterialCache = {
+local MaterialManager = {
     cache = {},
     paths = {
         "hud/vol_mute.png",
@@ -71,14 +87,35 @@ local MaterialCache = {
     },
     
     Get = function(self, path)
-        self.cache[path] = self.cache[path] or Material(path, "smooth")
+        if not self.cache[path] then
+            local mat = Material(path, "smooth")
+            if not mat or mat:IsError() then
+                ErrorNoHalt(string.format("[rRadio] Failed to load material: %s\n", path))
+                return Material("error")
+            end
+            self.cache[path] = mat
+        end
         return self.cache[path]
     end,
+    
+    Preload = function(self)
+        for _, path in ipairs(self.paths) do
+            self:Get(path)
+        end
+    end,
+    
+    Clear = function(self)
+        self.cache = {}
+    end
 }
+
+-- Preload materials on initialization
+MaterialManager:Preload()
+
 local VOLUME_ICONS = {
-    MUTE = MaterialCache:Get("hud/vol_mute.png"),
-    LOW = MaterialCache:Get("hud/vol_down.png"),
-    HIGH = MaterialCache:Get("hud/vol_up.png")
+    MUTE = MaterialManager:Get("hud/vol_mute.png"),
+    LOW = MaterialManager:Get("hud/vol_down.png"),
+    HIGH = MaterialManager:Get("hud/vol_up.png")
 }
 
 local unauthorizedUIOpen = false
@@ -97,15 +134,26 @@ local isLoadingStations = false
 local STATION_CHUNK_SIZE = 100
 local loadingProgress = 0
 
-local UIReferenceTracker = {
+-- Optimized UI reference tracking
+local UIManager = {
     references = {},
     validityCache = {},
     lastCheck = 0,
     CHECK_INTERVAL = 0.5,
     
     Track = function(self, element, id)
+        if not IsValid(element) then return end
         self.references[id] = element
         self.validityCache[id] = true
+        
+        -- Auto-cleanup when element is removed
+        if element.OnRemove then
+            local oldRemove = element.OnRemove
+            element.OnRemove = function(...)
+                self:Untrack(id)
+                return oldRemove(...)
+            end
+        end
     end,
     
     Untrack = function(self, id)
@@ -114,212 +162,37 @@ local UIReferenceTracker = {
     end,
     
     IsValid = function(self, id)
+        local currentTime = CurTime()
+        if (currentTime - self.lastCheck) >= self.CHECK_INTERVAL then
+            self:Update()
+        end
         return self.validityCache[id] == true
     end,
     
     Update = function(self)
-        local currentTime = CurTime()
-        if (currentTime - self.lastCheck) < self.CHECK_INTERVAL then
-            return
-        end
-        
-        self.lastCheck = currentTime
-        
+        self.lastCheck = CurTime()
         for id, element in pairs(self.references) do
-            self.validityCache[id] = IsValid(element)
-            if not self.validityCache[id] then
-                self.references[id] = nil
+            if not IsValid(element) then
+                self:Untrack(id)
             end
         end
+    end,
+    
+    Clear = function(self)
+        self.references = {}
+        self.validityCache = {}
+        self.lastCheck = 0
     end
 }
 
-hook.Add("OnPlayerChat", "RadioStreamToggleCommands", function(ply, text, teamChat, isDead)
-    if ply ~= LocalPlayer() then return end
-    
-    text = string.lower(text)
-    
-    if text == "!disablestreams" then
-        if not streamsEnabled then
-            chat.AddText(Color(255, 0, 0), "[Radio] Streams are already disabled.")
-            return true
-        end
-        
-        -- Stop all current streams
-        for entity, source in pairs(currentRadioSources) do
-            if IsValid(source) then
-                source:Stop()
-            end
-        end
-        
-        -- Clear states
-        currentRadioSources = {}
-        StreamManager.activeStreams = {}
-        
-        streamsEnabled = false
-        chat.AddText(Color(0, 255, 0), "[Radio] All radio streams have been disabled for this session.")
-        return true
+local function createUIElement(elementType, parent)
+    local element = vgui.Create(elementType, parent)
+    if element then
+        local id = tostring(element)
+        UIManager:Track(element, id)
+        return element
     end
-    
-    if text == "!enablestreams" then
-        if streamsEnabled then
-            chat.AddText(Color(255, 0, 0), "[Radio] Streams are already enabled.")
-            return true
-        end
-        
-        streamsEnabled = true
-        chat.AddText(Color(0, 255, 0), "[Radio] Radio streams have been re-enabled.")
-        return true
-    end
-end)
-
--- ------------------------------
---      Station Data Loading
--- ------------------------------
-
---[[
-    Function: truncateStationName
-    Truncates a station name to a maximum length and adds ellipsis if needed.
-    This is for display purposes and data storage.
-
-    Parameters:
-    - name: The station name to truncate
-    - maxLength: (optional) Maximum length before truncation, defaults to 15
-
-    Returns:
-    - The truncated name with ellipsis if needed
-]]
-local function truncateStationName(name, maxLength)
-    maxLength = maxLength or 15
-    if string.len(name) <= maxLength then
-        return name
-    end
-    return string.sub(name, 1, maxLength) .. "..."
-end
-
---[[
-    Function: LoadStationData
-    Loads station data from files asynchronously to prevent UI freezing.
-    Uses chunked loading with progress tracking.
-]]
-local function LoadStationData()
-    if stationDataLoaded or isLoadingStations then return end
-    
-    StationData = {}
-    isLoadingStations = true
-    loadingProgress = 0
-    
-    -- Get all data files first
-    local dataFiles = file.Find("radio/client/stations/data_*.lua", "LUA")
-    local totalFiles = #dataFiles
-    local currentFileIndex = 1
-    local currentStationIndex = 1
-    local currentCountry = nil
-    local currentStations = nil
-    
-    -- Create temporary storage for file data
-    local fileData = {}
-    
-    -- Process files in chunks
-    timer.Create("LoadStationDataChunks", 0.05, 0, function()
-        -- Process current chunk
-        local startTime = SysTime()
-        
-        while (SysTime() - startTime) < 0.016 and currentFileIndex <= totalFiles do
-            local filename = dataFiles[currentFileIndex]
-            
-            -- Load file data if not already loaded
-            if not fileData[filename] then
-                local success, data = pcall(include, "radio/client/stations/" .. filename)
-                if success and data then
-                    fileData[filename] = data
-                else
-                    print("[rRadio] Error loading station data from: " .. filename)
-                    fileData[filename] = {}
-                end
-            end
-            
-            -- Process stations from current file
-            local data = fileData[filename]
-            for country, stations in pairs(data) do
-                -- Extract base country name
-                local baseCountry = country:gsub("_(%d+)$", "")
-                if not StationData[baseCountry] then
-                    StationData[baseCountry] = {}
-                end
-                
-                -- Process stations in chunks
-                for i = 1, #stations, STATION_CHUNK_SIZE do
-                    local endIndex = math.min(i + STATION_CHUNK_SIZE - 1, #stations)
-                    for j = i, endIndex do
-                        local station = stations[j]
-                        table.insert(StationData[baseCountry], {
-                            name = station.n,
-                            displayName = truncateStationName(station.n),
-                            url = station.u
-                        })
-                    end
-                    
-                    -- Update progress
-                    loadingProgress = (currentFileIndex / totalFiles) * 100
-                    
-                    -- Emit progress event
-                    StateManager:Emit(StateManager.Events.STATION_LOAD_PROGRESS, {
-                        progress = loadingProgress,
-                        currentFile = filename,
-                        totalFiles = totalFiles
-                    })
-                    
-                    -- Break chunk processing if time exceeded
-                    if (SysTime() - startTime) >= 0.016 then
-                        return
-                    end
-                end
-            end
-            
-            currentFileIndex = currentFileIndex + 1
-        end
-        
-        -- Check if loading is complete
-        if currentFileIndex > totalFiles then
-            timer.Remove("LoadStationDataChunks")
-            stationDataLoaded = true
-            isLoadingStations = false
-            loadingProgress = 100
-            
-            -- Update state
-            StateManager:SetState("stationDataLoaded", true)
-            StateManager:SetState("stationData", StationData)
-            
-            -- Emit completion event
-            StateManager:Emit(StateManager.Events.STATION_LOAD_COMPLETE, {
-                totalStations = table.Count(StationData)
-            })
-            
-            -- Clear temporary storage
-            fileData = nil
-        end
-    end)
-end
-
--- Initialize station data
-LoadStationData()
-
--- ------------------------------
---      Stream Management
--- ------------------------------
-
---[[
-    Function: updateStationCount
-    Updates and validates the count of active radio stations.
-    Cleans up invalid entries and returns the current count.
-    
-    Returns:
-    - number: The current number of active stations
-]]
-local function updateStationCount()
-    local count = StateManager:UpdateStationCount()
-    return count
+    return nil
 end
 
 local StreamManager = {
@@ -502,8 +375,8 @@ local function loadFavorites()
     StateManager:LoadFavorites()
     
     -- Update local references
-    favoriteCountries = getFavoriteCountries()
-    favoriteStations = getFavoriteStations()
+    favoriteCountries = StateCache:Get("favoriteCountries", {})
+    favoriteStations = StateCache:Get("favoriteStations", {})
 end
 
 --[[
@@ -512,8 +385,8 @@ end
     Includes error handling, validation, and backup system.
 ]]
 local function saveFavorites()
-    StateManager:SetState("favoriteCountries", favoriteCountries)
-    StateManager:SetState("favoriteStations", favoriteStations)
+    StateCache:Set("favoriteCountries", favoriteCountries)
+    StateCache:Set("favoriteStations", favoriteStations)
 
     return StateManager:SaveFavorites()
 end
@@ -1012,7 +885,7 @@ local function playCarEnterAnim()
         self.BaseClass.SetVisible(self, true)
     end
 
-    UIReferenceTracker:Track(panel, "message_panel")
+    UIManager:Track(panel, "message_panel")
 
     panel.Paint = function(self, w, h)
         if not IsValid(self) then return end
@@ -1176,7 +1049,7 @@ local function createStarIcon(parent, country, station, updateList)
 
     starIcon.Paint = function(self, w, h)
         surface.SetDrawColor(Config.UI.FavoriteStarColor)
-        surface.SetMaterial(MaterialCache:Get(isFavorite and "hud/star_full.png" or "hud/star.png"))
+        surface.SetMaterial(MaterialManager:Get(isFavorite and "hud/star_full.png" or "hud/star.png"))
         surface.DrawTexturedRect(0, 0, w, h)
     end
 
@@ -1196,7 +1069,7 @@ local function createStarIcon(parent, country, station, updateList)
                 currentFavoriteStations[country][station.name] = true
             end
 
-            StateManager:SetState("favoriteStations", currentFavoriteStations)
+            StateCache:Set("favoriteStations", currentFavoriteStations)
         else
             local currentFavoriteCountries = getSafeState("favoriteCountries", {})
             if currentFavoriteCountries[country] then
@@ -1205,7 +1078,7 @@ local function createStarIcon(parent, country, station, updateList)
                 currentFavoriteCountries[country] = true
             end
 
-            StateManager:SetState("favoriteCountries", currentFavoriteCountries)
+            StateCache:Set("favoriteCountries", currentFavoriteCountries)
         end
 
         saveFavorites()
@@ -1452,7 +1325,7 @@ local ListPopulator = {
 
             favoritesButton:SetTextInset(Scale(40), 0)
             favoritesButton.PaintOver = function(self, w, h)
-                surface.SetMaterial(MaterialCache:Get("hud/star_full.png"))
+                surface.SetMaterial(MaterialManager:Get("hud/star_full.png"))
                 surface.SetDrawColor(Config.UI.FavoriteStarColor)
                 local iconSize = Scale(24)
                 surface.DrawTexturedRect(Scale(12), (h - iconSize) / 2, iconSize, iconSize)
@@ -1820,18 +1693,12 @@ local function openSettingsMenu(parentFrame, backButton)
                 button.choiceData = choice.data
                 
                 button.DoClick = function()
-                    print("[rRadio Debug] Button Click:")
-                    print("  - Choice name:", choice.name)
-                    print("  - Choice data:", choice.data)
-                    
                     self:SetValue(choice.name)
                     if onSelect then
                         onSelect(self, nil, choice.name, choice.data)
                     end
                     menu:Remove()
                 end
-                
-                totalHeight = totalHeight + optionHeight
             end
 
             -- Set menu size
@@ -1859,125 +1726,6 @@ local function openSettingsMenu(parentFrame, backButton)
         dropdown.OnSelect = onSelect
 
         return dropdown
-    end
-
-    local function addCheckbox(text, convar)
-        local container = vgui.Create("DPanel", scrollPanel)
-        container:Dock(TOP)
-        container:SetTall(Scale(40))
-        container:DockMargin(0, 0, 0, Scale(5))
-        container.Paint = function(self, w, h)
-            draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonColor)
-        end
-
-        local checkbox = vgui.Create("DCheckBox", container)
-        checkbox:SetPos(Scale(10), (container:GetTall() - Scale(20)) / 2)
-        checkbox:SetSize(Scale(20), Scale(20))
-        checkbox:SetConVar(convar)
-
-        checkbox.Paint = function(self, w, h)
-            draw.RoundedBox(4, 0, 0, w, h, Config.UI.SearchBoxColor)
-            if self:GetChecked() then
-                surface.SetDrawColor(Config.UI.TextColor)
-                surface.DrawRect(Scale(4), Scale(4), w - Scale(8), h - Scale(8))
-            end
-        end
-
-        local label = vgui.Create("DLabel", container)
-        label:SetText(text)
-        label:SetTextColor(Config.UI.TextColor)
-        label:SetFont("Roboto18")
-        label:SizeToContents()
-        label:SetPos(Scale(40), (container:GetTall() - label:GetTall()) / 2)
-
-        checkbox.OnChange = function(self, value)
-            if not ConVarExists(convar) then
-                print("[rRadio] Warning: ConVar " .. convar .. " does not exist")
-                return
-            end
-
-            RunConsoleCommand(convar, value and "1" or "0")
-            StateManager:SetState("settings_" .. convar, value)
-            
-            -- Emit settings change event
-            StateManager:Emit(StateManager.Events.SETTINGS_CHANGED, {
-                setting = convar,
-                value = value
-            })
-        end
-
-        return checkbox
-    end
-
-    -- Theme Selection
-    addHeader(Config.Lang["ThemeSelection"] or "Theme Selection", true)
-    local themeChoices = {
-        main = {},
-        strange = {},
-        other = {}
-    }
-
-    -- Modify the theme choices creation to format display names
-    for themeName, themeData in pairs(themeModule.themes) do
-        if type(themeData) == "table" then
-            local category = themeData.category or "other"
-            
-            -- Format display name: remove underscores and title case each word
-            local displayName = themeName:gsub("_", " "):gsub("(%a)([%w_']*)", function(first, rest)
-                return first:upper() .. rest:lower()
-            end)
-            
-            table.insert(themeChoices[category], {
-                name = displayName, -- Use formatted name for display
-                data = themeName    -- Keep original name for internal use
-            })
-        end
-    end
-
-    -- Sort themes within each category
-    for _, categoryThemes in pairs(themeChoices) do
-        table.sort(categoryThemes, function(a, b)
-            return a.name < b.name
-        end)
-    end
-
-    -- Create final choices array with category headers
-    local finalThemeChoices = {}
-
-    -- Add Main themes
-    if #themeChoices.main > 0 then
-        table.insert(finalThemeChoices, {
-            name = Config.Lang["Main"] or "Main Themes",
-            data = nil,
-            isHeader = true
-        })
-        for _, theme in ipairs(themeChoices.main) do
-            table.insert(finalThemeChoices, theme)
-        end
-    end
-
-    -- Add Strange themes
-    if #themeChoices.strange > 0 then
-        table.insert(finalThemeChoices, {
-            name = Config.Lang["Strange"] or "Strange Themes",
-            data = nil,
-            isHeader = true
-        })
-        for _, theme in ipairs(themeChoices.strange) do
-            table.insert(finalThemeChoices, theme)
-        end
-    end
-
-    -- Add Other themes
-    if #themeChoices.other > 0 then
-        table.insert(finalThemeChoices, {
-            name = Config.Lang["Other"] or "Other Themes",
-            data = nil,
-            isHeader = true
-        })
-        for _, theme in ipairs(themeChoices.other) do
-            table.insert(finalThemeChoices, theme)
-        end
     end
 
     local currentTheme = GetConVar("radio_theme"):GetString()
@@ -2408,7 +2156,7 @@ local function openSettingsMenu(parentFrame, backButton)
 
     githubIcon.Paint = function(self, w, h)
         surface.SetDrawColor(Config.UI.TextColor)
-        surface.SetMaterial(MaterialCache:Get("hud/github.png"))
+        surface.SetMaterial(MaterialManager:Get("hud/github.png"))
         surface.DrawTexturedRect(0, 0, w, h)
     end
 end
@@ -2448,7 +2196,7 @@ local function openUnauthorizedUI(entity)
         local iconOffsetX = Scale(10)
         local iconOffsetY = headerHeight/2 - iconSize/2
 
-        surface.SetMaterial(MaterialCache:Get("hud/radio.png"))
+        surface.SetMaterial(MaterialManager:Get("hud/radio.png"))
         surface.SetDrawColor(Config.UI.TextColor)
         surface.DrawTexturedRect(iconOffsetX, iconOffsetY, iconSize, iconSize)
 
@@ -2579,7 +2327,7 @@ local function openUnauthorizedUI(entity)
         end
         
         -- Icon
-        surface.SetMaterial(MaterialCache:Get(isMuted and "hud/vol_mute.png" or "hud/vol_up.png"))
+        surface.SetMaterial(MaterialManager:Get(isMuted and "hud/vol_mute.png" or "hud/vol_up.png"))
         surface.SetDrawColor(Config.UI.TextColor)
         surface.DrawTexturedRect(Scale(10), Scale(8), Scale(24), Scale(24))
         
@@ -2625,7 +2373,7 @@ local function openUnauthorizedUI(entity)
             self.lerp = math.Approach(self.lerp, 0, FrameTime() * 5)
         end
         
-        surface.SetMaterial(MaterialCache:Get("hud/close.png"))
+        surface.SetMaterial(MaterialManager:Get("hud/close.png"))
         surface.SetDrawColor(ColorAlpha(Config.UI.IconColor, 255 * (0.5 + 0.5 * self.lerp)))
         surface.DrawTexturedRect(0, 0, w, h)
     end
@@ -2705,7 +2453,7 @@ rRadio_OpenRadioPlayer = function(openSettings)
         local iconOffsetX = Scale(10)
         local iconOffsetY = headerHeight/2 - iconSize/2
 
-        surface.SetMaterial(MaterialCache:Get("hud/radio.png"))
+        surface.SetMaterial(MaterialManager:Get("hud/radio.png"))
         surface.SetDrawColor(Config.UI.TextColor)
         surface.DrawTexturedRect(iconOffsetX, iconOffsetY, iconSize, iconSize)
 
@@ -2998,7 +2746,7 @@ rRadio_OpenRadioPlayer = function(openSettings)
         end
     )
     closeButton.Paint = function(self, w, h)
-        surface.SetMaterial(MaterialCache:Get("hud/close.png"))
+        surface.SetMaterial(MaterialManager:Get("hud/close.png"))
         surface.SetDrawColor(ColorAlpha(Config.UI.IconColor, 255 * (0.5 + 0.5 * self.lerp)))
         surface.DrawTexturedRect(0, 0, w, h)
     end
@@ -3024,7 +2772,7 @@ rRadio_OpenRadioPlayer = function(openSettings)
         end
     )
     settingsButton.Paint = function(self, w, h)
-        surface.SetMaterial(MaterialCache:Get("hud/settings.png"))
+        surface.SetMaterial(MaterialManager:Get("hud/settings.png"))
         surface.SetDrawColor(ColorAlpha(Config.UI.IconColor, 255 * (0.5 + 0.5 * self.lerp)))
         surface.DrawTexturedRect(0, 0, w, h)
     end
@@ -3074,7 +2822,7 @@ rRadio_OpenRadioPlayer = function(openSettings)
     )
     backButton.Paint = function(self, w, h)
         if self:IsVisible() then
-            surface.SetMaterial(MaterialCache:Get("hud/return.png"))
+            surface.SetMaterial(MaterialManager:Get("hud/return.png"))
             surface.SetDrawColor(ColorAlpha(Config.UI.IconColor, 255 * (0.5 + 0.5 * self.lerp)))
             surface.DrawTexturedRect(0, 0, w, h)
         end
@@ -3480,8 +3228,8 @@ hook.Add("Think", "rRadioMainThink", function()
         StreamManager:UpdateValidityCache()
     end
 
-    if UIReferenceTracker then
-        UIReferenceTracker:Update()
+    if UIManager then
+        UIManager:Update()
     end
 
     if Misc and Misc.Animations then
