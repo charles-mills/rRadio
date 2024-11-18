@@ -1,4 +1,4 @@
-# rRadio
+# rRadio - Internet Radio for Garry's Mod
 
 ![Downloads](https://img.shields.io/steam/downloads/3318060741?style=for-the-badge&color=00adb5) ![Views](https://img.shields.io/steam/views/3318060741?style=for-the-badge&color=ff5719) ![Size](https://img.shields.io/steam/size/3318060741?style=for-the-badge&color=2ea043) ![Update Date](https://img.shields.io/steam/update-date/3318060741?style=for-the-badge&color=515de9)
 
