@@ -4,6 +4,8 @@
 
 rRadio is an internet radio addon for Garry's Mod that allows players to listen to thousands of live stations through in-game boomboxes, and in their vehicles. The addon is intended for use by public servers, with a major focus on server-side optimisation, security, and multi-client synchronisation, though remains fully compatible with singleplayer.
 
+This was built as a way of learning glua, and general best practices for Garry's Mod addons. The codebase is a mess, with varying levels of understanding at different points within files - but it works :)
+
 ## Features
 
 - Extensive list of radio stations from over 100 countries
