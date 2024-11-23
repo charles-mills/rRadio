@@ -4,7 +4,6 @@ local utils = include("radio/shared/sh_utils.lua")
 local Misc = include("radio/client/cl_misc.lua")
 local Themes = include("radio/client/cl_theme_manager.lua")
 
--- Ensure ConVar exists
 CreateClientConVar("boombox_show_text", "1", true, false, "Show or hide the text above the boombox.")
 
 timer.Simple(0, function()
@@ -31,9 +30,9 @@ local HUD = {
     },
     EQUALIZER = {
         BARS = 3,
-        MIN_HEIGHT = 0.3,
-        MAX_HEIGHT = 0.7,
-        FREQUENCIES = {1.5, 2.0, 2.5}
+        MIN_HEIGHT = 0.2,  -- Slightly higher min
+        MAX_HEIGHT = 0.75,  -- Slightly lower max
+        FREQUENCIES = {1.8, 2.2, 2.6}  -- More moderate frequencies
     },
     COLORS = {
         BACKGROUND = Color(20, 20, 20, 255),
@@ -151,6 +150,7 @@ local function createAnimationState()
         textOffset = 0,
         lastStatus = "",
         equalizerHeights = {0, 0, 0},
+        lastHeights = {0, 0, 0},  -- Initialize lastHeights here
         lastVolume = 0
     }
 end
@@ -158,7 +158,7 @@ end
 -- Add near the top with other local variables
 local VISIBILITY_CACHE_TIME = 0.1  -- Cache visibility for 100ms
 local DISTANT_UPDATE_INTERVAL = 0.25  -- Update distant boomboxes every 250ms
-local EQUALIZER_UPDATE_INTERVAL = 0.05 -- Update equalizer every 50ms
+local EQUALIZER_UPDATE_INTERVAL = 0.008  -- ~120fps update rate for ultra-smooth animation
 local ANIMATION_CLEANUP_INTERVAL = 30  -- Cleanup unused states every 30 seconds
 local MAX_CACHE_ENTRIES = 100  -- Prevent cache from growing too large
 
@@ -170,13 +170,16 @@ local lastFontSet = ""
 
 -- Pre-calculate sine patterns
 local function initSinePatterns()
-    local steps = 100
+    local steps = 120
     for i = 1, HUD.EQUALIZER.BARS do
         sinePatternCache[i] = {}
         local freq = HUD.EQUALIZER.FREQUENCIES[i]
         for step = 0, steps do
             local time = step * (math.pi * 2 / steps)
-            sinePatternCache[i][step] = math.abs(math.sin(time * freq))
+            -- Smoother pattern with gentle secondary wave
+            local primary = math.abs(math.sin(time * freq))
+            local secondary = math.sin(time * freq * 0.5) * 0.15
+            sinePatternCache[i][step] = primary + secondary
         end
     end
 end
@@ -264,28 +267,42 @@ end
 
 -- Optimized equalizer update
 function ENT:UpdateEqualizerHeights(volume, dt)
-    if not self.anim then return end
-    if not self.anim.equalizerHeights then
-        self.anim.equalizerHeights = {0, 0, 0}
+    -- Ensure animation state exists with all fields
+    if not self.anim then
+        self.anim = createAnimationState()
     end
     
-    -- Check update interval
-    if self.lastEqUpdate and (RealTime() - self.lastEqUpdate) < EQUALIZER_UPDATE_INTERVAL then
+    -- Moderate update rate
+    local currentTime = RealTime()
+    if self.lastEqUpdate and (currentTime - self.lastEqUpdate) < 0.016 then
         return
     end
+    self.lastEqUpdate = currentTime
     
-    self.lastEqUpdate = RealTime()
+    -- Moderate pattern cycling
+    local timeBase = CurTime() * 20  -- Slower base movement
     
-    -- Use pre-calculated patterns
-    local timeIndex = math.floor((CurTime() * 10) % 100)
     for i = 1, HUD.EQUALIZER.BARS do
+        -- Get current pattern value with slight offset per bar
+        local timeIndex = math.floor(timeBase * (1 + i * 0.1) % 120)
+        local patternValue = sinePatternCache[i][timeIndex]
+        
+        -- Small amount of randomness
+        local jitter = math.random() * 0.1
+        
+        -- Calculate target with volume influence
         local targetHeight = HUD.EQUALIZER.MIN_HEIGHT + 
-            (sinePatternCache[i][timeIndex] * HUD.EQUALIZER.MAX_HEIGHT * volume)
-        self.anim.equalizerHeights[i] = Lerp(
-            dt / HUD.ANIMATION.EQUALIZER_SMOOTHING, 
-            self.anim.equalizerHeights[i] or 0, 
-            targetHeight
-        )
+            ((patternValue + jitter) * (HUD.EQUALIZER.MAX_HEIGHT - HUD.EQUALIZER.MIN_HEIGHT) * volume)
+        
+        -- Quick but not instant response
+        self.anim.equalizerHeights[i] = Lerp(0.3, self.anim.equalizerHeights[i] or 0, targetHeight)
+        
+        -- Gentle bounce on changes
+        if math.abs((self.anim.lastHeights[i] or 0) - targetHeight) > 0.25 then
+            self.anim.equalizerHeights[i] = targetHeight * 1.1  -- Smaller overshoot
+        end
+        
+        self.anim.lastHeights[i] = self.anim.equalizerHeights[i]
     end
 end
 
@@ -353,6 +370,18 @@ function ENT:Initialize()
     end
 end
 
+function ENT:Think()
+    -- Only update if within hearing distance
+    if self:GetPos():DistToSqr(LocalPlayer():GetPos()) <= (HUD.FADE_DISTANCE.END * HUD.FADE_DISTANCE.END) then
+        if not self.anim then
+            self.anim = createAnimationState()
+        end
+        
+        local status = self:GetNWString("Status", "stopped")
+        self:UpdateAnimations(status, FrameTime())
+    end
+end
+
 function ENT:Draw()
     self:DrawModel()
     if not GetConVar("boombox_show_text"):GetBool() then return end
@@ -369,14 +398,14 @@ function ENT:Draw()
     local status = statusData.stationStatus or self:GetNWString("Status", "stopped")
     local stationName = statusData.stationName or self:GetNWString("StationName", "")
 
-    if (#stationName > HUD.TRUNCATE_LENGTH) then
+    -- Safely handle text truncation
+    if type(stationName) == "string" and #stationName > HUD.TRUNCATE_LENGTH then
         stationName = utils.truncateStationName(stationName, HUD.TRUNCATE_LENGTH)
     end
 
     local alpha = self:CalculateVisibility()
     if alpha <= 0 then return end
     
-    self:UpdateAnimations(status, FrameTime())
     local pos = self:GetPos() + self:GetForward() * 4.6 + self:GetUp() * 14.5
     local ang = self:GetAngles()
     ang:RotateAroundAxis(ang:Up(), -90)
@@ -532,6 +561,9 @@ function ENT:GetStatusColor(status)
 end
 
 function ENT:DrawEqualizer(x, y, alpha, color)
+    if not self or not IsValid(self) then return end
+    
+    -- Ensure animation state exists
     if not self.anim then
         self.anim = createAnimationState()
     end
@@ -564,38 +596,3 @@ function ENT:DrawEqualizer(x, y, alpha, color)
                        barWidth, height, ColorAlpha(color, alpha))
     end
 end
-
--- Remove the old Think hook first
-hook.Remove("Think", "UpdateBoomboxAnimations")
-
--- Add the new optimized Think hook
-hook.Add("Think", "UpdateBoomboxAnimations", function()
-    -- Update animations only for visible boomboxes
-    for _, ent in ipairs(ents.FindByClass("boombox")) do
-        if IsValid(ent) and ent:GetPos():DistToSqr(LocalPlayer():GetPos()) <= (HUD.FADE_DISTANCE.END * HUD.FADE_DISTANCE.END) then
-            -- Ensure animation state exists
-            if not ent.anim then
-                ent.anim = createAnimationState()
-            end
-            
-            local status = ent:GetNWString("Status", "stopped")
-            if ent.UpdateAnimations then -- Check if method exists
-                ent:UpdateAnimations(status, FrameTime())
-            end
-        end
-    end
-    
-    for _, ent in ipairs(ents.FindByClass("golden_boombox")) do
-        if IsValid(ent) and ent:GetPos():DistToSqr(LocalPlayer():GetPos()) <= (HUD.FADE_DISTANCE.END * HUD.FADE_DISTANCE.END) then
-            -- Ensure animation state exists
-            if not ent.anim then
-                ent.anim = createAnimationState()
-            end
-            
-            local status = ent:GetNWString("Status", "stopped")
-            if ent.UpdateAnimations then -- Check if method exists
-                ent:UpdateAnimations(status, FrameTime())
-            end
-        end
-    end
-end)
