@@ -2190,7 +2190,6 @@ local function openUnauthorizedUI(entity)
         draw.RoundedBox(8, 0, 0, w, h, Config.UI.BackgroundColor)
         draw.RoundedBoxEx(8, 0, 0, w, Scale(40), Config.UI.HeaderColor, true, true, false, false)
 
-        -- Header icon and text
         local headerHeight = Scale(40)
         local iconSize = Scale(25)
         local iconOffsetX = Scale(10)
@@ -2848,11 +2847,17 @@ end
 --      Hooks and Net Messages
 -- ------------------------------
 
-hook.Add("PlayerButtonDown", "OpenRadioPlayerMenu", function(ply, button)
-    if not IsValid(ply) or not ply:InVehicle() then return end
+hook.Remove("PlayerButtonDown", "OpenRadioPlayerMenu")
 
+hook.Add("Think", "RadioMenuThink", function()
+    local ply = LocalPlayer()
+    if not IsValid(ply) then return end
+    
+    -- Only check when in vehicle
+    if not ply:InVehicle() then return end
+    
     local openKey = GetConVar("car_radio_open_key"):GetInt()
-    if button ~= openKey then return end
+    if not input.IsKeyDown(openKey) then return end
     
     -- Check if enough time has passed since last press
     local currentTime = CurTime()
@@ -2862,7 +2867,7 @@ hook.Add("PlayerButtonDown", "OpenRadioPlayerMenu", function(ply, button)
     
     -- Update last key press time
     setSafeState("lastKeyPress", currentTime)
-
+    
     -- Handle menu close if already open
     if radioMenuOpen and not isSearching then
         surface.PlaySound("buttons/lightswitch2.wav")
@@ -2875,20 +2880,20 @@ hook.Add("PlayerButtonDown", "OpenRadioPlayerMenu", function(ply, button)
         favoritesMenuOpen = false
         return
     end
-
+    
     -- Get the player's current vehicle/seat
-    local currentSeat = ply:GetVehicle()
-    if not IsValid(currentSeat) then 
+    local vehicle = ply:GetVehicle()
+    if not IsValid(vehicle) then 
         utils.DebugPrint("No valid seat found")
         return 
     end
 
     -- Get the actual vehicle using our utility function
-    local actualVehicle = utils.GetVehicle(currentSeat)
+    local actualVehicle = utils.GetVehicle(vehicle)
     if not actualVehicle then
-        utils.DebugPrint("No valid vehicle found from seat:", currentSeat:GetClass())
-        if IsValid(currentSeat:GetParent()) then
-            utils.DebugPrint("Parent class:", currentSeat:GetParent():GetClass())
+        utils.DebugPrint("No valid vehicle found from seat:", vehicle:GetClass())
+        if IsValid(vehicle:GetParent()) then
+            utils.DebugPrint("Parent class:", vehicle:GetParent():GetClass())
         end
         return
     end
@@ -2908,7 +2913,7 @@ hook.Add("PlayerButtonDown", "OpenRadioPlayerMenu", function(ply, button)
 
     -- Set current radio entity and open menu
     ply.currentRadioEntity = actualVehicle
-    StateManager:SetState("currentRadioEntity", actualVehicle)
+    surface.PlaySound("buttons/lightswitch2.wav")
     rRadio_OpenRadioPlayer()
 end)
 
