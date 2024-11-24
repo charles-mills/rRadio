@@ -2387,12 +2387,21 @@ end
 --      Main UI Function
 -- ------------------------------
 
---[[
-    Function: rRadio_OpenRadioPlayer
-    Opens the radio menu UI for the player.
-]]
+local function validateOpenMenuKeyPress(ply, key)
+    if not ply:InVehicle() then return end
+
+    surface.PlaySound("buttons/lightswitch2.wav")
+    rRadio_OpenRadioPlayer()
+end
+
 rRadio_OpenRadioPlayer = function(openSettings)
-    if radioMenuOpen then return end
+    if radioMenuOpen then
+        if IsValid(frame) then
+            frame:Remove()
+        end
+        radioMenuOpen = false
+        return
+    end
     
     local ply = LocalPlayer()
     local entity = ply.currentRadioEntity
@@ -2439,6 +2448,14 @@ rRadio_OpenRadioPlayer = function(openSettings)
             if not IsValid(streamData.entity) then
                 StreamManager:QueueCleanup(entIndex, "menu_closed")
             end
+        end
+    end
+
+    frame.OnKeyCodePressed = function(self, keyCode)
+        local openKey = GetConVar("car_radio_open_key"):GetInt()
+        if keyCode == openKey then
+            validateOpenMenuKeyPress(LocalPlayer(), keyCode)
+            return true
         end
     end
 
@@ -2843,23 +2860,9 @@ rRadio_OpenRadioPlayer = function(openSettings)
     _G.rRadio_OpenRadioPlayer = rRadio_OpenRadioPlayer
 end
 
--- ------------------------------
---      Hooks and Net Messages
--- ------------------------------
-
-hook.Remove("PlayerButtonDown", "OpenRadioPlayerMenu")
-
-hook.Add("Think", "RadioMenuThink", function()
-    local ply = LocalPlayer()
-    if not IsValid(ply) then return end
-    
-    -- Only check when in vehicle
+local function validateOpenMenuKeyPress(ply, key)
     if not ply:InVehicle() then return end
-    
-    local openKey = GetConVar("car_radio_open_key"):GetInt()
-    if not input.IsKeyDown(openKey) then return end
-    
-    -- Check if enough time has passed since last press
+
     local currentTime = CurTime()
     local keyPressDelay = 0.2
     local lastPress = getSafeState("lastKeyPress", 0)
@@ -2898,13 +2901,6 @@ hook.Add("Think", "RadioMenuThink", function()
         return
     end
 
-    -- Debug info
-    utils.DebugPrint("Vehicle Info:", 
-        "\nClass:", actualVehicle:GetClass(),
-        "\nLVS:", actualVehicle.LVS and "true" or "false",
-        "\nParent:", IsValid(actualVehicle:GetParent()) and actualVehicle:GetParent():GetClass() or "none",
-        "\nIsVehicle:", actualVehicle:IsVehicle() and "true" or "false")
-
     -- Validate that the vehicle can use radio
     if not utils.canUseRadio(actualVehicle) then
         utils.DebugPrint("Vehicle cannot use radio")
@@ -2915,6 +2911,49 @@ hook.Add("Think", "RadioMenuThink", function()
     ply.currentRadioEntity = actualVehicle
     surface.PlaySound("buttons/lightswitch2.wav")
     rRadio_OpenRadioPlayer()
+end
+    
+
+-- ------------------------------
+--      Hooks and Net Messages
+-- ------------------------------
+
+local lastKeyState = false
+
+local function handleKeyPress(ply, key)
+    local openKey = GetConVar("car_radio_open_key"):GetInt()
+    if key == openKey then
+        validateOpenMenuKeyPress(ply, key)
+    end
+end
+
+-- Set up key detection based on game mode
+if game.SinglePlayer() then
+    -- Singleplayer Think hook for key detection
+    hook.Add("Think", "RadioMenuKeyPress_SP", function()
+        local ply = LocalPlayer()
+        if not IsValid(ply) then return end
+        
+        local openKey = GetConVar("car_radio_open_key"):GetInt()
+        local currentKeyState = input.IsKeyDown(openKey)
+        
+        if currentKeyState and not lastKeyState then
+            handleKeyPress(ply, openKey)
+        end
+        
+        lastKeyState = currentKeyState
+    end)
+else
+    -- Multiplayer key detection
+    hook.Add("PlayerButtonDown", "RadioMenuKeyPress", function(ply, key)
+        handleKeyPress(ply, key)
+    end)
+end
+
+hook.Add("EntityRemoved", "RadioCleanup", function(entity)
+    if IsValid(entity) then
+        StreamManager:CleanupStream(entity:EntIndex())
+    end
 end)
 
 --[[
@@ -2964,7 +3003,9 @@ end)
 ]]
 net.Receive("rRadio_QueueStream", function()
     if not streamsEnabled then return end
-    
+    local ply = LocalPlayer()
+    if not ply:InVehicle() then return end
+
     local entity = net.ReadEntity()
     if not IsValid(entity) then return end
 
