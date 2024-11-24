@@ -30,9 +30,9 @@ local HUD = {
     },
     EQUALIZER = {
         BARS = 3,
-        MIN_HEIGHT = 0.2,  -- Slightly higher min
-        MAX_HEIGHT = 0.75,  -- Slightly lower max
-        FREQUENCIES = {1.8, 2.2, 2.6}  -- More moderate frequencies
+        MIN_HEIGHT = 0.2,
+        MAX_HEIGHT = 0.75,
+        FREQUENCIES = {1.8, 2.2, 2.6}
     },
     COLORS = {
         BACKGROUND = Color(20, 20, 20, 255),
