@@ -147,6 +147,7 @@ local function UpdateTextStateCache()
 end
 
 local function LerpColor(t, col1, col2)
+    if not col2 then col2 = col1 end
     return Color(
         Lerp(t, col1.r, col2.r),
         Lerp(t, col1.g, col2.g),
@@ -376,11 +377,12 @@ function ENT:DrawHUD(status, stationName, alpha)
         colors = HUD.COLORS.golden_boombox
     else
         local theme = Config.UI or {}
+        local textClr = theme.TextColor or Color(255, 255, 255, 255)
         colors = {
             BACKGROUND = theme.BackgroundColor or Color(0, 0, 0, 255),
-            ACCENT = theme.AccentPrimary or theme.Highlight,
-            TEXT = theme.TextColor or Color(255, 255, 255, 255),
-            INACTIVE = theme.Disabled or theme.TextColor or Color(180, 180, 180, 255)
+            ACCENT     = theme.AccentPrimary or theme.Highlight or textClr,
+            TEXT       = textClr,
+            INACTIVE   = theme.Disabled or textClr
         }
     end
     local background, accent, textColor, inactive = colors.BACKGROUND, colors.ACCENT, colors.TEXT, colors.INACTIVE
@@ -437,8 +439,9 @@ function ENT:GetStatusColor(status)
         end
     end
     local theme = Config.UI or {}
-    local accent = theme.AccentPrimary or theme.Highlight
-    local inactive = theme.Disabled or theme.TextColor
+    local textClr = theme.TextColor or Color(255, 255, 255, 255)
+    local accent = theme.AccentPrimary or theme.Highlight or textClr
+    local inactive = theme.Disabled or textClr
     if status == "playing" then
         return accent
     elseif status == "tuning" then
