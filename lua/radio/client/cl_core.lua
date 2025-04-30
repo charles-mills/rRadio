@@ -1,40 +1,48 @@
 include("radio/shared/sh_config.lua")
-local LanguageManager = include("radio/client/lang/cl_language_manager.lua")
-local themes = include("radio/client/cl_themes.lua") or {}
-local keyCodeMapping = include("radio/client/cl_key_names.lua")
-local utils = include("radio/shared/sh_utils.lua")
+local LanguageManager     = include("radio/client/lang/cl_language_manager.lua")
+local themes              = include("radio/client/cl_themes.lua") or {}
+local keyCodeMapping      = include("radio/client/cl_key_names.lua")
+local utils               = include("radio/shared/sh_utils.lua")
+
 BoomboxStatuses = BoomboxStatuses or {}
-local favoriteCountries = {}
-local favoriteStations = {}
-local dataDir = "rradio"
-local favoriteCountriesFile = dataDir .. "/favorite_countries.json"
-local favoriteStationsFile = dataDir .. "/favorite_stations.json"
+
+local favoriteCountries       = {}
+local favoriteStations        = {}
+local dataDir                 = "rradio"
+local favoriteCountriesFile   = dataDir .. "/favorite_countries.json"
+local favoriteStationsFile    = dataDir .. "/favorite_stations.json"
+
 if not file.IsDir(dataDir, "DATA") then
     file.CreateDir(dataDir)
 end
-local currentFrame = nil
-local settingsMenuOpen = false
-local entityVolumes = {}
+
+local currentFrame          = nil
+local settingsMenuOpen      = false
+local entityVolumes         = {}
 local openRadioMenu
-local lastIconUpdate = 0
-local iconUpdateDelay = 0.1
-local pendingIconUpdate = nil
-local isUpdatingIcon = false
-local isMessageAnimating = false
-local lastKeyPress = 0
-local keyPressDelay = 0.2
-local favoritesMenuOpen = false
+local lastIconUpdate        = 0
+local iconUpdateDelay       = 0.1
+local pendingIconUpdate     = nil
+local isUpdatingIcon        = false
+local isMessageAnimating    = false
+local lastKeyPress          = 0
+local keyPressDelay         = 0.2
+local favoritesMenuOpen     = false
+
 local VOLUME_ICONS = {
     MUTE = Material("hud/vol_mute.png", "smooth"),
-    LOW = Material("hud/vol_down.png", "smooth"),
-    HIGH = Material("hud/vol_up.png", "smooth")
+    LOW  = Material("hud/vol_down.png", "smooth"),
+    HIGH = Material("hud/vol_up.png",   "smooth"),
 }
-local lastPermissionMessage = 0
+
+local lastPermissionMessage      = 0
 local PERMISSION_MESSAGE_COOLDOWN = 3
-local MAX_CLIENT_STATIONS = 10
-local activeStationCount = 0
+local MAX_CLIENT_STATIONS        = 10
+local activeStationCount         = 0
+
 local function updateStationCount()
     local count = 0
+
     for ent, source in pairs(currentRadioSources or {}) do
         if IsValid(ent) and IsValid(source) then
             count = count + 1
@@ -47,19 +55,24 @@ local function updateStationCount()
             end
         end
     end
+
     activeStationCount = count
     return count
 end
+
 currentRadioSources = currentRadioSources or {}
+
 local function LerpColor(t, col1, col2)
     return Color(
-        Lerp(t, col1.r, col2.r),
-        Lerp(t, col1.g, col2.g),
-        Lerp(t, col1.b, col2.b),
+        Lerp(t, col1.r,      col2.r),
+        Lerp(t, col1.g,      col2.g),
+        Lerp(t, col1.b,      col2.b),
         Lerp(t, col1.a or 255, col2.a or 255)
     )
 end
+
 local function reopenRadioMenu(openSettingsMenuFlag)
+
     if openRadioMenu then
         if IsValid(LocalPlayer()) and LocalPlayer().currentRadioEntity then
             timer.Simple(
@@ -73,10 +86,12 @@ local function reopenRadioMenu(openSettingsMenuFlag)
         print("Error: openRadioMenu function not found")
     end
 end
+
 local function ClampVolume(volume)
     local maxVolume = Config.MaxVolume()
     return math.Clamp(volume, 0, maxVolume)
 end
+
 local function loadFavorites()
     if file.Exists(favoriteCountriesFile, "DATA") then
         local success, data =
