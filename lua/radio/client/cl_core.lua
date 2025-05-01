@@ -1,48 +1,40 @@
 include("radio/shared/sh_config.lua")
-local LanguageManager     = include("radio/client/lang/cl_language_manager.lua")
-local themes              = include("radio/client/cl_themes.lua") or {}
-local keyCodeMapping      = include("radio/client/cl_key_names.lua")
-local utils               = include("radio/shared/sh_utils.lua")
-
+local LanguageManager = include("radio/client/lang/cl_language_manager.lua")
+local themes = include("radio/client/cl_themes.lua") or {}
+local keyCodeMapping = include("radio/client/cl_key_names.lua")
+local utils = include("radio/shared/sh_utils.lua")
 BoomboxStatuses = BoomboxStatuses or {}
-
-local favoriteCountries       = {}
-local favoriteStations        = {}
-local dataDir                 = "rradio"
-local favoriteCountriesFile   = dataDir .. "/favorite_countries.json"
-local favoriteStationsFile    = dataDir .. "/favorite_stations.json"
-
+local favoriteCountries = {}
+local favoriteStations = {}
+local dataDir = "rradio"
+local favoriteCountriesFile = dataDir .. "/favorite_countries.json"
+local favoriteStationsFile = dataDir .. "/favorite_stations.json"
 if not file.IsDir(dataDir, "DATA") then
     file.CreateDir(dataDir)
 end
-
-local currentFrame          = nil
-local settingsMenuOpen      = false
-local entityVolumes         = {}
+local currentFrame = nil
+local settingsMenuOpen = false
+local entityVolumes = {}
 local openRadioMenu
-local lastIconUpdate        = 0
-local iconUpdateDelay       = 0.1
-local pendingIconUpdate     = nil
-local isUpdatingIcon        = false
-local isMessageAnimating    = false
-local lastKeyPress          = 0
-local keyPressDelay         = 0.2
-local favoritesMenuOpen     = false
-
+local lastIconUpdate = 0
+local iconUpdateDelay = 0.1
+local pendingIconUpdate = nil
+local isUpdatingIcon = false
+local isMessageAnimating = false
+local lastKeyPress = 0
+local keyPressDelay = 0.2
+local favoritesMenuOpen = false
 local VOLUME_ICONS = {
     MUTE = Material("hud/vol_mute.png", "smooth"),
-    LOW  = Material("hud/vol_down.png", "smooth"),
-    HIGH = Material("hud/vol_up.png",   "smooth"),
+    LOW = Material("hud/vol_down.png", "smooth"),
+    HIGH = Material("hud/vol_up.png", "smooth")
 }
-
-local lastPermissionMessage      = 0
+local lastPermissionMessage = 0
 local PERMISSION_MESSAGE_COOLDOWN = 3
-local MAX_CLIENT_STATIONS        = 10
-local activeStationCount         = 0
-
+local MAX_CLIENT_STATIONS = 10
+local activeStationCount = 0
 local function updateStationCount()
     local count = 0
-
     for ent, source in pairs(currentRadioSources or {}) do
         if IsValid(ent) and IsValid(source) then
             count = count + 1
@@ -50,56 +42,37 @@ local function updateStationCount()
             if IsValid(source) then
                 source:Stop()
             end
-            if currentRadioSources then
-                currentRadioSources[ent] = nil
-            end
+            currentRadioSources[ent] = nil
         end
     end
-
     activeStationCount = count
     return count
 end
-
 currentRadioSources = currentRadioSources or {}
-
 local function LerpColor(t, col1, col2)
     return Color(
-        Lerp(t, col1.r,      col2.r),
-        Lerp(t, col1.g,      col2.g),
-        Lerp(t, col1.b,      col2.b),
+        Lerp(t, col1.r, col2.r),
+        Lerp(t, col1.g, col2.g),
+        Lerp(t, col1.b, col2.b),
         Lerp(t, col1.a or 255, col2.a or 255)
     )
 end
-
 local function reopenRadioMenu(openSettingsMenuFlag)
-
-    if openRadioMenu then
-        if IsValid(LocalPlayer()) and LocalPlayer().currentRadioEntity then
-            timer.Simple(
-                0.1,
-                function()
-                    openRadioMenu(openSettingsMenuFlag)
-                end
-            )
-        end
-    else
-        print("Error: openRadioMenu function not found")
+    if openRadioMenu and IsValid(LocalPlayer()) and LocalPlayer().currentRadioEntity then
+        timer.Simple(0.1, function()
+            openRadioMenu(openSettingsMenuFlag)
+        end)
     end
 end
-
 local function ClampVolume(volume)
     local maxVolume = Config.MaxVolume()
     return math.Clamp(volume, 0, maxVolume)
 end
-
 local function loadFavorites()
     if file.Exists(favoriteCountriesFile, "DATA") then
-        local success, data =
-            pcall(
-            function()
-                return util.JSONToTable(file.Read(favoriteCountriesFile, "DATA"))
-            end
-        )
+        local success, data = pcall(function()
+            return util.JSONToTable(file.Read(favoriteCountriesFile, "DATA"))
+        end)
         if success and data then
             favoriteCountries = {}
             for _, country in ipairs(data) do
@@ -108,18 +81,15 @@ local function loadFavorites()
                 end
             end
         else
-            print("[rRADIO] Error loading favorite countries, resetting file")
+            print("[Radio] Error loading favorite countries, resetting file")
             favoriteCountries = {}
             saveFavorites()
         end
     end
     if file.Exists(favoriteStationsFile, "DATA") then
-        local success, data =
-            pcall(
-            function()
-                return util.JSONToTable(file.Read(favoriteStationsFile, "DATA"))
-            end
-        )
+        local success, data = pcall(function()
+            return util.JSONToTable(file.Read(favoriteStationsFile, "DATA"))
+        end)
         if success and data then
             favoriteStations = {}
             for country, stations in pairs(data) do
@@ -136,7 +106,7 @@ local function loadFavorites()
                 end
             end
         else
-            print("[rRADIO] Error loading favorite stations, resetting file")
+            print("[Radio] Error loading favorite stations, resetting file")
             favoriteStations = {}
             saveFavorites()
         end
@@ -156,7 +126,7 @@ local function saveFavorites()
         end
         file.Write(favoriteCountriesFile, countriesJson)
     else
-        print("[rRADIO] Error converting favorite countries to JSON")
+        print("[Radio] Error converting favorite countries to JSON")
     end
     local favStationsTable = {}
     for country, stations in pairs(favoriteStations) do
@@ -179,26 +149,28 @@ local function saveFavorites()
         end
         file.Write(favoriteStationsFile, stationsJson)
     else
-        print("[rRADIO] Error converting favorite stations to JSON")
+        print("[Radio] Error converting favorite stations to JSON")
     end
 end
 local function createFonts()
-    surface.CreateFont(
-        "Roboto18",
-        {
-            font = "Roboto",
-            size = ScreenScale(5),
-            weight = 500
-        }
-    )
-    surface.CreateFont(
-        "HeaderFont",
-        {
-            font = "Roboto",
-            size = ScreenScale(8),
-            weight = 700
-        }
-    )
+    surface.CreateFont("Montserrat18", {
+        font = "Montserrat",
+        size = ScreenScale(5),
+        weight = 500,
+        shadow = false
+    })
+    surface.CreateFont("MontserratHeader", {
+        font = "Montserrat",
+        size = ScreenScale(8),
+        weight = 700,
+        shadow = false
+    })
+    surface.CreateFont("MontserratButton", {
+        font = "Montserrat",
+        size = ScreenScale(6),
+        weight = 600,
+        shadow = false
+    })
 end
 createFonts()
 local selectedCountry = nil
@@ -237,9 +209,7 @@ local function formatCountryName(name)
 end
 local function updateRadioVolume(station, distanceSqr, isPlayerInCar, entity)
     local entityConfig = getEntityConfig(entity)
-    if not entityConfig then
-        return
-    end
+    if not entityConfig then return end
     local userVolume = ClampVolume(entity:GetNWFloat("Volume", entityConfig.Volume()))
     if userVolume <= 0.02 then
         station:SetVolume(0)
@@ -258,9 +228,7 @@ local function updateRadioVolume(station, distanceSqr, isPlayerInCar, entity)
     station:SetVolume(finalVolume)
 end
 local function PrintCarRadioMessage()
-    if not GetConVar("car_radio_show_messages"):GetBool() then
-        return
-    end
+    if not GetConVar("car_radio_show_messages"):GetBool() then return end
     local currentTime = CurTime()
     local cooldownTime = Config.MessageCooldown()
     if isMessageAnimating or (lastMessageTime and currentTime - lastMessageTime < cooldownTime) then
@@ -271,14 +239,14 @@ local function PrintCarRadioMessage()
     local openKey = GetConVar("car_radio_open_key"):GetInt()
     local keyName = GetKeyName(openKey)
     local scrW, scrH = ScrW(), ScrH()
-    local panelWidth = Scale(300)
-    local panelHeight = Scale(70)
+    local panelWidth = Scale(250)
+    local panelHeight = Scale(60)
     local panel = vgui.Create("DButton")
     panel:SetSize(panelWidth, panelHeight)
     panel:SetPos(scrW, scrH * 0.2)
     panel:SetText("")
     panel:MoveToFront()
-    local animDuration = 1
+    local animDuration = 0.8
     local showDuration = 2
     local startTime = CurTime()
     local alpha = 0
@@ -290,54 +258,28 @@ local function PrintCarRadioMessage()
         isDismissed = true
     end
     panel.Paint = function(self, w, h)
-        local bgColor = Config.UI.HeaderColor
-        local hoverBrightness = self:IsHovered() and 1.2 or 1
-        bgColor =
-            Color(
-            math.min(bgColor.r * hoverBrightness, 255),
-            math.min(bgColor.g * hoverBrightness, 255),
-            math.min(bgColor.b * hoverBrightness, 255),
-            alpha * 255
-        )
-        draw.RoundedBoxEx(12, 0, 0, w, h, bgColor, true, false, true, false)
-        local keyWidth = Scale(40)
-        local keyHeight = Scale(30)
-        local keyX = Scale(20)
-        local keyY = h / 2 - keyHeight / 2
+        local bgColor = Color(255, 255, 255, alpha * 20)
+        draw.RoundedBox(12, 0, 0, w, h, bgColor)
+        surface.SetMaterial(Material("gui/gradient"))
+        surface.SetDrawColor(100, 100, 255, alpha * 50)
+        surface.DrawTexturedRect(0, 0, w, h)
+        local keyWidth = Scale(35)
+        local keyHeight = Scale(25)
+        local keyX = Scale(15)
+        local keyY = h/2 - keyHeight/2
         local pulseScale = 1 + math.sin(pulseValue * math.pi * 2) * 0.05
         local adjustedKeyWidth = keyWidth * pulseScale
         local adjustedKeyHeight = keyHeight * pulseScale
         local adjustedKeyX = keyX - (adjustedKeyWidth - keyWidth) / 2
         local adjustedKeyY = keyY - (adjustedKeyHeight - keyHeight) / 2
-        draw.RoundedBox(
-            6,
-            adjustedKeyX,
-            adjustedKeyY,
-            adjustedKeyWidth,
-            adjustedKeyHeight,
-            ColorAlpha(Config.UI.ButtonColor, alpha * 255)
-        )
-        surface.SetDrawColor(ColorAlpha(Config.UI.TextColor, alpha * 50))
-        surface.DrawLine(keyX + keyWidth + Scale(7), h * 0.3, keyX + keyWidth + Scale(7), h * 0.7)
-        draw.SimpleText(
-            keyName,
-            "Roboto18",
-            keyX + keyWidth / 2,
-            h / 2,
-            ColorAlpha(Config.UI.TextColor, alpha * 255),
-            TEXT_ALIGN_CENTER,
-            TEXT_ALIGN_CENTER
-        )
-        local messageX = keyX + keyWidth + Scale(15)
-        draw.SimpleText(
-            Config.Lang["ToOpenRadio"] or "to open radio",
-            "Roboto18",
-            messageX,
-            h / 2,
-            ColorAlpha(Config.UI.TextColor, alpha * 255),
-            TEXT_ALIGN_LEFT,
-            TEXT_ALIGN_CENTER
-        )
+        draw.RoundedBox(6, adjustedKeyX, adjustedKeyY, adjustedKeyWidth, adjustedKeyHeight,
+            Color(100, 100, 255, alpha * 200))
+        draw.SimpleText(keyName, "Montserrat18", keyX + keyWidth/2, h/2,
+            Color(255, 255, 255, alpha * 255), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+        local messageX = keyX + keyWidth + Scale(10)
+        draw.SimpleText(Config.Lang["ToOpenRadio"] or "to open radio", "Montserrat18",
+            messageX, h/2, Color(255, 255, 255, alpha * 255),
+            TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
     end
     panel.Think = function(self)
         local time = CurTime() - startTime
@@ -368,26 +310,22 @@ end
 local function calculateFontSizeForStopButton(text, buttonWidth, buttonHeight)
     local maxFontSize = buttonHeight * 0.7
     local fontName = "DynamicStopButtonFont"
-    surface.CreateFont(
-        fontName,
-        {
-            font = "Roboto",
-            size = maxFontSize,
-            weight = 700
-        }
-    )
+    surface.CreateFont(fontName, {
+        font = "Montserrat",
+        size = maxFontSize,
+        weight = 700,
+        shadow = false
+    })
     surface.SetFont(fontName)
     local textWidth = surface.GetTextSize(text)
     while textWidth > buttonWidth * 0.9 and maxFontSize > 10 do
         maxFontSize = maxFontSize - 1
-        surface.CreateFont(
-            fontName,
-            {
-                font = "Roboto",
-                size = maxFontSize,
-                weight = 700
-            }
-        )
+        surface.CreateFont(fontName, {
+            font = "Montserrat",
+            size = maxFontSize,
+            weight = 700,
+            shadow = false
+        })
         surface.SetFont(fontName)
         textWidth = surface.GetTextSize(text)
     end
@@ -395,22 +333,32 @@ local function calculateFontSizeForStopButton(text, buttonWidth, buttonHeight)
 end
 local function createStarIcon(parent, country, station, updateList)
     local starIcon = vgui.Create("DImageButton", parent)
-    starIcon:SetSize(Scale(24), Scale(24))
-    starIcon:SetPos(Scale(8), (Scale(40) - Scale(24)) / 2)
-    local isFavorite =
-        station and (favoriteStations[country] and favoriteStations[country][station.name]) or
+    starIcon:SetSize(Scale(20), Scale(20))
+    starIcon:SetPos(Scale(8), (Scale(35) - Scale(20)) / 2)
+    local isFavorite = station and
+        (favoriteStations[country] and favoriteStations[country][station.name]) or
         (not station and favoriteCountries[country])
     starIcon:SetImage(isFavorite and "hud/star_full.png" or "hud/star.png")
+    local hoverLerp = 0
+    starIcon.Paint = function(self, w, h)
+        surface.SetDrawColor(255, 255, 255, 255 * (0.8 + hoverLerp * 0.2))
+        surface.SetMaterial(self:GetMaterial())
+        surface.DrawTexturedRect(0, 0, w, h)
+        if hoverLerp > 0 then
+            surface.SetDrawColor(255, 255, 100, 100 * hoverLerp)
+            surface.DrawTexturedRect(-Scale(2), -Scale(2), w + Scale(4), h + Scale(4))
+        end
+    end
+    starIcon.Think = function(self)
+        hoverLerp = self:IsHovered() and math.Approach(hoverLerp, 1, FrameTime() * 5) or math.Approach(hoverLerp, 0, FrameTime() * 5)
+    end
     starIcon.DoClick = function()
+        surface.PlaySound("buttons/button3.wav")
         if station then
-            if not favoriteStations[country] then
-                favoriteStations[country] = {}
-            end
+            if not favoriteStations[country] then favoriteStations[country] = {} end
             if favoriteStations[country][station.name] then
                 favoriteStations[country][station.name] = nil
-                if next(favoriteStations[country]) == nil then
-                    favoriteStations[country] = nil
-                end
+                if next(favoriteStations[country]) == nil then favoriteStations[country] = nil end
             else
                 favoriteStations[country][station.name] = true
             end
@@ -422,50 +370,40 @@ local function createStarIcon(parent, country, station, updateList)
             end
         end
         saveFavorites()
-        local newIsFavorite =
-            station and (favoriteStations[country] and favoriteStations[country][station.name]) or
+        local newIsFavorite = station and
+            (favoriteStations[country] and favoriteStations[country][station.name]) or
             (not station and favoriteCountries[country])
         starIcon:SetImage(newIsFavorite and "hud/star_full.png" or "hud/star.png")
-        if updateList then
-            updateList()
-        end
+        if updateList then updateList() end
     end
     return starIcon
 end
 local StationData = {}
+local whitelistedStations = {}
 local function LoadStationData()
-    if stationDataLoaded then
-        return
-    end
+    if stationDataLoaded then return end
     StationData = {}
-    local files = file.Find("radio/client/stations/*.lua", "LUA")
-    for _, f in ipairs(files) do
-        local data = include("radio/client/stations/" .. f)
-        if data then
-            for country, stations in pairs(data) do
-                local baseCountry = country:gsub("_(%d+)$", "")
-                if not StationData[baseCountry] then
-                    StationData[baseCountry] = {}
-                end
-                for _, station in ipairs(stations) do
-                    table.insert(StationData[baseCountry], {name = station.n, url = station.u})
-                end
+    local dataFiles = file.Find("radio/client/stations/data_*.lua", "LUA")
+    for _, filename in ipairs(dataFiles) do
+        local data = include("radio/client/stations/" .. filename)
+        for country, stations in pairs(data) do
+            local baseCountry = country:gsub("_(%d+)$", "")
+            if not StationData[baseCountry] then
+                StationData[baseCountry] = {}
             end
-        else
-            print("[rRADIO] Error: Could not load station file " .. f)
+            for _, station in ipairs(stations) do
+                table.insert(StationData[baseCountry], { name = station.n, url = station.u })
+                whitelistedStations[station.u] = true
+            end
         end
     end
     stationDataLoaded = true
 end
 LoadStationData()
 local function populateList(stationListPanel, backButton, searchBox, resetSearch)
-    if not stationListPanel then
-        return
-    end
+    if not stationListPanel then return end
     stationListPanel:Clear()
-    if resetSearch then
-        searchBox:SetText("")
-    end
+    if resetSearch then searchBox:SetText("") end
     local filterText = searchBox:GetText():lower()
     local lang = GetConVar("radio_language"):GetString() or "en"
     local function updateList()
@@ -480,31 +418,33 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                     break
                 end
             end
-            if hasFavorites then
-                break
-            end
+            if hasFavorites then break end
         end
         if hasFavorites then
-            local topSeparator = vgui.Create("DPanel", stationListPanel)
-            topSeparator:Dock(TOP)
-            topSeparator:DockMargin(Scale(5), Scale(5), Scale(5), Scale(5))
-            topSeparator:SetTall(Scale(2))
-            topSeparator.Paint = function(self, w, h)
-                draw.RoundedBox(0, 0, 0, w, h, Config.UI.ButtonColor)
-            end
             local favoritesButton = vgui.Create("DButton", stationListPanel)
             favoritesButton:Dock(TOP)
             favoritesButton:DockMargin(Scale(5), Scale(5), Scale(5), Scale(5))
-            favoritesButton:SetTall(Scale(40))
+            favoritesButton:SetTall(Scale(35))
             favoritesButton:SetText(Config.Lang["FavoriteStations"] or "Favorite Stations")
-            favoritesButton:SetFont("Roboto18")
-            favoritesButton:SetTextColor(Config.UI.TextColor)
+            favoritesButton:SetFont("Montserrat18")
+            favoritesButton:SetTextColor(Color(255, 255, 255))
+            local hoverLerp = 0
             favoritesButton.Paint = function(self, w, h)
-                local bgColor = self:IsHovered() and Config.UI.ButtonHoverColor or Config.UI.ButtonColor
+                local bgColor = Color(255, 255, 255, 20)
                 draw.RoundedBox(8, 0, 0, w, h, bgColor)
+                surface.SetMaterial(Material("gui/gradient"))
+                surface.SetDrawColor(100, 100, 255, hoverLerp * 50)
+                surface.DrawTexturedRect(0, 0, w, h)
+                if hoverLerp > 0 then
+                    surface.SetDrawColor(100, 100, 255, hoverLerp * 100)
+                    surface.DrawOutlinedRect(0, 0, w, h, Scale(2))
+                end
                 surface.SetMaterial(Material("hud/star_full.png"))
-                surface.SetDrawColor(Config.UI.TextColor)
-                surface.DrawTexturedRect(Scale(10), h / 2 - Scale(12), Scale(24), Scale(24))
+                surface.SetDrawColor(255, 255, 255)
+                surface.DrawTexturedRect(Scale(10), h/2 - Scale(10), Scale(20), Scale(20))
+            end
+            favoritesButton.Think = function(self)
+                hoverLerp = self:IsHovered() and math.Approach(hoverLerp, 1, FrameTime() * 5) or math.Approach(hoverLerp, 0, FrameTime() * 5)
             end
             favoritesButton.DoClick = function()
                 surface.PlaySound("buttons/button3.wav")
@@ -516,95 +456,53 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                 end
                 populateList(stationListPanel, backButton, searchBox, true)
             end
-            local bottomSeparator = vgui.Create("DPanel", stationListPanel)
-            bottomSeparator:Dock(TOP)
-            bottomSeparator:DockMargin(Scale(5), Scale(5), Scale(5), Scale(5))
-            bottomSeparator:SetTall(Scale(2))
-            bottomSeparator.Paint = function(self, w, h)
-                draw.RoundedBox(0, 0, 0, w, h, Config.UI.ButtonColor)
-            end
         end
         local countries = {}
         for country, _ in pairs(StationData) do
-            local formattedCountry =
-                country:gsub("_", " "):gsub(
-                "(%a)([%w_']*)",
-                function(first, rest)
-                    return first:upper() .. rest:lower()
-                end
-            )
+            local formattedCountry = country:gsub("_", " "):gsub("(%a)([%w_']*)", function(first, rest)
+                return first:upper() .. rest:lower()
+            end)
             local translatedCountry = LanguageManager:GetCountryTranslation(lang, formattedCountry) or formattedCountry
             if filterText == "" or translatedCountry:lower():find(filterText, 1, true) then
-                table.insert(
-                    countries,
-                    {
-                        original = country,
-                        translated = translatedCountry,
-                        isPrioritized = favoriteCountries[country]
-                    }
-                )
+                table.insert(countries, {
+                    original = country,
+                    translated = translatedCountry,
+                    isPrioritized = favoriteCountries[country]
+                })
             end
         end
-        table.sort(
-            countries,
-            function(a, b)
-                if a.isPrioritized ~= b.isPrioritized then
-                    return a.isPrioritized
-                end
-                return a.translated < b.translated
-            end
-        )
+        table.sort(countries, function(a, b)
+            if a.isPrioritized ~= b.isPrioritized then return a.isPrioritized end
+            return a.translated < b.translated
+        end)
         for _, country in ipairs(countries) do
             local countryButton = vgui.Create("DButton", stationListPanel)
             countryButton:Dock(TOP)
             countryButton:DockMargin(Scale(5), Scale(5), Scale(5), 0)
-            countryButton:SetTall(Scale(40))
-            countryButton:SetText("")
-            countryButton:SetFont("Roboto18")
-            countryButton:SetTextColor(Config.UI.TextColor)
+            countryButton:SetTall(Scale(35))
+            countryButton:SetText(country.translated)
+            countryButton:SetFont("Montserrat18")
+            countryButton:SetTextColor(Color(255, 255, 255))
+            local hoverLerp = 0
             countryButton.Paint = function(self, w, h)
-                draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonColor)
-                if self:IsHovered() then
-                    draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonHoverColor)
+                local bgColor = Color(255, 255, 255, 20)
+                draw.RoundedBox(8, 0, 0, w, h, bgColor)
+                surface.SetMaterial(Material("gui/gradient"))
+                surface.SetDrawColor(100, 100, 255, hoverLerp * 50)
+                surface.DrawTexturedRect(0, 0, w, h)
+                if hoverLerp > 0 then
+                    surface.SetDrawColor(100, 100, 255, hoverLerp * 100)
+                    surface.DrawOutlinedRect(0, 0, w, h, Scale(2))
                 end
-                local text = country.translated
-                surface.SetFont("Roboto18")
-                local regionLeft = Scale(8 + 24 + 8)
-                local rightMargin = Scale(8)
-                local availWidth = w - regionLeft - rightMargin
-                local outputText = text
-                if surface.GetTextSize(text) > availWidth then
-                    local ellipsis = "..."
-                    local len = #text
-                    while len > 0 and surface.GetTextSize(string.sub(text, 1, len) .. ellipsis) > availWidth do
-                        len = len - 1
-                    end
-                    outputText = string.sub(text, 1, len) .. ellipsis
-                end
-                local textWidth = surface.GetTextSize(outputText)
-                local x = w * 0.5
-                if x - textWidth * 0.5 < regionLeft then
-                    x = regionLeft + textWidth * 0.5
-                elseif x + textWidth * 0.5 > w - rightMargin then
-                    x = w - rightMargin - textWidth * 0.5
-                end
-                draw.SimpleText(
-                    outputText,
-                    "Roboto18",
-                    x,
-                    h / 2,
-                    Config.UI.TextColor,
-                    TEXT_ALIGN_CENTER,
-                    TEXT_ALIGN_CENTER
-                )
+            end
+            countryButton.Think = function(self)
+                hoverLerp = self:IsHovered() and math.Approach(hoverLerp, 1, FrameTime() * 5) or math.Approach(hoverLerp, 0, FrameTime() * 5)
             end
             createStarIcon(countryButton, country.original, nil, updateList)
             countryButton.DoClick = function()
                 surface.PlaySound("buttons/button3.wav")
                 selectedCountry = country.original
-                if backButton then
-                    backButton:SetVisible(true)
-                end
+                if backButton then backButton:SetVisible(true) end
                 populateList(stationListPanel, backButton, searchBox, true)
             end
         end
@@ -618,99 +516,54 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
             if StationData[country] then
                 for _, station in ipairs(StationData[country]) do
                     if stations[station.name] and (filterText == "" or station.name:lower():find(filterText, 1, true)) then
-                        local formattedCountry =
-                            country:gsub("_", " "):gsub(
-                            "(%a)([%w_']*)",
-                            function(first, rest)
-                                return first:upper() .. rest:lower()
-                            end
-                        )
-                        local translatedName =
-                            LanguageManager:GetCountryTranslation(lang, formattedCountry) or formattedCountry
-                        table.insert(
-                            favoritesList,
-                            {
-                                station = station,
-                                country = country,
-                                countryName = translatedName
-                            }
-                        )
+                        local formattedCountry = country:gsub("_", " "):gsub("(%a)([%w_']*)", function(first, rest)
+                            return first:upper() .. rest:lower()
+                        end)
+                        local translatedName = LanguageManager:GetCountryTranslation(lang, formattedCountry) or formattedCountry
+                        table.insert(favoritesList, {
+                            station = station,
+                            country = country,
+                            countryName = translatedName
+                        })
                     end
                 end
             end
         end
-        table.sort(
-            favoritesList,
-            function(a, b)
-                if a.countryName == b.countryName then
-                    return a.station.name < b.station.name
-                end
-                return a.countryName < b.countryName
+        table.sort(favoritesList, function(a, b)
+            if a.countryName == b.countryName then
+                return a.station.name < b.station.name
             end
-        )
+            return a.countryName < b.countryName
+        end)
         for _, favorite in ipairs(favoritesList) do
             local stationButton = vgui.Create("DButton", stationListPanel)
             stationButton:Dock(TOP)
             stationButton:DockMargin(Scale(5), Scale(5), Scale(5), 0)
-            stationButton:SetTall(Scale(40))
-            stationButton:SetText("")
-            stationButton:SetFont("Roboto18")
-            stationButton:SetTextColor(Config.UI.TextColor)
+            stationButton:SetTall(Scale(35))
+            stationButton:SetText(favorite.countryName .. " - " .. favorite.station.name)
+            stationButton:SetFont("Montserrat18")
+            stationButton:SetTextColor(Color(255, 255, 255))
+            local hoverLerp = 0
             stationButton.Paint = function(self, w, h)
-                local entity = LocalPlayer().currentRadioEntity
-                if
-                    IsValid(entity) and currentlyPlayingStations[entity] and
-                        currentlyPlayingStations[entity].name == favorite.station.name
-                 then
-                    draw.RoundedBox(8, 0, 0, w, h, Config.UI.PlayingButtonColor)
-                else
-                    draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonColor)
-                    if self:IsHovered() then
-                        draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonHoverColor)
-                    end
+                local bgColor = IsValid(LocalPlayer().currentRadioEntity) and currentlyPlayingStations[LocalPlayer().currentRadioEntity] and
+                    currentlyPlayingStations[LocalPlayer().currentRadioEntity].name == favorite.station.name and
+                    Color(100, 100, 255, 50) or Color(255, 255, 255, 20)
+                draw.RoundedBox(8, 0, 0, w, h, bgColor)
+                if hoverLerp > 0 then
+                    surface.SetDrawColor(100, 100, 255, hoverLerp * 100)
+                    surface.DrawOutlinedRect(0, 0, w, h, Scale(2))
                 end
-                local text = favorite.countryName .. " - " .. favorite.station.name
-                surface.SetFont("Roboto18")
-                local regionLeft = Scale(8 + 24 + 8)
-                local rightMargin = Scale(8)
-                local availWidth = w - regionLeft - rightMargin
-                local outputText = text
-                if surface.GetTextSize(text) > availWidth then
-                    local ellipsis = "..."
-                    local len = #text
-                    while len > 0 and surface.GetTextSize(string.sub(text, 1, len) .. ellipsis) > availWidth do
-                        len = len - 1
-                    end
-                    outputText = string.sub(text, 1, len) .. ellipsis
-                end
-                local textWidth = surface.GetTextSize(outputText)
-                local x = w * 0.5
-                if x - textWidth * 0.5 < regionLeft then
-                    x = regionLeft + textWidth * 0.5
-                elseif x + textWidth * 0.5 > w - rightMargin then
-                    x = w - rightMargin - textWidth * 0.5
-                end
-                draw.SimpleText(
-                    outputText,
-                    "Roboto18",
-                    x,
-                    h / 2,
-                    Config.UI.TextColor,
-                    TEXT_ALIGN_CENTER,
-                    TEXT_ALIGN_CENTER
-                )
+            end
+            stationButton.Think = function(self)
+                hoverLerp = self:IsHovered() and math.Approach(hoverLerp, 1, FrameTime() * 5) or math.Approach(hoverLerp, 0, FrameTime() * 5)
             end
             createStarIcon(stationButton, favorite.country, favorite.station, updateList)
             stationButton.DoClick = function()
                 local currentTime = CurTime()
-                if currentTime - lastStationSelectTime < 2 then
-                    return
-                end
+                if currentTime - lastStationSelectTime < 2 then return end
                 surface.PlaySound("buttons/button17.wav")
                 local entity = LocalPlayer().currentRadioEntity
-                if not IsValid(entity) then
-                    return
-                end
+                if not IsValid(entity) then return end
                 if currentlyPlayingStations[entity] then
                     net.Start("StopCarRadioStation")
                     net.WriteEntity(entity)
@@ -718,23 +571,18 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                 end
                 local entityConfig = getEntityConfig(entity)
                 local volume = entityVolumes[entity] or (entityConfig and entityConfig.Volume()) or 0.5
-                timer.Simple(
-                    0,
-                    function()
-                        if not IsValid(entity) then
-                            return
-                        end
-                        net.Start("PlayCarRadioStation")
-                        net.WriteEntity(entity)
-                        net.WriteString(favorite.station.name)
-                        net.WriteString(favorite.station.url)
-                        net.WriteFloat(volume)
-                        net.SendToServer()
-                        currentlyPlayingStations[entity] = favorite.station
-                        lastStationSelectTime = currentTime
-                        populateList(stationListPanel, backButton, searchBox, false)
-                    end
-                )
+                timer.Simple(0, function()
+                    if not IsValid(entity) then return end
+                    net.Start("PlayCarRadioStation")
+                    net.WriteEntity(entity)
+                    net.WriteString(favorite.station.name)
+                    net.WriteString(favorite.station.url)
+                    net.WriteFloat(volume)
+                    net.SendToServer()
+                    currentlyPlayingStations[entity] = favorite.station
+                    lastStationSelectTime = currentTime
+                    populateList(stationListPanel, backButton, searchBox, false)
+                end)
             end
         end
     else
@@ -743,79 +591,42 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
         for _, station in ipairs(stations) do
             if station and station.name and (filterText == "" or station.name:lower():find(filterText, 1, true)) then
                 local isFavorite = favoriteStations[selectedCountry] and favoriteStations[selectedCountry][station.name]
-                table.insert(favoriteStationsList, {station = station, favorite = isFavorite})
+                table.insert(favoriteStationsList, { station = station, favorite = isFavorite })
             end
         end
-        table.sort(
-            favoriteStationsList,
-            function(a, b)
-                if a.favorite ~= b.favorite then
-                    return a.favorite
-                end
-                return (a.station.name or "") < (b.station.name or "")
-            end
-        )
+        table.sort(favoriteStationsList, function(a, b)
+            if a.favorite ~= b.favorite then return a.favorite end
+            return (a.station.name or "") < (b.station.name or "")
+        end)
         for _, stationData in ipairs(favoriteStationsList) do
             local station = stationData.station
             local stationButton = vgui.Create("DButton", stationListPanel)
             stationButton:Dock(TOP)
             stationButton:DockMargin(Scale(5), Scale(5), Scale(5), 0)
-            stationButton:SetTall(Scale(40))
-            stationButton:SetText("")
-            stationButton:SetFont("Roboto18")
-            stationButton:SetTextColor(Config.UI.TextColor)
+            stationButton:SetTall(Scale(35))
+            stationButton:SetText(station.name)
+            stationButton:SetFont("Montserrat18")
+            stationButton:SetTextColor(Color(255, 255, 255))
+            local hoverLerp = 0
             stationButton.Paint = function(self, w, h)
-                local entity = LocalPlayer().currentRadioEntity
-                if IsValid(entity) and station == currentlyPlayingStations[entity] then
-                    draw.RoundedBox(8, 0, 0, w, h, Config.UI.PlayingButtonColor)
-                else
-                    draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonColor)
-                    if self:IsHovered() then
-                        draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonHoverColor)
-                    end
+                local bgColor = IsValid(LocalPlayer().currentRadioEntity) and station == currentlyPlayingStations[LocalPlayer().currentRadioEntity] and
+                    Color(100, 100, 255, 50) or Color(255, 255, 255, 20)
+                draw.RoundedBox(8, 0, 0, w, h, bgColor)
+                if hoverLerp > 0 then
+                    surface.SetDrawColor(100, 100, 255, hoverLerp * 100)
+                    surface.DrawOutlinedRect(0, 0, w, h, Scale(2))
                 end
-                local text = station.name
-                surface.SetFont("Roboto18")
-                local regionLeft = Scale(8 + 24 + 8)
-                local rightMargin = Scale(8)
-                local availWidth = w - regionLeft - rightMargin
-                local outputText = text
-                if surface.GetTextSize(text) > availWidth then
-                    local ellipsis = "..."
-                    local len = #text
-                    while len > 0 and surface.GetTextSize(string.sub(text, 1, len) .. ellipsis) > availWidth do
-                        len = len - 1
-                    end
-                    outputText = string.sub(text, 1, len) .. ellipsis
-                end
-                local textWidth = surface.GetTextSize(outputText)
-                local x = w * 0.5
-                if x - textWidth * 0.5 < regionLeft then
-                    x = regionLeft + textWidth * 0.5
-                elseif x + textWidth * 0.5 > w - rightMargin then
-                    x = w - rightMargin - textWidth * 0.5
-                end
-                draw.SimpleText(
-                    outputText,
-                    "Roboto18",
-                    x,
-                    h / 2,
-                    Config.UI.TextColor,
-                    TEXT_ALIGN_CENTER,
-                    TEXT_ALIGN_CENTER
-                )
+            end
+            stationButton.Think = function(self)
+                hoverLerp = self:IsHovered() and math.Approach(hoverLerp, 1, FrameTime() * 5) or math.Approach(hoverLerp, 0, FrameTime() * 5)
             end
             createStarIcon(stationButton, selectedCountry, station, updateList)
             stationButton.DoClick = function()
                 local currentTime = CurTime()
-                if currentTime - lastStationSelectTime < 2 then
-                    return
-                end
+                if currentTime - lastStationSelectTime < 2 then return end
                 surface.PlaySound("buttons/button17.wav")
                 local entity = LocalPlayer().currentRadioEntity
-                if not IsValid(entity) then
-                    return
-                end
+                if not IsValid(entity) then return end
                 if currentlyPlayingStations[entity] then
                     net.Start("StopCarRadioStation")
                     net.WriteEntity(entity)
@@ -823,23 +634,18 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                 end
                 local entityConfig = getEntityConfig(entity)
                 local volume = entityVolumes[entity] or (entityConfig and entityConfig.Volume()) or 0.5
-                timer.Simple(
-                    0,
-                    function()
-                        if not IsValid(entity) then
-                            return
-                        end
-                        net.Start("PlayCarRadioStation")
-                        net.WriteEntity(entity)
-                        net.WriteString(station.name)
-                        net.WriteString(station.url)
-                        net.WriteFloat(volume)
-                        net.SendToServer()
-                        currentlyPlayingStations[entity] = station
-                        lastStationSelectTime = currentTime
-                        populateList(stationListPanel, backButton, searchBox, false)
-                    end
-                )
+                timer.Simple(0, function()
+                    if not IsValid(entity) then return end
+                    net.Start("PlayCarRadioStation")
+                    net.WriteEntity(entity)
+                    net.WriteString(station.name)
+                    net.WriteString(station.url)
+                    net.WriteFloat(volume)
+                    net.SendToServer()
+                    currentlyPlayingStations[entity] = station
+                    lastStationSelectTime = currentTime
+                    populateList(stationListPanel, backButton, searchBox, false)
+                end)
             end
         end
         if backButton then
@@ -850,10 +656,18 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
 end
 local function openSettingsMenu(parentFrame, backButton)
     settingsFrame = vgui.Create("DPanel", parentFrame)
-    settingsFrame:SetSize(parentFrame:GetWide() - Scale(20), parentFrame:GetTall() - Scale(50) - Scale(10))
-    settingsFrame:SetPos(Scale(10), Scale(50))
+    settingsFrame:SetSize(parentFrame:GetWide() - Scale(20), parentFrame:GetTall() - Scale(50))
+    settingsFrame:SetPos(parentFrame:GetWide(), Scale(50))
+    local slideLerp = 0
     settingsFrame.Paint = function(self, w, h)
-        draw.RoundedBox(8, 0, 0, w, h, Config.UI.BackgroundColor)
+        draw.RoundedBox(8, 0, 0, w, h, Color(255, 255, 255, 20))
+        surface.SetMaterial(Material("gui/gradient"))
+        surface.SetDrawColor(100, 100, 255, 50)
+        surface.DrawTexturedRect(0, 0, w, h)
+    end
+    settingsFrame.Think = function(self)
+        slideLerp = math.Approach(slideLerp, 1, FrameTime() * 5)
+        self:SetPos(Lerp(slideLerp, parentFrame:GetWide(), Scale(10)), Scale(50))
     end
     local scrollPanel = vgui.Create("DScrollPanel", settingsFrame)
     scrollPanel:Dock(FILL)
@@ -861,163 +675,84 @@ local function openSettingsMenu(parentFrame, backButton)
     local function addHeader(text, isFirst)
         local header = vgui.Create("DLabel", scrollPanel)
         header:SetText(text)
-        header:SetFont("Roboto18")
-        header:SetTextColor(Config.UI.TextColor)
+        header:SetFont("MontserratHeader")
+        header:SetTextColor(Color(255, 255, 255))
         header:Dock(TOP)
-        if isFirst then
-            header:DockMargin(0, Scale(5), 0, Scale(0))
-        else
-            header:DockMargin(0, Scale(10), 0, Scale(5))
-        end
+        header:DockMargin(0, isFirst and Scale(5) or Scale(10), 0, Scale(5))
         header:SetContentAlignment(4)
     end
     local function addDropdown(text, choices, currentValue, onSelect)
         local container = vgui.Create("DPanel", scrollPanel)
         container:Dock(TOP)
-        container:SetTall(Scale(50))
+        container:SetTall(Scale(45))
         container:DockMargin(0, 0, 0, Scale(5))
+        local hoverLerp = 0
         container.Paint = function(self, w, h)
-            draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonColor)
+            draw.RoundedBox(8, 0, 0, w, h, Color(255, 255, 255, 20))
+            if hoverLerp > 0 then
+                surface.SetDrawColor(100, 100, 255, hoverLerp * 100)
+                surface.DrawOutlinedRect(0, 0, w, h, Scale(2))
+            end
         end
-
+        container.Think = function(self)
+            hoverLerp = self:IsHovered() and math.Approach(hoverLerp, 1, FrameTime() * 5) or math.Approach(hoverLerp, 0, FrameTime() * 5)
+        end
         local label = vgui.Create("DLabel", container)
         label:SetText(text)
-        label:SetFont("Roboto18")
-        label:SetTextColor(Config.UI.TextColor)
+        label:SetFont("Montserrat18")
+        label:SetTextColor(Color(255, 255, 255))
         label:Dock(LEFT)
         label:DockMargin(Scale(10), 0, 0, 0)
         label:SetContentAlignment(4)
         label:SizeToContents()
-
         local dropdown = vgui.Create("DComboBox", container)
         dropdown:Dock(RIGHT)
-        dropdown:SetWide(Scale(150))
+        dropdown:SetWide(Scale(130))
         dropdown:DockMargin(0, Scale(5), Scale(10), Scale(5))
         dropdown:SetValue(currentValue)
-        dropdown:SetTextColor(Config.UI.TextColor)
-        dropdown:SetFont("Roboto18")
-        dropdown:SetSortItems(false)
-
-        -- Custom dropdown styling
+        dropdown:SetTextColor(Color(255, 255, 255))
+        dropdown:SetFont("Montserrat18")
         dropdown.Paint = function(self, w, h)
-            draw.RoundedBox(6, 0, 0, w, h, Config.UI.SearchBoxColor)
-            -- Draw arrow
-            surface.SetDrawColor(Config.UI.TextColor)
-            local arrowSize = Scale(8)
-            local x = w - arrowSize - Scale(5)
-            local y = h / 2 - arrowSize / 2
-            if self:IsMenuOpen() then
-                draw.NoTexture()
-                surface.DrawPoly(
-                    {
-                        {x = x, y = y + arrowSize},
-                        {x = x + arrowSize, y = y + arrowSize},
-                        {x = x + arrowSize / 2, y = y}
-                    }
-                )
-            else
-                draw.NoTexture()
-                surface.DrawPoly(
-                    {
-                        {x = x, y = y},
-                        {x = x + arrowSize, y = y},
-                        {x = x + arrowSize / 2, y = y + arrowSize}
-                    }
-                )
-            end
-            self:DrawTextEntryText(Config.UI.TextColor, Config.UI.ButtonHoverColor, Config.UI.TextColor)
+            draw.RoundedBox(6, 0, 0, w, h, Color(255, 255, 255, 20))
+            self:DrawTextEntryText(Color(255, 255, 255), Color(100, 100, 255), Color(255, 255, 255))
         end
-
-        -- Customize dropdown menu
-        local oldOpenMenu = dropdown.OpenMenu
-        dropdown.OpenMenu = function(self)
-            if IsValid(self.Menu) then
-                self.Menu:Remove()
-                self.Menu = nil
-            end
-
-            local menu = DermaMenu()
-            self.Menu = menu
-
-            menu:SetMaxHeight(Scale(200)) -- Limit height
-            menu.Paint = function(pnl, w, h)
-                draw.RoundedBox(6, 0, 0, w, h, Config.UI.SearchBoxColor)
-            end
-
-            -- Add choices
-            for _, choice in ipairs(choices) do
-                local option =
-                    menu:AddOption(
-                    choice.name,
-                    function()
-                        self:ChooseOption(choice.name, choice.data)
-                        if onSelect then
-                            onSelect(self, _, choice.name, choice.data)
-                        end
-                    end
-                )
-                -- Customize option
-                option:SetTextColor(Config.UI.TextColor)
-                option:SetFont("Roboto18")
-                option.Paint = function(pnl, w, h)
-                    if pnl:IsHovered() then
-                        draw.RoundedBox(4, 2, 0, w - 4, h, Config.UI.ButtonHoverColor)
-                    end
-                end
-            end
-
-            -- Position the menu
-            local x, y = self:LocalToScreen(0, self:GetTall())
-            menu:SetMinimumWidth(self:GetWide())
-            menu:Open(x, y, false, self)
-
-            -- Custom scrollbar for menu
-            if IsValid(menu.VBar) then
-                menu.VBar:SetWide(Scale(8))
-                menu.VBar:DockMargin(0, Scale(2), Scale(2), Scale(2))
-                -- Customize scrollbar
-                menu.VBar.Paint = function(_, w, h)
-                    draw.RoundedBox(4, 0, 0, w, h, Config.UI.ScrollbarColor)
-                end
-                menu.VBar.btnGrip.Paint = function(_, w, h)
-                    draw.RoundedBox(4, 0, 0, w, h, Config.UI.ScrollbarGripColor)
-                end
-                menu.VBar.btnUp.Paint = function()
-                end
-                menu.VBar.btnDown.Paint = function()
-                end
-            end
-        end
-
         for _, choice in ipairs(choices) do
             dropdown:AddChoice(choice.name, choice.data)
         end
-
+        dropdown.OnSelect = onSelect
         return dropdown
     end
     local function addCheckbox(text, convar)
         local container = vgui.Create("DPanel", scrollPanel)
         container:Dock(TOP)
-        container:SetTall(Scale(40))
+        container:SetTall(Scale(35))
         container:DockMargin(0, 0, 0, Scale(5))
+        local hoverLerp = 0
         container.Paint = function(self, w, h)
-            draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonColor)
+            draw.RoundedBox(8, 0, 0, w, h, Color(255, 255, 255, 20))
+            if hoverLerp > 0 then
+                surface.SetDrawColor(100, 100, 255, hoverLerp * 100)
+                surface.DrawOutlinedRect(0, 0, w, h, Scale(2))
+            end
+        end
+        container.Think = function(self)
+            hoverLerp = self:IsHovered() and math.Approach(hoverLerp, 1, FrameTime() * 5) or math.Approach(hoverLerp, 0, FrameTime() * 5)
         end
         local checkbox = vgui.Create("DCheckBox", container)
         checkbox:SetPos(Scale(10), (container:GetTall() - Scale(20)) / 2)
         checkbox:SetSize(Scale(20), Scale(20))
         checkbox:SetConVar(convar)
         checkbox.Paint = function(self, w, h)
-            draw.RoundedBox(4, 0, 0, w, h, Config.UI.SearchBoxColor)
+            draw.RoundedBox(4, 0, 0, w, h, Color(255, 255, 255, 20))
             if self:GetChecked() then
-                surface.SetDrawColor(Config.UI.TextColor)
+                surface.SetDrawColor(100, 100, 255)
                 surface.DrawRect(Scale(4), Scale(4), w - Scale(8), h - Scale(8))
             end
         end
         local label = vgui.Create("DLabel", container)
         label:SetText(text)
-        label:SetTextColor(Config.UI.TextColor)
-        label:SetFont("Roboto18")
+        label:SetTextColor(Color(255, 255, 255))
+        label:SetFont("Montserrat18")
         label:SizeToContents()
         label:SetPos(Scale(40), (container:GetTall() - label:GetTall()) / 2)
         checkbox.OnChange = function(self, value)
@@ -1034,20 +769,15 @@ local function openSettingsMenu(parentFrame, backButton)
     end
     local currentTheme = GetConVar("radio_theme"):GetString()
     local currentThemeName = currentTheme:gsub("^%l", string.upper)
-    addDropdown(
-        Config.Lang["SelectTheme"] or "Select Theme",
-        themeChoices,
-        currentThemeName,
-        function(_, _, value)
-            local lowerValue = value:lower()
-            if themes and themes[lowerValue] then
-                RunConsoleCommand("radio_theme", lowerValue)
-                Config.UI = themes[lowerValue]
-                parentFrame:Close()
-                reopenRadioMenu(true)
-            end
+    addDropdown(Config.Lang["SelectTheme"] or "Select Theme", themeChoices, currentThemeName, function(_, _, value)
+        local lowerValue = value:lower()
+        if themes and themes[lowerValue] then
+            RunConsoleCommand("radio_theme", lowerValue)
+            Config.UI = themes[lowerValue]
+            parentFrame:Close()
+            reopenRadioMenu(true)
         end
-    )
+    end)
     addHeader(Config.Lang["LanguageSelection"] or "Language Selection")
     local languageChoices = {}
     for code, name in pairs(LanguageManager:GetAvailableLanguages()) do
@@ -1055,67 +785,47 @@ local function openSettingsMenu(parentFrame, backButton)
     end
     local currentLanguage = GetConVar("radio_language"):GetString()
     local currentLanguageName = LanguageManager:GetLanguageName(currentLanguage)
-    addDropdown(
-        Config.Lang["SelectLanguage"] or "Select Language",
-        languageChoices,
-        currentLanguageName,
-        function(_, _, _, data)
-            RunConsoleCommand("radio_language", data)
-            LanguageManager:SetLanguage(data)
-            Config.Lang = LanguageManager.translations[data]
-            formattedCountryNames = {}
-            stationDataLoaded = false
-            LoadStationData()
-            if IsValid(currentFrame) then
-                currentFrame:Close()
-                timer.Simple(
-                    0.1,
-                    function()
-                        if openRadioMenu then
-                            radioMenuOpen = false
-                            selectedCountry = nil
-                            settingsMenuOpen = false
-                            favoritesMenuOpen = false
-                            openRadioMenu(true)
-                        end
-                    end
-                )
-            end
+    addDropdown(Config.Lang["SelectLanguage"] or "Select Language", languageChoices, currentLanguageName, function(_, _, _, data)
+        RunConsoleCommand("radio_language", data)
+        LanguageManager:SetLanguage(data)
+        Config.Lang = LanguageManager.translations[data]
+        formattedCountryNames = {}
+        stationDataLoaded = false
+        LoadStationData()
+        if IsValid(currentFrame) then
+            currentFrame:Close()
+            timer.Simple(0.1, function()
+                if openRadioMenu then
+                    radioMenuOpen = false
+                    selectedCountry = nil
+                    settingsMenuOpen = false
+                    favoritesMenuOpen = false
+                    openRadioMenu(true)
+                end
+            end)
         end
-    )
-    addHeader(Config.Lang["KeyBinds"] or "Key Binds")
+    end)
+    addHeader(Config.Lang["SelectKeyToOpenRadioMenu"] or "Select Key to Open Radio Menu")
     local keyChoices = {}
     if keyCodeMapping then
         for keyCode, keyName in pairs(keyCodeMapping) do
             table.insert(keyChoices, {name = keyName, data = keyCode})
         end
-        table.sort(
-            keyChoices,
-            function(a, b)
-                return a.name < b.name
-            end
-        )
+        table.sort(keyChoices, function(a, b) return a.name < b.name end)
     else
         table.insert(keyChoices, {name = "K", data = KEY_K})
     end
     local currentKey = GetConVar("car_radio_open_key"):GetInt()
     local currentKeyName = (keyCodeMapping and keyCodeMapping[currentKey]) or "K"
-    addDropdown(
-        Config.Lang["SelectKey"] or "Select Key",
-        keyChoices,
-        currentKeyName,
-        function(_, _, _, data)
-            RunConsoleCommand("car_radio_open_key", data)
-        end
-    )
+    addDropdown(Config.Lang["SelectKey"] or "Select Key", keyChoices, currentKeyName, function(_, _, _, data)
+        RunConsoleCommand("car_radio_open_key", data)
+    end)
     addHeader(Config.Lang["GeneralOptions"] or "General Options")
-    addCheckbox(Config.Lang["ShowCarMessages"] or "Show Car Radio Animation", "car_radio_show_messages")
-    addCheckbox(Config.Lang["ShowBoomboxHUD"] or "Show Boombox HUD", "boombox_show_text")
+    addCheckbox(Config.Lang["ShowCarMessages"] or "Show Car Radio Messages", "car_radio_show_messages")
+    addCheckbox(Config.Lang["ShowBoomboxHUD"] or "Show Boombox Hover Text", "boombox_show_text")
     if LocalPlayer():IsSuperAdmin() then
         local currentEntity = LocalPlayer().currentRadioEntity
-        local isBoombox =
-            IsValid(currentEntity) and
-            (currentEntity:GetClass() == "boombox" or currentEntity:GetClass() == "golden_boombox")
+        local isBoombox = IsValid(currentEntity) and (currentEntity:GetClass() == "boombox" or currentEntity:GetClass() == "golden_boombox")
         if isBoombox then
             addHeader(Config.Lang["SuperadminSettings"] or "Superadmin Settings")
             local permanentCheckbox = addCheckbox(Config.Lang["MakeBoomboxPermanent"] or "Make Boombox Permanent", "")
@@ -1135,79 +845,65 @@ local function openSettingsMenu(parentFrame, backButton)
                     net.SendToServer()
                 end
             end
-            net.Receive(
-                "BoomboxPermanentConfirmation",
-                function()
-                    local message = net.ReadString()
-                    chat.AddText(Color(0, 255, 0), "[Boombox] ", Color(255, 255, 255), message)
-                    if string.find(message, "marked as permanent") then
-                        permanentCheckbox:SetChecked(true)
-                    elseif string.find(message, "permanence has been removed") then
-                        permanentCheckbox:SetChecked(false)
-                    end
+            net.Receive("BoomboxPermanentConfirmation", function()
+                local message = net.ReadString()
+                chat.AddText(Color(0, 255, 0), "[Boombox] ", Color(255, 255, 255), message)
+                if string.find(message, "marked as permanent") then
+                    permanentCheckbox:SetChecked(true)
+                elseif string.find(message, "permanence has been removed") then
+                    permanentCheckbox:SetChecked(false)
                 end
-            )
+            end)
         end
     end
-    local footerHeight = Scale(60)
+    local footerHeight = Scale(50)
     local footer = vgui.Create("DButton", settingsFrame)
     footer:SetSize(settingsFrame:GetWide(), footerHeight)
     footer:SetPos(0, settingsFrame:GetTall() - footerHeight)
-    footer:SetText("")
+    local hoverLerp = 0
     footer.Paint = function(self, w, h)
-        draw.RoundedBox(8, 0, 0, w, h, self:IsHovered() and Config.UI.BackgroundColor or Config.UI.BackgroundColor)
+        draw.RoundedBox(8, 0, 0, w, h, Color(255, 255, 255, 20))
+        if hoverLerp > 0 then
+            surface.SetDrawColor(100, 100, 255, hoverLerp * 100)
+            surface.DrawOutlinedRect(0, 0, w, h, Scale(2))
+        end
+    end
+    footer.Think = function(self)
+        hoverLerp = self:IsHovered() and math.Approach(hoverLerp, 1, FrameTime() * 5) or math.Approach(hoverLerp, 0, FrameTime() * 5)
     end
     footer.DoClick = function()
-    end
-    local githubIcon = vgui.Create("DImageButton", footer)
-    githubIcon:SetSize(Scale(32), Scale(32))
-    githubIcon:SetPos(Scale(10), (footerHeight - Scale(32)) / 2)
-    githubIcon.Paint = function(self, w, h)
-        surface.SetDrawColor(Config.UI.TextColor)
-        surface.SetMaterial(Material("hud/github.png"))
-        surface.DrawTexturedRect(0, 0, w, h)
-    end
-    githubIcon.DoClick = function()
         gui.OpenURL("https://github.com/charles-mills/rRadio")
     end
-
-    local steamIcon = vgui.Create("DImageButton", footer)
-    steamIcon:SetSize(Scale(32), Scale(32))
-    steamIcon:SetPos(Scale(50), (footerHeight - Scale(32)) / 2)
-    steamIcon.Paint = function(self, w, h)
-        surface.SetDrawColor(Config.UI.TextColor)
-        surface.SetMaterial(Material("hud/steam.png"))
+    local githubIcon = vgui.Create("DImage", footer)
+    githubIcon:SetSize(Scale(28), Scale(28))
+    githubIcon:SetPos(Scale(10), (footerHeight - Scale(28)) / 2)
+    githubIcon:SetImage("hud/github.png")
+    local iconHoverLerp = 0
+    githubIcon.Paint = function(self, w, h)
+        surface.SetDrawColor(255, 255, 255, 255 * (0.8 + iconHoverLerp * 0.2))
+        surface.SetMaterial(Material("hud/github.png"))
         surface.DrawTexturedRect(0, 0, w, h)
+        if iconHoverLerp > 0 then
+            surface.SetDrawColor(100, 100, 255, 100 * iconHoverLerp)
+            surface.DrawTexturedRect(-Scale(2), -Scale(2), w + Scale(4), h + Scale(4))
+        end
     end
-    steamIcon.DoClick = function()
-        gui.OpenURL("https://steamcommunity.com/id/rammel")
+    githubIcon.Think = function(self)
+        iconHoverLerp = self:IsMouseInputEnabled() and math.Approach(iconHoverLerp, 1, FrameTime() * 5) or math.Approach(iconHoverLerp, 0, FrameTime() * 5)
     end
-
-    local discordIcon = vgui.Create("DImageButton", footer)
-    discordIcon:SetSize(Scale(32), Scale(32))
-    discordIcon:SetPos(Scale(90), (footerHeight - Scale(32)) / 2)
-    discordIcon.Paint = function(self, w, h)
-        surface.SetDrawColor(Config.UI.TextColor)
-        surface.SetMaterial(Material("hud/discord.png"))
-        surface.DrawTexturedRect(0, 0, w, h)
-    end
-    discordIcon.DoClick = function()
-        gui.OpenURL("https://discordapp.com/users/1265373956685299836")
-    end
+    local contributeLabel = vgui.Create("DLabel", footer)
+    contributeLabel:SetText(Config.Lang["Contribute"] or "Contribute on GitHub")
+    contributeLabel:SetFont("Montserrat18")
+    contributeLabel:SetTextColor(Color(255, 255, 255))
+    contributeLabel:SizeToContents()
+    contributeLabel:SetPos(Scale(45), footerHeight / 2 - contributeLabel:GetTall() / 2)
 end
 openRadioMenu = function(openSettings)
-    if radioMenuOpen then
-        return
-    end
+    currentKey = GetConVar("car_radio_open_key"):GetInt()
+    if radioMenuOpen then return end
     local ply = LocalPlayer()
     local entity = ply.currentRadioEntity
-    if not IsValid(entity) then
-        return
-    end
-    if not utils.canUseRadio(entity) then
-        chat.AddText(Color(255, 0, 0), "[rRADIO] This seat cannot use the radio.")
-        return
-    end
+    if not IsValid(entity) then return end
     if entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox" then
         if not utils.canInteractWithBoombox(ply, entity) then
             chat.AddText(Color(255, 0, 0), "You don't have permission to interact with this boombox.")
@@ -1219,7 +915,7 @@ openRadioMenu = function(openSettings)
     local frame = vgui.Create("DFrame")
     currentFrame = frame
     frame:SetTitle("")
-    frame:SetSize(Scale(Config.UI.FrameSize.width), Scale(Config.UI.FrameSize.height))
+    frame:SetSize(Scale(300), Scale(450))
     frame:Center()
     frame:SetDraggable(false)
     frame:ShowCloseButton(false)
@@ -1227,16 +923,35 @@ openRadioMenu = function(openSettings)
     frame.OnClose = function()
         radioMenuOpen = false
     end
+    local closeKey = GetConVar("car_radio_open_key"):GetInt()
+    local slideLerp = 0
     frame.Paint = function(self, w, h)
-        draw.RoundedBox(8, 0, 0, w, h, Config.UI.BackgroundColor)
-        draw.RoundedBoxEx(8, 0, 0, w, Scale(40), Config.UI.HeaderColor, true, true, false, false)
-        local headerHeight = Scale(40)
-        local iconSize = Scale(25)
+        if radioMenuOpen and not isSearching and input.IsKeyDown(closeKey) and (lastKeyPress < CurTime()) then
+            surface.PlaySound("buttons/lightswitch2.wav")
+            currentFrame:Close()
+            radioMenuOpen = false
+            selectedCountry = nil
+            settingsMenuOpen = false
+            favoritesMenuOpen = false
+            lastKeyPress = CurTime() + 1
+            return
+        end
+        draw.RoundedBox(8, 0, 0, w, h, Color(255, 255, 255, 20))
+        surface.SetMaterial(Material("gui/gradient"))
+        surface.SetDrawColor(100, 100, 255, 50)
+        surface.DrawTexturedRect(0, 0, w, h)
+        draw.RoundedBoxEx(8, 0, 0, w, Scale(35), Color(100, 100, 255, 100), true, true, false, false)
+        local headerHeight = Scale(35)
+        local iconSize = Scale(20)
         local iconOffsetX = Scale(10)
-        local iconOffsetY = headerHeight / 2 - iconSize / 2
+        local iconOffsetY = headerHeight/2 - iconSize/2
         surface.SetMaterial(Material("hud/radio.png"))
-        surface.SetDrawColor(Config.UI.TextColor)
+        surface.SetDrawColor(255, 255, 255)
         surface.DrawTexturedRect(iconOffsetX, iconOffsetY, iconSize, iconSize)
+        if slideLerp > 0 then
+            surface.SetDrawColor(100, 100, 255, 100 * slideLerp)
+            surface.DrawTexturedRect(iconOffsetX - Scale(2), iconOffsetY - Scale(2), iconSize + Scale(4), iconSize + Scale(4))
+        end
         local headerText
         if settingsMenuOpen then
             headerText = Config.Lang["Settings"] or "Settings"
@@ -1244,103 +959,86 @@ openRadioMenu = function(openSettings)
             if selectedCountry == "favorites" then
                 headerText = Config.Lang["FavoriteStations"] or "Favorite Stations"
             else
-                local formattedCountry =
-                    selectedCountry:gsub("_", " "):gsub(
-                    "(%a)([%w_']*)",
-                    function(a, b)
-                        return string.upper(a) .. string.lower(b)
-                    end
-                )
+                local formattedCountry = selectedCountry:gsub("_", " "):gsub("(%a)([%w_']*)", function(a, b)
+                    return string.upper(a) .. string.lower(b)
+                end)
                 local lang = GetConVar("radio_language"):GetString() or "en"
                 headerText = LanguageManager:GetCountryTranslation(lang, formattedCountry)
             end
         else
             headerText = Config.Lang["SelectCountry"] or "Select Country"
         end
-        draw.SimpleText(
-            headerText,
-            "HeaderFont",
-            iconOffsetX + iconSize + Scale(5),
-            headerHeight / 2 + Scale(2),
-            Config.UI.TextColor,
-            TEXT_ALIGN_LEFT,
-            TEXT_ALIGN_CENTER
-        )
+        draw.SimpleText(headerText, "MontserratHeader", iconOffsetX + iconSize + Scale(5),
+            headerHeight/2, Color(255, 255, 255),
+            TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+    end
+    frame.Think = function(self)
+        slideLerp = math.Approach(slideLerp, 1, FrameTime() * 5)
+        local centerX, centerY = ScrW()/2 - self:GetWide()/2, ScrH()/2 - self:GetTall()/2
+        self:SetPos(Lerp(slideLerp, ScrW(), centerX), centerY)
     end
     local searchBox = vgui.Create("DTextEntry", frame)
-    searchBox:SetPos(Scale(10), Scale(50))
-    searchBox:SetSize(Scale(Config.UI.FrameSize.width) - Scale(20), Scale(30))
-    searchBox:SetFont("Roboto18")
+    searchBox:SetPos(Scale(10), Scale(45))
+    searchBox:SetSize(Scale(280), Scale(30))
+    searchBox:SetFont("Montserrat18")
     searchBox:SetPlaceholderText(Config.Lang and Config.Lang["SearchPlaceholder"] or "Search")
-    searchBox:SetTextColor(Config.UI.TextColor)
+    searchBox:SetTextColor(Color(255, 255, 255))
     searchBox:SetDrawBackground(false)
+    local searchHoverLerp = 0
     searchBox.Paint = function(self, w, h)
-        draw.RoundedBox(8, 0, 0, w, h, Config.UI.SearchBoxColor)
-        self:DrawTextEntryText(Config.UI.TextColor, Color(120, 120, 120), Config.UI.TextColor)
+        draw.RoundedBox(8, 0, 0, w, h, Color(255, 255, 255, 20))
+        if searchHoverLerp > 0 then
+            surface.SetDrawColor(100, 100, 255, searchHoverLerp * 100)
+            surface.DrawOutlinedRect(0, 0, w, h, Scale(2))
+        end
+        self:DrawTextEntryText(Color(255, 255, 255), Color(100, 100, 255), Color(255, 255, 255))
         if self:GetText() == "" then
-            draw.SimpleText(
-                self:GetPlaceholderText(),
-                self:GetFont(),
-                Scale(5),
-                h / 2,
-                Config.UI.TextColor,
-                TEXT_ALIGN_LEFT,
-                TEXT_ALIGN_CENTER
-            )
+            draw.SimpleText(self:GetPlaceholderText(), self:GetFont(), Scale(5), h / 2, Color(255, 255, 255, 100), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
         end
     end
+    searchBox.Think = function(self)
+        searchHoverLerp = self:IsHovered() and math.Approach(searchHoverLerp, 1, FrameTime() * 5) or math.Approach(searchHoverLerp, 0, FrameTime() * 5)
+    end
     searchBox:SetVisible(not settingsMenuOpen)
-    searchBox.OnGetFocus = function()
-        isSearching = true
-    end
-    searchBox.OnLoseFocus = function()
-        isSearching = false
-    end
+    searchBox.OnGetFocus = function() isSearching = true end
+    searchBox.OnLoseFocus = function() isSearching = false end
     local stationListPanel = vgui.Create("DScrollPanel", frame)
-    stationListPanel:SetPos(Scale(5), Scale(90))
-    stationListPanel:SetSize(
-        Scale(Config.UI.FrameSize.width) - Scale(20),
-        Scale(Config.UI.FrameSize.height) - Scale(200)
-    )
+    stationListPanel:SetPos(Scale(5), Scale(85))
+    stationListPanel:SetSize(Scale(290), Scale(300))
     stationListPanel:SetVisible(not settingsMenuOpen)
-    local stopButtonHeight = Scale(Config.UI.FrameSize.width) / 8
-    local stopButtonWidth = Scale(Config.UI.FrameSize.width) / 4
+    local stopButtonHeight = Scale(35)
+    local stopButtonWidth = Scale(70)
     local stopButtonText = Config.Lang["StopRadio"] or "STOP"
     local stopButtonFont = calculateFontSizeForStopButton(stopButtonText, stopButtonWidth, stopButtonHeight)
-    local function createAnimatedButton(parent, x, y, w, h, text, textColor, bgColor, hoverColor, clickFunc)
+    local function createAnimatedButton(parent, x, y, w, h, text, textColor, clickFunc)
         local button = vgui.Create("DButton", parent)
         button:SetPos(x, y)
         button:SetSize(w, h)
         button:SetText(text)
         button:SetTextColor(textColor)
-        button.bgColor = bgColor
-        button.hoverColor = hoverColor
+        button:SetFont(text == "" and "Montserrat18" or "MontserratButton")
         button.lerp = 0
         button.Paint = function(self, w, h)
-            local color = LerpColor(self.lerp, self.bgColor, self.hoverColor)
-            draw.RoundedBox(8, 0, 0, w, h, color)
+            draw.RoundedBox(8, 0, 0, w, h, Color(255, 255, 255, 20))
+            if self.lerp > 0 then
+                surface.SetDrawColor(255, 0, 0, self.lerp * 100)
+                surface.DrawOutlinedRect(0, 0, w, h, Scale(2))
+            end
         end
         button.Think = function(self)
-            if self:IsHovered() then
-                self.lerp = math.Approach(self.lerp, 1, FrameTime() * 5)
-            else
-                self.lerp = math.Approach(self.lerp, 0, FrameTime() * 5)
-            end
+            self.lerp = self:IsHovered() and math.Approach(self.lerp, 1, FrameTime() * 5) or math.Approach(self.lerp, 0, FrameTime() * 5)
         end
         button.DoClick = clickFunc
         return button
     end
-    local stopButton =
-        createAnimatedButton(
+    local stopButton = createAnimatedButton(
         frame,
         Scale(10),
-        Scale(Config.UI.FrameSize.height) - Scale(90),
+        Scale(400),
         stopButtonWidth,
         stopButtonHeight,
         stopButtonText,
-        Config.UI.TextColor,
-        Config.UI.CloseButtonColor,
-        Config.UI.CloseButtonHoverColor,
+        Color(255, 255, 255),
         function()
             surface.PlaySound("buttons/button6.wav")
             local entity = LocalPlayer().currentRadioEntity
@@ -1360,24 +1058,36 @@ openRadioMenu = function(openSettings)
     )
     stopButton:SetFont(stopButtonFont)
     local volumePanel = vgui.Create("DPanel", frame)
-    volumePanel:SetPos(Scale(20) + stopButtonWidth, Scale(Config.UI.FrameSize.height) - Scale(90))
-    volumePanel:SetSize(Scale(Config.UI.FrameSize.width) - Scale(30) - stopButtonWidth, stopButtonHeight)
+    volumePanel:SetPos(Scale(90), Scale(400))
+    volumePanel:SetSize(Scale(200), stopButtonHeight)
     volumePanel.Paint = function(self, w, h)
-        draw.RoundedBox(8, 0, 0, w, h, Config.UI.CloseButtonColor)
+        draw.RoundedBox(8, 0, 0, w, h, Color(255, 255, 255, 20))
     end
-    local volumeIconSize = Scale(50)
+    local volumeIconSize = Scale(25)
     local volumeIcon = vgui.Create("DImage", volumePanel)
-    volumeIcon:SetPos(Scale(10), (volumePanel:GetTall() - volumeIconSize) / 2)
+    volumeIcon:SetPos(Scale(5), (volumePanel:GetTall() - volumeIconSize) / 2)
     volumeIcon:SetSize(volumeIconSize, volumeIconSize)
     volumeIcon:SetMaterial(VOLUME_ICONS.HIGH)
+    local iconHoverLerp = 0
+    volumeIcon.Paint = function(self, w, h)
+        surface.SetDrawColor(255, 255, 255, 255 * (0.8 + iconHoverLerp * 0.2))
+        local mat = self:GetMaterial()
+        if mat then
+            surface.SetMaterial(mat)
+            surface.DrawTexturedRect(0, 0, w, h)
+            if iconHoverLerp > 0 then
+                surface.SetDrawColor(100, 100, 255, 100 * iconHoverLerp)
+                surface.DrawTexturedRect(-Scale(2), -Scale(2), w + Scale(4), h + Scale(4))
+            end
+        end
+    end
+    volumeIcon.Think = function(self)
+        iconHoverLerp = self:IsMouseInputEnabled() and math.Approach(iconHoverLerp, 1, FrameTime() * 5) or math.Approach(iconHoverLerp, 0, FrameTime() * 5)
+    end
     local function updateVolumeIcon(volumeIcon, value)
-        if not IsValid(volumeIcon) then
-            return
-        end
+        if not IsValid(volumeIcon) then return end
         local iconMat
-        if type(value) == "function" then
-            value = value()
-        end
+        if type(value) == "function" then value = value() end
         if value < 0.01 then
             iconMat = VOLUME_ICONS.MUTE
         elseif value <= 0.65 then
@@ -1385,17 +1095,7 @@ openRadioMenu = function(openSettings)
         else
             iconMat = VOLUME_ICONS.HIGH
         end
-        if iconMat then
-            volumeIcon:SetMaterial(iconMat)
-        end
-    end
-    volumeIcon.Paint = function(self, w, h)
-        surface.SetDrawColor(Config.UI.TextColor)
-        local mat = self:GetMaterial()
-        if mat then
-            surface.SetMaterial(mat)
-            surface.DrawTexturedRect(0, 0, w, h)
-        end
+        if iconMat then volumeIcon:SetMaterial(iconMat) end
     end
     local entity = LocalPlayer().currentRadioEntity
     local currentVolume = 0.5
@@ -1412,29 +1112,25 @@ openRadioMenu = function(openSettings)
     end
     updateVolumeIcon(volumeIcon, currentVolume)
     local volumeSlider = vgui.Create("DNumSlider", volumePanel)
-    volumeSlider:SetPos(-Scale(170), Scale(5))
-    volumeSlider:SetSize(
-        Scale(Config.UI.FrameSize.width) + Scale(120) - stopButtonWidth,
-        volumePanel:GetTall() - Scale(20)
-    )
+    volumeSlider:SetPos(Scale(35), Scale(5))
+    volumeSlider:SetSize(Scale(160), volumePanel:GetTall() - Scale(10))
     volumeSlider:SetText("")
     volumeSlider:SetMin(0)
     volumeSlider:SetMax(Config.MaxVolume())
     volumeSlider:SetDecimals(2)
     volumeSlider:SetValue(currentVolume)
     volumeSlider.Slider.Paint = function(self, w, h)
-        draw.RoundedBox(8, 0, h / 2 - 4, w, 16, Config.UI.TextColor)
+        draw.RoundedBox(8, 0, h / 2 - Scale(2), w, Scale(4), Color(255, 255, 255, 50))
+        draw.RoundedBox(8, 0, h / 2 - Scale(2), w * (self:GetValue() / self:GetMax()), Scale(4), Color(100, 100, 255))
     end
     volumeSlider.Slider.Knob.Paint = function(self, w, h)
-        draw.RoundedBox(12, 0, Scale(-2), w * 2, h * 2, Config.UI.BackgroundColor)
+        draw.RoundedBox(8, 0, -Scale(4), w * 1.5, h * 1.5, Color(100, 100, 255))
     end
     volumeSlider.TextArea:SetVisible(false)
     local lastServerUpdate = 0
     volumeSlider.OnValueChanged = function(_, value)
         local entity = LocalPlayer().currentRadioEntity
-        if not IsValid(entity) then
-            return
-        end
+        if not IsValid(entity) then return end
         entity = utils.GetVehicle(entity) or entity
         value = math.min(value, Config.MaxVolume())
         entityVolumes[entity] = value
@@ -1452,33 +1148,26 @@ openRadioMenu = function(openSettings)
         end
     end
     local sbar = stationListPanel:GetVBar()
-    sbar:SetWide(Scale(8))
+    sbar:SetWide(Scale(6))
     function sbar:Paint(w, h)
-        draw.RoundedBox(8, 0, 0, w, h, Config.UI.ScrollbarColor)
+        draw.RoundedBox(8, 0, 0, w, h, Color(255, 255, 255, 20))
     end
-    function sbar.btnUp:Paint(w, h)
-        draw.RoundedBox(8, 0, 0, w, h, Config.UI.ScrollbarColor)
-    end
-    function sbar.btnDown:Paint(w, h)
-        draw.RoundedBox(8, 0, 0, w, h, Config.UI.ScrollbarColor)
-    end
+    function sbar.btnUp:Paint(w, h) end
+    function sbar.btnDown:Paint(w, h) end
     function sbar.btnGrip:Paint(w, h)
-        draw.RoundedBox(8, 0, 0, w, h, Config.UI.ScrollbarGripColor)
+        draw.RoundedBox(8, 0, 0, w, h, Color(100, 100, 255, 100))
     end
-    local buttonSize = Scale(25)
+    local buttonSize = Scale(20)
     local topMargin = Scale(7)
     local buttonPadding = Scale(5)
-    local closeButton =
-        createAnimatedButton(
+    local closeButton = createAnimatedButton(
         frame,
         frame:GetWide() - buttonSize - Scale(10),
         topMargin,
         buttonSize,
         buttonSize,
         "",
-        Config.UI.TextColor,
-        Color(0, 0, 0, 0),
-        Config.UI.ButtonHoverColor,
+        Color(255, 255, 255),
         function()
             surface.PlaySound("buttons/lightswitch2.wav")
             frame:Close()
@@ -1486,20 +1175,21 @@ openRadioMenu = function(openSettings)
     )
     closeButton.Paint = function(self, w, h)
         surface.SetMaterial(Material("hud/close.png"))
-        surface.SetDrawColor(ColorAlpha(Config.UI.TextColor, 255 * (0.5 + 0.5 * self.lerp)))
+        surface.SetDrawColor(255, 255, 255, 255 * (0.5 + 0.5 * self.lerp))
         surface.DrawTexturedRect(0, 0, w, h)
+        if self.lerp > 0 then
+            surface.SetDrawColor(100, 100, 255, 100 * self.lerp)
+            surface.DrawTexturedRect(-Scale(2), -Scale(2), w + Scale(4), h + Scale(4))
+        end
     end
-    local settingsButton =
-        createAnimatedButton(
+    local settingsButton = createAnimatedButton(
         frame,
         closeButton:GetX() - buttonSize - buttonPadding,
         topMargin,
         buttonSize,
         buttonSize,
         "",
-        Config.UI.TextColor,
-        Color(0, 0, 0, 0),
-        Config.UI.ButtonHoverColor,
+        Color(255, 255, 255),
         function()
             surface.PlaySound("buttons/lightswitch2.wav")
             settingsMenuOpen = true
@@ -1512,20 +1202,21 @@ openRadioMenu = function(openSettings)
     )
     settingsButton.Paint = function(self, w, h)
         surface.SetMaterial(Material("hud/settings.png"))
-        surface.SetDrawColor(ColorAlpha(Config.UI.TextColor, 255 * (0.5 + 0.5 * self.lerp)))
+        surface.SetDrawColor(255, 255, 255, 255 * (0.5 + 0.5 * self.lerp))
         surface.DrawTexturedRect(0, 0, w, h)
+        if self.lerp > 0 then
+            surface.SetDrawColor(100, 100, 255, 100 * self.lerp)
+            surface.DrawTexturedRect(-Scale(2), -Scale(2), w + Scale(4), h + Scale(4))
+        end
     end
-    backButton =
-        createAnimatedButton(
+    backButton = createAnimatedButton(
         frame,
         settingsButton:GetX() - buttonSize - buttonPadding,
         topMargin,
         buttonSize,
         buttonSize,
         "",
-        Config.UI.TextColor,
-        Color(0, 0, 0, 0),
-        Config.UI.ButtonHoverColor,
+        Color(255, 255, 255),
         function()
             surface.PlaySound("buttons/lightswitch2.wav")
             if settingsMenuOpen then
@@ -1538,12 +1229,9 @@ openRadioMenu = function(openSettings)
                 stationListPanel:SetVisible(true)
                 stationDataLoaded = false
                 LoadStationData()
-                timer.Simple(
-                    0,
-                    function()
-                        populateList(stationListPanel, backButton, searchBox, true)
-                    end
-                )
+                timer.Simple(0, function()
+                    populateList(stationListPanel, backButton, searchBox, true)
+                end)
                 backButton:SetVisible(selectedCountry ~= nil or favoritesMenuOpen)
                 backButton:SetEnabled(selectedCountry ~= nil or favoritesMenuOpen)
             elseif selectedCountry or favoritesMenuOpen then
@@ -1558,8 +1246,12 @@ openRadioMenu = function(openSettings)
     backButton.Paint = function(self, w, h)
         if self:IsVisible() then
             surface.SetMaterial(Material("hud/return.png"))
-            surface.SetDrawColor(ColorAlpha(Config.UI.TextColor, 255 * (0.5 + 0.5 * self.lerp)))
+            surface.SetDrawColor(255, 255, 255, 255 * (0.5 + 0.5 * self.lerp))
             surface.DrawTexturedRect(0, 0, w, h)
+            if self.lerp > 0 then
+                surface.SetDrawColor(100, 100, 255, 100 * self.lerp)
+                surface.DrawTexturedRect(-Scale(2), -Scale(2), w + Scale(4), h + Scale(4))
+            end
         end
     end
     backButton:SetVisible((selectedCountry ~= nil and selectedCountry ~= "") or settingsMenuOpen)
@@ -1574,283 +1266,115 @@ openRadioMenu = function(openSettings)
     end
     _G.openRadioMenu = openRadioMenu
 end
-hook.Add(
-    "Think",
-    "OpenCarRadioMenu",
-    function()
-        local openKey = GetConVar("car_radio_open_key"):GetInt()
-        local ply = LocalPlayer()
-        local currentTime = CurTime()
-        if not (input.IsKeyDown(openKey) and not ply:IsTyping() and currentTime - lastKeyPress > keyPressDelay) then
-            return
-        end
-        lastKeyPress = currentTime
-        if radioMenuOpen and not isSearching then
-            surface.PlaySound("buttons/lightswitch2.wav")
-            currentFrame:Close()
-            radioMenuOpen = false
-            selectedCountry = nil
-            settingsMenuOpen = false
-            favoritesMenuOpen = false
-            return
-        end
-        local vehicle = ply:GetVehicle()
-        if IsValid(vehicle) and not utils.isSitAnywhereSeat(vehicle) then
-            ply.currentRadioEntity = vehicle
-            openRadioMenu()
-        end
+hook.Add("PlayerButtonDown", "OpenCarRadioMenu", function(ply, button)
+    if not ply:InVehicle() then return end
+    currentKey = currentKey or GetConVar("car_radio_open_key"):GetInt()
+    if button ~= currentKey or (lastKeyPress > CurTime()) then return end
+    lastKeyPress = CurTime() + 1
+    local vehicle = ply:GetVehicle()
+    if IsValid(vehicle) and not utils.isSitAnywhereSeat(vehicle) then
+        ply.currentRadioEntity = vehicle
+        openRadioMenu()
     end
-)
-net.Receive(
-    "UpdateRadioStatus",
-    function()
-        local entity = net.ReadEntity()
-        local stationName = net.ReadString()
-        local isPlaying = net.ReadBool()
-        local status = net.ReadString()
-        if IsValid(entity) then
-            BoomboxStatuses[entity:EntIndex()] = {
-                stationStatus = status,
-                stationName = stationName
-            }
-            entity:SetNWString("Status", status)
-            entity:SetNWString("StationName", stationName)
-            entity:SetNWBool("IsPlaying", isPlaying)
-            if status == "playing" then
-                currentlyPlayingStations[entity] = {name = stationName}
-            elseif status == "stopped" then
-                currentlyPlayingStations[entity] = nil
+end)
+net.Receive("UpdateRadioStatus", function(len)
+    if len < 32 then
+        print("[Radio] Error: UpdateRadioStatus message too short (" .. len .. " bits)")
+        return
+    end
+    local entity = net.ReadEntity()
+    if not IsValid(entity) then
+        print("[Radio] Error: Invalid entity in UpdateRadioStatus")
+        return
+    end
+    local stationName = net.ReadString()
+    local isPlaying = net.ReadBool()
+    local status = net.ReadString()
+    if not status or status == "" then
+        status = isPlaying and "playing" or "stopped"
+        print("[Radio] Warning: Invalid status in UpdateRadioStatus, using default: " .. status)
+    end
+    BoomboxStatuses[entity:EntIndex()] = {
+        stationStatus = status,
+        stationName = stationName or ""
+    }
+    entity:SetNWString("Status", status)
+    entity:SetNWString("StationName", stationName or "")
+    entity:SetNWBool("IsPlaying", isPlaying)
+    if status == "playing" then
+        currentlyPlayingStations[entity] = { name = stationName }
+    elseif status == "stopped" then
+        currentlyPlayingStations[entity] = nil
+    end
+end)
+net.Receive("PlayCarRadioStation", function()
+    local entity = net.ReadEntity()
+    entity = GetVehicleEntity(entity)
+    local stationName = net.ReadString()
+    local url = net.ReadString()
+    local volume = net.ReadFloat()
+    local currentCount = updateStationCount()
+    if not currentRadioSources[entity] and currentCount >= MAX_CLIENT_STATIONS then return end
+    if currentRadioSources[entity] and IsValid(currentRadioSources[entity]) then
+        currentRadioSources[entity]:Stop()
+        currentRadioSources[entity] = nil
+        activeStationCount = math.max(0, activeStationCount - 1)
+    end
+    if not whitelistedStations[url] then return end
+    sound.PlayURL(url, "3d mono", function(station, errorID, errorName)
+        if IsValid(station) and IsValid(entity) then
+            station:SetPos(entity:GetPos())
+            station:SetVolume(volume)
+            station:Play()
+            currentRadioSources[entity] = station
+            activeStationCount = updateStationCount()
+            local entityConfig = getEntityConfig(entity)
+            if entityConfig then
+                local minDist = entityConfig.MinVolumeDistance()
+                local maxDist = entityConfig.MaxHearingDistance()
+                station:Set3DFadeDistance(minDist, maxDist)
             end
-        end
-    end
-)
-net.Receive(
-    "PlayCarRadioStation",
-    function()
-        local entity = net.ReadEntity()
-        entity = GetVehicleEntity(entity)
-        local stationName = net.ReadString()
-        local url = net.ReadString()
-        local volume = net.ReadFloat()
-        local currentCount = updateStationCount()
-        if not currentRadioSources[entity] and currentCount >= MAX_CLIENT_STATIONS then
-            return
-        end
-        if currentRadioSources[entity] and IsValid(currentRadioSources[entity]) then
-            currentRadioSources[entity]:Stop()
-            currentRadioSources[entity] = nil
-            activeStationCount = math.max(0, activeStationCount - 1)
-        end
-        sound.PlayURL(
-            url,
-            "3d mono",
-            function(station, errorID, errorName)
-                if IsValid(station) and IsValid(entity) then
-                    station:SetPos(entity:GetPos())
-                    station:SetVolume(volume)
-                    station:Play()
-                    currentRadioSources[entity] = station
+            local hookName = "UpdateRadioPosition_" .. entity:EntIndex()
+            hook.Add("Think", hookName, function()
+                if not IsValid(entity) or not IsValid(station) then
+                    hook.Remove("Think", hookName)
+                    if IsValid(station) then
+                        station:Stop()
+                    end
+                    currentRadioSources[entity] = nil
                     activeStationCount = updateStationCount()
-                    local entityConfig = getEntityConfig(entity)
-                    if entityConfig then
-                        local minDist = entityConfig.MinVolumeDistance()
-                        local maxDist = entityConfig.MaxHearingDistance()
-                        station:Set3DFadeDistance(minDist, maxDist)
+                    return
+                end
+                local actualEntity = entity
+                if entity:IsVehicle() then
+                    local parent = entity:GetParent()
+                    if IsValid(parent) then
+                        actualEntity = parent
                     end
-                    local hookName = "UpdateRadioPosition_" .. entity:EntIndex()
-                    hook.Add(
-                        "Think",
-                        hookName,
-                        function()
-                            if not IsValid(entity) or not IsValid(station) then
-                                hook.Remove("Think", hookName)
-                                if IsValid(station) then
-                                    station:Stop()
-                                end
-                                currentRadioSources[entity] = nil
-                                activeStationCount = updateStationCount()
-                                return
+                end
+                station:SetPos(actualEntity:GetPos())
+                local playerPos = LocalPlayer():GetPos()
+                local entityPos = actualEntity:GetPos()
+                local distanceSqr = playerPos:DistToSqr(entityPos)
+                local isPlayerInCar = false
+                if actualEntity:IsVehicle() then
+                    if LocalPlayer():GetVehicle() == entity then
+                        isPlayerInCar = true
+                    else
+                        for _, seat in pairs(ents.FindByClass("prop_vehicle_prisoner_pod")) do
+                            if IsValid(seat) and seat:GetParent() == actualEntity and seat:GetDriver() == LocalPlayer() then
+                                isPlayerInCar = true
+                                break
                             end
-                            local actualEntity = entity
-                            if entity:IsVehicle() then
-                                local parent = entity:GetParent()
-                                if IsValid(parent) then
-                                    actualEntity = parent
-                                end
-                            end
-                            station:SetPos(actualEntity:GetPos())
-                            local playerPos = LocalPlayer():GetPos()
-                            local entityPos = actualEntity:GetPos()
-                            local distanceSqr = playerPos:DistToSqr(entityPos)
-                            local isPlayerInCar = false
-                            if actualEntity:IsVehicle() then
-                                if LocalPlayer():GetVehicle() == entity then
-                                    isPlayerInCar = true
-                                else
-                                    for _, seat in pairs(ents.FindByClass("prop_vehicle_prisoner_pod")) do
-                                        if
-                                            IsValid(seat) and seat:GetParent() == actualEntity and
-                                                seat:GetDriver() == LocalPlayer()
-                                         then
-                                            isPlayerInCar = true
-                                            break
-                                        end
-                                    end
-                                end
-                            end
-                            updateRadioVolume(station, distanceSqr, isPlayerInCar, actualEntity)
                         end
-                    )
-                else
-                    if IsValid(entity) and (entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox") then
-                        utils.clearRadioStatus(entity)
                     end
                 end
-            end
-        )
-    end
-)
-net.Receive(
-    "StopCarRadioStation",
-    function()
-        local entity = net.ReadEntity()
-        if not IsValid(entity) then
-            return
-        end
-        entity = GetVehicleEntity(entity)
-        if currentRadioSources[entity] then
-            if IsValid(currentRadioSources[entity]) then
-                currentRadioSources[entity]:Stop()
-            end
-            currentRadioSources[entity] = nil
-            activeStationCount = updateStationCount()
-        end
-        if IsValid(entity) and (entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox") then
-            utils.clearRadioStatus(entity)
-        end
-        hook.Remove("Think", "UpdateRadioPosition_" .. entity:EntIndex())
-    end
-)
-hook.Add(
-    "EntityRemoved",
-    "CleanupRadioStationCount",
-    function(entity)
-        if currentRadioSources[entity] then
-            if IsValid(currentRadioSources[entity]) then
-                currentRadioSources[entity]:Stop()
-            end
-            currentRadioSources[entity] = nil
-            activeStationCount = updateStationCount()
-        end
-    end
-)
-timer.Create(
-    "ValidateStationCount",
-    30,
-    0,
-    function()
-        updateStationCount()
-    end
-)
-net.Receive(
-    "OpenRadioMenu",
-    function()
-        local ent = net.ReadEntity()
-        if not IsValid(ent) then
-            return
-        end
-        local ply = LocalPlayer()
-        if ent:GetClass() == "boombox" or ent:GetClass() == "golden_boombox" then
-            if utils.canInteractWithBoombox(ply, ent) then
-                ply.currentRadioEntity = ent
-                if not radioMenuOpen then
-                    openRadioMenu()
-                end
-            else
-                local currentTime = CurTime()
-                if currentTime - lastPermissionMessage >= PERMISSION_MESSAGE_COOLDOWN then
-                    chat.AddText(Color(255, 0, 0), "You don't have permission to interact with this boombox.")
-                    lastPermissionMessage = currentTime
-                end
+                updateRadioVolume(station, distanceSqr, isPlayerInCar, actualEntity)
+            end)
+        else
+            if IsValid(entity) and (entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox") then
+                utils.clearRadioStatus(entity)
             end
         end
-    end
-)
-net.Receive(
-    "CarRadioMessage",
-    function()
-        PrintCarRadioMessage()
-    end
-)
-net.Receive(
-    "RadioConfigUpdate",
-    function()
-        for entity, source in pairs(currentRadioSources) do
-            if IsValid(entity) and IsValid(source) then
-                local volume = ClampVolume(entityVolumes[entity] or getEntityConfig(entity).Volume())
-                source:SetVolume(volume)
-            end
-        end
-    end
-)
-hook.Add(
-    "EntityRemoved",
-    "CleanupRadioStationCount",
-    function(entity)
-        if currentRadioSources[entity] then
-            if IsValid(currentRadioSources[entity]) then
-                currentRadioSources[entity]:Stop()
-            end
-            currentRadioSources[entity] = nil
-            activeStationCount = updateStationCount()
-        end
-    end
-)
-timer.Create(
-    "ValidateStationCount",
-    30,
-    0,
-    function()
-        local actualCount = 0
-        for ent, source in pairs(currentRadioSources) do
-            if IsValid(ent) and IsValid(source) then
-                actualCount = actualCount + 1
-            else
-                currentRadioSources[ent] = nil
-            end
-        end
-        activeStationCount = actualCount
-    end
-)
-loadFavorites()
-hook.Add(
-    "EntityRemoved",
-    "BoomboxCleanup",
-    function(ent)
-        if IsValid(ent) and (ent:GetClass() == "boombox" or ent:GetClass() == "golden_boombox") then
-            BoomboxStatuses[ent:EntIndex()] = nil
-        end
-    end
-)
-hook.Add(
-    "VehicleChanged",
-    "ClearRadioEntity",
-    function(ply, old, new)
-        if ply ~= LocalPlayer() then
-            return
-        end
-        if not new then
-            ply.currentRadioEntity = nil
-        end
-    end
-)
-hook.Add(
-    "EntityRemoved",
-    "ClearRadioEntity",
-    function(ent)
-        local ply = LocalPlayer()
-        if ent == ply.currentRadioEntity then
-            ply.currentRadioEntity = nil
-        end
-    end
-)
+    end)
+end)
