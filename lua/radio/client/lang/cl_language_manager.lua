@@ -1,5 +1,5 @@
-local LanguageManager = {}
-LanguageManager.languages = {
+rRadio.LanguageManager = {}
+rRadio.LanguageManager.languages = {
     de = "Deutsch",
     en = "English",
     es = "Español",
@@ -10,51 +10,73 @@ LanguageManager.languages = {
     pt_br = "Português (Brasil)",
     ru = "Русский",
     zh_cn = "简体中文",
-    tr = "Türkçe"
+    tr = "Türkçe",
+    en_pt = "Pirate"
 }
-LanguageManager.currentLanguage = "en"
-LanguageManager.translations = include("cl_localisation_strings.lua")
-LanguageManager.countryTranslationsB = include("cl_country_translations_b.lua")
-LanguageManager.countryTranslations = {}
 
-for lang, translations in pairs(LanguageManager.countryTranslationsB) do
+rRadio.LanguageManager.currentLanguage = "en"
+rRadio.LanguageManager.translations = include("cl_localisation_strings.lua")
+rRadio.LanguageManager.countryTranslationsA = include("cl_country_translations_a.lua")
+rRadio.LanguageManager.countryTranslationsB = include("cl_country_translations_b.lua")
+rRadio.LanguageManager.countryTranslations = {}
+
+for lang, translations in pairs(rRadio.LanguageManager.countryTranslationsA) do
     if type(translations) == "table" then
-        LanguageManager.countryTranslations[lang] = LanguageManager.countryTranslations[lang] or {}
+        rRadio.LanguageManager.countryTranslations[lang] = rRadio.LanguageManager.countryTranslations[lang] or {}
         for k, v in pairs(translations) do
-            LanguageManager.countryTranslations[lang][k] = v
+            rRadio.LanguageManager.countryTranslations[lang][k] = v
         end
     end
 end
-function LanguageManager:GetCountryTranslation(lang, country_key)
-    if self.countryTranslations[lang] then
-        local translation = self.countryTranslations[lang][country_key]
-        if translation then
-            return translation
+
+for lang, translations in pairs(rRadio.LanguageManager.countryTranslationsB) do
+    if type(translations) == "table" then
+        rRadio.LanguageManager.countryTranslations[lang] = rRadio.LanguageManager.countryTranslations[lang] or {}
+        for k, v in pairs(translations) do
+            rRadio.LanguageManager.countryTranslations[lang][k] = v
         end
+    end
+end
+
+local function getClientLanguageCode()
+    local raw = GetConVar("gmod_language"):GetString() or "en"
+    raw = raw:lower():gsub("%s+", "_"):gsub("-", "_"):gsub("[()]", "")
+    local langMap = {
+        english = "en", german = "de", spanish = "es", ["español"] = "es",
+        french = "fr", ["français"] = "fr", italian = "it", ["italiano"] = "it",
+        japanese = "ja", korean = "ko", portuguese = "pt_br", ["pt_br"] = "pt_br",
+        russian = "ru", chinese = "zh_cn", ["simplified_chinese"] = "zh_cn",
+        turkish = "tr", pirate_english = "en_pt", ["en_pt"] = "en_pt"
+    }
+    return langMap[raw] or raw
+end
+
+function rRadio.LanguageManager:GetCountryTranslation(country_key)
+    local lang = getClientLanguageCode()
+    local translations = self.countryTranslations[lang]
+    if translations and translations[country_key] then
+        return translations[country_key]
     end
     return country_key
 end
-function LanguageManager:SetLanguage(code)
-    if self.translations[code] then
-        self.currentLanguage = code
-    else
-        print("[rRADIO] Language not found! Falling back to English.")
-        self.currentLanguage = "en"
-    end
-end
-function LanguageManager:Translate(key)
+
+function rRadio.LanguageManager:Translate(key)
     return self:GetTranslation(self.currentLanguage, key)
 end
-function LanguageManager:GetLanguageName(code)
+
+function rRadio.LanguageManager:GetLanguageName(code)
     return self.languages[code] or code
 end
-function LanguageManager:GetAvailableLanguages()
+
+function rRadio.LanguageManager:GetAvailableLanguages()
     return self.languages
 end
-function LanguageManager:GetTranslation(lang, key)
+
+function rRadio.LanguageManager:GetTranslation(lang, key)
     if self.translations[lang] and self.translations[lang][key] then
         return self.translations[lang][key]
-    end
+        end
     return key
 end
-return LanguageManager
+
+return rRadio.LanguageManager

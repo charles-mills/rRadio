@@ -1,8 +1,8 @@
-CreateConVar("boombox_permanent", "0", FCVAR_ARCHIVE + FCVAR_REPLICATED, "Toggle boombox permanence")
 local initialLoadComplete = false
 local spawnedBoomboxesByPosition = {}
 local spawnedBoomboxes = {}
 local currentMap = game.GetMap()
+BoomboxStatuses = BoomboxStatuses or {}
 local function InitializeDatabase()
 if not sql.TableExists("permanent_boomboxes") then
 local query = [[
@@ -207,9 +207,9 @@ spawnedBoomboxes[row.permanent_id] = true
 spawnedBoomboxesByPosition[posKey] = true
 end
 end
-hook.Remove("InitPostEntity", "LoadPermanentBoomboxes")
-hook.Remove("PostCleanupMap", "ReloadPermanentBoomboxes")
-hook.Add("PostCleanupMap", "LoadPermanentBoomboxes", function()
+hook.Remove("InitPostEntity", "rRadio.LoadPermanentBoomboxes")
+hook.Remove("PostCleanupMap", "rRadio.ReloadPermanentBoomboxes")
+hook.Add("PostCleanupMap", "rRadio.LoadPermanentBoomboxes", function()
 timer.Simple(5, function()
 if not initialLoadComplete then
 LoadPermanentBoomboxes()
@@ -296,6 +296,6 @@ end)
 _G.LoadPermanentBoomboxes = function()
 LoadPermanentBoomboxes(false)
 end
-hook.Add("Initialize", "UpdateCurrentMapForPermanentBoomboxes", function()
+hook.Add("Initialize", "rRadio.UpdateCurrentMapForPermanentBoomboxes", function()
 currentMap = game.GetMap()
 end)
