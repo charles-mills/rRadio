@@ -5,25 +5,26 @@ local entityVolumes = entityVolumes or {}
 local currentFrame = nil
 local settingsMenuOpen = false
 local openRadioMenu
-local lastIconUpdate = 0
-local iconUpdateDelay = 0.1
-local pendingIconUpdate = nil
-local isUpdatingIcon = false
-local isMessageAnimating = false
 local lastKeyPress = 0
 local keyPressDelay = 0.2
 local favoritesMenuOpen = false
+local MAX_CLIENT_STATIONS = 10
+local activeStationCount = 0
+local selectedCountry = nil
+local radioMenuOpen = false
+local currentlyPlayingStation = nil
+local lastMessageTime = -math.huge
+local lastStationSelectTime = 0
+local currentlyPlayingStations = {}
+local formattedCountryNames = {}
+local stationDataLoaded = false
+local isSearching = false
 
 local VOLUME_ICONS = {
     MUTE = Material("hud/vol_mute.png", "smooth"),
     LOW = Material("hud/vol_down.png", "smooth"),
     HIGH = Material("hud/vol_up.png", "smooth")
 }
-
-local lastPermissionMessage = 0
-local PERMISSION_MESSAGE_COOLDOWN = 3
-local MAX_CLIENT_STATIONS = 10
-local activeStationCount = 0
 
 local function Scale(value)
     return value * (ScrW() / 2560)
@@ -62,19 +63,8 @@ local function createFonts()
         }
     )
 end
-createFonts()
 
-local selectedCountry = nil
-local radioMenuOpen = false
-local currentlyPlayingStation = nil
-local currentRadioSources = _G.currentRadioSources
-local lastMessageTime = -math.huge
-local lastStationSelectTime = 0
-local currentlyPlayingStations = {}
-local settingsMenuOpen = false
-local formattedCountryNames = {}
-local stationDataLoaded = false
-local isSearching = false
+createFonts()
 
 local function toggleFavorite(list, key, subkey)
     if subkey then
@@ -292,15 +282,7 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                 local regionLeft = Scale(8 + 24 + 8)
                 local rightMargin = Scale(8)
                 local availWidth = w - regionLeft - rightMargin
-                local outputText = text
-                if surface.GetTextSize(text) > availWidth then
-                    local ellipsis = "..."
-                    local len = #text
-                    while len > 0 and surface.GetTextSize(string.sub(text, 1, len) .. ellipsis) > availWidth do
-                        len = len - 1
-                    end
-                    outputText = string.sub(text, 1, len) .. ellipsis
-                end
+                local outputText = rRadio.interface.TruncateText(text, "Roboto18", availWidth)
                 local textWidth = surface.GetTextSize(outputText)
                 local x = w * 0.5
                 if x - textWidth * 0.5 < regionLeft then
@@ -386,15 +368,7 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                 local regionLeft = Scale(8 + 24 + 8)
                 local rightMargin = Scale(8)
                 local availWidth = w - regionLeft - rightMargin
-                local outputText = text
-                if surface.GetTextSize(text) > availWidth then
-                    local ellipsis = "..."
-                    local len = #text
-                    while len > 0 and surface.GetTextSize(string.sub(text, 1, len) .. ellipsis) > availWidth do
-                        len = len - 1
-                    end
-                    outputText = string.sub(text, 1, len) .. ellipsis
-                end
+                local outputText = rRadio.interface.TruncateText(text, "Roboto18", availWidth)
                 local textWidth = surface.GetTextSize(outputText)
                 local x = w * 0.5
                 if x - textWidth * 0.5 < regionLeft then
@@ -491,15 +465,7 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                 local regionLeft = Scale(8 + 24 + 8)
                 local rightMargin = Scale(8)
                 local availWidth = w - regionLeft - rightMargin
-                local outputText = text
-                if surface.GetTextSize(text) > availWidth then
-                    local ellipsis = "..."
-                    local len = #text
-                    while len > 0 and surface.GetTextSize(string.sub(text, 1, len) .. ellipsis) > availWidth do
-                        len = len - 1
-                    end
-                    outputText = string.sub(text, 1, len) .. ellipsis
-                end
+                local outputText = rRadio.interface.TruncateText(text, "Roboto18", availWidth)
                 local textWidth = surface.GetTextSize(outputText)
                 local x = w * 0.5
                 if x - textWidth * 0.5 < regionLeft then
@@ -1261,7 +1227,6 @@ openRadioMenu = function(openSettings)
     searchBox.OnChange = function(self)
         populateList(stationListPanel, backButton, searchBox, false)
     end
-    _G.openRadioMenu = openRadioMenu
 end
 
 hook.Add(

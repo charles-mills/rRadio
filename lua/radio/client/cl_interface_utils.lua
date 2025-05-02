@@ -17,6 +17,19 @@ local function Scale(value)
     return value * (ScrW() / 2560)
 end
 
+function rRadio.interface.TruncateText(text, font, maxWidth)
+    surface.SetFont(font)
+    if surface.GetTextSize(text) <= maxWidth then
+        return text
+    end
+    local ellipsis = "..."
+    local len = #text
+    while len > 0 and surface.GetTextSize(text:sub(1, len) .. ellipsis) > maxWidth do
+        len = len - 1
+    end
+    return text:sub(1, len) .. ellipsis
+end
+
 function rRadio.interface.DisplayVehicleEnterAnimation(argVehicle, isDriverOverride)
     rRadio.DevPrint("Displaying vehicle enter animation")
 
