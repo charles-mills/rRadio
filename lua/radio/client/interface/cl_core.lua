@@ -732,7 +732,7 @@ openRadioMenu = function(openSettings, opts)
         timer.Simple(
             0.1,
             function()
-                openRadioMenu(openSettings)
+                openRadioMenu(openSettings, {})
             end
         )
         return
