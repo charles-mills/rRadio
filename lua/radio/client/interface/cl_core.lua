@@ -718,41 +718,9 @@ local function openSettingsMenu(parentFrame, backButton)
         )
     end
 
-    local githubIcon = vgui.Create("DImageButton", footer)
-    githubIcon:SetSize(Scale(32), Scale(32))
-    githubIcon:SetPos(Scale(10), (footerHeight - Scale(32)) / 2)
-    githubIcon.Paint = function(self, w, h)
-        surface.SetDrawColor(rRadio.config.UI.TextColor)
-        surface.SetMaterial(Material("hud/github.png"))
-        surface.DrawTexturedRect(0, 0, w, h)
-    end
-    githubIcon.DoClick = function()
-        gui.OpenURL("https://github.com/charles-mills/rRadio")
-    end
-
-    local steamIcon = vgui.Create("DImageButton", footer)
-    steamIcon:SetSize(Scale(32), Scale(32))
-    steamIcon:SetPos(Scale(50), (footerHeight - Scale(32)) / 2)
-    steamIcon.Paint = function(self, w, h)
-        surface.SetDrawColor(rRadio.config.UI.TextColor)
-        surface.SetMaterial(Material("hud/steam.png"))
-        surface.DrawTexturedRect(0, 0, w, h)
-    end
-    steamIcon.DoClick = function()
-        gui.OpenURL("https://steamcommunity.com/id/rammel")
-    end
-
-    local discordIcon = vgui.Create("DImageButton", footer)
-    discordIcon:SetSize(Scale(32), Scale(32))
-    discordIcon:SetPos(Scale(90), (footerHeight - Scale(32)) / 2)
-    discordIcon.Paint = function(self, w, h)
-        surface.SetDrawColor(rRadio.config.UI.TextColor)
-        surface.SetMaterial(Material("hud/discord.png"))
-        surface.DrawTexturedRect(0, 0, w, h)
-    end
-    discordIcon.DoClick = function()
-        gui.OpenURL("https://discordapp.com/users/1265373956685299836")
-    end
+    rRadio.interface.MakeIconButton(footer, "hud/github.png", "https://github.com/charles-mills/rRadio", Scale(10))
+    rRadio.interface.MakeIconButton(footer, "hud/steam.png", "https://steamcommunity.com/id/rammel", Scale(50))
+    rRadio.interface.MakeIconButton(footer, "hud/discord.png", "https://discordapp.com/users/1265373956685299836", Scale(90))
 end
 
 openRadioMenu = function(openSettings, opts)

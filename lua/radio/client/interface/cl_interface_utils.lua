@@ -22,6 +22,22 @@ local function Scale(value)
     return value * (ScrW() / 2560)
 end
 
+function rRadio.interface.MakeIconButton(parent, materialPath, url, xOffset)
+    local icon = vgui.Create("DImageButton", parent)
+    local size = Scale(32)
+    icon:SetSize(size, size)
+    icon:SetPos(xOffset, (parent:GetTall() - size) / 2)
+    icon.Paint = function(self, w, h)
+        surface.SetDrawColor(rRadio.config.UI.TextColor)
+        surface.SetMaterial(Material(materialPath))
+        surface.DrawTexturedRect(0, 0, w, h)
+    end
+    icon.DoClick = function()
+        gui.OpenURL(url)
+    end
+    return icon
+end
+
 function rRadio.interface.TruncateText(text, font, maxWidth)
     surface.SetFont(font)
     if surface.GetTextSize(text) <= maxWidth then
