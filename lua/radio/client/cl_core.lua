@@ -12,7 +12,6 @@ local MAX_CLIENT_STATIONS = 10
 local activeStationCount = 0
 local selectedCountry = nil
 local radioMenuOpen = false
-local currentlyPlayingStation = nil
 local lastMessageTime = -math.huge
 local lastStationSelectTime = 0
 local currentlyPlayingStations = {}
@@ -28,21 +27,6 @@ local VOLUME_ICONS = {
 
 local function Scale(value)
     return value * (ScrW() / 2560)
-end
-
-local function reopenRadioMenu(openSettingsMenuFlag)
-    if openRadioMenu then
-        if IsValid(LocalPlayer()) and LocalPlayer().currentRadioEntity then
-            timer.Simple(
-                0.1,
-                function()
-                    openRadioMenu(openSettingsMenuFlag)
-                end
-            )
-        end
-    else
-        print("Error: openRadioMenu function not found")
-    end
 end
 
 local function createFonts()
@@ -607,7 +591,7 @@ local function openSettingsMenu(parentFrame, backButton)
                 RunConsoleCommand("rammel_rradio_menu_theme", key)
                 rRadio.config.UI = rRadio.themes[key]
                 parentFrame:Close()
-                reopenRadioMenu(true)
+                openRadioMenu(true, {delay=true})
             end
         end
     )
@@ -743,7 +727,18 @@ local function openSettingsMenu(parentFrame, backButton)
     end
 end
 
-openRadioMenu = function(openSettings)
+openRadioMenu = function(openSettings, opts)
+    opts = opts or {}
+    if opts.delay and IsValid(LocalPlayer()) and LocalPlayer().currentRadioEntity then
+        timer.Simple(
+            0.1,
+            function()
+                openRadioMenu(openSettings)
+            end
+        )
+        return
+    end
+    -- openSettings param retained for compatibility
     if not GetConVar("rammel_rradio_enabled"):GetBool() then
         return
     end
@@ -891,7 +886,6 @@ openRadioMenu = function(openSettings)
                 net.Start("StopCarRadioStation")
                 net.WriteEntity(entity)
                 net.SendToServer()
-                currentlyPlayingStation = nil
                 currentlyPlayingStations[entity] = nil
                 populateList(stationListPanel, backButton, searchBox, false)
                 if backButton then

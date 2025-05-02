@@ -26,7 +26,7 @@ rRadio.config.Lang = rRadio.config.Lang or {}
 rRadio.config.UI = rRadio.config.UI or {}
 
 local gmodLang = GetConVar("gmod_language")
-rRadio.config.RadioVersion = "1.2.0"
+rRadio.config.RadioVersion = "1.2.1"
 
 rRadio.config.RegisteredConVars = rRadio.config.RegisteredConVars or {
     server = {},
