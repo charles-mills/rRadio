@@ -126,7 +126,7 @@ local function LoadStationData()
     if stationDataLoaded then
         return
     end
-    StationData = {}
+    StationData = {} -- s
     local files = file.Find("radio/client/stations/*.lua", "LUA")
     for _, f in ipairs(files) do
         local data = include("radio/client/stations/" .. f)
