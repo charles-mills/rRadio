@@ -1,5 +1,10 @@
+if (rRadio.isClientLoadDisabled()) then
+    function ENT:Draw()
+        self:DrawModel()
+    end
+end
+
 include("shared.lua")
-include("radio/shared/sh_config.lua")
 
 local math_sin = math.sin
 local math_min = math.min
@@ -68,12 +73,12 @@ local HUD_ICON_OFFSET = HUD_PADDING * 2 + ICON_SIZE + 8
 local ACCENT_ALPHA_BRIGHT = 0.8
 local ACCENT_ALPHA_DIM = 0.2
 
-local ActiveBoomboxes = {}
+local ActiveBoomboxes = ActiveBoomboxes or {}
 local DIST_CHECK_VECTOR = Vector(0, 0, 0)
 local UPDATE_INTERVAL = 0.1
 local CLEANUP_INTERVAL = 5
 
-local entityVolumes = {}
+local entityVolumes = entityVolumes or {}
 local entityColorSchemes = setmetatable({}, {__mode = "k"})
 
 local HUD_DIMS = {
@@ -90,46 +95,57 @@ local cached_dots = {
     [4] = "...."
 }
 
-local color_cache =
-    setmetatable(
-    {},
-    {
-        __index = function(t, k)
-            local colorKey = string.format("%d,%d,%d", k.r, k.g, k.b)
-            t[k] =
-                setmetatable(
-                {},
-                {
-                    __index = function(t2, alpha)
-                        t2[alpha] = Color(k.r * alpha / 255, k.g * alpha / 255, k.b * alpha / 255, alpha)
-                        return t2[alpha]
-                    end
-                }
-            )
-            return t[k]
+local color_cache = setmetatable({}, {
+    __index = function(t, k)
+        if type(k) ~= "table" or type(k.r) ~= "number" or type(k.g) ~= "number" or type(k.b) ~= "number" then
+            return {}
         end
-    }
-)
+        local colorKey = string.format("%d,%d,%d", math.floor(k.r), math.floor(k.g), math.floor(k.b))
+        t[k] = setmetatable({}, {
+            __index = function(t2, alpha)
+                if type(alpha) ~= "number" then return nil end
+                local ok, col = pcall(Color, k.r * alpha / 255, k.g * alpha / 255, k.b * alpha / 255, alpha)
+                if not ok or type(col) ~= "table" then return nil end
+                t2[alpha] = col
+                return t2[alpha]
+            end
+        })
+        return t[k]
+    end
+})
 
 local TEXT_STATE_CACHE = {
     width = {},
     clipped = {},
     interact = {
-        text = Config.Lang["Interact"] or "Press E to Interact",
+        text = rRadio.config.Lang["Interact"] or "Press E to Interact",
         width = 0
     },
     paused = {
-        text = Config.Lang["Paused"] or "PAUSED",
+        text = rRadio.config.Lang["Paused"] or "PAUSED",
         width = 0
     },
     tuning = {
-        text = Config.Lang["TuningIn"] or "Tuning in",
+        text = rRadio.config.Lang["TuningIn"] or "Tuning in",
         width = 0
     }
 }
 
 local function GetCachedColor(baseColor, alpha)
-    return color_cache[baseColor][math_floor(alpha)]
+    local bucket = color_cache[baseColor]
+    if not bucket or type(alpha) ~= "number" then
+        return Color(255,255,255, math_floor(alpha or 255))
+    end
+    local key = math_floor(alpha)
+    local col = bucket[key]
+    if not col then
+        if type(baseColor) == "table" and type(baseColor.r) == "number" then
+            local ok, c = pcall(Color, baseColor.r * alpha/255, baseColor.g * alpha/255, baseColor.b * alpha/255, alpha)
+            if ok and type(c) == "table" then return c end
+        end
+        return Color(255,255,255, key)
+    end
+    return col
 end
 
 local function UpdateTextStateCache()
@@ -137,17 +153,16 @@ local function UpdateTextStateCache()
     TEXT_STATE_CACHE.clipped = {}
 
     surface_SetFont("rRadio_BoomboxHUD")
-    TEXT_STATE_CACHE.interact.text = Config.Lang["Interact"] or "Press E to Interact"
-    TEXT_STATE_CACHE.paused.text = Config.Lang["Paused"] or "PAUSED"
-    TEXT_STATE_CACHE.tuning.text = Config.Lang["TuningIn"] or "Tuning in"
-
+    TEXT_STATE_CACHE.interact.text = rRadio.config.Lang["Interact"] or "Press E to Interact"
+    TEXT_STATE_CACHE.paused.text = rRadio.config.Lang["Paused"] or "PAUSED"
+    TEXT_STATE_CACHE.tuning.text = rRadio.config.Lang["TuningIn"] or "Tuning in"
+    
     TEXT_STATE_CACHE.interact.width = surface_GetTextSize(TEXT_STATE_CACHE.interact.text)
     TEXT_STATE_CACHE.paused.width = surface_GetTextSize(TEXT_STATE_CACHE.paused.text)
     TEXT_STATE_CACHE.tuning.width = surface_GetTextSize(TEXT_STATE_CACHE.tuning.text)
 end
 
 local function LerpColor(t, col1, col2)
-    if not col2 then col2 = col1 end
     return Color(
         Lerp(t, col1.r, col2.r),
         Lerp(t, col1.g, col2.g),
@@ -192,16 +207,16 @@ local function BoomboxDistanceCheck()
         timer.Pause("BoomboxDistanceCheck")
         return
     end
-
+    
     local playerPos = GetLocalPlayerEyePos()
     local fadeEndSqr = FADE_END_SQR
     local cullDistSqr = MODEL_CULL_DISTANCE_SQR
-
+    
     for ent in pairs(ActiveBoomboxes) do
         DIST_CHECK_VECTOR:Set(playerPos)
         DIST_CHECK_VECTOR:Sub(ent:GetPos())
         local distSqr = DIST_CHECK_VECTOR:LengthSqr()
-
+        
         ent.lastDistanceResult = distSqr
         local wasVisible = ent.hudVisible
         ent.hudVisible = distSqr < fadeEndSqr
@@ -231,7 +246,7 @@ function ENT:Initialize()
     local mins, maxs = self:GetModelBounds()
     maxs.z = maxs.z + 20
     self:SetRenderBounds(mins, maxs)
-
+    
     self.anim = createAnimationState()
     self.lastVisibilityCheck = 0
     self.lastVisibilityResult = 0
@@ -244,7 +259,7 @@ function ENT:Initialize()
     self.hudX = -self.halfWidth + HUD_PADDING
 
     UpdateNetworkedValues(self)
-
+    
     ActiveBoomboxes[self] = true
     timer.UnPause("BoomboxDistanceCheck")
 end
@@ -255,46 +270,39 @@ end
 
 function ENT:Draw()
     self:DrawModel()
-
-    if not GetConVar("boombox_show_text"):GetBool() or not self.hudVisible then
-        return
+    
+    if not GetConVar("rammel_rradio_boombox_hud"):GetBool() or not self.hudVisible then 
+        return 
     end
 
+    if not GetConVar("rammel_rradio_enabled"):GetBool() then return end
+    
     local alpha = self:CalculateVisibility()
-    if alpha <= 0 then
-        return
-    end
+    if alpha <= 0 then return end
 
     UpdateNetworkedValues(self)
-
+    
     local entIndex = self:EntIndex()
     local statusData = BoomboxStatuses[entIndex] or {}
     local status = statusData.stationStatus or self.nwStatus
     local stationName = statusData.stationName or self.nwStationName
-
+    
     self:UpdateAnimations(status, FrameTime())
-
+    
     local pos = self:GetPos()
     pos:Add(self:GetForward() * 4.6)
     pos:Add(self:GetUp() * 14.5)
-
+    
     local ang = self:GetAngles()
     ang:RotateAroundAxis(ang:Up(), -90)
     ang:RotateAroundAxis(ang:Forward(), 90)
     ang:RotateAroundAxis(ang:Right(), 180)
-
+    
     cam.Start3D2D(pos, ang, 0.06)
-    local success, err =
-        pcall(
-        function()
-            self:DrawHUD(status, stationName, alpha)
-        end
-    )
+    local success, err = pcall(function() self:DrawHUD(status, stationName, alpha) end)
     cam.End3D2D()
-
-    if not success then
-        ErrorNoHalt("Error in DrawHUD: " .. tostring(err) .. "\n")
-    end
+    
+    if not success then ErrorNoHalt("Error in DrawHUD: " .. tostring(err) .. "\n") end
 end
 
 function ENT:GetDisplayText(status, stationName)
@@ -304,7 +312,7 @@ function ENT:GetDisplayText(status, stationName)
         end
         return TEXT_STATE_CACHE.paused.text, TEXT_STATE_CACHE.paused.width
     end
-
+    
     if status == "tuning" then
         local dots = cached_dots[math_floor(CurTime() * 2) % 4]
         local fullText = TEXT_STATE_CACHE.tuning.text .. dots
@@ -316,7 +324,7 @@ function ENT:GetDisplayText(status, stationName)
         end
         return fullText, cachedWidth
     end
-
+    
     if stationName ~= "" then
         local cachedWidth = TEXT_STATE_CACHE.width[stationName]
         if not cachedWidth then
@@ -326,7 +334,7 @@ function ENT:GetDisplayText(status, stationName)
         end
         return stationName, cachedWidth
     end
-
+    
     return "Radio", TEXT_STATE_CACHE.width["Radio"] or 50
 end
 
@@ -359,14 +367,13 @@ function ENT:ProcessDisplayText(status, stationName)
 
     self.cachedText = finalText
 
-    -- Only update width-dependent values if width changed
     local newWidth = math_max(finalWidth + HUD_PADDING * 3 + ICON_SIZE, HUD_DIMS.MIN_WIDTH)
     if newWidth ~= self.cachedWidth then
         self.cachedWidth = newWidth
         self.halfWidth = newWidth * 0.5
         self.hudX = -self.halfWidth + HUD_PADDING
     end
-
+    
     return finalText
 end
 
@@ -376,41 +383,40 @@ function ENT:DrawHUD(status, stationName, alpha)
     if self:GetClass() == "golden_boombox" then
         colors = HUD.COLORS.golden_boombox
     else
-        local theme = Config.UI or {}
-        local textClr = theme.TextColor or Color(255, 255, 255, 255)
+        local theme = rRadio.config.UI or {}
         colors = {
-            BACKGROUND = theme.BackgroundColor or Color(0, 0, 0, 255),
-            ACCENT     = theme.AccentPrimary or theme.Highlight or textClr,
-            TEXT       = textClr,
-            INACTIVE   = theme.Disabled or textClr
+            BACKGROUND = theme.BackgroundColor or Color(0,0,0,255),
+            ACCENT = theme.AccentPrimary or theme.Highlight,
+            TEXT = theme.TextColor or Color(255,255,255,255),
+            INACTIVE = theme.Disabled or theme.TextColor or Color(180,180,180,255)
         }
     end
     local background, accent, textColor, inactive = colors.BACKGROUND, colors.ACCENT, colors.TEXT, colors.INACTIVE
     local text = self:ProcessDisplayText(status, stationName)
-
-    surface.SetDrawColor(GetCachedColor(background, bgAlpha))
+    
+    do local c = GetCachedColor(background, bgAlpha) surface.SetDrawColor(c.r, c.g, c.b, c.a) end
     surface.DrawRect(-self.halfWidth, HUD_Y, self.cachedWidth, HUD_HEIGHT)
-
+    
     if status == "tuning" then
         local barWidth = self.cachedWidth * 0.3
         local tuningOffset = self.anim.tuningOffset * (self.cachedWidth - barWidth)
-
-        surface.SetDrawColor(GetCachedColor(accent, alpha * ACCENT_ALPHA_DIM))
+        
+        do local c = GetCachedColor(accent, alpha * ACCENT_ALPHA_DIM) surface.SetDrawColor(c.r, c.g, c.b, c.a) end
         surface.DrawRect(-self.halfWidth, HUD_HALF_HEIGHT - 2, self.cachedWidth, 2)
-
-        surface.SetDrawColor(GetCachedColor(accent, alpha * ACCENT_ALPHA_BRIGHT))
+        
+        do local c = GetCachedColor(accent, alpha * ACCENT_ALPHA_BRIGHT) surface.SetDrawColor(c.r, c.g, c.b, c.a) end
         surface.DrawRect(-self.halfWidth + tuningOffset, HUD_HALF_HEIGHT - 2, barWidth, 2)
     else
-        surface.SetDrawColor(GetCachedColor(accent, alpha * ACCENT_ALPHA_BRIGHT))
+        do local c = GetCachedColor(accent, alpha * ACCENT_ALPHA_BRIGHT) surface.SetDrawColor(c.r, c.g, c.b, c.a) end
         surface.DrawRect(-self.halfWidth, HUD_HALF_HEIGHT - 2, self.cachedWidth, 2)
     end
-
+    
     local indicatorColor = self:GetStatusColor(status)
     if status ~= "playing" then
-        surface.SetDrawColor(GetCachedColor(indicatorColor, alpha))
+        do local c = GetCachedColor(indicatorColor, alpha) surface.SetDrawColor(c.r, c.g, c.b, c.a) end
         surface.DrawRect(self.hudX, HUD_Y + HUD_HEIGHT / 3, 4, HUD_HEIGHT / 3)
     end
-
+    
     draw_SimpleText(
         text,
         "rRadio_BoomboxHUD",
@@ -420,7 +426,7 @@ function ENT:DrawHUD(status, stationName, alpha)
         TEXT_ALIGN_LEFT,
         TEXT_ALIGN_CENTER
     )
-
+    
     if status == "playing" then
         self:DrawEqualizer(self.hudX, HUD_Y + HUD_HALF_HEIGHT, alpha, indicatorColor)
     end
@@ -438,10 +444,9 @@ function ENT:GetStatusColor(status)
             return colors.INACTIVE
         end
     end
-    local theme = Config.UI or {}
-    local textClr = theme.TextColor or Color(255, 255, 255, 255)
-    local accent = theme.AccentPrimary or theme.Highlight or textClr
-    local inactive = theme.Disabled or textClr
+    local theme = rRadio.config.UI or {}
+    local accent = theme.AccentPrimary or theme.Highlight
+    local inactive = theme.Disabled or theme.TextColor
     if status == "playing" then
         return accent
     elseif status == "tuning" then
@@ -453,23 +458,19 @@ function ENT:GetStatusColor(status)
 end
 
 function ENT:DrawEqualizer(x, y, alpha, color)
-    if not self.anim then
-        self.anim = createAnimationState()
-    end
-    if not self.anim.equalizerHeights then
-        self.anim.equalizerHeights = {0, 0, 0}
-    end
-
+    if not self.anim then self.anim = createAnimationState() end
+    if not self.anim.equalizerHeights then self.anim.equalizerHeights = {0, 0, 0} end
+    
     local barWidth = 4
     local spacing = 4
     local maxHeight = HUD.DIMENSIONS.HEIGHT * 0.7
     local volume = entityVolumes[self] or 1
 
     self:UpdateEqualizerHeights(volume, FrameTime() * 2)
-
+    
     local colorWithAlpha = GetCachedColor(color, alpha)
     local baseY = y
-
+    
     for i = 1, HUD.EQUALIZER.BARS do
         local height = maxHeight * (self.anim.equalizerHeights[i] or 0)
         draw_RoundedBox(1, x + (i - 1) * (barWidth + spacing), baseY - height * 0.5, barWidth, height, colorWithAlpha)
@@ -479,49 +480,42 @@ end
 function ENT:UpdateEqualizerHeights(volume, dt)
     local curTime = CurTime()
     local timeOffsets = {0, 0.33, 0.66}
-
+    
     for i = 1, HUD.EQUALIZER.BARS do
         local wave1 = math_sin((curTime + timeOffsets[i]) * HUD.EQUALIZER.FREQUENCIES[i])
         local wave2 = math_sin((curTime + timeOffsets[i]) * HUD.EQUALIZER.FREQUENCIES[i] * 1.5)
         local combinedWave = (wave1 + wave2) * 0.5
-
+        
         local targetHeight = HUD.EQUALIZER.MIN_HEIGHT + (math_abs(combinedWave) * HUD.EQUALIZER.MAX_HEIGHT * volume)
         self.anim.equalizerHeights[i] = Lerp(dt * 4, self.anim.equalizerHeights[i], targetHeight)
     end
 end
 
 function ENT:CalculateVisibility()
-    if not self.hudVisible then
-        return 0
-    end
-
+    if not self.hudVisible then return 0 end
+    
     local curTime = CurTime()
     if curTime - self.lastVisibilityCheck < UPDATE_INTERVAL then
         return self.lastVisibilityResult
     end
     self.lastVisibilityCheck = curTime
 
-    -- Update player position and calculate distance
     local playerPos = GetLocalPlayerEyePos()
     DIST_CHECK_VECTOR:Set(playerPos)
     DIST_CHECK_VECTOR:Sub(self:GetPos())
     local distSqr = DIST_CHECK_VECTOR:LengthSqr()
-
+    
     self.lastDistanceResult = distSqr
 
-    -- Exit if beyond culling range
     if distSqr >= FADE_END_SQR then
         self.lastVisibilityResult = 0
         return 0
     end
-
-    -- Check if within fade-in range
     if distSqr <= FADE_START_SQR then
         self.lastVisibilityResult = 255
         return 255
     end
-
-    -- Calculate alpha based on distance
+    
     local alpha = math_Clamp(255 * (1 - (distSqr - FADE_START_SQR) * FADE_RANGE_INV), 0, 255)
     self.lastVisibilityResult = alpha
     return alpha
@@ -533,7 +527,7 @@ function ENT:UpdateAnimations(status, dt)
     end
     local targetProgress = (status == "playing" or status == "tuning") and 1 or 0
     self.anim.progress = Lerp(dt * HUD.ANIMATION.SPEED, self.anim.progress, targetProgress)
-
+    
     if status ~= self.anim.lastStatus then
         self.anim.statusTransition = 0
         self.anim.lastStatus = status
@@ -554,65 +548,40 @@ function ENT:GetColorScheme()
     return scheme
 end
 
-surface.CreateFont(
-    "rRadio_BoomboxHUD",
-    {
-        font = "Roboto",
-        size = 24,
-        weight = 500,
-        antialias = true,
-        extended = true
-    }
-)
+surface.CreateFont("rRadio_BoomboxHUD", {
+    font = "Roboto",
+    size = 24,
+    weight = 500,
+    antialias = true,
+    extended = true
+})
 
-net.Receive(
-    "UpdateRadioVolume",
-    function()
-        local entity = net.ReadEntity()
-        local volume = net.ReadFloat()
-        if IsValid(entity) then
-            entityVolumes[entity:EntIndex()] = volume
-        end
-    end
-)
+net.Receive("UpdateRadioVolume", function()
+    local entity = net.ReadEntity()
+    local volume = net.ReadFloat()
+    if IsValid(entity) then entityVolumes[entity:EntIndex()] = volume end
+end)
 
 hook.Add("Initialize", "InitTextStateCache", UpdateTextStateCache)
 hook.Add("LanguageUpdated", "UpdateBoomboxTextCache", UpdateTextStateCache)
 
-hook.Add(
-    "NetworkEntityCreated",
-    "BoomboxNetworkedValues",
-    function(ent)
-        if not IsValid(ent) or not ent:GetClass():find("boombox") then
-            return
-        end
+hook.Add("NetworkEntityCreated", "BoomboxNetworkedValues", function(ent)
+    if not IsValid(ent) or not ent:GetClass():find("boombox") then return end
 
-        timer.Simple(
-            0,
-            function()
-                if IsValid(ent) then
-                    UpdateNetworkedValues(ent)
-                end
-            end
-        )
-    end
-)
-
-hook.Add(
-    "EntityRemoved",
-    "CleanupBoomboxVolumes",
-    function(ent)
+    timer.Simple(0, function()
         if IsValid(ent) then
-            entityVolumes[ent:EntIndex()] = nil
+            UpdateNetworkedValues(ent)
         end
-    end
-)
+    end)
+end)
 
-hook.Add(
-    "ShutDown",
-    "CleanupBoomboxTimers",
-    function()
-        timer.Remove("BoomboxDistanceCheck")
-        timer.Remove("BoomboxCleanup")
+hook.Add("EntityRemoved", "CleanupBoomboxVolumes", function(ent)
+    if IsValid(ent) then
+        entityVolumes[ent:EntIndex()] = nil
     end
-)
+end)
+
+hook.Add("ShutDown", "CleanupBoomboxTimers", function()
+    timer.Remove("BoomboxDistanceCheck")
+    timer.Remove("BoomboxCleanup")
+end)

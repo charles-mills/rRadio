@@ -6,4 +6,3 @@ ENT.Spawnable = true
 ENT.AdminSpawnable = true
 ENT.IconOvervide = "entities/golden_boombox.png"
 ENT.Color = Color(255, 215, 0)
-Config = include("radio/shared/sh_config.lua")
