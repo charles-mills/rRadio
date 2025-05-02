@@ -124,9 +124,6 @@ rRadio.config.MaxVolume = function() return GetConVar("rammel_rradio_sv_vehicle_
 rRadio.config.VolumeAttenuationExponent = 0.8
 
 if CLIENT then
-    rRadio.config.gmodLang = GetConVar("gmod_language")
-    rRadio.config.RadioVersion = "1.2.0"
-
     local function loadLanguage()
         local raw = (rRadio.config.gmodLang and rRadio.config.gmodLang:GetString()) or "en"
         local code = raw:lower()

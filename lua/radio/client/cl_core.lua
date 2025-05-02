@@ -1,3 +1,14 @@
+if CLIENT then
+    hook.Remove("Think",          "rRadio.OpenCarRadioMenu")
+    hook.Remove("Think",          "rRadio.UpdateAllStations")
+    hook.Remove("EntityRemoved",  "rRadio.CleanupRadioStationCount")
+    hook.Remove("EntityRemoved",  "rRadio.BoomboxCleanup")
+    hook.Remove("EntityRemoved",  "rRadio.ClearRadioEntity")
+    hook.Remove("VehicleChanged", "rRadio.ClearRadioEntity")
+    hook.Remove("InitPostEntity", "rRadio.ApplySettingsOnJoin")
+    timer.Remove("ValidateStationCount")
+end
+
 BoomboxStatuses = BoomboxStatuses or {}
 currentRadioSources = currentRadioSources or {}
 local entityVolumes = entityVolumes or {}
