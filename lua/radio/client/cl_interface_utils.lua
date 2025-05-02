@@ -13,6 +13,11 @@ if not file.IsDir(dataDir, "DATA") then
     file.CreateDir(dataDir)
 end
 
+local stopFontCache = {}
+hook.Add("LanguageUpdated", "rRadio.ClearStopFontCache", function()
+    stopFontCache = {}
+end)
+
 local function Scale(value)
     return value * (ScrW() / 2560)
 end
@@ -402,38 +407,21 @@ function rRadio.interface.updateRadioVolume(station, distanceSqr, isPlayerInCar,
 end
 
 function rRadio.interface.calculateFontSizeForStopButton(text, buttonWidth, buttonHeight)
-    local maxFontSize = buttonHeight * 0.7
-    local fontName = "DynamicStopButtonFont"
-    surface.CreateFont(
-        fontName,
-        {
-            font = "Roboto",
-            size = maxFontSize,
-            weight = 700
-        }
-    )
-    surface.CreateFont(
-        "HeaderFont",
-        {
-            font = "Roboto",
-            size = ScreenScale(8),
-            weight = 700
-        }
-    )
+    local key = text .. "_" .. math.floor(buttonHeight)
+    if stopFontCache[key] then
+        return stopFontCache[key]
+    end
+    local maxFontSize = math.floor(buttonHeight * 0.7)
+    local fontName = "StopFont_" .. key
+    surface.CreateFont(fontName, { font = "Roboto", size = maxFontSize, weight = 700 })
     surface.SetFont(fontName)
     local textWidth = surface.GetTextSize(text)
     while textWidth > buttonWidth * 0.9 and maxFontSize > 10 do
         maxFontSize = maxFontSize - 1
-        surface.CreateFont(
-            fontName,
-            {
-                font = "Roboto",
-                size = maxFontSize,
-                weight = 700
-            }
-        )
+        surface.CreateFont(fontName, { font = "Roboto", size = maxFontSize, weight = 700 })
         surface.SetFont(fontName)
         textWidth = surface.GetTextSize(text)
     end
+    stopFontCache[key] = fontName
     return fontName
 end
