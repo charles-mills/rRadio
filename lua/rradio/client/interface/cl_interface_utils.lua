@@ -13,8 +13,95 @@ if not file.IsDir(dataDir, "DATA") then
     file.CreateDir(dataDir)
 end
 
+local stopFontCache = {}
+hook.Add("LanguageUpdated", "rRadio.ClearStopFontCache", function()
+    stopFontCache = {}
+end)
+
 local function Scale(value)
     return value * (ScrW() / 2560)
+end
+
+function rRadio.interface.MakeIconButton(parent, materialPath, url, xOffset)
+    local icon = vgui.Create("DImageButton", parent)
+    local size = Scale(32)
+    icon:SetSize(size, size)
+    icon:SetPos(xOffset, (parent:GetTall() - size) / 2)
+    icon.Paint = function(self, w, h)
+        surface.SetDrawColor(rRadio.config.UI.TextColor)
+        surface.SetMaterial(Material(materialPath))
+        surface.DrawTexturedRect(0, 0, w, h)
+    end
+    icon.DoClick = function()
+        gui.OpenURL(url)
+    end
+    return icon
+end
+
+function rRadio.interface.MakeNavButton(parent, x, y, size, iconMaterial, onClick)
+    local button = vgui.Create("DButton", parent)
+    button:SetPos(x, y)
+    button:SetSize(size, size)
+    button:SetText("")
+    button:SetTextColor(rRadio.config.UI.TextColor)
+    button.lerp = 0
+    button.bgColor = Color(0, 0, 0, 0)
+    button.hoverColor = rRadio.config.UI.ButtonHoverColor
+    button.Paint = function(self, w, h)
+        local bg = rRadio.interface.LerpColor(self.lerp, self.bgColor, self.hoverColor)
+        draw.RoundedBox(8, 0, 0, w, h, bg)
+        surface.SetMaterial(Material(iconMaterial))
+        surface.SetDrawColor(ColorAlpha(rRadio.config.UI.TextColor, 255 * (0.5 + 0.5 * self.lerp)))
+        surface.DrawTexturedRect(0, 0, w, h)
+    end
+    button.Think = function(self)
+        if self:IsHovered() then
+            self.lerp = math.Approach(self.lerp, 1, FrameTime() * 5)
+        else
+            self.lerp = math.Approach(self.lerp, 0, FrameTime() * 5)
+        end
+    end
+    button.DoClick = onClick
+    return button
+end
+
+function rRadio.interface.TruncateText(text, font, maxWidth)
+    surface.SetFont(font)
+    if surface.GetTextSize(text) <= maxWidth then
+        return text
+    end
+    local ellipsis = "..."
+    local len = #text
+    while len > 0 and surface.GetTextSize(text:sub(1, len) .. ellipsis) > maxWidth do
+        len = len - 1
+    end
+    return text:sub(1, len) .. ellipsis
+end
+
+function rRadio.interface.StyleVBar(vbar)
+    if not IsValid(vbar) then return end
+    vbar:SetWide(Scale(8))
+    if vbar.DockMargin then vbar:DockMargin(0, Scale(2), Scale(2), Scale(2)) end
+    vbar.Paint = function(self, w, h)
+        draw.RoundedBox(8, 0, 0, w, h, rRadio.config.UI.ScrollbarColor)
+    end
+    vbar.btnGrip.Paint = function(self, w, h)
+        draw.RoundedBox(8, 0, 0, w, h, rRadio.config.UI.ScrollbarGripColor)
+    end
+    vbar.btnUp.Paint = function(self, w, h) end
+    vbar.btnDown.Paint = function(self, w, h) end
+end
+
+function rRadio.interface.MakeStationButton(parent, onClick)
+    local btn = vgui.Create("DButton", parent)
+    btn:Dock(TOP)
+    btn:DockMargin(Scale(5), Scale(5), Scale(5), 0)
+    btn:SetTall(Scale(40))
+    btn:SetText("")
+    btn:SetFont("Roboto18")
+    btn:SetTextColor(rRadio.config.UI.TextColor)
+    btn.DoClick = onClick
+    return btn
 end
 
 function rRadio.interface.DisplayVehicleEnterAnimation(argVehicle, isDriverOverride)
@@ -363,38 +450,21 @@ function rRadio.interface.updateRadioVolume(station, distanceSqr, isPlayerInCar,
 end
 
 function rRadio.interface.calculateFontSizeForStopButton(text, buttonWidth, buttonHeight)
-    local maxFontSize = buttonHeight * 0.7
-    local fontName = "DynamicStopButtonFont"
-    surface.CreateFont(
-        fontName,
-        {
-            font = "Roboto",
-            size = maxFontSize,
-            weight = 700
-        }
-    )
-    surface.CreateFont(
-        "HeaderFont",
-        {
-            font = "Roboto",
-            size = ScreenScale(8),
-            weight = 700
-        }
-    )
+    local key = text .. "_" .. math.floor(buttonHeight)
+    if stopFontCache[key] then
+        return stopFontCache[key]
+    end
+    local maxFontSize = math.floor(buttonHeight * 0.7)
+    local fontName = "StopFont_" .. key
+    surface.CreateFont(fontName, { font = "Roboto", size = maxFontSize, weight = 700 })
     surface.SetFont(fontName)
     local textWidth = surface.GetTextSize(text)
     while textWidth > buttonWidth * 0.9 and maxFontSize > 10 do
         maxFontSize = maxFontSize - 1
-        surface.CreateFont(
-            fontName,
-            {
-                font = "Roboto",
-                size = maxFontSize,
-                weight = 700
-            }
-        )
+        surface.CreateFont(fontName, { font = "Roboto", size = maxFontSize, weight = 700 })
         surface.SetFont(fontName)
         textWidth = surface.GetTextSize(text)
     end
+    stopFontCache[key] = fontName
     return fontName
 end

@@ -25,8 +25,7 @@ rRadio.config.RadioStations = rRadio.config.RadioStations or {}
 rRadio.config.Lang = rRadio.config.Lang or {}
 rRadio.config.UI = rRadio.config.UI or {}
 
-local gmodLang = GetConVar("gmod_language")
-rRadio.config.RadioVersion = "1.2.0"
+rRadio.config.RadioVersion = "1.2.1"
 
 rRadio.config.RegisteredConVars = rRadio.config.RegisteredConVars or {
     server = {},
@@ -124,11 +123,10 @@ rRadio.config.MaxVolume = function() return GetConVar("rammel_rradio_sv_vehicle_
 rRadio.config.VolumeAttenuationExponent = 0.8
 
 if CLIENT then
-    rRadio.config.gmodLang = GetConVar("gmod_language")
-    rRadio.config.RadioVersion = "1.2.0"
+    local gmodLang = GetConVar("gmod_language")
 
     local function loadLanguage()
-        local raw = (rRadio.config.gmodLang and rRadio.config.gmodLang:GetString()) or "en"
+        local raw = (gmodLang and gmodLang:GetString()) or "en"
         local code = raw:lower()
         code = code:gsub("%s+", "_"):gsub("-", "_"):gsub("[()]", "")
         local langMap = {
