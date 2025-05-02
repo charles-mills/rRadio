@@ -69,7 +69,7 @@ function rRadio.isClientLoadDisabled()
 end
 
 local function addClientFile(filename)
-    include("radio/" .. filename)
+    include("rradio/" .. filename)
     cl_count = cl_count + 1
 end
 
@@ -80,10 +80,10 @@ end
 
 local function addCSLuaFiles()
     local dirs = {
-        "radio/shared",
-        "radio/client",
-        "radio/client/lang",
-        "radio/client/stations",
+        "rradio/shared",
+        "rradio/client",
+        "rradio/client/lang",
+        "rradio/client/stations",
         "entities/base_boombox",
         "entities/boombox",
         "entities/golden_boombox"
@@ -109,25 +109,6 @@ local function addPrivileges()
     end
 end
 
-local function addList()
-    list.Set("SpawnableEntities", "boombox", {
-    PrintName = "Boombox",
-    ClassName = "boombox",
-    Category = "Radio",
-    AdminOnly = false,
-    Model = "models/rammel/boombox.mdl",
-    Description = "A basic boombox, ready to play some music!"
-    })
-    list.Set("SpawnableEntities", "golden_boombox", {
-    PrintName = "Golden Boombox",
-    ClassName = "golden_boombox",
-    Category = "Radio",
-    AdminOnly = true,
-    Model = "models/rammel/boombox.mdl",
-    Description = "A boombox with an extreme audio range!"
-    })
-end
-
 if SERVER then
     local resourceStr = ""
 
@@ -143,11 +124,9 @@ if SERVER then
     addCSLuaFiles()
     rRadio.FormattedOutput("Assigned " .. cl_load_count .. " client-side files")
     rRadio.FormattedOutput("Assigned " .. resourceStr .. " resource files") 
-    addList()
-    rRadio.FormattedOutput("Assigned entities to client spawn list")
-    include("radio/shared/sh_config.lua")
-    include("radio/shared/sh_utils.lua")
-    include("radio/server/sv_core.lua")
+    include("rradio/shared/sh_config.lua")
+    include("rradio/shared/sh_utils.lua")
+    include("rradio/server/sv_core.lua")
     addPrivileges()
 
     rRadio.FormattedOutput("Finished server-side initialization")

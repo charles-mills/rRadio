@@ -1,4 +1,4 @@
-include("radio/server/sv_permanent.lua")
+include("rradio/server/sv_permanent.lua")
 
 util.AddNetworkString("PlayCarRadioStation")
 util.AddNetworkString("StopCarRadioStation")

@@ -161,9 +161,9 @@ local function LoadStationData()
         return
     end
     StationData = {}
-    local files = file.Find("radio/client/stations/*.lua", "LUA")
+    local files = file.Find("rradio/client/stations/*.lua", "LUA")
     for _, f in ipairs(files) do
-        local data = include("radio/client/stations/" .. f)
+        local data = include("rradio/client/stations/" .. f)
         if data then
             for country, stations in pairs(data) do
                 local baseCountry = country:gsub("_(%d+)$", "")
