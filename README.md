@@ -45,10 +45,6 @@ You can customise various aspects of rRadio by editing the `lua/rradio/shared/sh
 
 If you encounter any issues or have any questions, please open an issue on this GitHub repository.
 
-## Licence
-
-This project is licensed under the GNU General Public License v3.0 (GPL-3.0). See the [LICENSE](https://github.com/charles-mills/rRadio/blob/main/LICENSE) file for details.
-
 ## General Credits
 
 - UI Icons by [Flaticon](https://www.flaticon.com/uicons/)
