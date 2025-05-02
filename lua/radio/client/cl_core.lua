@@ -111,6 +111,55 @@ local function createStarIcon(parent, country, station, updateList)
     end
     return starIcon
 end
+
+local function MakePlayableStationButton(parent, station, displayText, updateList, backButton, searchBox, resetSearch)
+    local btn = rRadio.interface.MakeStationButton(parent)
+    btn.Paint = function(self, w, h)
+        local entity = LocalPlayer().currentRadioEntity
+        local isPlaying = IsValid(entity) and currentlyPlayingStations[entity] and currentlyPlayingStations[entity].name == station.name
+        draw.RoundedBox(8, 0, 0, w, h, isPlaying and rRadio.config.UI.PlayingButtonColor or rRadio.config.UI.ButtonColor)
+        if not isPlaying and self:IsHovered() then
+            draw.RoundedBox(8, 0, 0, w, h, rRadio.config.UI.ButtonHoverColor)
+        end
+        local text = displayText
+        surface.SetFont("Roboto18")
+        local regionLeft = Scale(8 + 24 + 8)
+        local rightMargin = Scale(8)
+        local availWidth = w - regionLeft - rightMargin
+        local outputText = rRadio.interface.TruncateText(text, "Roboto18", availWidth)
+        local textWidth = surface.GetTextSize(outputText)
+        local x = w * 0.5
+        if x - textWidth * 0.5 < regionLeft then x = regionLeft + textWidth * 0.5
+        elseif x + textWidth * 0.5 > w - rightMargin then x = w - rightMargin - textWidth * 0.5 end
+        draw.SimpleText(outputText, "Roboto18", x, h/2, rRadio.config.UI.TextColor, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+    end
+    btn.DoClick = function()
+        local currentTime = CurTime()
+        if currentTime - lastStationSelectTime < 2 then return end
+        surface.PlaySound("buttons/button17.wav")
+        local entity = LocalPlayer().currentRadioEntity
+        if not IsValid(entity) then return end
+        if currentlyPlayingStations[entity] then
+            net.Start("StopCarRadioStation") net.WriteEntity(entity) net.SendToServer()
+        end
+        local entityConfig = rRadio.interface.getEntityConfig(entity)
+        local volume = entityVolumes[entity] or (entityConfig and entityConfig.Volume()) or 0.5
+        timer.Simple(0, function()
+            if not IsValid(entity) then return end
+            net.Start("PlayCarRadioStation")
+            net.WriteEntity(entity)
+            net.WriteString(station.name)
+            net.WriteString(station.url)
+            net.WriteFloat(volume)
+            net.SendToServer()
+            currentlyPlayingStations[entity] = station
+            lastStationSelectTime = currentTime
+            updateList()
+        end)
+    end
+    return btn
+end
+
 local StationData = {}
 local function LoadStationData()
     if stationDataLoaded then
@@ -329,68 +378,16 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
             end
         )
         for _, favorite in ipairs(favoritesList) do
-            local stationButton = rRadio.interface.MakeStationButton(stationListPanel, nil)
-            stationButton.Paint = function(self, w, h)
-                local entity = LocalPlayer().currentRadioEntity
-                if IsValid(entity) and currentlyPlayingStations[entity] and currentlyPlayingStations[entity].name == favorite.station.name then
-                    draw.RoundedBox(8, 0, 0, w, h, rRadio.config.UI.PlayingButtonColor)
-                else
-                    draw.RoundedBox(8, 0, 0, w, h, rRadio.config.UI.ButtonColor)
-                    if self:IsHovered() then
-                        draw.RoundedBox(8, 0, 0, w, h, rRadio.config.UI.ButtonHoverColor)
-                    end
-                end
-                local text = favorite.countryName .. " - " .. favorite.station.name
-                surface.SetFont("Roboto18")
-                local regionLeft = Scale(8 + 24 + 8)
-                local rightMargin = Scale(8)
-                local availWidth = w - regionLeft - rightMargin
-                local outputText = rRadio.interface.TruncateText(text, "Roboto18", availWidth)
-                local textWidth = surface.GetTextSize(outputText)
-                local x = w * 0.5
-                if x - textWidth * 0.5 < regionLeft then
-                    x = regionLeft + textWidth * 0.5
-                elseif x + textWidth * 0.5 > w - rightMargin then
-                    x = w - rightMargin - textWidth * 0.5
-                end
-                draw.SimpleText(outputText, "Roboto18", x, h / 2, rRadio.config.UI.TextColor, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
-            end
+            local stationButton = MakePlayableStationButton(
+                stationListPanel,
+                favorite.station,
+                favorite.countryName .. " - " .. favorite.station.name,
+                updateList,
+                backButton,
+                searchBox,
+                false
+            )
             createStarIcon(stationButton, favorite.country, favorite.station, updateList)
-            stationButton.DoClick = function()
-                local currentTime = CurTime()
-                if currentTime - lastStationSelectTime < 2 then
-                    return
-                end
-                surface.PlaySound("buttons/button17.wav")
-                local entity = LocalPlayer().currentRadioEntity
-                if not IsValid(entity) then
-                    return
-                end
-                if currentlyPlayingStations[entity] then
-                    net.Start("StopCarRadioStation")
-                    net.WriteEntity(entity)
-                    net.SendToServer()
-                end
-                local entityConfig = rRadio.interface.getEntityConfig(entity)
-                local volume = entityVolumes[entity] or (entityConfig and entityConfig.Volume()) or 0.5
-                timer.Simple(
-                    0,
-                    function()
-                        if not IsValid(entity) then
-                            return
-                        end
-                        net.Start("PlayCarRadioStation")
-                        net.WriteEntity(entity)
-                        net.WriteString(favorite.station.name)
-                        net.WriteString(favorite.station.url)
-                        net.WriteFloat(volume)
-                        net.SendToServer()
-                        currentlyPlayingStations[entity] = favorite.station
-                        lastStationSelectTime = currentTime
-                        populateList(stationListPanel, backButton, searchBox, false)
-                    end
-                )
-            end
         end
     else
         local stations = StationData[selectedCountry] or {}
@@ -412,68 +409,16 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
         )
         for _, stationData in ipairs(favoriteStationsList) do
             local station = stationData.station
-            local stationButton = rRadio.interface.MakeStationButton(stationListPanel, nil)
-            stationButton.Paint = function(self, w, h)
-                local entity = LocalPlayer().currentRadioEntity
-                if IsValid(entity) and stationData.station == currentlyPlayingStations[entity] then
-                    draw.RoundedBox(8, 0, 0, w, h, rRadio.config.UI.PlayingButtonColor)
-                else
-                    draw.RoundedBox(8, 0, 0, w, h, rRadio.config.UI.ButtonColor)
-                    if self:IsHovered() then
-                        draw.RoundedBox(8, 0, 0, w, h, rRadio.config.UI.ButtonHoverColor)
-                    end
-                end
-                local text = stationData.station.name
-                surface.SetFont("Roboto18")
-                local regionLeft = Scale(8 + 24 + 8)
-                local rightMargin = Scale(8)
-                local availWidth = w - regionLeft - rightMargin
-                local outputText = rRadio.interface.TruncateText(text, "Roboto18", availWidth)
-                local textWidth = surface.GetTextSize(outputText)
-                local x = w * 0.5
-                if x - textWidth * 0.5 < regionLeft then
-                    x = regionLeft + textWidth * 0.5
-                elseif x + textWidth * 0.5 > w - rightMargin then
-                    x = w - rightMargin - textWidth * 0.5
-                end
-                draw.SimpleText(outputText, "Roboto18", x, h / 2, rRadio.config.UI.TextColor, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
-            end
-            createStarIcon(stationButton, selectedCountry, stationData.station, updateList)
-            stationButton.DoClick = function()
-                local currentTime = CurTime()
-                if currentTime - lastStationSelectTime < 2 then
-                    return
-                end
-                surface.PlaySound("buttons/button17.wav")
-                local entity = LocalPlayer().currentRadioEntity
-                if not IsValid(entity) then
-                    return
-                end
-                if currentlyPlayingStations[entity] then
-                    net.Start("StopCarRadioStation")
-                    net.WriteEntity(entity)
-                    net.SendToServer()
-                end
-                local entityConfig = rRadio.interface.getEntityConfig(entity)
-                local volume = entityVolumes[entity] or (entityConfig and entityConfig.Volume()) or 0.5
-                timer.Simple(
-                    0,
-                    function()
-                        if not IsValid(entity) then
-                            return
-                        end
-                        net.Start("PlayCarRadioStation")
-                        net.WriteEntity(entity)
-                        net.WriteString(station.name)
-                        net.WriteString(station.url)
-                        net.WriteFloat(volume)
-                        net.SendToServer()
-                        currentlyPlayingStations[entity] = station
-                        lastStationSelectTime = currentTime
-                        populateList(stationListPanel, backButton, searchBox, false)
-                    end
-                )
-            end
+            local stationButton = MakePlayableStationButton(
+                stationListPanel,
+                station,
+                station.name,
+                updateList,
+                backButton,
+                searchBox,
+                false
+            )
+            createStarIcon(stationButton, selectedCountry, station, updateList)
         end
         if backButton then
             backButton:SetVisible(true)
