@@ -541,7 +541,7 @@ local function openSettingsMenu(parentFrame, backButton)
 
         return dropdown
     end
-    local function addCheckbox(text, convar)
+    local function addCheckbox(text, convar, initialValue, onChangeCallback)
         local container = vgui.Create("DPanel", scrollPanel)
         container:Dock(TOP)
         container:SetTall(Scale(40))
@@ -552,7 +552,12 @@ local function openSettingsMenu(parentFrame, backButton)
         local checkbox = vgui.Create("DCheckBox", container)
         checkbox:SetPos(Scale(10), (container:GetTall() - Scale(20)) / 2)
         checkbox:SetSize(Scale(20), Scale(20))
-        checkbox:SetConVar(convar)
+
+        if initialValue ~= nil then
+            checkbox:SetChecked(initialValue)
+        elseif convar and convar ~= "" then
+            checkbox:SetChecked(GetConVar(convar):GetBool())
+        end
         checkbox.Paint = function(self, w, h)
             draw.RoundedBox(4, 0, 0, w, h, rRadio.config.UI.SearchBoxColor)
             if self:GetChecked() then
@@ -567,7 +572,12 @@ local function openSettingsMenu(parentFrame, backButton)
         label:SizeToContents()
         label:SetPos(Scale(40), (container:GetTall() - label:GetTall()) / 2)
         checkbox.OnChange = function(self, value)
-            RunConsoleCommand(convar, value and "1" or "0")
+            if convar and convar ~= "" then
+                RunConsoleCommand(convar, value and "1" or "0")
+            end
+            if onChangeCallback then
+                onChangeCallback(self, value)
+            end
         end
         return checkbox
     end
@@ -622,8 +632,12 @@ local function openSettingsMenu(parentFrame, backButton)
         end
     )
     addHeader(rRadio.config.Lang["GeneralOptions"] or "General Options")
-    addCheckbox(rRadio.config.Lang["ShowCarMessages"] or "Show Car Radio Animation", "rammel_rradio_vehicle_animation")
-    addCheckbox(rRadio.config.Lang["ShowBoomboxHUD"] or "Show Boombox HUD", "rammel_rradio_boombox_hud")
+    addCheckbox(rRadio.config.Lang["ShowCarMessages"] or "Show Car Radio Animation",
+                "rammel_rradio_vehicle_animation",
+                GetConVar("rammel_rradio_vehicle_animation"):GetBool())
+    addCheckbox(rRadio.config.Lang["ShowBoomboxHUD"] or "Show Boombox HUD",
+                "rammel_rradio_boombox_hud",
+                GetConVar("rammel_rradio_boombox_hud"):GetBool())
     if LocalPlayer():IsSuperAdmin() then
         local currentEntity = LocalPlayer().currentRadioEntity
         local isBoombox =
@@ -631,23 +645,26 @@ local function openSettingsMenu(parentFrame, backButton)
             (currentEntity:GetClass() == "boombox" or currentEntity:GetClass() == "golden_boombox")
         if isBoombox then
             addHeader(rRadio.config.Lang["SuperadminSettings"] or "Superadmin Settings")
-            local permanentCheckbox = addCheckbox(rRadio.config.Lang["MakeBoomboxPermanent"] or "Make Boombox Permanent", "")
-            permanentCheckbox:SetChecked(currentEntity:GetNWBool("IsPermanent", false))
-            permanentCheckbox.OnChange = function(self, value)
-                if not IsValid(currentEntity) then
-                    self:SetChecked(false)
-                    return
+            local permanentCheckbox = addCheckbox(
+                rRadio.config.Lang["MakeBoomboxPermanent"] or "Make Boombox Permanent",
+                nil,
+                currentEntity:GetNWBool("IsPermanent", false),
+                function(self, value)
+                    if not IsValid(currentEntity) then
+                        self:SetChecked(false)
+                        return
+                    end
+                    if value then
+                        net.Start("MakeBoomboxPermanent")
+                        net.WriteEntity(currentEntity)
+                        net.SendToServer()
+                    else
+                        net.Start("RemoveBoomboxPermanent")
+                        net.WriteEntity(currentEntity)
+                        net.SendToServer()
+                    end
                 end
-                if value then
-                    net.Start("MakeBoomboxPermanent")
-                    net.WriteEntity(currentEntity)
-                    net.SendToServer()
-                else
-                    net.Start("RemoveBoomboxPermanent")
-                    net.WriteEntity(currentEntity)
-                    net.SendToServer()
-                end
-            end
+            )
             net.Receive(
                 "BoomboxPermanentConfirmation",
                 function()
@@ -729,6 +746,7 @@ end
 
 openRadioMenu = function(openSettings, opts)
     opts = opts or {}
+    settingsMenuOpen = openSettings == true
     if opts.delay and IsValid(LocalPlayer()) and LocalPlayer().currentRadioEntity then
         timer.Simple(
             0.1,
@@ -738,7 +756,7 @@ openRadioMenu = function(openSettings, opts)
         )
         return
     end
-    -- openSettings param retained for compatibility
+
     if not GetConVar("rammel_rradio_enabled"):GetBool() then
         return
     end
