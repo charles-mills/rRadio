@@ -265,13 +265,7 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
             end
         )
         for _, country in ipairs(countries) do
-            local countryButton = vgui.Create("DButton", stationListPanel)
-            countryButton:Dock(TOP)
-            countryButton:DockMargin(Scale(5), Scale(5), Scale(5), 0)
-            countryButton:SetTall(Scale(40))
-            countryButton:SetText("")
-            countryButton:SetFont("Roboto18")
-            countryButton:SetTextColor(rRadio.config.UI.TextColor)
+            local countryButton = rRadio.interface.MakeStationButton(stationListPanel, nil)
             countryButton.Paint = function(self, w, h)
                 draw.RoundedBox(8, 0, 0, w, h, rRadio.config.UI.ButtonColor)
                 if self:IsHovered() then
@@ -290,15 +284,7 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                 elseif x + textWidth * 0.5 > w - rightMargin then
                     x = w - rightMargin - textWidth * 0.5
                 end
-                draw.SimpleText(
-                    outputText,
-                    "Roboto18",
-                    x,
-                    h / 2,
-                    rRadio.config.UI.TextColor,
-                    TEXT_ALIGN_CENTER,
-                    TEXT_ALIGN_CENTER
-                )
+                draw.SimpleText(outputText, "Roboto18", x, h / 2, rRadio.config.UI.TextColor, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
             end
             createStarIcon(countryButton, country.original, nil, updateList)
             countryButton.DoClick = function()
@@ -343,19 +329,10 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
             end
         )
         for _, favorite in ipairs(favoritesList) do
-            local stationButton = vgui.Create("DButton", stationListPanel)
-            stationButton:Dock(TOP)
-            stationButton:DockMargin(Scale(5), Scale(5), Scale(5), 0)
-            stationButton:SetTall(Scale(40))
-            stationButton:SetText("")
-            stationButton:SetFont("Roboto18")
-            stationButton:SetTextColor(rRadio.config.UI.TextColor)
+            local stationButton = rRadio.interface.MakeStationButton(stationListPanel, nil)
             stationButton.Paint = function(self, w, h)
                 local entity = LocalPlayer().currentRadioEntity
-                if
-                    IsValid(entity) and currentlyPlayingStations[entity] and
-                        currentlyPlayingStations[entity].name == favorite.station.name
-                 then
+                if IsValid(entity) and currentlyPlayingStations[entity] and currentlyPlayingStations[entity].name == favorite.station.name then
                     draw.RoundedBox(8, 0, 0, w, h, rRadio.config.UI.PlayingButtonColor)
                 else
                     draw.RoundedBox(8, 0, 0, w, h, rRadio.config.UI.ButtonColor)
@@ -376,15 +353,7 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                 elseif x + textWidth * 0.5 > w - rightMargin then
                     x = w - rightMargin - textWidth * 0.5
                 end
-                draw.SimpleText(
-                    outputText,
-                    "Roboto18",
-                    x,
-                    h / 2,
-                    rRadio.config.UI.TextColor,
-                    TEXT_ALIGN_CENTER,
-                    TEXT_ALIGN_CENTER
-                )
+                draw.SimpleText(outputText, "Roboto18", x, h / 2, rRadio.config.UI.TextColor, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
             end
             createStarIcon(stationButton, favorite.country, favorite.station, updateList)
             stationButton.DoClick = function()
@@ -443,16 +412,10 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
         )
         for _, stationData in ipairs(favoriteStationsList) do
             local station = stationData.station
-            local stationButton = vgui.Create("DButton", stationListPanel)
-            stationButton:Dock(TOP)
-            stationButton:DockMargin(Scale(5), Scale(5), Scale(5), 0)
-            stationButton:SetTall(Scale(40))
-            stationButton:SetText("")
-            stationButton:SetFont("Roboto18")
-            stationButton:SetTextColor(rRadio.config.UI.TextColor)
+            local stationButton = rRadio.interface.MakeStationButton(stationListPanel, nil)
             stationButton.Paint = function(self, w, h)
                 local entity = LocalPlayer().currentRadioEntity
-                if IsValid(entity) and station == currentlyPlayingStations[entity] then
+                if IsValid(entity) and stationData.station == currentlyPlayingStations[entity] then
                     draw.RoundedBox(8, 0, 0, w, h, rRadio.config.UI.PlayingButtonColor)
                 else
                     draw.RoundedBox(8, 0, 0, w, h, rRadio.config.UI.ButtonColor)
@@ -460,7 +423,7 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                         draw.RoundedBox(8, 0, 0, w, h, rRadio.config.UI.ButtonHoverColor)
                     end
                 end
-                local text = station.name
+                local text = stationData.station.name
                 surface.SetFont("Roboto18")
                 local regionLeft = Scale(8 + 24 + 8)
                 local rightMargin = Scale(8)
@@ -473,17 +436,9 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                 elseif x + textWidth * 0.5 > w - rightMargin then
                     x = w - rightMargin - textWidth * 0.5
                 end
-                draw.SimpleText(
-                    outputText,
-                    "Roboto18",
-                    x,
-                    h / 2,
-                    rRadio.config.UI.TextColor,
-                    TEXT_ALIGN_CENTER,
-                    TEXT_ALIGN_CENTER
-                )
+                draw.SimpleText(outputText, "Roboto18", x, h / 2, rRadio.config.UI.TextColor, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
             end
-            createStarIcon(stationButton, selectedCountry, station, updateList)
+            createStarIcon(stationButton, selectedCountry, stationData.station, updateList)
             stationButton.DoClick = function()
                 local currentTime = CurTime()
                 if currentTime - lastStationSelectTime < 2 then
@@ -536,6 +491,7 @@ local function openSettingsMenu(parentFrame, backButton)
     local scrollPanel = vgui.Create("DScrollPanel", settingsFrame)
     scrollPanel:Dock(FILL)
     scrollPanel:DockMargin(Scale(5), Scale(5), Scale(5), Scale(5))
+    rRadio.interface.StyleVBar(scrollPanel:GetVBar())
     local function addHeader(text, isFirst)
         local header = vgui.Create("DLabel", scrollPanel)
         header:SetText(text)
@@ -646,19 +602,7 @@ local function openSettingsMenu(parentFrame, backButton)
             menu:Open(x, y, false, self)
 
             if IsValid(menu.VBar) then
-                menu.VBar:SetWide(Scale(8))
-                menu.VBar:DockMargin(0, Scale(2), Scale(2), Scale(2))
-
-                menu.VBar.Paint = function(_, w, h)
-                    draw.RoundedBox(4, 0, 0, w, h, rRadio.config.UI.ScrollbarColor)
-                end
-                menu.VBar.btnGrip.Paint = function(_, w, h)
-                    draw.RoundedBox(4, 0, 0, w, h, rRadio.config.UI.ScrollbarGripColor)
-                end
-                menu.VBar.btnUp.Paint = function()
-                end
-                menu.VBar.btnDown.Paint = function()
-                end
+                rRadio.interface.StyleVBar(menu.VBar)
             end
         end
 
@@ -956,6 +900,7 @@ openRadioMenu = function(openSettings)
         Scale(rRadio.config.UI.FrameSize.height) - Scale(200)
     )
     stationListPanel:SetVisible(not settingsMenuOpen)
+    rRadio.interface.StyleVBar(stationListPanel:GetVBar())
     local stopButtonHeight = Scale(rRadio.config.UI.FrameSize.width) / 8
     local stopButtonWidth = Scale(rRadio.config.UI.FrameSize.width) / 4
     local stopButtonText = rRadio.config.Lang["StopRadio"] or "STOP"
@@ -1105,20 +1050,6 @@ openRadioMenu = function(openSettings)
             net.WriteFloat(value)
             net.SendToServer()
         end
-    end
-    local sbar = stationListPanel:GetVBar()
-    sbar:SetWide(Scale(8))
-    function sbar:Paint(w, h)
-        draw.RoundedBox(8, 0, 0, w, h, rRadio.config.UI.ScrollbarColor)
-    end
-    function sbar.btnUp:Paint(w, h)
-        draw.RoundedBox(8, 0, 0, w, h, rRadio.config.UI.ScrollbarColor)
-    end
-    function sbar.btnDown:Paint(w, h)
-        draw.RoundedBox(8, 0, 0, w, h, rRadio.config.UI.ScrollbarColor)
-    end
-    function sbar.btnGrip:Paint(w, h)
-        draw.RoundedBox(8, 0, 0, w, h, rRadio.config.UI.ScrollbarGripColor)
     end
     local buttonSize = Scale(25)
     local topMargin = Scale(7)

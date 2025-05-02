@@ -30,6 +30,32 @@ function rRadio.interface.TruncateText(text, font, maxWidth)
     return text:sub(1, len) .. ellipsis
 end
 
+function rRadio.interface.StyleVBar(vbar)
+    if not IsValid(vbar) then return end
+    vbar:SetWide(Scale(8))
+    if vbar.DockMargin then vbar:DockMargin(0, Scale(2), Scale(2), Scale(2)) end
+    vbar.Paint = function(self, w, h)
+        draw.RoundedBox(8, 0, 0, w, h, rRadio.config.UI.ScrollbarColor)
+    end
+    vbar.btnGrip.Paint = function(self, w, h)
+        draw.RoundedBox(8, 0, 0, w, h, rRadio.config.UI.ScrollbarGripColor)
+    end
+    vbar.btnUp.Paint = function(self, w, h) end
+    vbar.btnDown.Paint = function(self, w, h) end
+end
+
+function rRadio.interface.MakeStationButton(parent, onClick)
+    local btn = vgui.Create("DButton", parent)
+    btn:Dock(TOP)
+    btn:DockMargin(Scale(5), Scale(5), Scale(5), 0)
+    btn:SetTall(Scale(40))
+    btn:SetText("")
+    btn:SetFont("Roboto18")
+    btn:SetTextColor(rRadio.config.UI.TextColor)
+    btn.DoClick = onClick
+    return btn
+end
+
 function rRadio.interface.DisplayVehicleEnterAnimation(argVehicle, isDriverOverride)
     rRadio.DevPrint("Displaying vehicle enter animation")
 
