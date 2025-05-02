@@ -153,7 +153,7 @@ if SERVER then
     rRadio.FormattedOutput("Finished server-side initialization")
 elseif CLIENT then
     addClientFile("shared/sh_utils.lua")
-    addClientFile("client/cl_themes.lua")
+    addClientFile("client/interface/cl_themes.lua")
     addClientFile("client/lang/cl_language_manager.lua")
     addClientFile("shared/sh_config.lua")
     rRadio.addClConVars()
@@ -166,8 +166,8 @@ elseif CLIENT then
 
     rRadio.FormattedOutput("Starting client-side initialization")
     
-    addClientFile("client/cl_interface_utils.lua")
-    addClientFile("client/cl_core.lua")
+    addClientFile("client/interface/cl_interface_utils.lua")
+    addClientFile("client/interface/cl_core.lua")
 
     addClientFile("client/lang/cl_localisation_strings.lua")
     addClientFile("client/lang/cl_country_translations_a.lua")
