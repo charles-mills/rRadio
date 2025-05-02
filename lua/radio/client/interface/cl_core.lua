@@ -847,31 +847,64 @@ openRadioMenu = function(openSettings, opts)
     local stopButtonWidth = Scale(rRadio.config.UI.FrameSize.width) / 4
     local stopButtonText = rRadio.config.Lang["StopRadio"] or "STOP"
     local stopButtonFont = rRadio.interface.calculateFontSizeForStopButton(stopButtonText, stopButtonWidth, stopButtonHeight)
+    local buttonSize = Scale(25)
+    local topMargin = Scale(7)
+    local buttonPadding = Scale(5)
     local function createAnimatedButton(parent, x, y, w, h, text, textColor, bgColor, hoverColor, clickFunc)
         local button = vgui.Create("DButton", parent)
         button:SetPos(x, y)
         button:SetSize(w, h)
         button:SetText(text)
+        button:SetFont("Roboto18")
         button:SetTextColor(textColor)
-        button.bgColor = bgColor
-        button.hoverColor = hoverColor
-        button.lerp = 0
         button.Paint = function(self, w, h)
-            local color = rRadio.interface.LerpColor(self.lerp, self.bgColor, self.hoverColor)
-            draw.RoundedBox(8, 0, 0, w, h, color)
-        end
-        button.Think = function(self)
-            if self:IsHovered() then
-                self.lerp = math.Approach(self.lerp, 1, FrameTime() * 5)
-            else
-                self.lerp = math.Approach(self.lerp, 0, FrameTime() * 5)
-            end
+            local bgColor = self:IsHovered() and hoverColor or bgColor
+            draw.RoundedBox(8, 0, 0, w, h, bgColor)
         end
         button.DoClick = clickFunc
         return button
     end
-    local stopButton =
-        createAnimatedButton(
+    local closeButton = rRadio.interface.MakeNavButton(frame, frame:GetWide() - buttonSize - Scale(10), topMargin, buttonSize, "hud/close.png", function()
+        surface.PlaySound("buttons/lightswitch2.wav")
+        frame:Close()
+    end)
+    local settingsButton = rRadio.interface.MakeNavButton(frame, closeButton:GetX() - buttonSize - buttonPadding, topMargin, buttonSize, "hud/settings.png", function()
+        surface.PlaySound("buttons/lightswitch2.wav")
+        settingsMenuOpen = true
+        openSettingsMenu(currentFrame, backButton)
+        backButton:SetVisible(true)
+        backButton:SetEnabled(true)
+        searchBox:SetVisible(false)
+        stationListPanel:SetVisible(false)
+    end)
+    backButton = rRadio.interface.MakeNavButton(frame, settingsButton:GetX() - buttonSize - buttonPadding, topMargin, buttonSize, "hud/return.png", function()
+        surface.PlaySound("buttons/lightswitch2.wav")
+        if settingsMenuOpen then
+            settingsMenuOpen = false
+            if IsValid(settingsFrame) then
+                settingsFrame:Remove()
+                settingsFrame = nil
+            end
+            searchBox:SetVisible(true)
+            stationListPanel:SetVisible(true)
+            stationDataLoaded = false
+            LoadStationData()
+            timer.Simple(0, function()
+                populateList(stationListPanel, backButton, searchBox, true)
+            end)
+            backButton:SetVisible(selectedCountry ~= nil or favoritesMenuOpen)
+            backButton:SetEnabled(selectedCountry ~= nil or favoritesMenuOpen)
+        elseif selectedCountry or favoritesMenuOpen then
+            selectedCountry = nil
+            favoritesMenuOpen = false
+            backButton:SetVisible(false)
+            backButton:SetEnabled(false)
+            populateList(stationListPanel, backButton, searchBox, true)
+        end
+    end)
+    backButton:SetVisible((selectedCountry ~= nil and selectedCountry ~= "") or settingsMenuOpen)
+    backButton:SetEnabled((selectedCountry ~= nil and selectedCountry ~= "") or settingsMenuOpen)
+    local stopButton = createAnimatedButton(
         frame,
         Scale(10),
         Scale(rRadio.config.UI.FrameSize.height) - Scale(90),
@@ -992,105 +1025,6 @@ openRadioMenu = function(openSettings, opts)
             net.SendToServer()
         end
     end
-    local buttonSize = Scale(25)
-    local topMargin = Scale(7)
-    local buttonPadding = Scale(5)
-    local closeButton =
-        createAnimatedButton(
-        frame,
-        frame:GetWide() - buttonSize - Scale(10),
-        topMargin,
-        buttonSize,
-        buttonSize,
-        "",
-        rRadio.config.UI.TextColor,
-        Color(0, 0, 0, 0),
-        rRadio.config.UI.ButtonHoverColor,
-        function()
-            surface.PlaySound("buttons/lightswitch2.wav")
-            frame:Close()
-        end
-    )
-    closeButton.Paint = function(self, w, h)
-        surface.SetMaterial(Material("hud/close.png"))
-        surface.SetDrawColor(ColorAlpha(rRadio.config.UI.TextColor, 255 * (0.5 + 0.5 * self.lerp)))
-        surface.DrawTexturedRect(0, 0, w, h)
-    end
-    local settingsButton =
-        createAnimatedButton(
-        frame,
-        closeButton:GetX() - buttonSize - buttonPadding,
-        topMargin,
-        buttonSize,
-        buttonSize,
-        "",
-        rRadio.config.UI.TextColor,
-        Color(0, 0, 0, 0),
-        rRadio.config.UI.ButtonHoverColor,
-        function()
-            surface.PlaySound("buttons/lightswitch2.wav")
-            settingsMenuOpen = true
-            openSettingsMenu(currentFrame, backButton)
-            backButton:SetVisible(true)
-            backButton:SetEnabled(true)
-            searchBox:SetVisible(false)
-            stationListPanel:SetVisible(false)
-        end
-    )
-    settingsButton.Paint = function(self, w, h)
-        surface.SetMaterial(Material("hud/settings.png"))
-        surface.SetDrawColor(ColorAlpha(rRadio.config.UI.TextColor, 255 * (0.5 + 0.5 * self.lerp)))
-        surface.DrawTexturedRect(0, 0, w, h)
-    end
-    backButton =
-        createAnimatedButton(
-        frame,
-        settingsButton:GetX() - buttonSize - buttonPadding,
-        topMargin,
-        buttonSize,
-        buttonSize,
-        "",
-        rRadio.config.UI.TextColor,
-        Color(0, 0, 0, 0),
-        rRadio.config.UI.ButtonHoverColor,
-        function()
-            surface.PlaySound("buttons/lightswitch2.wav")
-            if settingsMenuOpen then
-                settingsMenuOpen = false
-                if IsValid(settingsFrame) then
-                    settingsFrame:Remove()
-                    settingsFrame = nil
-                end
-                searchBox:SetVisible(true)
-                stationListPanel:SetVisible(true)
-                stationDataLoaded = false
-                LoadStationData()
-                timer.Simple(
-                    0,
-                    function()
-                        populateList(stationListPanel, backButton, searchBox, true)
-                    end
-                )
-                backButton:SetVisible(selectedCountry ~= nil or favoritesMenuOpen)
-                backButton:SetEnabled(selectedCountry ~= nil or favoritesMenuOpen)
-            elseif selectedCountry or favoritesMenuOpen then
-                selectedCountry = nil
-                favoritesMenuOpen = false
-                backButton:SetVisible(false)
-                backButton:SetEnabled(false)
-                populateList(stationListPanel, backButton, searchBox, true)
-            end
-        end
-    )
-    backButton.Paint = function(self, w, h)
-        if self:IsVisible() then
-            surface.SetMaterial(Material("hud/return.png"))
-            surface.SetDrawColor(ColorAlpha(rRadio.config.UI.TextColor, 255 * (0.5 + 0.5 * self.lerp)))
-            surface.DrawTexturedRect(0, 0, w, h)
-        end
-    end
-    backButton:SetVisible((selectedCountry ~= nil and selectedCountry ~= "") or settingsMenuOpen)
-    backButton:SetEnabled((selectedCountry ~= nil and selectedCountry ~= "") or settingsMenuOpen)
     if not settingsMenuOpen then
         populateList(stationListPanel, backButton, searchBox, true)
     else
