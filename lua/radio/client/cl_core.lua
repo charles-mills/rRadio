@@ -758,6 +758,8 @@ end
 openRadioMenu = function(openSettings, opts)
     opts = opts or {}
     settingsMenuOpen = openSettings == true
+    favoritesMenuOpen = false
+    selectedCountry = nil
     if opts.delay and IsValid(LocalPlayer()) and LocalPlayer().currentRadioEntity then
         timer.Simple(
             0.1,
@@ -800,6 +802,9 @@ openRadioMenu = function(openSettings, opts)
     frame:MakePopup()
     frame.OnClose = function()
         radioMenuOpen = false
+        settingsMenuOpen = false
+        favoritesMenuOpen = false
+        selectedCountry = nil
     end
     frame.Paint = function(self, w, h)
         draw.RoundedBox(8, 0, 0, w, h, rRadio.config.UI.BackgroundColor)
