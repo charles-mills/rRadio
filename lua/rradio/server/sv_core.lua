@@ -1,5 +1,3 @@
-include("radio/server/sv_permanent.lua")
-
 util.AddNetworkString("PlayCarRadioStation")
 util.AddNetworkString("StopCarRadioStation")
 util.AddNetworkString("OpenRadioMenu")
@@ -77,7 +75,7 @@ local function AddActiveRadio(entity, stationName, url, volume)
         stationName = stationName,
         url = url,
         volume = EntityVolumes[entIndex],
-        timestamp = CurTime()
+        timestamp = SysTime()
     }
     if rRadio.utils.IsBoombox(entity) then
         BoomboxStatuses[entIndex] = {
@@ -250,7 +248,7 @@ local function ProcessVolumeUpdate(entity, volume, ply)
 end
 
 local function CleanupInactiveRadios()
-    local currentTime = CurTime()
+    local currentTime = SysTime()
     for entIndex, radio in pairs(ActiveRadios) do
         if not IsValid(radio.entity) or currentTime - radio.timestamp > 3600 then
             RemoveActiveRadio(Entity(entIndex))
@@ -481,7 +479,7 @@ net.Receive("PlayCarRadioStation", function(len, ply)
         end
     end
 
-    local now = CurTime()
+    local now = SysTime()
     if now - lastGlobalAction < GLOBAL_COOLDOWN then
         ply:ChatPrint("The radio system is busy. Please try again in a moment.")
         return
@@ -623,7 +621,7 @@ net.Receive("UpdateRadioVolume", function(len, ply)
         }
     end
     local updateData = volumeUpdateQueue[entIndex]
-    local currentTime = CurTime()
+    local currentTime = SysTime()
     updateData.pendingVolume = volume
     updateData.pendingPlayer = ply
     if currentTime - updateData.lastUpdate >= VOLUME_UPDATE_DEBOUNCE_TIME then
@@ -636,7 +634,7 @@ net.Receive("UpdateRadioVolume", function(len, ply)
             timer.Create("VolumeUpdate_" .. entIndex, VOLUME_UPDATE_DEBOUNCE_TIME, 1, function()
                 if updateData.pendingVolume and IsValid(updateData.pendingPlayer) then
                     ProcessVolumeUpdate(entity, updateData.pendingVolume, updateData.pendingPlayer)
-                    updateData.lastUpdate = CurTime()
+                    updateData.lastUpdate = SysTime()
                     updateData.pendingVolume = nil
                     updateData.pendingPlayer = nil
                 end
