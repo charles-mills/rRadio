@@ -1,4 +1,5 @@
-local LANG = LANG or {
+-- Localization strings for radio UI
+local LANG = {
     de = {},
     en = {},
     es = {},
@@ -6,792 +7,523 @@ local LANG = LANG or {
     it = {},
     ja = {},
     ko = {},
-    pt_br = {},
+    ["pt-br"] = {},
     ru = {},
     tr = {},
-    zh_cn = {},
-    en_pt = {},
-    bg = {},
-    el = {},
-    hr = {},
-    he = {},
-    sk = {},
-    pl = {},
-    da = {},
-    nl = {},
-    th = {},
-    vi = {},
-    hu = {},
-    lt = {},
-    uk = {}
-  }
-  
-  -- German
-  LANG.de["SelectCountry"]        = "Land auswählen"
-  LANG.de["StopRadio"]           = "STOP"
-  LANG.de["SearchPlaceholder"]   = "Suche..."
-  LANG.de["PressKeyToOpen"]      = "Drücken Sie {key}, um eine Station auszuwählen"
-  LANG.de["NoStations"]          = "Warnung: Keine Stationen gefunden für {country}"
-  LANG.de["Interact"]            = "Drücken Sie E zur Interaktion"
-  LANG.de["PAUSED"]              = "PAUSIERT"
-  LANG.de["Settings"]            = "Einstellungen"
-  LANG.de["LanguageSelection"]   = "Sprachauswahl"
-  LANG.de["ThemeSelection"]      = "Themenauswahl"
-  LANG.de["SelectTheme"]         = "Thema auswählen"
-  LANG.de["SelectLanguage"]      = "Sprache auswählen"
-  LANG.de["SelectKey"]           = "Taste für Auto-Radio-Menü wählen"
-  LANG.de["GeneralOptions"]      = "Allgemeine Optionen"
-  LANG.de["ShowCarMessages"]     = "Animation beim Einsteigen im Fahrzeug anzeigen"
-  LANG.de["ShowBoomboxHUD"]      = "Tragbares-Radio-Bildschirmanzeige anzeigen"
-  LANG.de["Contribute"]          = "Möchten Sie mitwirken?"
-  LANG.de["SubmitPullRequest"]   = "Einen Änderungsvorschlag einreichen :)"
-  LANG.de["SuperadminSettings"]  = "Hauptadministrator-Einstellungen"
-  LANG.de["MakeBoomboxPermanent"] = "Tragbares Radio als permanent markieren"
-  LANG.de["Enabled"]             = "Aktiviert"
-  LANG.de["Disabled"]            = "Deaktiviert"
-  LANG.de["FavoriteStations"]    = "Favorit-Stationen"
-  LANG.de["TuningIn"]            = "Einstellen"
-  LANG.de["KeyBinds"]            = "Tastenbelegungen"
-  LANG.de["ToOpenRadio"]         = "um das Radio zu öffnen"
-  
-  -- English
-  LANG.en["SelectCountry"]        = "Select a Country"
-  LANG.en["StopRadio"]           = "STOP"
-  LANG.en["SearchPlaceholder"]   = "Search..."
-  LANG.en["PressKeyToOpen"]      = "Press {key} to pick a station"
-  LANG.en["NoStations"]          = "Warning: No stations found for {country}"
-  LANG.en["Interact"]            = "Press E to Interact"
-  LANG.en["PAUSED"]              = "PAUSED"
-  LANG.en["Settings"]            = "Settings"
-  LANG.en["LanguageSelection"]   = "Language Selection"
-  LANG.en["ThemeSelection"]      = "Theme Selection"
-  LANG.en["SelectTheme"]         = "Select Theme"
-  LANG.en["SelectLanguage"]      = "Select Language"
-  LANG.en["SelectKey"]           = "Open Car Radio Menu"
-  LANG.en["GeneralOptions"]      = "General Options"
-  LANG.en["ShowCarMessages"]     = "Show Animation When Entering Vehicle"
-  LANG.en["ShowBoomboxHUD"]      = "Show the Boombox HUD"
-  LANG.en["Contribute"]          = "Want to contribute?"
-  LANG.en["SubmitPullRequest"]   = "Submit a Pull Request :)"
-  LANG.en["SuperadminSettings"]  = "Superadmin Settings"
-  LANG.en["MakeBoomboxPermanent"] = "Make Boombox Permanent"
-  LANG.en["Enabled"]             = "Enabled"
-  LANG.en["Disabled"]            = "Disabled"
-  LANG.en["FavoriteStations"]    = "Favorite Stations"
-  LANG.en["TuningIn"]            = "Tuning in"
-  LANG.en["KeyBinds"]            = "Key Binds"
-  LANG.en["ToOpenRadio"]         = "to open radio"
-  
-  -- Pirate English
-  LANG.en_pt["SelectCountry"]        = "Be Choosin’ a Land"
-  LANG.en_pt["StopRadio"]           = "AVAST!"
-  LANG.en_pt["SearchPlaceholder"]   = "Hunt fer treasure..."
-  LANG.en_pt["PressKeyToOpen"]      = "Press {key} to tune into a shanty"
-  LANG.en_pt["NoStations"]          = "Yarr! No shanties found in {country}"
-  LANG.en_pt["Interact"]            = "Press E to Parley"
-  LANG.en_pt["PAUSED"]              = "TAKIN’ A BREATHER"
-  LANG.en_pt["Settings"]            = "Ship’s Riggin’s"
-  LANG.en_pt["LanguageSelection"]   = "Choose Yer Tongue"
-  LANG.en_pt["ThemeSelection"]      = "Pick Yer Colors"
-  LANG.en_pt["SelectTheme"]         = "Choose a Look fer the Ship"
-  LANG.en_pt["SelectLanguage"]      = "Be Choosin’ Yer Tongue"
-  LANG.en_pt["SelectKey"]           = "Hoist the Car Radio Menu"
-  LANG.en_pt["GeneralOptions"]      = "Cap’n’s Options"
-  LANG.en_pt["ShowCarMessages"]     = "Show the Enterin’ Animation"
-  LANG.en_pt["ShowBoomboxHUD"]      = "Show the Music Box Treasure Map"
-  LANG.en_pt["Contribute"]          = "Wanna lend a hook?"
-  LANG.en_pt["SubmitPullRequest"]   = "Send a Message in a Bottle :)"
-  LANG.en_pt["SuperadminSettings"]  = "Cap’n o' Cap’ns Settings"
-  LANG.en_pt["MakeBoomboxPermanent"] = "Nail Down the Music Box Forever"
-  LANG.en_pt["Enabled"]             = "Aye, It Be On"
-  LANG.en_pt["Disabled"]            = "Nay, It Be Off"
-  LANG.en_pt["FavoriteStations"]    = "Ye Favorite Shanties"
-  LANG.en_pt["TuningIn"]            = "Tunin’ the Sails"
-  LANG.en_pt["KeyBinds"]            = "Key Binds"
-  LANG.en_pt["ToOpenRadio"]         = "to set sail"
-  
-  -- Spanish
-  LANG.es["SelectCountry"]        = "Seleccionar país"
-  LANG.es["StopRadio"]           = "PARAR"
-  LANG.es["SearchPlaceholder"]   = "Buscar..."
-  LANG.es["PressKeyToOpen"]      = "Presione {key} para elegir una estación"
-  LANG.es["NoStations"]          = "Advertencia: No se encontraron estaciones para {country}"
-  LANG.es["Interact"]            = "Presiona E para interactuar"
-  LANG.es["PAUSED"]              = "PAUSADO"
-  LANG.es["Settings"]            = "Ajustes"
-  LANG.es["LanguageSelection"]   = "Selección de idioma"
-  LANG.es["ThemeSelection"]      = "Selección de tema"
-  LANG.es["SelectTheme"]         = "Seleccionar tema"
-  LANG.es["SelectLanguage"]      = "Seleccionar idioma"
-  LANG.es["SelectKey"]           = "Selecciona la tecla para abrir el menú de radio del auto"
-  LANG.es["GeneralOptions"]      = "Opciones generales"
-  LANG.es["ShowCarMessages"]     = "Mostrar animación al entrar en el vehículo"
-  LANG.es["ShowBoomboxHUD"]      = "Mostrar la interfaz del radio portátil"
-  LANG.es["Contribute"]          = "¿Quieres contribuir?"
-  LANG.es["SubmitPullRequest"]   = "Enviar una solicitud de cambios :)"
-  LANG.es["SuperadminSettings"]  = "Configuraciones de Administrador Principal"
-  LANG.es["MakeBoomboxPermanent"] = "Marcar radio portátil como permanente"
-  LANG.es["Enabled"]             = "Activado"
-  LANG.es["Disabled"]            = "Desactivado"
-  LANG.es["FavoriteStations"]    = "Estaciones favoritas"
-  LANG.es["TuningIn"]            = "Sintonizando"
-  LANG.es["KeyBinds"]            = "Asignación de teclas"
-  LANG.es["ToOpenRadio"]         = "para abrir la radio"
-  
-  -- French
-  LANG.fr["SelectCountry"]        = "Sélectionnez un pays"
-  LANG.fr["StopRadio"]           = "ARRÊT"
-  LANG.fr["SearchPlaceholder"]   = "Recherche..."
-  LANG.fr["PressKeyToOpen"]      = "Appuyez sur {key} pour choisir une station"
-  LANG.fr["NoStations"]          = "Attention : Aucune station trouvée pour {country}"
-  LANG.fr["Interact"]            = "Appuyez sur E pour interagir"
-  LANG.fr["PAUSED"]              = "EN PAUSE"
-  LANG.fr["Settings"]            = "Paramètres"
-  LANG.fr["LanguageSelection"]   = "Sélection de la langue"
-  LANG.fr["ThemeSelection"]      = "Sélection du thème"
-  LANG.fr["SelectTheme"]         = "Sélectionner un thème"
-  LANG.fr["SelectLanguage"]      = "Sélectionner une langue"
-  LANG.fr["SelectKey"]           = "Sélectionner la touche pour ouvrir le menu de radio du véhicule"
-  LANG.fr["GeneralOptions"]      = "Options générales"
-  LANG.fr["ShowCarMessages"]     = "Afficher l'animation lors de l'entrée dans le véhicule"
-  LANG.fr["ShowBoomboxHUD"]      = "Afficher l'interface de la radio portable"
-  LANG.fr["Contribute"]          = "Voulez-vous contribuer?"
-  LANG.fr["SubmitPullRequest"]   = "Envoyez une demande de fusion :)"
-  LANG.fr["SuperadminSettings"]  = "Paramètres d'Administrateur Principal"
-  LANG.fr["MakeBoomboxPermanent"] = "Marquer la radio portable comme permanente"
-  LANG.fr["Enabled"]             = "Activé"
-  LANG.fr["Disabled"]            = "Désactivé"
-  LANG.fr["FavoriteStations"]    = "Stations favorites"
-  LANG.fr["TuningIn"]            = "Sintonisation"
-  LANG.fr["KeyBinds"]            = "Raccourcis clavier"
-  LANG.fr["ToOpenRadio"]         = "pour ouvrir la radio"
-  
-  -- Italian
-  LANG.it["SelectCountry"]        = "Seleziona paese"
-  LANG.it["StopRadio"]           = "FERMARE"
-  LANG.it["SearchPlaceholder"]   = "Cerca..."
-  LANG.it["PressKeyToOpen"]      = "Premi {key} per scegliere una stazione"
-  LANG.it["NoStations"]          = "Avviso: Nessuna stazione trovata per {country}"
-  LANG.it["Interact"]            = "Premi E per interagire"
-  LANG.it["PAUSED"]              = "IN PAUSA"
-  LANG.it["Settings"]            = "Impostazioni"
-  LANG.it["LanguageSelection"]   = "Selezione della lingua"
-  LANG.it["ThemeSelection"]      = "Selezione del tema"
-  LANG.it["SelectTheme"]         = "Seleziona tema"
-  LANG.it["SelectLanguage"]      = "Seleziona lingua"
-  LANG.it["SelectKey"]           = "Tasto per aprire menu radio auto"
-  LANG.it["GeneralOptions"]      = "Opzioni generali"
-  LANG.it["ShowCarMessages"]     = "Mostra animazione all'entrata nel veicolo"
-  LANG.it["ShowBoomboxHUD"]      = "Mostra l'interfaccia della radio portatile"
-  LANG.it["Contribute"]          = "Vuoi contribuire?"
-  LANG.it["SubmitPullRequest"]   = "Invia una richiesta di unione :)"
-  LANG.it["SuperadminSettings"]  = "Configurazioni dell'Amministratore Principale"
-  LANG.it["MakeBoomboxPermanent"] = "Rendi la radio portatile permanente"
-  LANG.it["Enabled"]             = "Attivo"
-  LANG.it["Disabled"]            = "Disattivato"
-  LANG.it["FavoriteStations"]    = "Stazioni favorite"
-  LANG.it["TuningIn"]            = "Sintonizzazione"
-  LANG.it["KeyBinds"]            = "Assegnazione tasti"
-  LANG.it["ToOpenRadio"]         = "per aprire la radio"
-  
-  -- Japanese
-  LANG.ja["SelectCountry"]        = "国を選択"
-  LANG.ja["StopRadio"]           = "停止"
-  LANG.ja["SearchPlaceholder"]   = "検索..."
-  LANG.ja["PressKeyToOpen"]      = "{key}を押して局を選択"
-  LANG.ja["NoStations"]          = "警告: {country}の局が見つかりません"
-  LANG.ja["Interact"]            = "私とやり取りして！"
-  LANG.ja["PAUSED"]              = "一時停止"
-  LANG.ja["Settings"]            = "設定"
-  LANG.ja["LanguageSelection"]   = "言語選択"
-  LANG.ja["ThemeSelection"]      = "テーマ選択"
-  LANG.ja["SelectTheme"]         = "テーマを選択"
-  LANG.ja["SelectLanguage"]      = "言語を選択"
-  LANG.ja["SelectKey"]           = "車内ラジオメニューのキーを選択"
-  LANG.ja["GeneralOptions"]      = "一般オプション"
-  LANG.ja["ShowCarMessages"]     = "車内に入るとアニメーションを表示"
-  LANG.ja["ShowBoomboxHUD"]      = "ポータブルラジオの画面表示を表示"
-  LANG.ja["Contribute"]          = "貢献したいですか？"
-  LANG.ja["SubmitPullRequest"]   = "変更リクエストを送信 :)"
-  LANG.ja["SuperadminSettings"]  = "最高管理者の設定"
-  LANG.ja["MakeBoomboxPermanent"] = "ポータブルラジオを永久にする"
-  LANG.ja["Enabled"]             = "有効"
-  LANG.ja["Disabled"]            = "無効"
-  LANG.ja["FavoriteStations"]    = "お気に入りの局"
-  LANG.ja["TuningIn"]            = "調整中"
-  LANG.ja["KeyBinds"]            = "キー割り当て"
-  LANG.ja["ToOpenRadio"]         = "ラジオを開くには"
-  
-  -- Korean
-  LANG.ko["SelectCountry"]        = "국가 선택"
-  LANG.ko["StopRadio"]           = "정지"
-  LANG.ko["SearchPlaceholder"]   = "검색..."
-  LANG.ko["PressKeyToOpen"]      = "{key}을 눌러 방송국을 선택하십시오"
-  LANG.ko["NoStations"]          = "경고: {country}에 대한 방송국을 찾을 수 없습니다"
-  LANG.ko["Interact"]            = "나와 상호작용하세요!"
-  LANG.ko["PAUSED"]              = "일시정지"
-  LANG.ko["Settings"]            = "설정"
-  LANG.ko["LanguageSelection"]   = "언어 선택"
-  LANG.ko["ThemeSelection"]      = "테마 선택"
-  LANG.ko["SelectTheme"]         = "테마 선택"
-  LANG.ko["SelectLanguage"]      = "언어 선택"
-  LANG.ko["SelectKey"]           = "차량 라디오 메뉴 키 선택"
-  LANG.ko["GeneralOptions"]      = "일반 옵션"
-  LANG.ko["ShowCarMessages"]     = "차량 진입 시 애니메이션 표시"
-  LANG.ko["ShowBoomboxHUD"]      = "휴대용 라디오의 화면 표시"
-  LANG.ko["Contribute"]          = "기여하고 싶습니까?"
-  LANG.ko["SubmitPullRequest"]   = "변경 요청을 제출 :)"
-  LANG.ko["SuperadminSettings"]  = "최고 관리자 설정"
-  LANG.ko["MakeBoomboxPermanent"] = "휴대용 라디오를 영구적으로 만들기"
-  LANG.ko["Enabled"]             = "활성화"
-  LANG.ko["Disabled"]            = "비활성화"
-  LANG.ko["FavoriteStations"]    = "즐겨찾기 방송국"
-  LANG.ko["TuningIn"]            = "조정 중"
-  LANG.ko["KeyBinds"]            = "키 바인딩"
-  LANG.ko["ToOpenRadio"]         = "라디오 메뉴를 열려면"
-  
-  -- Brazilian Portuguese
-  LANG.pt_br["SelectCountry"]        = "Selecionar país"
-  LANG.pt_br["StopRadio"]           = "PARAR"
-  LANG.pt_br["SearchPlaceholder"]   = "Buscar..."
-  LANG.pt_br["PressKeyToOpen"]      = "Pressione {key} para escolher uma estação"
-  LANG.pt_br["NoStations"]          = "Aviso: Nenhuma estação encontrada para {country}"
-  LANG.pt_br["Interact"]            = "Pressione E para interagir"
-  LANG.pt_br["PAUSED"]              = "PAUSADO"
-  LANG.pt_br["Settings"]            = "Configurações"
-  LANG.pt_br["LanguageSelection"]   = "Seleção de idioma"
-  LANG.pt_br["ThemeSelection"]      = "Seleção de tema"
-  LANG.pt_br["SelectTheme"]         = "Selecionar tema"
-  LANG.pt_br["SelectLanguage"]      = "Selecionar idioma"
-  LANG.pt_br["SelectKey"]           = "Tecla para abrir menu de rádio"
-  LANG.pt_br["GeneralOptions"]      = "Opções gerais"
-  LANG.pt_br["ShowCarMessages"]     = "Mostrar animação ao entrar no veículo"
-  LANG.pt_br["ShowBoomboxHUD"]      = "Mostrar a interface do rádio portátil"
-  LANG.pt_br["Contribute"]          = "Quer contribuir?"
-  LANG.pt_br["SubmitPullRequest"]   = "Enviar uma solicitação de mudança :)"
-  LANG.pt_br["SuperadminSettings"]  = "Configurações de Administrador Principal"
-  LANG.pt_br["MakeBoomboxPermanent"] = "Marcar rádio portátil como permanente"
-  LANG.pt_br["Enabled"]             = "Ativado"
-  LANG.pt_br["Disabled"]            = "Desativado"
-  LANG.pt_br["FavoriteStations"]    = "Estações favoritas"
-  LANG.pt_br["TuningIn"]            = "Sintonização"
-  LANG.pt_br["KeyBinds"]            = "Atribuições de teclas"
-  LANG.pt_br["ToOpenRadio"]         = "para abrir o rádio"
-  
-  -- Russian
-  LANG.ru["SelectCountry"]        = "Выберите страну"
-  LANG.ru["StopRadio"]           = "СТОП"
-  LANG.ru["SearchPlaceholder"]   = "Поиск..."
-  LANG.ru["PressKeyToOpen"]      = "Нажмите {key}, чтобы выбрать станцию"
-  LANG.ru["NoStations"]          = "Предупреждение: Станции не найдены для {country}"
-  LANG.ru["Interact"]            = "Взаимодействуй со мной!"
-  LANG.ru["PAUSED"]              = "ПАУЗА"
-  LANG.ru["Settings"]            = "Настройки"
-  LANG.ru["LanguageSelection"]   = "Выбор языка"
-  LANG.ru["ThemeSelection"]      = "Выбор темы"
-  LANG.ru["SelectTheme"]         = "Выберите тему"
-  LANG.ru["SelectLanguage"]      = "Выберите язык"
-  LANG.ru["SelectKey"]           = "Клавиша для меню радио в машине"
-  LANG.ru["GeneralOptions"]      = "Общие параметры"
-  LANG.ru["ShowCarMessages"]     = "Показывать анимацию при входе в машину"
-  LANG.ru["ShowBoomboxHUD"]      = "Показывать интерфейс портативного радио"
-  LANG.ru["Contribute"]          = "Хотите внести свой вклад?"
-  LANG.ru["SubmitPullRequest"]   = "Отправить запрос на внесение изменений :)"
-  LANG.ru["SuperadminSettings"]  = "Настройки Главного Администратора"
-  LANG.ru["MakeBoomboxPermanent"] = "Сделать портативное радио постоянным"
-  LANG.ru["Enabled"]             = "Включено"
-  LANG.ru["Disabled"]            = "Выключено"
-  LANG.ru["FavoriteStations"]    = "Избранные станции"
-  LANG.ru["TuningIn"]            = "Настройка"
-  LANG.ru["KeyBinds"]            = "Назначение клавиш"
-  LANG.ru["ToOpenRadio"]         = "чтобы открыть радио"
-  
-  -- Turkish
-  LANG.tr["SelectCountry"]        = "Ülke seç"
-  LANG.tr["StopRadio"]           = "DURDUR"
-  LANG.tr["SearchPlaceholder"]   = "Ara..."
-  LANG.tr["PressKeyToOpen"]      = "Radyo kanalı seçmek için {key} tuşuna bas"
-  LANG.tr["NoStations"]          = "Uyarı: {country} kanalı bulunamadı."
-  LANG.tr["Interact"]            = "Benimle Etkileşimde Bulun!"
-  LANG.tr["PAUSED"]              = "DURAKLATILDI"
-  LANG.tr["Settings"]            = "Ayarlar"
-  LANG.tr["LanguageSelection"]   = "Dil Seçimi"
-  LANG.tr["ThemeSelection"]      = "Tema Seçimi"
-  LANG.tr["SelectTheme"]         = "Tema Seç"
-  LANG.tr["SelectLanguage"]      = "Dil Seç"
-  LANG.tr["SelectKey"]           = "Araç radyo menüsü tuşunu seç"
-  LANG.tr["GeneralOptions"]      = "Genel Seçenekler"
-  LANG.tr["ShowCarMessages"]     = "Araçta giriş yapıldığında animasyon göster"
-  LANG.tr["ShowBoomboxHUD"]      = "Taşınabilir radyo arayüzünü göster"
-  LANG.tr["Contribute"]          = "Katkıda bulunmak ister misiniz?"
-  LANG.tr["SubmitPullRequest"]   = "Değişiklik isteği gönder :)"
-  LANG.tr["SuperadminSettings"]  = "Baş Yönetici ayarları"
-  LANG.tr["MakeBoomboxPermanent"] = "Taşınabilir radyoyu sabit yap"
-  LANG.tr["Enabled"]             = "Aktif"
-  LANG.tr["Disabled"]            = "Pasif"
-  LANG.tr["FavoriteStations"]    = "Favori Radyo Kanalları"
-  LANG.tr["TuningIn"]            = "Ayarlıyor"
-  LANG.tr["KeyBinds"]            = "Tuş Atamaları"
-  LANG.tr["ToOpenRadio"]         = "radyo menüsünü açmak için"
-  
-  -- Chinese (Simplified)
-  LANG.zh_cn["SelectCountry"]        = "选择国家"
-  LANG.zh_cn["StopRadio"]           = "停止"
-  LANG.zh_cn["SearchPlaceholder"]   = "搜索..."
-  LANG.zh_cn["PressKeyToOpen"]      = "按 {key} 选择电台"
-  LANG.zh_cn["NoStations"]          = "警告: 未找到 {country} 的电台"
-  LANG.zh_cn["Interact"]            = "与我互动！"
-  LANG.zh_cn["PAUSED"]              = "暂停"
-  LANG.zh_cn["Settings"]            = "设置"
-  LANG.zh_cn["LanguageSelection"]   = "语言选择"
-  LANG.zh_cn["ThemeSelection"]      = "主题选择"
-  LANG.zh_cn["SelectTheme"]         = "选择主题"
-  LANG.zh_cn["SelectLanguage"]      = "选择语言"
-  LANG.zh_cn["SelectKey"]           = "选择车载电台菜单按键"
-  LANG.zh_cn["GeneralOptions"]      = "常规选项"
-  LANG.zh_cn["ShowCarMessages"]     = "进入车内时显示动画"
-  LANG.zh_cn["ShowBoomboxHUD"]      = "显示便携式收音机界面"
-  LANG.zh_cn["Contribute"]          = "想要贡献吗？"
-  LANG.zh_cn["SubmitPullRequest"]   = "提交合并请求 :)"
-  LANG.zh_cn["SuperadminSettings"]  = "超级管理员设置"
-  LANG.zh_cn["MakeBoomboxPermanent"] = "将便携式收音机设为永久"
-  LANG.zh_cn["Enabled"]             = "启用"
-  LANG.zh_cn["Disabled"]            = "禁用"
-  LANG.zh_cn["FavoriteStations"]    = "收藏电台"
-  LANG.zh_cn["TuningIn"]            = "调谐中"
-  LANG.zh_cn["KeyBinds"]            = "按键绑定"
-  LANG.zh_cn["ToOpenRadio"]         = "按键以打开收音机"
-  
-  -- Bulgarian
-  LANG.bg["SelectCountry"]        = "Изберете държава"
-  LANG.bg["StopRadio"]           = "СТОП"
-  LANG.bg["SearchPlaceholder"]   = "Търсене..."
-  LANG.bg["PressKeyToOpen"]      = "Натиснете {key}, за да изберете станция"
-  LANG.bg["NoStations"]          = "Предупреждение: Няма намерени станции за {country}"
-  LANG.bg["Interact"]            = "Натиснете E за взаимодействие"
-  LANG.bg["PAUSED"]              = "ПАУЗА"
-  LANG.bg["Settings"]            = "Настройки"
-  LANG.bg["LanguageSelection"]   = "Избор на език"
-  LANG.bg["ThemeSelection"]      = "Избор на тема"
-  LANG.bg["SelectTheme"]         = "Изберете тема"
-  LANG.bg["SelectLanguage"]      = "Изберете език"
-  LANG.bg["SelectKey"]           = "Изберете клавиш за менюто на радиото в колата"
-  LANG.bg["GeneralOptions"]      = "Общи настройки"
-  LANG.bg["ShowCarMessages"]     = "Показване на анимация при влизане в превозното средство"
-  LANG.bg["ShowBoomboxHUD"]      = "Показване на интерфейса на Boombox"
-  LANG.bg["Contribute"]          = "Искате ли да допринесете?"
-  LANG.bg["SubmitPullRequest"]   = "Изпратете заявка за промяна :)"
-  LANG.bg["SuperadminSettings"]  = "Настройки за супер администратор"
-  LANG.bg["MakeBoomboxPermanent"] = "Направете Boombox постоянен"
-  LANG.bg["Enabled"]             = "Активирано"
-  LANG.bg["Disabled"]            = "Деактивирано"
-  LANG.bg["FavoriteStations"]    = "Любими станции"
-  LANG.bg["TuningIn"]            = "Настройване"
-  LANG.bg["KeyBinds"]            = "Насрочване на клавиши"
-  LANG.bg["ToOpenRadio"]         = "за да отворите радиото"
-  
-  -- Greek
-  LANG.el["SelectCountry"]        = "Επιλέξτε χώρα"
-  LANG.el["StopRadio"]           = "ΣΤΟΠ"
-  LANG.el["SearchPlaceholder"]   = "Αναζήτηση..."
-  LANG.el["PressKeyToOpen"]      = "Πατήστε {key} για να επιλέξετε σταθμό"
-  LANG.el["NoStations"]          = "Προειδοποίηση: Δεν βρέθηκαν σταθμοί για {country}"
-  LANG.el["Interact"]            = "Πατήστε E για αλληλεπίδραση"
-  LANG.el["PAUSED"]              = "ΠΑΥΣΗ"
-  LANG.el["Settings"]            = "Ρυθμίσεις"
-  LANG.el["LanguageSelection"]   = "Επιλογή γλώσσας"
-  LANG.el["ThemeSelection"]      = "Επιλογή θέματος"
-  LANG.el["SelectTheme"]         = "Επιλέξτε θέμα"
-  LANG.el["SelectLanguage"]      = "Επιλέξτε γλώσσα"
-  LANG.el["SelectKey"]           = "Επιλέξτε πλήκτρο για το μενού ραδιοφώνου αυτοκινήτου"
-  LANG.el["GeneralOptions"]      = "Γενικές επιλογές"
-  LANG.el["ShowCarMessages"]     = "Εμφάνιση κινούμενων εικόνων κατά την είσοδο στο όχημα"
-  LANG.el["ShowBoomboxHUD"]      = "Εμφάνιση του Boombox HUD"
-  LANG.el["Contribute"]          = "Θέλετε να συνεισφέρετε;"
-  LANG.el["SubmitPullRequest"]   = "Υποβάλετε ένα Pull Request :)"
-  LANG.el["SuperadminSettings"]  = "Ρυθμίσεις υπερδιαχειριστή"
-  LANG.el["MakeBoomboxPermanent"] = "Κάντε το Boombox μόνιμο"
-  LANG.el["Enabled"]             = "Ενεργοποιημένο"
-  LANG.el["Disabled"]            = "Απενεργοποιημένο"
-  LANG.el["FavoriteStations"]    = "Αγαπημένοι σταθμοί"
-  LANG.el["TuningIn"]            = "Συντονισμός"
-  LANG.el["KeyBinds"]            = "Πλήκτρα σύνδεσης"
-  LANG.el["ToOpenRadio"]         = "για να ανοίξετε το ραδιόφωνο"
-  
-  -- Croatian
-  LANG.hr["SelectCountry"]        = "Odaberite državu"
-  LANG.hr["StopRadio"]           = "STOP"
-  LANG.hr["SearchPlaceholder"]   = "Pretraži..."
-  LANG.hr["PressKeyToOpen"]      = "Pritisnite {key} za odabir stanice"
-  LANG.hr["NoStations"]          = "Upozorenje: Nema pronađenih stanica za {country}"
-  LANG.hr["Interact"]            = "Pritisnite E za interakciju"
-  LANG.hr["PAUSED"]              = "PAUZA"
-  LANG.hr["Settings"]            = "Postavke"
-  LANG.hr["LanguageSelection"]   = "Odabir jezika"
-  LANG.hr["ThemeSelection"]      = "Odabir teme"
-  LANG.hr["SelectTheme"]         = "Odaberite temu"
-  LANG.hr["SelectLanguage"]      = "Odaberite jezik"
-  LANG.hr["SelectKey"]           = "Odaberite tipku za izbornik radija u autu"
-  LANG.hr["GeneralOptions"]      = "Opće opcije"
-  LANG.hr["ShowCarMessages"]     = "Prikaži animaciju pri ulasku u vozilo"
-  LANG.hr["ShowBoomboxHUD"]      = "Prikaži Boombox HUD"
-  LANG.hr["Contribute"]          = "Želite li doprinijeti?"
-  LANG.hr["SubmitPullRequest"]   = "Pošaljite Pull Request :)"
-  LANG.hr["SuperadminSettings"]  = "Postavke superadministratora"
-  LANG.hr["MakeBoomboxPermanent"] = "Učinite Boombox trajnim"
-  LANG.hr["Enabled"]             = "Omogućeno"
-  LANG.hr["Disabled"]            = "Onemogućeno"
-  LANG.hr["FavoriteStations"]    = "Omiljene stanice"
-  LANG.hr["TuningIn"]            = "Usklađivanje"
-  LANG.hr["KeyBinds"]            = "Dodjela tipki"
-  LANG.hr["ToOpenRadio"]         = "za otvaranje radija"
-  
-  -- Hebrew
-  LANG.he["SelectCountry"]        = "בחר מדינה"
-  LANG.he["StopRadio"]           = "עצור"
-  LANG.he["SearchPlaceholder"]   = "חיפוש..."
-  LANG.he["PressKeyToOpen"]      = "לחץ על {key} כדי לבחור תחנה"
-  LANG.he["NoStations"]          = "אזהרה: לא נמצאו תחנות עבור {country}"
-  LANG.he["Interact"]            = "לחץ על E כדי לקיים אינטראקציה"
-  LANG.he["PAUSED"]              = "מושהה"
-  LANG.he["Settings"]            = "הגדרות"
-  LANG.he["LanguageSelection"]   = "בחירת שפה"
-  LANG.he["ThemeSelection"]      = "בחירת ערכת נושא"
-  LANG.he["SelectTheme"]         = "בחר ערכת נושא"
-  LANG.he["SelectLanguage"]      = "בחר שפה"
-  LANG.he["SelectKey"]           = "בחר מקש לתפריט רדיו הרכב"
-  LANG.he["GeneralOptions"]      = "אפשרויות כלליות"
-  LANG.he["ShowCarMessages"]     = "הצג אנימציה בעת כניסה לרכב"
-  LANG.he["ShowBoomboxHUD"]      = "הצג את ממשק Boombox"
-  LANG.he["Contribute"]          = "רוצה לתרום?"
-  LANG.he["SubmitPullRequest"]   = "שלח Pull Request :)"
-  LANG.he["SuperadminSettings"]  = "הגדרות סופר-מנהל"
-  LANG.he["MakeBoomboxPermanent"] = "הפוך את ה-Boombox לקבוע"
-  LANG.he["Enabled"]             = "מופעל"
-  LANG.he["Disabled"]            = "מושבת"
-  LANG.he["FavoriteStations"]    = "תחנות מועדפות"
-  LANG.he["TuningIn"]            = "מכוון"
-  LANG.he["KeyBinds"]            = "קביעת מקשים"
-  LANG.he["ToOpenRadio"]         = "כדי לפתוח את הרדיו"
-  
-  -- Slovak
-  LANG.sk["SelectCountry"]        = "Vyberte krajinu"
-  LANG.sk["StopRadio"]           = "STOP"
-  LANG.sk["SearchPlaceholder"]   = "Hľadať..."
-  LANG.sk["PressKeyToOpen"]      = "Stlačte {key} pre výber stanice"
-  LANG.sk["NoStations"]          = "Upozornenie: Neboli nájdené žiadne stanice pre {country}"
-  LANG.sk["Interact"]            = "Stlačte E na interakciu"
-  LANG.sk["PAUSED"]              = "POZASTAVENÉ"
-  LANG.sk["Settings"]            = "Nastavenia"
-  LANG.sk["LanguageSelection"]   = "Výber jazyka"
-  LANG.sk["ThemeSelection"]      = "Výber témy"
-  LANG.sk["SelectTheme"]         = "Vyberte tému"
-  LANG.sk["SelectLanguage"]      = "Vyberte jazyk"
-  LANG.sk["SelectKey"]           = "Vyberte kláves pre menu autorádia"
-  LANG.sk["GeneralOptions"]      = "Všeobecné možnosti"
-  LANG.sk["ShowCarMessages"]     = "Zobraziť animáciu pri vstupe do vozidla"
-  LANG.sk["ShowBoomboxHUD"]      = "Zobraziť rozhranie Boomboxu"
-  LANG.sk["Contribute"]          = "Chcete prispieť?"
-  LANG.sk["SubmitPullRequest"]   = "Odošlite Pull Request :)"
-  LANG.sk["SuperadminSettings"]  = "Nastavenia superadministrátora"
-  LANG.sk["MakeBoomboxPermanent"] = "Urobiť Boombox trvalým"
-  LANG.sk["Enabled"]             = "Povolené"
-  LANG.sk["Disabled"]            = "Zakázané"
-  LANG.sk["FavoriteStations"]    = "Obľúbené stanice"
-  LANG.sk["TuningIn"]            = "Ladenie"
-  LANG.sk["KeyBinds"]            = "Klávesové väzby"
-  LANG.sk["ToOpenRadio"]         = "na otvorenie rádia"
-  
-  -- Polish
-  LANG.pl["SelectCountry"]        = "Wybierz kraj"
-  LANG.pl["StopRadio"]           = "STOP"
-  LANG.pl["SearchPlaceholder"]   = "Szukaj..."
-  LANG.pl["PressKeyToOpen"]      = "Naciśnij {key}, aby wybrać stację"
-  LANG.pl["NoStations"]          = "Uwaga: Nie znaleziono stacji dla {country}"
-  LANG.pl["Interact"]            = "Naciśnij E, aby wejść w interakcję"
-  LANG.pl["PAUSED"]              = "WSTRZYMANO"
-  LANG.pl["Settings"]            = "Ustawienia"
-  LANG.pl["LanguageSelection"]   = "Wybór języka"
-  LANG.pl["ThemeSelection"]      = "Wybór motywu"
-  LANG.pl["SelectTheme"]         = "Wybierz motyw"
-  LANG.pl["SelectLanguage"]      = "Wybierz język"
-  LANG.pl["SelectKey"]           = "Wybierz klawisz do menu radia samochodowego"
-  LANG.pl["GeneralOptions"]      = "Opcje ogólne"
-  LANG.pl["ShowCarMessages"]     = "Pokaż animację przy wchodzeniu do pojazdu"
-  LANG.pl["ShowBoomboxHUD"]      = "Pokaż interfejs Boomboxa"
-  LANG.pl["Contribute"]          = "Chcesz pomóc?"
-  LANG.pl["SubmitPullRequest"]   = "Wyślij Pull Request :)"
-  LANG.pl["SuperadminSettings"]  = "Ustawienia superadministratora"
-  LANG.pl["MakeBoomboxPermanent"] = "Ustaw Boombox jako stały"
-  LANG.pl["Enabled"]             = "Włączone"
-  LANG.pl["Disabled"]            = "Wyłączone"
-  LANG.pl["FavoriteStations"]    = "Ulubione stacje"
-  LANG.pl["TuningIn"]            = "Strojenie"
-  LANG.pl["KeyBinds"]            = "Przypisanie klawiszy"
-  LANG.pl["ToOpenRadio"]         = "aby otworzyć radio"
-  
-  -- Danish
-  LANG.da["SelectCountry"]        = "Vælg et land"
-  LANG.da["StopRadio"]           = "STOP"
-  LANG.da["SearchPlaceholder"]   = "Søg..."
-  LANG.da["PressKeyToOpen"]      = "Tryk på {key} for at vælge en station"
-  LANG.da["NoStations"]          = "Advarsel: Ingen stationer fundet for {country}"
-  LANG.da["Interact"]            = "Tryk på E for at interagere"
-  LANG.da["PAUSED"]              = "PAUSE"
-  LANG.da["Settings"]            = "Indstillinger"
-  LANG.da["LanguageSelection"]   = "Sprogvalg"
-  LANG.da["ThemeSelection"]      = "Temavalg"
-  LANG.da["SelectTheme"]         = "Vælg tema"
-  LANG.da["SelectLanguage"]      = "Vælg sprog"
-  LANG.da["SelectKey"]           = "Vælg tast til bilradio-menu"
-  LANG.da["GeneralOptions"]      = "Generelle indstillinger"
-  LANG.da["ShowCarMessages"]     = "Vis animation ved indstigning i køretøjet"
-  LANG.da["ShowBoomboxHUD"]      = "Vis Boombox HUD"
-  LANG.da["Contribute"]          = "Vil du bidrage?"
-  LANG.da["SubmitPullRequest"]   = "Indsend en Pull Request :)"
-  LANG.da["SuperadminSettings"]  = "Superadmin-indstillinger"
-  LANG.da["MakeBoomboxPermanent"] = "Gør Boombox permanent"
-  LANG.da["Enabled"]             = "Aktiveret"
-  LANG.da["Disabled"]            = "Deaktiveret"
-  LANG.da["FavoriteStations"]    = "Favoritstationer"
-  LANG.da["TuningIn"]            = "Tuner ind"
-  LANG.da["KeyBinds"]            = "Tastbindinger"
-  LANG.da["ToOpenRadio"]         = "for at åbne radioen"
-  
-  -- Dutch
-  LANG.nl["SelectCountry"]        = "Selecteer een land"
-  LANG.nl["StopRadio"]           = "STOP"
-  LANG.nl["SearchPlaceholder"]   = "Zoeken..."
-  LANG.nl["PressKeyToOpen"]      = "Druk op {key} om een zender te kiezen"
-  LANG.nl["NoStations"]          = "Waarschuwing: Geen zenders gevonden voor {country}"
-  LANG.nl["Interact"]            = "Druk op E om te interageren"
-  LANG.nl["PAUSED"]              = "GEPAUZEERD"
-  LANG.nl["Settings"]            = "Instellingen"
-  LANG.nl["LanguageSelection"]   = "Taalkeuze"
-  LANG.nl["ThemeSelection"]      = "Themakeuze"
-  LANG.nl["SelectTheme"]         = "Selecteer thema"
-  LANG.nl["SelectLanguage"]      = "Selecteer taal"
-  LANG.nl["SelectKey"]           = "Selecteer toets voor radio-menu"
-  LANG.nl["GeneralOptions"]      = "Algemene opties"
-  LANG.nl["ShowCarMessages"]     = "Toon animatie bij instappen"
-  LANG.nl["ShowBoomboxHUD"]      = "Toon Boombox-interface"
-  LANG.nl["Contribute"]          = "Wil je bijdragen?"
-  LANG.nl["SubmitPullRequest"]   = "Dien een Pull Request in :)"
-  LANG.nl["SuperadminSettings"]  = "Superadmin instellingen"
-  LANG.nl["MakeBoomboxPermanent"] = "Maak Boombox permanent"
-  LANG.nl["Enabled"]             = "Ingeschakeld"
-  LANG.nl["Disabled"]            = "Uitgeschakeld"
-  LANG.nl["FavoriteStations"]    = "Favoriete zenders"
-  LANG.nl["TuningIn"]            = "Afstemmen"
-  LANG.nl["KeyBinds"]            = "Toetsbindingen"
-  LANG.nl["ToOpenRadio"]         = "om de radio te openen"
-  
-  -- Thai
-  LANG.th["SelectCountry"]        = "เลือกประเทศ"
-  LANG.th["StopRadio"]           = "หยุด"
-  LANG.th["SearchPlaceholder"]   = "ค้นหา..."
-  LANG.th["PressKeyToOpen"]      = "กด {key} เพื่อเลือกสถานี"
-  LANG.th["NoStations"]          = "คำเตือน: ไม่พบสถานีสำหรับ {country}"
-  LANG.th["Interact"]            = "กด E เพื่อโต้ตอบ"
-  LANG.th["PAUSED"]              = "หยุดชั่วคราว"
-  LANG.th["Settings"]            = "การตั้งค่า"
-  LANG.th["LanguageSelection"]   = "การเลือกภาษา"
-  LANG.th["ThemeSelection"]      = "การเลือกธีม"
-  LANG.th["SelectTheme"]         = "เลือกธีม"
-  LANG.th["SelectLanguage"]      = "เลือกภาษา"
-  LANG.th["SelectKey"]           = "เลือกปุ่มสำหรับเมนูวิทยุรถยนต์"
-  LANG.th["GeneralOptions"]      = "ตัวเลือกทั่วไป"
-  LANG.th["ShowCarMessages"]     = "แสดงแอนิเมชันเมื่อเข้าสู่ยานพาหนะ"
-  LANG.th["ShowBoomboxHUD"]      = "แสดงส่วนแสดงผล Boombox"
-  LANG.th["Contribute"]          = "ต้องการช่วยเหลือไหม?"
-  LANG.th["SubmitPullRequest"]   = "ส่งคำขอดึง :)"
-  LANG.th["SuperadminSettings"]  = "การตั้งค่าซุปเปอร์แอดมิน"
-  LANG.th["MakeBoomboxPermanent"] = "ทำให้ Boombox ถาวร"
-  LANG.th["Enabled"]             = "เปิดใช้งาน"
-  LANG.th["Disabled"]            = "ปิดใช้งาน"
-  LANG.th["FavoriteStations"]    = "สถานีโปรด"
-  LANG.th["TuningIn"]            = "กำลังปรับจูน"
-  LANG.th["KeyBinds"]            = "การผูกปุ่ม"
-  LANG.th["ToOpenRadio"]         = "เพื่อเปิดวิทยุ"
-  
-  -- Vietnamese
-  LANG.vi["SelectCountry"]        = "Chọn quốc gia"
-  LANG.vi["StopRadio"]           = "DỪNG"
-  LANG.vi["SearchPlaceholder"]   = "Tìm kiếm..."
-  LANG.vi["PressKeyToOpen"]      = "Nhấn {key} để chọn đài"
-  LANG.vi["NoStations"]          = "Cảnh báo: Không tìm thấy đài cho {country}"
-  LANG.vi["Interact"]            = "Nhấn E để tương tác"
-  LANG.vi["PAUSED"]              = "TẠM DỪNG"
-  LANG.vi["Settings"]            = "Cài đặt"
-  LANG.vi["LanguageSelection"]   = "Chọn ngôn ngữ"
-  LANG.vi["ThemeSelection"]      = "Chọn chủ đề"
-  LANG.vi["SelectTheme"]         = "Chọn giao diện"
-  LANG.vi["SelectLanguage"]      = "Chọn ngôn ngữ"
-  LANG.vi["SelectKey"]           = "Chọn phím mở menu radio xe"
-  LANG.vi["GeneralOptions"]      = "Tùy chọn chung"
-  LANG.vi["ShowCarMessages"]     = "Hiển thị hoạt ảnh khi vào xe"
-  LANG.vi["ShowBoomboxHUD"]      = "Hiển thị giao diện Boombox"
-  LANG.vi["Contribute"]          = "Bạn muốn đóng góp không?"
-  LANG.vi["SubmitPullRequest"]   = "Gửi yêu cầu hợp nhất :)"
-  LANG.vi["SuperadminSettings"]  = "Cài đặt siêu quản trị"
-  LANG.vi["MakeBoomboxPermanent"] = "Làm Boombox vĩnh viễn"
-  LANG.vi["Enabled"]             = "Bật"
-  LANG.vi["Disabled"]            = "Tắt"
-  LANG.vi["FavoriteStations"]    = "Đài yêu thích"
-  LANG.vi["TuningIn"]            = "Đang dò sóng"
-  LANG.vi["KeyBinds"]            = "Phím tắt"
-  LANG.vi["ToOpenRadio"]         = "để mở radio"
-  
-  -- Hungarian
-  LANG.hu["SelectCountry"]        = "Válassz országot"
-  LANG.hu["StopRadio"]           = "MEGÁLLÍTÁS"
-  LANG.hu["SearchPlaceholder"]   = "Keresés..."
-  LANG.hu["PressKeyToOpen"]      = "Nyomd meg a(z) {key} gombot az állomás kiválasztásához"
-  LANG.hu["NoStations"]          = "Figyelem: Nem található állomás a(z) {country} országra"
-  LANG.hu["Interact"]            = "Nyomj E-t az interakcióhoz"
-  LANG.hu["PAUSED"]              = "SZÜNETELTETVE"
-  LANG.hu["Settings"]            = "Beállítások"
-  LANG.hu["LanguageSelection"]   = "Nyelvválasztás"
-  LANG.hu["ThemeSelection"]      = "Téma kiválasztása"
-  LANG.hu["SelectTheme"]         = "Téma kiválasztása"
-  LANG.hu["SelectLanguage"]      = "Nyelv kiválasztása"
-  LANG.hu["SelectKey"]           = "Válassz gombot az autórádió menühöz"
-  LANG.hu["GeneralOptions"]      = "Általános beállítások"
-  LANG.hu["ShowCarMessages"]     = "Animáció megjelenítése járműbe való beszálláskor"
-  LANG.hu["ShowBoomboxHUD"]      = "Boombox felület megjelenítése"
-  LANG.hu["Contribute"]          = "Szeretnél hozzájárulni?"
-  LANG.hu["SubmitPullRequest"]   = "Küldj Pull Requestet :)"
-  LANG.hu["SuperadminSettings"]  = "Szuperadmin beállítások"
-  LANG.hu["MakeBoomboxPermanent"] = "Boombox állandóvá tétele"
-  LANG.hu["Enabled"]             = "Engedélyezve"
-  LANG.hu["Disabled"]            = "Letiltva"
-  LANG.hu["FavoriteStations"]    = "Kedvenc állomások"
-  LANG.hu["TuningIn"]            = "Hangolás"
-  LANG.hu["KeyBinds"]            = "Billentyűkiosztás"
-  LANG.hu["ToOpenRadio"]         = "a rádió megnyitásához"
-  
-  -- Lithuanian
-  LANG.lt["SelectCountry"]        = "Pasirinkite šalį"
-  LANG.lt["StopRadio"]           = "SUSTABDYTI"
-  LANG.lt["SearchPlaceholder"]   = "Paieška..."
-  LANG.lt["PressKeyToOpen"]      = "Paspauskite {key} norėdami pasirinkti stotį"
-  LANG.lt["NoStations"]          = "Įspėjimas: nerasta stočių šalia {country}"
-  LANG.lt["Interact"]            = "Paspauskite E sąveikai"
-  LANG.lt["PAUSED"]              = "PRISTABDYTA"
-  LANG.lt["Settings"]            = "Nustatymai"
-  LANG.lt["LanguageSelection"]   = "Kalbos pasirinkimas"
-  LANG.lt["ThemeSelection"]      = "Temos pasirinkimas"
-  LANG.lt["SelectTheme"]         = "Pasirinkti temą"
-  LANG.lt["SelectLanguage"]      = "Pasirinkti kalbą"
-  LANG.lt["SelectKey"]           = "Pasirinkite klavišą automobilio radijo meniu"
-  LANG.lt["GeneralOptions"]      = "Bendrosios parinktys"
-  LANG.lt["ShowCarMessages"]     = "Rodyti animaciją įlipant į transporto priemonę"
-  LANG.lt["ShowBoomboxHUD"]      = "Rodyti Boombox sąsają"
-  LANG.lt["Contribute"]          = "Norite prisidėti?"
-  LANG.lt["SubmitPullRequest"]   = "Pateikite Pull Request :)"
-  LANG.lt["SuperadminSettings"]  = "Super administratoriaus nustatymai"
-  LANG.lt["MakeBoomboxPermanent"] = "Padaryti Boombox nuolatiniu"
-  LANG.lt["Enabled"]             = "Įjungta"
-  LANG.lt["Disabled"]            = "Išjungta"
-  LANG.lt["FavoriteStations"]    = "Mėgstamos stotys"
-  LANG.lt["TuningIn"]            = "Derinimas"
-  LANG.lt["KeyBinds"]            = "Raktų priskyrimai"
-  LANG.lt["ToOpenRadio"]         = "radijui atidaryti"
-  
-  -- Ukrainian
-  LANG.uk["SelectCountry"]        = "Оберіть країну"
-  LANG.uk["StopRadio"]           = "СТОП"
-  LANG.uk["SearchPlaceholder"]   = "Пошук..."
-  LANG.uk["PressKeyToOpen"]      = "Натисніть {key}, щоб вибрати станцію"
-  LANG.uk["NoStations"]          = "Попередження: Не знайдено станцій для {country}"
-  LANG.uk["Interact"]            = "Натисніть E для взаємодії"
-  LANG.uk["PAUSED"]              = "ПРИЗУПИНЕНО"
-  LANG.uk["Settings"]            = "Налаштування"
-  LANG.uk["LanguageSelection"]   = "Вибір мови"
-  LANG.uk["ThemeSelection"]      = "Вибір теми"
-  LANG.uk["SelectTheme"]         = "Оберіть тему"
-  LANG.uk["SelectLanguage"]      = "Оберіть мову"
-  LANG.uk["SelectKey"]           = "Оберіть клавішу для меню радіо автомобіля"
-  LANG.uk["GeneralOptions"]      = "Загальні параметри"
-  LANG.uk["ShowCarMessages"]     = "Показувати анімацію при вході в авто"
-  LANG.uk["ShowBoomboxHUD"]      = "Показувати інтерфейс Boombox"
-  LANG.uk["Contribute"]          = "Хочете допомогти?"
-  LANG.uk["SubmitPullRequest"]   = "Надішліть Pull Request :)"
-  LANG.uk["SuperadminSettings"]  = "Налаштування суперадміністратора"
-  LANG.uk["MakeBoomboxPermanent"] = "Зробити Boombox постійним"
-  LANG.uk["Enabled"]             = "Увімкнено"
-  LANG.uk["Disabled"]            = "Вимкнено"
-  LANG.uk["FavoriteStations"]    = "Улюблені станції"
-  LANG.uk["TuningIn"]            = "Настройка"
-  LANG.uk["KeyBinds"]            = "Прив’язка клавіш"
-  LANG.uk["ToOpenRadio"]         = "щоб відкрити радіо"
-  
-  local themes = {
-    "dark","sleek","cyberpunk","sunset","emerald",
-    "synthwave","forest","ocean","volcanic"
-  }
-  
-  for _, theme in ipairs(themes) do
-    -- German
-    LANG.de[theme]      = ({
-      dark      = "Dunkel",
-      sleek     = "Elegant",
-      cyberpunk = "Cyberpunk",
-      sunset    = "Sonnenuntergang",
-      emerald   = "Smaragd",
-      synthwave = "Synthwave",
-      forest    = "Wald",
-      ocean     = "Ozean",
-      volcanic  = "Vulkanisch",
-    })[theme]
-    -- English
-    LANG.en[theme]      = ({ dark="Dark", sleek="Sleek", cyberpunk="Cyberpunk", sunset="Sunset", emerald="Emerald", synthwave="Synthwave", forest="Forest", ocean="Ocean", volcanic="Volcanic" })[theme]
-    -- Pirate English
-    LANG.en_pt[theme]   = LANG.en[theme]
-    -- Spanish
-    LANG.es[theme]      = ({ dark="Oscuro", sleek="Elegante", cyberpunk="Cyberpunk", sunset="Atardecer", emerald="Esmeralda", synthwave="Synthwave", forest="Bosque", ocean="Océano", volcanic="Volcánico" })[theme]
-    -- French
-    LANG.fr[theme]      = ({ dark="Sombre", sleek="Élégant", cyberpunk="Cyberpunk", sunset="Coucher de soleil", emerald="Émeraude", synthwave="Synthwave", forest="Forêt", ocean="Océan", volcanic="Volcanique" })[theme]
-    -- Italian
-    LANG.it[theme]      = ({ dark="Scuro", sleek="Elegante", cyberpunk="Cyberpunk", sunset="Tramonto", emerald="Smeraldo", synthwave="Synthwave", forest="Foresta", ocean="Oceano", volcanic="Vulcanico" })[theme]
-    -- Japanese
-    LANG.ja[theme]      = ({ dark="ダーク", sleek="スリーク", cyberpunk="サイバーパンク", sunset="サンセット", emerald="エメラルド", synthwave="シンセウェーブ", forest="フォレスト", ocean="オーシャン", volcanic="ボルカニック" })[theme]
-    -- Korean
-    LANG.ko[theme]      = ({ dark="다크", sleek="슬릭", cyberpunk="사이버펑크", sunset="선셋", emerald="에메랄드", synthwave="신스웨이브", forest="포레스트", ocean="오션", volcanic="볼케이닉" })[theme]
-    -- Portuguese (BR)
-    LANG.pt_br[theme]   = ({ dark="Escuro", sleek="Elegante", cyberpunk="Cyberpunk", sunset="Pôr do sol", emerald="Esmeralda", synthwave="Synthwave", forest="Floresta", ocean="Oceano", volcanic="Vulcânico" })[theme]
-    -- Russian
-    LANG.ru[theme]      = ({ dark="Тёмный", sleek="Стильный", cyberpunk="Киберпанк", sunset="Закат", emerald="Изумруд", synthwave="Синтвейв", forest="Лес", ocean="Океан", volcanic="Вулканический" })[theme]
-    -- Turkish
-    LANG.tr[theme]      = ({ dark="Koyu", sleek="Şık", cyberpunk="Siberpunk", sunset="Günbatımı", emerald="Zümrüt", synthwave="Synthwave", forest="Orman", ocean="Okyanus", volcanic="Volkanik" })[theme]
-    -- Chinese (Simplified)
-    LANG.zh_cn[theme]   = ({ dark="暗黑", sleek="简洁", cyberpunk="赛博朋克", sunset="日落", emerald="翡翠", synthwave="合成波", forest="森林", ocean="海洋", volcanic="火山" })[theme]
-    -- Bulgarian
-    LANG.bg[theme]      = ({ dark="Тъмна", sleek="Изтънчен", cyberpunk="Киберпънк", sunset="Залез", emerald="Изумруд", synthwave="Синтувейв", forest="Гора", ocean="Океан", volcanic="Вулканичен" })[theme]
-    -- Greek
-    LANG.el[theme]      = ({ dark="Σκοτεινό", sleek="Κομψό", cyberpunk="Σάιμπερπανκ", sunset="Ηλιοβασίλεμα", emerald="Σμάραγδο", synthwave="Συνθετικό κύμα", forest="Δάσος", ocean="Ωκεανός", volcanic="Ηφαιστειακό" })[theme]
-    -- Croatian
-    LANG.hr[theme]      = ({ dark="Tamno", sleek="Elegantno", cyberpunk="Cyberpunk", sunset="Zalazak sunca", emerald="Smaragd", synthwave="Synthwave", forest="Šuma", ocean="Ocean", volcanic="Vulkanski" })[theme]
-    -- Hebrew
-    LANG.he[theme]      = ({ dark="כהה", sleek="חלק", cyberpunk="סייברפאנק", sunset="שקיעה", emerald="אזמרגד", synthwave="סינתוויב", forest="יער", ocean="אוקיינוס", volcanic="געשי" })[theme]
-    -- Slovak
-    LANG.sk[theme]      = ({ dark="Tmavá", sleek="Elegantná", cyberpunk="Kyberpunk", sunset="Západ slnka", emerald="Smaragd", synthwave="Synthwave", forest="Les", ocean="Oceán", volcanic="Sopečný" })[theme]
-    -- Polish
-    LANG.pl[theme]      = ({ dark="Ciemny", sleek="Elegancki", cyberpunk="Cyberpunk", sunset="Zachód słońca", emerald="Szmaragd", synthwave="Synthwave", forest="Las", ocean="Ocean", volcanic="Wulkaniczny" })[theme]
-    -- Danish
-    LANG.da[theme]      = ({ dark="Mørk", sleek="Elegant", cyberpunk="Cyberpunk", sunset="Solnedgang", emerald="Smaragd", synthwave="Synthwave", forest="Skov", ocean="Hav", volcanic="Vulkanisk" })[theme]
-    -- Dutch
-    LANG.nl[theme]      = ({ dark="Donker", sleek="Strak", cyberpunk="Cyberpunk", sunset="Zonsondergang", emerald="Smaragd", synthwave="Synthwave", forest="Bos", ocean="Oceaan", volcanic="Vulkanisch" })[theme]
-    -- Thai
-    LANG.th[theme]      = ({ dark="มืด", sleek="เพรียว", cyberpunk="ไซเบอร์พังค์", sunset="พระอาทิตย์ตก", emerald="มรกต", synthwave="ซินธ์เวฟ", forest="ป่า", ocean="มหาสมุทร", volcanic="ภูเขาไฟ" })[theme]
-    -- Vietnamese
-    LANG.vi[theme]      = ({ dark="Tối", sleek="Bóng bẩy", cyberpunk="Cyberpunk", sunset="Hoàng hôn", emerald="Ngọc lục bảo", synthwave="Synthwave", forest="Rừng", ocean="Đại dương", volcanic="Núi lửa" })[theme]
-    -- Hungarian
-    LANG.hu[theme]      = ({ dark="Sötét", sleek="Elegáns", cyberpunk="Cyberpunk", sunset="Naplemente", emerald="Smaragd", synthwave="Synthwave", forest="Erdő", ocean="Óceán", volcanic="Vulkáni" })[theme]
-    -- Lithuanian
-    LANG.lt[theme]      = ({ dark="Tamsus", sleek="Elegantiškas", cyberpunk="Cyberpunk", sunset="Saulėlydis", emerald="Smaragdas", synthwave="Synthwave", forest="Miškas", ocean="Vandenynas", volcanic="Vulkaninis" })[theme]
-    -- Ukrainian
-    LANG.uk[theme]      = ({ dark="Темна", sleek="Елегантна", cyberpunk="Кіберпанк", sunset="Сонячний захід", emerald="Смарагд", synthwave="Синтвейв", forest="Ліс", ocean="Океан", volcanic="Вулканічний" })[theme]
-  end
-  
-  return LANG
+    ["zh-cn"] = {},
+    ["en-pt"] = {}
+}
+
+-- Common translation keys
+local translations = {
+    SelectCountry = {
+        de = "Land auswählen",
+        en = "Select a Country",
+        es = "Seleccionar país",
+        fr = "Sélectionnez un pays",
+        it = "Seleziona paese",
+        ja = "国を選択",
+        ko = "국가 선택",
+        ["pt-br"] = "Selecionar país",
+        ru = "Выберите страну",
+        tr = "Ülke seç",
+        ["zh-cn"] = "选择国家",
+        ["en-pt"] = "Be Choosin’ a Land"
+    },
+    StopRadio = {
+        de = "STOP",
+        en = "STOP",
+        es = "PARAR",
+        fr = "ARRÊT",
+        it = "FERMARE",
+        ja = "停止",
+        ko = "정지",
+        ["pt-br"] = "PARAR",
+        ru = "СТОП",
+        tr = "DURDUR",
+        ["zh-cn"] = "停止",
+        ["en-pt"] = "AVAST!"
+    },
+    SearchPlaceholder = {
+        de = "Suche...",
+        en = "Search...",
+        es = "Buscar...",
+        fr = "Recherche...",
+        it = "Cerca...",
+        ja = "検索...",
+        ko = "검색...",
+        ["pt-br"] = "Buscar...",
+        ru = "Поиск...",
+        tr = "Ara...",
+        ["zh-cn"] = "搜索...",
+        ["en-pt"] = "Hunt fer treasure..."
+    },
+    PressKeyToOpen = {
+        de = "Drücken Sie {key}, um eine Station auszuwählen",
+        en = "Press {key} to pick a station",
+        es = "Presione {key} para elegir una estación",
+        fr = "Appuyez sur {key} pour choisir une station",
+        it = "Premi {key} per scegliere una stazione",
+        ja = "{key}を押して局を選択",
+        ko = "{key}을 눌러 방송국을 선택하십시오",
+        ["pt-br"] = "Pressione {key} para escolher uma estação",
+        ru = "Нажмите {key}, чтобы выбрать станцию",
+        tr = "Radyo kanalı seçmek için {key} tuşuna bas",
+        ["zh-cn"] = "按 {key} 选择电台",
+        ["en-pt"] = "Press {key} to tune into a shanty"
+    },
+    NoStations = {
+        de = "Warnung: Keine Stationen gefunden für {country}",
+        en = "Warning: No stations found for {country}",
+        es = "Advertencia: No se encontraron estaciones para {country}",
+        fr = "Attention : Aucune station trouvée pour {country}",
+        it = "Avviso: Nessuna stazione trovata per {country}",
+        ja = "警告: {country}の局が見つかりません",
+        ko = "경고: {country}에 대한 방송국을 찾을 수 없습니다",
+        ["pt-br"] = "Aviso: Nenhuma estação encontrada para {country}",
+        ru = "Предупреждение: Станции не найдены для {country}",
+        tr = "Uyarı: {country} kanalı bulunamadı.",
+        ["zh-cn"] = "警告: 未找到 {country} 的电台",
+        ["en-pt"] = "Yarr! No shanties found in {country}"
+    },
+    Interact = {
+        de = "Drücken Sie E zur Interaktion",
+        en = "Press E to Interact",
+        es = "Presiona E para interactuar",
+        fr = "Appuyez sur E pour interagir",
+        it = "Premi E per interagire",
+        ja = "私とやり取りして！",
+        ko = "나와 상호작용하세요!",
+        ["pt-br"] = "Pressione E para interagir",
+        ru = "Взаимодействуй со мной!",
+        tr = "Benimle Etkileşimde Bulun!",
+        ["zh-cn"] = "与我互动！",
+        ["en-pt"] = "Press E to Parley"
+    },
+    PAUSED = {
+        de = "PAUSIERT",
+        en = "PAUSED",
+        es = "PAUSADO",
+        fr = "EN PAUSE",
+        it = "IN PAUSA",
+        ja = "一時停止",
+        ko = "일시정지",
+        ["pt-br"] = "PAUSADO",
+        ru = "ПАУЗА",
+        tr = "DURAKLATILDI",
+        ["zh-cn"] = "暂停",
+        ["en-pt"] = "TAKIN’ A BREATHER"
+    },
+    Settings = {
+        de = "Einstellungen",
+        en = "Settings",
+        es = "Ajustes",
+        fr = "Paramètres",
+        it = "Impostazioni",
+        ja = "設定",
+        ko = "설정",
+        ["pt-br"] = "Configurações",
+        ru = "Настройки",
+        tr = "Ayarlar",
+        ["zh-cn"] = "设置",
+        ["en-pt"] = "Ship’s Riggin’s"
+    },
+    LanguageSelection = {
+        de = "Sprachauswahl",
+        en = "Language Selection",
+        es = "Selección de idioma",
+        fr = "Sélection de la langue",
+        it = "Selezione della lingua",
+        ja = "言語選択",
+        ko = "언어 선택",
+        ["pt-br"] = "Seleção de idioma",
+        ru = "Выбор языка",
+        tr = "Dil Seçimi",
+        ["zh-cn"] = "语言选择",
+        ["en-pt"] = "Choose Yer Tongue"
+    },
+    ThemeSelection = {
+        de = "Themenauswahl",
+        en = "Theme Selection",
+        es = "Selección de tema",
+        fr = "Sélection du thème",
+        it = "Selezione del tema",
+        ja = "テーマ選択",
+        ko = "테마 선택",
+        ["pt-br"] = "Seleção de tema",
+        ru = "Выбор темы",
+        tr = "Tema Seçimi",
+        ["zh-cn"] = "主题选择",
+        ["en-pt"] = "Pick Yer Colors"
+    },
+    SelectTheme = {
+        de = "Thema auswählen",
+        en = "Select Theme",
+        es = "Seleccionar tema",
+        fr = "Sélectionner un thème",
+        it = "Seleziona tema",
+        ja = "テーマを選択",
+        ko = "테마 선택",
+        ["pt-br"] = "Selecionar tema",
+        ru = "Выберите тему",
+        tr = "Tema Seç",
+        ["zh-cn"] = "选择主题",
+        ["en-pt"] = "Choose a Look fer the Ship"
+    },
+    SelectLanguage = {
+        de = "Sprache auswählen",
+        en = "Select Language",
+        es = "Seleccionar idioma",
+        fr = "Sélectionner une langue",
+        it = "Seleziona lingua",
+        ja = "言語を選択",
+        ko = "언어 선택",
+        ["pt-br"] = "Selecionar idioma",
+        ru = "Выберите язык",
+        tr = "Dil Seç",
+        ["zh-cn"] = "选择语言",
+        ["en-pt"] = "Be Choosin’ Yer Tongue"
+    },
+    SelectKey = {
+        de = "Taste für Auto-Radio-Menü wählen",
+        en = "Open Car Radio Menu",
+        es = "Selecciona la tecla para abrir el menú de radio del auto",
+        fr = "Sélectionner la touche pour ouvrir le menu de radio du véhicule",
+        it = "Tasto per aprire menu radio auto",
+        ja = "車内ラジオメニューのキーを選択",
+        ko = "차량 라디오 메뉴 키 선택",
+        ["pt-br"] = "Tecla para abrir menu de rádio",
+        ru = "Клавиша для меню радио в машине",
+        tr = "Araç radyo menüsü tuşunu seç",
+        ["zh-cn"] = "选择车载电台菜单按键",
+        ["en-pt"] = "Hoist the Car Radio Menu"
+    },
+    GeneralOptions = {
+        de = "Allgemeine Optionen",
+        en = "General Options",
+        es = "Opciones generales",
+        fr = "Options générales",
+        it = "Opzioni generali",
+        ja = "一般オプション",
+        ko = "일반 옵션",
+        ["pt-br"] = "Opções gerais",
+        ru = "Общие параметры",
+        tr = "Genel Seçenekler",
+        ["zh-cn"] = "常规选项",
+        ["en-pt"] = "Cap’n’s Options"
+    },
+    ShowCarMessages = {
+        de = "Animation beim Einsteigen im Fahrzeug anzeigen",
+        en = "Show Animation When Entering Vehicle",
+        es = "Mostrar animación al entrar en el vehículo",
+        fr = "Afficher l'animation lors de l'entrée dans le véhicule",
+        it = "Mostra animazione all'entrata nel veicolo",
+        ja = "車内に入るとアニメーションを表示",
+        ko = "차량 진입 시 애니메이션 표시",
+        ["pt-br"] = "Mostrar animação ao entrar no veículo",
+        ru = "Показывать анимацию при входе в машину",
+        tr = "Araçta giriş yapıldığında animasyon göster",
+        ["zh-cn"] = "进入车内时显示动画",
+        ["en-pt"] = "Show the Enterin’ Animation"
+    },
+    ShowBoomboxHUD = {
+        de = "Tragbares-Radio-Bildschirmanzeige anzeigen",
+        en = "Show the Boombox HUD",
+        es = "Mostrar la interfaz del radio portátil",
+        fr = "Afficher l'interface de la radio portable",
+        it = "Mostra l'interfaccia della radio portatile",
+        ja = "ポータブルラジオの画面表示を表示",
+        ko = "휴대용 라디오의 화면 표시",
+        ["pt-br"] = "Mostrar a interface do rádio portátil",
+        ru = "Показывать интерфейс портативного радио",
+        tr = "Taşınabilir radyo arayüzünü göster",
+        ["zh-cn"] = "显示便携式收音机界面",
+        ["en-pt"] = "Show the Music Box Treasure Map"
+    },
+    Contribute = {
+        de = "Möchten Sie mitwirken?",
+        en = "Want to contribute?",
+        es = "¿Quieres contribuir?",
+        fr = "Voulez-vous contribuer?",
+        it = "Vuoi contribuire?",
+        ja = "貢献したいですか？",
+        ko = "기여하고 싶습니까?",
+        ["pt-br"] = "Quer contribuir?",
+        ru = "Хотите внести свой вклад?",
+        tr = "Katkıda bulunmak ister misiniz?",
+        ["zh-cn"] = "想要贡献吗？",
+        ["en-pt"] = "Wanna lend a hook?"
+    },
+    SubmitPullRequest = {
+        de = "Einen Änderungsvorschlag einreichen :)",
+        en = "Submit a Pull Request :)",
+        es = "Enviar una solicitud de cambios :)",
+        fr = "Envoyez une demande de fusion :)",
+        it = "Invia una richiesta di unione :)",
+        ja = "変更リクエストを送信 :)",
+        ko = "변경 요청을 제출 :)",
+        ["pt-br"] = "Enviar uma solicitação de mudança :)",
+        ru = "Отправить запрос на внесение изменений :)",
+        tr = "Değişiklik isteği gönder :)",
+        ["zh-cn"] = "提交合并请求 :)",
+        ["en-pt"] = "Send a Message in a Bottle :)"
+    },
+    SuperadminSettings = {
+        de = "Hauptadministrator-Einstellungen",
+        en = "Superadmin Settings",
+        es = "Configuraciones de Administrador Principal",
+        fr = "Paramètres d'Administrateur Principal",
+        it = "Configurazioni dell'Amministratore Principale",
+        ja = "最高管理者の設定",
+        ko = "최고 관리자 설정",
+        ["pt-br"] = "Configurações de Administrador Principal",
+        ru = "Настройки Главного Администратора",
+        tr = "Baş Yönetici ayarları",
+        ["zh-cn"] = "超级管理员设置",
+        ["en-pt"] = "Cap’n o' Cap’ns Settings"
+    },
+    MakeBoomboxPermanent = {
+        de = "Tragbares Radio als permanent markieren",
+        en = "Make Boombox Permanent",
+        es = "Marcar radio portátil como permanente",
+        fr = "Marquer la radio portable comme permanente",
+        it = "Rendi la radio portatile permanente",
+        ja = "ポータブルラジオを永久にする",
+        ko = "휴대용 라디오를 영구적으로 만들기",
+        ["pt-br"] = "Marcar rádio portátil como permanente",
+        ru = "Сделать портативное радио постоянным",
+        tr = "Taşınabilir radyoyu sabit yap",
+        ["zh-cn"] = "将便携式收音机设为永久",
+        ["en-pt"] = "Nail Down the Music Box Forever"
+    },
+    Enabled = {
+        de = "Aktiviert",
+        en = "Enabled",
+        es = "Activado",
+        fr = "Activé",
+        it = "Attivo",
+        ja = "有効",
+        ko = "활성화",
+        ["pt-br"] = "Ativado",
+        ru = "Включено",
+        tr = "Aktif",
+        ["zh-cn"] = "启用",
+        ["en-pt"] = "Aye, It Be On"
+    },
+    Disabled = {
+        de = "Deaktiviert",
+        en = "Disabled",
+        es = "Desactivado",
+        fr = "Désactivé",
+        it = "Disattivato",
+        ja = "無効",
+        ko = "비활성화",
+        ["pt-br"] = "Desativado",
+        ru = "Выключено",
+        tr = "Pasif",
+        ["zh-cn"] = "禁用",
+        ["en-pt"] = "Nay, It Be Off"
+    },
+    FavoriteStations = {
+        de = "Favorit-Stationen",
+        en = "Favorite Stations",
+        es = "Estaciones favoritas",
+        fr = "Stations favorites",
+        it = "Stazioni favorite",
+        ja = "お気に入りの局",
+        ko = "즐겨찾기 방송국",
+        ["pt-br"] = "Estações favoritas",
+        ru = "Избранные станции",
+        tr = "Favori Radyo Kanalları",
+        ["zh-cn"] = "收藏电台",
+        ["en-pt"] = "Ye Favorite Shanties"
+    },
+    TuningIn = {
+        de = "Einstellen",
+        en = "Tuning in",
+        es = "Sintonizando",
+        fr = "Sintonisation",
+        it = "Sintonizzazione",
+        ja = "調整中",
+        ko = "조정 중",
+        ["pt-br"] = "Sintonização",
+        ru = "Настройка",
+        tr = "Ayarlıyor",
+        ["zh-cn"] = "调谐中",
+        ["en-pt"] = "Tunin’ the Sails"
+    },
+    KeyBinds = {
+        de = "Tastenbelegungen",
+        en = "Key Binds",
+        es = "Asignación de teclas",
+        fr = "Raccourcis clavier",
+        it = "Assegnazione tasti",
+        ja = "キー割り当て",
+        ko = "키 바인딩",
+        ["pt-br"] = "Atribuições de teclas",
+        ru = "Назначение клавиш",
+        tr = "Tuş Atamaları",
+        ["zh-cn"] = "按键绑定",
+        ["en-pt"] = "Key Binds"
+    },
+    ToOpenRadio = {
+        de = "um das Radio zu öffnen",
+        en = "to open radio",
+        es = "para abrir la radio",
+        fr = "pour ouvrir la radio",
+        it = "per aprire la radio",
+        ja = "ラジオを開くには",
+        ko = "라디오 메뉴를 열려면",
+        ["pt-br"] = "para abrir o rádio",
+        ru = "чтобы открыть радио",
+        tr = "radyo menüsünü açmak için",
+        ["zh-cn"] = "按键以打开收音机",
+        ["en-pt"] = "to set sail"
+    }
+}
+
+-- Theme translations
+local themes = {
+    dark = {
+        de = "Dunkel",
+        en = "Dark",
+        es = "Oscuro",
+        fr = "Sombre",
+        it = "Scuro",
+        ja = "ダーク",
+        ko = "다크",
+        ["pt-br"] = "Escuro",
+        ru = "Тёмный",
+        tr = "Koyu",
+        ["zh-cn"] = "暗黑",
+        ["en-pt"] = "Dark"
+    },
+    sleek = {
+        de = "Elegant",
+        en = "Sleek",
+        es = "Elegante",
+        fr = "Élégant",
+        it = "Elegante",
+        ja = "スリーク",
+        ko = "슬릭",
+        ["pt-br"] = "Elegante",
+        ru = "Стильный",
+        tr = "Şık",
+        ["zh-cn"] = "简洁",
+        ["en-pt"] = "Sleek"
+    },
+    cyberpunk = {
+        de = "Cyberpunk",
+        en = "Cyberpunk",
+        es = "Cyberpunk",
+        fr = "Cyberpunk",
+        it = "Cyberpunk",
+        ja = "サイバーパンク",
+        ko = "사이버펑크",
+        ["pt-br"] = "Cyberpunk",
+        ru = "Киберпанк",
+        tr = "Siberpunk",
+        ["zh-cn"] = "赛博朋克",
+        ["en-pt"] = "Cyberpunk"
+    },
+    sunset = {
+        de = "Sonnenuntergang",
+        en = "Sunset",
+        es = "Atardecer",
+        fr = "Coucher de soleil",
+        it = "Tramonto",
+        ja = "サンセット",
+        ko = "선셋",
+        ["pt-br"] = "Pôr do sol",
+        ru = "Закат",
+        tr = "Günbatımı",
+        ["zh-cn"] = "日落",
+        ["en-pt"] = "Sunset"
+    },
+    emerald = {
+        de = "Smaragd",
+        en = "Emerald",
+        es = "Esmeralda",
+        fr = "Émeraude",
+        it = "Smeraldo",
+        ja = "エメラルド",
+        ko = "에메랄드",
+        ["pt-br"] = "Esmeralda",
+        ru = "Изумруд",
+        tr = "Zümrüt",
+        ["zh-cn"] = "翡翠",
+        ["en-pt"] = "Emerald"
+    },
+    synthwave = {
+        de = "Synthwave",
+        en = "Synthwave",
+        es = "Synthwave",
+        fr = "Synthwave",
+        it = "Synthwave",
+        ja = "シンセウェーブ",
+        ko = "신스웨이브",
+        ["pt-br"] = "Synthwave",
+        ru = "Синтвейв",
+        tr = "Synthwave",
+        ["zh-cn"] = "合成波",
+        ["en-pt"] = "Synthwave"
+    },
+    forest = {
+        de = "Wald",
+        en = "Forest",
+        es = "Bosque",
+        fr = "Forêt",
+        it = "Foresta",
+        ja = "フォレスト",
+        ko = "포레스트",
+        ["pt-br"] = "Floresta",
+        ru = "Лес",
+        tr = "Orman",
+        ["zh-cn"] = "森林",
+        ["en-pt"] = "Forest"
+    },
+    ocean = {
+        de = "Ozean",
+        en = "Ocean",
+        es = "Océano",
+        fr = "Océan",
+        it = "Oceano",
+        ja = "オーシャン",
+        ko = "오션",
+        ["pt-br"] = "Oceano",
+        ru = "Океан",
+        tr = "Okyanus",
+        ["zh-cn"] = "海洋",
+        ["en-pt"] = "Ocean"
+    },
+    volcanic = {
+        de = "Vulkanisch",
+        en = "Volcanic",
+        es = "Volcánico",
+        fr = "Volcanique",
+        it = "Vulcanico",
+        ja = "ボルカニック",
+        ko = "볼케이닉",
+        ["pt-br"] = "Vulcânico",
+        ru = "Вулканический",
+        tr = "Volkanik",
+        ["zh-cn"] = "火山",
+        ["en-pt"] = "Volcanic"
+    }
+}
+
+-- Apply translations to each language
+for key, langs in pairs(translations) do
+    for lang, text in pairs(langs) do
+        LANG[lang][key] = text
+    end
+end
+
+-- Apply theme translations
+for theme, langs in pairs(themes) do
+    for lang, text in pairs(langs) do
+        LANG[lang][theme] = text
+    end
+end
+
+return LANG
