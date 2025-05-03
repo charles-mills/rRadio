@@ -7,6 +7,7 @@ rRadio.utils.VehicleClasses = {
   ["gmod_sent_vehicle_fphysics_base"] = true,
   ["drs_car_r5"] = true,
 }
+
 rRadio.utils.SitAnywhereSeats = {
   ["Seat_Airboat"] = true,
   ["Chair_Office2"] = true,
@@ -21,14 +22,13 @@ function rRadio.utils.GetVehicle(ent)
   local parent = ent:GetParent()
   ent = IsValid(parent) and parent or ent
   if rRadio.utils.SitAnywhereSeats[ent:GetClass()] then return end
+
   if rRadio.utils.VehicleClasses[ent:GetClass()] or ent:IsVehicle() or
-  string.StartWith(ent:GetClass(), "lvs_") or
-  string.StartWith(ent:GetClass(), "ses_") or
-  string.StartWith(ent:GetClass(), "sw_") or
-  string.StartWith(ent:GetClass(), "drs_")
-  then
-    return ent
-  end
+    string.StartWith(ent:GetClass(), "lvs_") or
+    string.StartWith(ent:GetClass(), "ses_") or
+    string.StartWith(ent:GetClass(), "sw_") or
+    string.StartWith(ent:GetClass(), "drs_")
+  then return ent end
 end
 
 function rRadio.utils.isSitAnywhereSeat(vehicle)
@@ -96,22 +96,28 @@ end
 
 function rRadio.utils.setRadioStatus(entity, status, stationName, isPlaying, updateNameOnly)
   if not IsValid(entity) then return end
+
   local entIndex = entity:EntIndex()
+
   if timer.Exists("UpdateBoomboxStatus_" .. entIndex) then
     timer.Remove("UpdateBoomboxStatus_" .. entIndex)
   end
+
   stationName = stationName or ""
   if isPlaying == nil then
     isPlaying = (status == "playing" or status == "tuning")
   end
+
   if not BoomboxStatuses[entIndex] then
     BoomboxStatuses[entIndex] = {}
   end
+
   if not updateNameOnly then
     entity:SetNWString("Status", status)
     entity:SetNWBool("IsPlaying", isPlaying)
     BoomboxStatuses[entIndex].stationStatus = status
   end
+
   entity:SetNWString("StationName", stationName)
   BoomboxStatuses[entIndex].stationName = stationName
   if SERVER then
@@ -127,10 +133,13 @@ end
 
 function rRadio.utils.clearRadioStatus(entity)
   if not IsValid(entity) then return end
+
   local entIndex = entity:EntIndex()
+
   if timer.Exists("UpdateBoomboxStatus_" .. entIndex) then
     timer.Remove("UpdateBoomboxStatus_" .. entIndex)
   end
+
   rRadio.utils.setRadioStatus(entity, "stopped", "", false)
 end
 
@@ -143,7 +152,9 @@ end
 function rRadio.utils.canUseRadio(entity)
   if not IsValid(entity) then return false end
   if rRadio.utils.IsBoombox(entity) then return true end
+
   local vehicle = rRadio.utils.GetVehicle(entity)
+
   if not vehicle then return false end
   if rRadio.utils.isSitAnywhereSeat(vehicle) then return false end
   return true
