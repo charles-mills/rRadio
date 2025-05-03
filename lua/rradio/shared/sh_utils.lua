@@ -50,30 +50,26 @@ function rRadio.utils.canInteractWithBoombox(ply, boombox)
   rRadio.DevPrint("Checking if player can interact with boombox")
 
   if not IsValid(ply) or not IsValid(boombox) then return false end
+  local owner = rRadio.sv.utils.getOwner(boombox)
+
+  rRadio.DevPrint("Owner is valid, checking if player is owner")
+
+  if owner == ply then
+    rRadio.DevPrint("Player is owner - granting permission")
+    return true
+  else
+    rRadio.DevPrint("Player is not owner - refusing permission")
+    return false
+  end
 
   rRadio.DevPrint("Player is valid, checking CAMI")
 
   if CAMI.PlayerHasAccess(ply, "rradio.UseAll") then
      rRadio.DevPrint("Player has rradio.UseAll")
      return true
-  elseif ply:IsSuperAdmin() then
-     rRadio.DevPrint("Player is superadmin")
-     return true
   end
 
-  local owner = rRadio.sv.utils.getOwner(boombox)
-
-  rRadio.DevPrint("Owner is valid, checking if player is owner")
-
-  local canInteract = IsValid(owner) and owner == ply
-
-  if canInteract then
-    rRadio.DevPrint("Player is owner - granting permission")
-  else
-    rRadio.DevPrint("Player is not owner - refusing permission")
-  end
-  
-  return canInteract
+  return false
 end
 
 function rRadio.utils.GetEntityConfig(entity)
