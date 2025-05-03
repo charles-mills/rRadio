@@ -57,9 +57,6 @@ function rRadio.utils.canInteractWithBoombox(ply, boombox)
   if owner == ply then
     rRadio.DevPrint("Player is owner - granting permission")
     return true
-  else
-    rRadio.DevPrint("Player is not owner - refusing permission")
-    return false
   end
 
   rRadio.DevPrint("Player is valid, checking CAMI")
