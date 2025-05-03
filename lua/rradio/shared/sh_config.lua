@@ -80,7 +80,11 @@ function rRadio.config.ReloadConVars()
             elseif name == "rammel_rradio_sv_vehicle_volume_limit" then
                 rRadio.config.MaxVolume = function() return value end
             elseif name == "rammel_rradio_sv_animation_cooldown" then
-                rRadio.config.MessageCooldown = function() return value
+                rRadio.config.MessageCooldown = function() return value end
+            elseif name == "rammel_rradio_sv_volume_update_debounce" then
+                rRadio.config.VolumeUpdateDebounce = function() return value end
+            elseif name == "rammel_rradio_sv_station_update_debounce" then
+                rRadio.config.StationUpdateDebounce = function() return value end
             end
         end
     end
@@ -184,6 +188,7 @@ if CLIENT then
         rRadio.config.ReloadConVars()
     end)
 else
+    util.AddNetworkString("RadioConfigUpdate")
     net.Start("RadioConfigUpdate")
     net.Broadcast()
 
@@ -204,6 +209,4 @@ else
 end
 
 hook.Run("RadioConfig_Updated")
-end
-
 return rRadio.config

@@ -167,6 +167,7 @@ net.Receive("UpdateRadioVolume", function(len, ply)
     end
     local updateData = rRadio.sv.volumeUpdateQueue[entIndex]
     local currentTime = SysTime()
+
     if currentTime - updateData.lastUpdate >= VolumeUpdateDebounce() then
         rRadio.sv.utils.ProcessVolumeUpdate(entity, volume, ply)
         updateData.lastUpdate = currentTime

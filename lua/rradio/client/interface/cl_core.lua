@@ -952,6 +952,8 @@ openRadioMenu = function(openSettings, opts)
         if type(value) == "function" then
             value = value()
         end
+        local maxVol = (rRadio.config.MaxVolume and rRadio.config.MaxVolume() or 1.0)
+        value = math.min(value, maxVol)
         if value < 0.01 then
             iconMat = VOLUME_ICONS.MUTE
         elseif value <= 0.65 then
@@ -978,7 +980,8 @@ openRadioMenu = function(openSettings, opts)
         local defaultVolume = (entityConfig and (type(entityConfig.Volume) == "function" and entityConfig.Volume() or entityConfig.Volume)) or 0.5
         currentVolume = entity:GetNWFloat("Volume", defaultVolume)
         entityVolumes[entity] = currentVolume
-        currentVolume = math.min(currentVolume, rRadio.config.MaxVolume())
+        local maxVol = (rRadio.config.MaxVolume and rRadio.config.MaxVolume() or 1.0)
+        currentVolume = math.min(currentVolume, maxVol)
     end
     updateVolumeIcon(volumeIcon, currentVolume)
     local volumeSlider = vgui.Create("DNumSlider", volumePanel)
@@ -989,7 +992,8 @@ openRadioMenu = function(openSettings, opts)
     )
     volumeSlider:SetText("")
     volumeSlider:SetMin(0)
-    volumeSlider:SetMax(rRadio.config.MaxVolume())
+    local maxVol = (rRadio.config.MaxVolume and rRadio.config.MaxVolume() or 1.0)
+    volumeSlider:SetMax(maxVol)
     volumeSlider:SetDecimals(2)
     volumeSlider:SetValue(currentVolume)
     volumeSlider.Slider.Paint = function(self, w, h)
@@ -1012,7 +1016,8 @@ openRadioMenu = function(openSettings, opts)
             entity = rRadio.utils.GetVehicle(entity)
         end
 
-        value = math.min(value, rRadio.config.MaxVolume())
+        local maxVol = (rRadio.config.MaxVolume and rRadio.config.MaxVolume() or 1.0)
+        value = math.min(value, maxVol)
         entityVolumes[entity] = value
         if currentRadioSources[entity] and IsValid(currentRadioSources[entity]) then
             currentRadioSources[entity]:SetVolume(value)
