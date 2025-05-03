@@ -13,20 +13,19 @@ BoomboxStatuses = BoomboxStatuses or {}
 currentRadioSources = currentRadioSources or {}
 local entityVolumes = entityVolumes or {}
 
+local MAX_CLIENT_STATIONS = 10
+
 local currentFrame = nil
 local settingsMenuOpen = false
 local openRadioMenu
 local lastKeyPress = 0
 local keyPressDelay = 0.2
 local favoritesMenuOpen = false
-local MAX_CLIENT_STATIONS = 10
 local activeStationCount = 0
 local selectedCountry = nil
 local radioMenuOpen = false
-local lastMessageTime = -math.huge
 local lastStationSelectTime = 0
 local currentlyPlayingStations = {}
-local formattedCountryNames = {}
 local stationDataLoaded = false
 local isSearching = false
 
