@@ -1,4 +1,4 @@
-if rRadio.clCoreLoaded then return end
+if rRadio.clCoreLoaded or SERVER then return end
 
 rRadio.cl = rRadio.cl or {}
 

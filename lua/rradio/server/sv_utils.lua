@@ -151,7 +151,7 @@ end
 function rRadio.sv.utils.CleanupInactiveRadios()
     local currentTime = SysTime()
     for entIndex, radio in pairs(rRadio.sv.ActiveRadios) do
-        if not IsValid(radio.entity) or currentTime - radio.timestamp > InactiveTimeout() then
+        if not IsValid(radio.entity) or currentTime - radio.timestamp > rRadio.config.InactiveTimeout() then
             rRadio.sv.utils.RemoveActiveRadio(Entity(entIndex))
         end
     end
