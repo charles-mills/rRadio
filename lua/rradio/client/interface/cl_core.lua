@@ -1017,7 +1017,7 @@ hook.Add(
         if IsValid(vehicle) then
             local mainVehicle = rRadio.utils.GetVehicle(vehicle)
             if IsValid(mainVehicle) then
-                if hook.Run("rRadioCanOpenMenu", ply, mainVehicle) == false then return end
+                if hook.Run("rRadio.CanOpenMenu", ply, mainVehicle) == false then return end
                 if rRadio.config.DriverPlayOnly then
                     local isPlayerDriving = (mainVehicle:GetDriver() == ply)
                     if not isPlayerDriving then
@@ -1118,6 +1118,7 @@ net.Receive(
         if rRadio.cl.radioSources[entity] and IsValid(rRadio.cl.radioSources[entity]) then
             rRadio.cl.radioSources[entity]:Stop()
             rRadio.cl.radioSources[entity] = nil
+            entityVolumes[entity] = nil
             activeStationCount = rRadio.interface.updateStationCount()
         end
 
