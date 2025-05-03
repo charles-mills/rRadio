@@ -108,24 +108,25 @@ function rRadio.utils.setRadioStatus(entity, status, stationName, isPlaying, upd
     isPlaying = (status == "playing" or status == "tuning")
   end
 
-  if not BoomboxStatuses[entIndex] then
-    BoomboxStatuses[entIndex] = {}
+  local statuses = (SERVER and rRadio.sv.BoomboxStatuses) or BoomboxStatuses
+  if not statuses[entIndex] then
+    statuses[entIndex] = {}
   end
 
   if not updateNameOnly then
     entity:SetNWString("Status", status)
     entity:SetNWBool("IsPlaying", isPlaying)
-    BoomboxStatuses[entIndex].stationStatus = status
+    statuses[entIndex].stationStatus = status
   end
 
   entity:SetNWString("StationName", stationName)
-  BoomboxStatuses[entIndex].stationName = stationName
+  statuses[entIndex].stationName = stationName
   if SERVER then
     net.Start("UpdateRadioStatus")
     net.WriteEntity(entity)
     net.WriteString(stationName)
     net.WriteBool(isPlaying)
-    local statusToSend = (updateNameOnly and BoomboxStatuses[entIndex].stationStatus or status)
+    local statusToSend = (updateNameOnly and statuses[entIndex].stationStatus or status)
     net.WriteString(statusToSend or "")
     net.Broadcast()
   end
