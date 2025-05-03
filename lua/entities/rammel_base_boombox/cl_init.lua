@@ -5,6 +5,14 @@ if (rRadio.isClientLoadDisabled() and rRadio.config.ClientHardDisable) then
 else
     include("shared.lua")
 
+    surface.CreateFont("rRadio_BoomboxHUD", {
+        font = "Roboto",
+        size = 24,
+        weight = 500,
+        antialias = true,
+        extended = true
+    })
+
     local math_sin = math.sin
     local math_min = math.min
     local math_max = math.max
@@ -464,14 +472,6 @@ else
         end
         return scheme
     end
-
-    surface.CreateFont("rRadio_BoomboxHUD", {
-        font = "Roboto",
-        size = 24,
-        weight = 500,
-        antialias = true,
-        extended = true
-    })
 
     net.Receive("UpdateRadioVolume", function()
         local entity = net.ReadEntity()
