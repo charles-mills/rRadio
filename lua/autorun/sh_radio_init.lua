@@ -121,6 +121,7 @@ if SERVER then
     rRadio.FormattedOutput("Assigned " .. resourceStr .. " resource files") 
     include("rradio/shared/sh_config.lua")
     include("rradio/shared/sh_utils.lua")
+    include("rradio/server/sv_utils.lua")
     include("rradio/server/sv_core.lua")
     include("rradio/server/sv_permanent.lua")
     addPrivileges()
