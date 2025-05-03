@@ -79,9 +79,9 @@ end
 function rRadio.utils.GetEntityConfig(entity)
   if not IsValid(entity) then return nil end
   local entityClass = entity:GetClass()
-  if entityClass == "golden_boombox" then
+  if entityClass == "rammel_boombox_gold" then
     return rRadio.config.GoldenBoombox
-  elseif entityClass == "boombox" then
+  elseif entityClass == "rammel_boombox" then
     return rRadio.config.Boombox
   elseif rRadio.utils.GetVehicle(entity) then
     return rRadio.config.VehicleRadio
@@ -142,7 +142,7 @@ end
 function rRadio.utils.IsBoombox(entity)
   if not IsValid(entity) then return false end
   local class = entity:GetClass()
-  return class == "boombox" or class == "golden_boombox"
+  return class == "rammel_boombox" or class == "rammel_boombox_gold"
 end
 
 function rRadio.utils.canUseRadio(entity)

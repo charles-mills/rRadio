@@ -31,6 +31,14 @@ else
     local LocalPlayer = LocalPlayer
     local FrameTime = FrameTime
 
+    local DEFAULT_UI = {
+        BackgroundColor = Color(0,0,0,255),
+        AccentPrimary   = Color(58,114,255),
+        Highlight       = Color(58,114,255),
+        TextColor       = Color(255,255,255,255),
+        Disabled        = Color(180,180,180,255)
+    }
+
     local FADE_START_SQR = 400 * 400
     local FADE_END_SQR = 500 * 500
     local FADE_RANGE_INV = 1 / (FADE_END_SQR - FADE_START_SQR)
@@ -213,6 +221,7 @@ else
     end
 
     timer.Create("BoomboxDistanceCheck", UPDATE_INTERVAL, 0, BoomboxDistanceCheck)
+    timer.Pause("BoomboxDistanceCheck")
 
     local function UpdateNetworkedValues(self)
         local oldStatus = self.nwStatus
@@ -359,12 +368,12 @@ else
         if self:GetClass() == "golden_boombox" then
             colors = HUD.COLORS.golden_boombox
         else
-            local theme = rRadio.config.UI or {}
+            local theme = rRadio.config.UI or DEFAULT_UI
             colors = {
-                BACKGROUND = theme.BackgroundColor or Color(0,0,0,255),
-                ACCENT = theme.AccentPrimary or theme.Highlight,
-                TEXT = theme.TextColor or Color(255,255,255,255),
-                INACTIVE = theme.Disabled or theme.TextColor or Color(180,180,180,255)
+                BACKGROUND = theme.BackgroundColor,
+                ACCENT     = theme.AccentPrimary or theme.Highlight,
+                TEXT       = theme.TextColor,
+                INACTIVE   = theme.Disabled or theme.TextColor
             }
         end
         local background, accent, textColor, inactive = colors.BACKGROUND, colors.ACCENT, colors.TEXT, colors.INACTIVE
@@ -539,7 +548,7 @@ else
     end)
 
     hook.Add("NetworkEntityCreated", "BoomboxNetworkedValues", function(ent)
-        if not IsValid(ent) or not ent:GetClass():find("boombox") then return end
+        if not IsValid(ent) or not rRadio.utils.IsBoombox(ent) then return end
 
         timer.Simple(0, function()
             if IsValid(ent) then

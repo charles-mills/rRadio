@@ -1,5 +1,5 @@
 ENT.Type = "anim"
-ENT.Base = "base_boombox"
+ENT.Base = "rammel_base_boombox"
 ENT.Category = "rRadio"
 ENT.PrintName = "Boombox"
 ENT.Spawnable = true

@@ -653,10 +653,7 @@ local function openSettingsMenu(parentFrame, backButton)
                 GetConVar("rammel_rradio_boombox_hud"):GetBool())
     if LocalPlayer():IsSuperAdmin() then
         local currentEntity = LocalPlayer().currentRadioEntity
-        local isBoombox =
-            IsValid(currentEntity) and
-            (currentEntity:GetClass() == "boombox" or currentEntity:GetClass() == "golden_boombox")
-        if isBoombox then
+        if rRadio.utils.IsBoombox(currentEntity) then
             addHeader(rRadio.config.Lang["SuperadminSettings"] or "Superadmin Settings")
             local permanentCheckbox = addCheckbox(
                 rRadio.config.Lang["MakeBoomboxPermanent"] or "Make Boombox Permanent",
@@ -1174,7 +1171,7 @@ net.Receive(
             activeStationCount = rRadio.interface.updateStationCount()
         end
 
-        if IsValid(entity) and (entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox") then
+        if IsValid(entity) and rRadio.utils.IsBoombox(entity) then
             rRadio.utils.clearRadioStatus(entity)
         end
     end
@@ -1226,7 +1223,7 @@ net.Receive(
             return
         end
         local ply = LocalPlayer()
-        if ent:GetClass() == "boombox" or ent:GetClass() == "golden_boombox" then
+        if rRadio.utils.IsBoombox(ent) then
             ply.currentRadioEntity = ent
             if not radioMenuOpen then
                 openRadioMenu()
@@ -1290,7 +1287,7 @@ hook.Add(
     "EntityRemoved",
     "rRadio.BoomboxCleanup",
     function(ent)
-        if IsValid(ent) and (ent:GetClass() == "boombox" or ent:GetClass() == "golden_boombox") then
+        if IsValid(ent) and rRadio.utils.IsBoombox(ent) then
             rRadio.cl.BoomboxStatuses[ent:EntIndex()] = nil
         end
     end

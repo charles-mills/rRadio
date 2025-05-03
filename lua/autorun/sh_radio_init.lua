@@ -84,9 +84,9 @@ local function addCSLuaFiles()
         "rradio/client",
         "rradio/client/lang",
         "rradio/client/stations",
-        "entities/base_boombox",
-        "entities/boombox",
-        "entities/golden_boombox"
+        "entities/rammel_base_boombox",
+        "entities/rammel_boombox",
+        "entities/rammel_boombox_gold"
     }
     for _, dir in ipairs(dirs) do
         for _, f in ipairs(file.Find(dir .. "/*.lua", "LUA")) do
