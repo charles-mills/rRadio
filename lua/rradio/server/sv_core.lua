@@ -22,10 +22,6 @@ rRadio.sv.BoomboxStatuses     = rRadio.sv.BoomboxStatuses or {}
 
 local GLOBAL_COOLDOWN = 1
 local lastGlobalAction = 0
-local InactiveTimeout       = rRadio.config.InactiveTimeout
-local CleanupInterval       = rRadio.config.CleanupInterval
-local VolumeUpdateDebounce  = rRadio.config.VolumeUpdateDebounce
-local StationUpdateDebounce = rRadio.config.StationUpdateDebounce
 
 rRadio.sv.RadioTimers = {
     "VolumeUpdate_",
@@ -144,7 +140,7 @@ net.Receive("StopCarRadioStation", function(len, ply)
     if timer.Exists("StationUpdate_" .. entIndex) then
         timer.Remove("StationUpdate_" .. entIndex)
     end
-    timer.Create("StationUpdate_" .. entIndex, StationUpdateDebounce(), 1, function()
+    timer.Create("StationUpdate_" .. entIndex, rRadio.config.StationUpdateDebounce(), 1, function()
         if IsValid(entity) and entity.IsPermanent then
             rRadio.sv.permanent.SavePermanentBoombox(entity)
         end
@@ -167,14 +163,15 @@ net.Receive("UpdateRadioVolume", function(len, ply)
     end
     local updateData = rRadio.sv.volumeUpdateQueue[entIndex]
     local currentTime = SysTime()
-    if currentTime - updateData.lastUpdate >= VolumeUpdateDebounce() then
+
+    if currentTime - updateData.lastUpdate >= rRadio.config.VolumeUpdateDebounce() then
         rRadio.sv.utils.ProcessVolumeUpdate(entity, volume, ply)
         updateData.lastUpdate = currentTime
         updateData.pendingVolume = nil
         updateData.pendingPlayer = nil
     else
         if not timer.Exists("VolumeUpdate_" .. entIndex) then
-            timer.Create("VolumeUpdate_" .. entIndex, VolumeUpdateDebounce(), 1, function()
+            timer.Create("VolumeUpdate_" .. entIndex, rRadio.config.VolumeUpdateDebounce(), 1, function()
                 if updateData.pendingVolume and IsValid(updateData.pendingPlayer) then
                     rRadio.sv.utils.ProcessVolumeUpdate(entity, updateData.pendingVolume, updateData.pendingPlayer)
                     updateData.lastUpdate = SysTime()
@@ -247,7 +244,7 @@ hook.Add("InitPostEntity", "rRadio.initalizePostEntity", function()
     end)
 end)
 
-timer.Create("CleanupInactiveRadios", CleanupInterval(), 0, rRadio.sv.utils.CleanupInactiveRadios)
+timer.Create("CleanupInactiveRadios", rRadio.config.CleanupInterval(), 0, rRadio.sv.utils.CleanupInactiveRadios)
 
 hook.Add("OnEntityCreated", "rRadio.InitializeRadio", function(entity)
     timer.Simple(0, function()

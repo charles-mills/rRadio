@@ -1,20 +1,12 @@
-if CLIENT then
-    hook.Remove("Think",          "rRadio.OpenCarRadioMenu")
-    hook.Remove("Think",          "rRadio.UpdateAllStations")
-    hook.Remove("EntityRemoved",  "rRadio.CleanupRadioStationCount")
-    hook.Remove("EntityRemoved",  "rRadio.BoomboxCleanup")
-    hook.Remove("EntityRemoved",  "rRadio.ClearRadioEntity")
-    hook.Remove("VehicleChanged", "rRadio.ClearRadioEntity")
-    hook.Remove("InitPostEntity", "rRadio.ApplySettingsOnJoin")
-    timer.Remove("ValidateStationCount")
-end
+if rRadio.clCoreLoaded or SERVER then return end
 
-BoomboxStatuses = BoomboxStatuses or {}
-currentRadioSources = currentRadioSources or {}
+rRadio.cl = rRadio.cl or {}
+
+rRadio.cl.radioSources = rRadio.cl.radioSources or {}
+rRadio.cl.BoomboxStatuses = rRadio.cl.BoomboxStatuses or {}
+
 local entityVolumes = entityVolumes or {}
-
 local MAX_CLIENT_STATIONS = 10
-
 local currentFrame = nil
 local settingsMenuOpen = false
 local openRadioMenu
@@ -276,36 +268,22 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                 draw.RoundedBox(0, 0, 0, w, h, rRadio.config.UI.ButtonColor)
             end
         end
-        local countries = {}
+        local rawCountries = {}
         for country, _ in pairs(StationData) do
-            local formattedCountry =
-                country:gsub("_", " "):gsub(
-                "(%a)([%w_']*)",
-                function(first, rest)
-                    return first:upper() .. rest:lower()
-                end
-            )
-
+            local formattedCountry = country:gsub("_", " "):gsub("(%a)([%w_']*)", function(first, rest)
+                return first:upper() .. rest:lower()
+            end)
             local translatedCountry = rRadio.LanguageManager:GetCountryTranslation(formattedCountry) or formattedCountry
-            if filterText == "" or translatedCountry:lower():find(filterText, 1, true) then
-                table.insert(
-                    countries,
-                    {
-                        original = country,
-                        translated = translatedCountry,
-                        isPrioritized = rRadio.interface.favoriteCountries[country]
-                    }
-                )
-            end
+            rawCountries[#rawCountries+1] = {
+                original = country,
+                translated = translatedCountry,
+                isPrioritized = rRadio.interface.favoriteCountries[country]
+            }
         end
-        table.sort(
-            countries,
-            function(a, b)
-                if a.isPrioritized ~= b.isPrioritized then
-                    return a.isPrioritized
-                end
-                return a.translated < b.translated
-            end
+        local countries = rRadio.interface.fuzzyFilter(filterText, rawCountries,
+            function(c) return c.translated end,
+            0,
+            function(c) return c.isPrioritized and 0.1 or 0 end
         )
         for _, country in ipairs(countries) do
             local countryButton = rRadio.interface.MakeStationButton(stationListPanel, nil)
@@ -344,32 +322,24 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
             backButton:SetEnabled(false)
         end
     elseif selectedCountry == "favorites" then
-        local favoritesList = {}
+        local rawFav = {}
         for country, stations in pairs(rRadio.interface.favoriteStations) do
             if StationData[country] then
                 for _, station in ipairs(StationData[country]) do
-                    if stations[station.name] and (filterText == "" or station.name:lower():find(filterText, 1, true)) then
+                    if stations[station.name] then
                         local translatedName = rRadio.utils.FormatAndTranslateCountry(country)
-                        table.insert(
-                            favoritesList,
-                            {
-                                station = station,
-                                country = country,
-                                countryName = translatedName
-                            }
-                        )
+                        rawFav[#rawFav+1] = {
+                            station = station,
+                            country = country,
+                            countryName = translatedName
+                        }
                     end
                 end
             end
         end
-        table.sort(
-            favoritesList,
-            function(a, b)
-                if a.countryName == b.countryName then
-                    return a.station.name < b.station.name
-                end
-                return a.countryName < b.countryName
-            end
+        local favoritesList = rRadio.interface.fuzzyFilter(filterText, rawFav,
+            function(f) return f.countryName .. " - " .. f.station.name end,
+            0
         )
         for _, favorite in ipairs(favoritesList) do
             local stationButton = MakePlayableStationButton(
@@ -384,22 +354,17 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
             createStarIcon(stationButton, favorite.country, favorite.station, updateList)
         end
     else
-        local stations = StationData[selectedCountry] or {}
-        local favoriteStationsList = {}
-        for _, station in ipairs(stations) do
-            if station and station.name and (filterText == "" or station.name:lower():find(filterText, 1, true)) then
+        local rawList = {}
+        for _, station in ipairs(StationData[selectedCountry] or {}) do
+            if station and station.name then
                 local isFavorite = rRadio.interface.favoriteStations[selectedCountry] and rRadio.interface.favoriteStations[selectedCountry][station.name]
-                table.insert(favoriteStationsList, {station = station, favorite = isFavorite})
+                rawList[#rawList+1] = {station = station, favorite = isFavorite}
             end
         end
-        table.sort(
-            favoriteStationsList,
-            function(a, b)
-                if a.favorite ~= b.favorite then
-                    return a.favorite
-                end
-                return (a.station.name or "") < (b.station.name or "")
-            end
+        local favoriteStationsList = rRadio.interface.fuzzyFilter(filterText, rawList,
+            function(s) return s.station.name end,
+            0,
+            function(s) return s.favorite and 0.1 or 0 end
         )
         for _, stationData in ipairs(favoriteStationsList) do
             local station = stationData.station
@@ -650,10 +615,7 @@ local function openSettingsMenu(parentFrame, backButton)
                 GetConVar("rammel_rradio_boombox_hud"):GetBool())
     if LocalPlayer():IsSuperAdmin() then
         local currentEntity = LocalPlayer().currentRadioEntity
-        local isBoombox =
-            IsValid(currentEntity) and
-            (currentEntity:GetClass() == "boombox" or currentEntity:GetClass() == "golden_boombox")
-        if isBoombox then
+        if rRadio.utils.IsBoombox(currentEntity) then
             addHeader(rRadio.config.Lang["SuperadminSettings"] or "Superadmin Settings")
             local permanentCheckbox = addCheckbox(
                 rRadio.config.Lang["MakeBoomboxPermanent"] or "Make Boombox Permanent",
@@ -772,6 +734,11 @@ openRadioMenu = function(openSettings, opts)
         settingsMenuOpen = false
         favoritesMenuOpen = false
         selectedCountry = nil
+        if IsValid(settingsFrame) then
+            settingsFrame:Remove()
+            settingsFrame = nil
+        end
+        currentFrame = nil
     end
     frame.Paint = function(self, w, h)
         draw.RoundedBox(8, 0, 0, w, h, rRadio.config.UI.BackgroundColor)
@@ -812,6 +779,9 @@ openRadioMenu = function(openSettings, opts)
     searchBox:SetPlaceholderText(rRadio.config.Lang and rRadio.config.Lang["SearchPlaceholder"] or "Search")
     searchBox:SetTextColor(rRadio.config.UI.TextColor)
     searchBox:SetDrawBackground(false)
+    searchBox.OnValueChanged = function(self, txt)
+        populateList(stationListPanel, backButton, searchBox, false)
+    end
     searchBox.Paint = function(self, w, h)
         draw.RoundedBox(8, 0, 0, w, h, rRadio.config.UI.SearchBoxColor)
         self:DrawTextEntryText(rRadio.config.UI.TextColor, Color(120, 120, 120), rRadio.config.UI.TextColor)
@@ -949,6 +919,8 @@ openRadioMenu = function(openSettings, opts)
         if type(value) == "function" then
             value = value()
         end
+        local maxVol = (rRadio.config.MaxVolume and rRadio.config.MaxVolume() or 1.0)
+        value = math.min(value, maxVol)
         if value < 0.01 then
             iconMat = VOLUME_ICONS.MUTE
         elseif value <= 0.65 then
@@ -975,7 +947,8 @@ openRadioMenu = function(openSettings, opts)
         local defaultVolume = (entityConfig and (type(entityConfig.Volume) == "function" and entityConfig.Volume() or entityConfig.Volume)) or 0.5
         currentVolume = entity:GetNWFloat("Volume", defaultVolume)
         entityVolumes[entity] = currentVolume
-        currentVolume = math.min(currentVolume, rRadio.config.MaxVolume())
+        local maxVol = (rRadio.config.MaxVolume and rRadio.config.MaxVolume() or 1.0)
+        currentVolume = math.min(currentVolume, maxVol)
     end
     updateVolumeIcon(volumeIcon, currentVolume)
     local volumeSlider = vgui.Create("DNumSlider", volumePanel)
@@ -986,7 +959,8 @@ openRadioMenu = function(openSettings, opts)
     )
     volumeSlider:SetText("")
     volumeSlider:SetMin(0)
-    volumeSlider:SetMax(rRadio.config.MaxVolume())
+    local maxVol = (rRadio.config.MaxVolume and rRadio.config.MaxVolume() or 1.0)
+    volumeSlider:SetMax(maxVol)
     volumeSlider:SetDecimals(2)
     volumeSlider:SetValue(currentVolume)
     volumeSlider.Slider.Paint = function(self, w, h)
@@ -1009,10 +983,11 @@ openRadioMenu = function(openSettings, opts)
             entity = rRadio.utils.GetVehicle(entity)
         end
 
-        value = math.min(value, rRadio.config.MaxVolume())
+        local maxVol = (rRadio.config.MaxVolume and rRadio.config.MaxVolume() or 1.0)
+        value = math.min(value, maxVol)
         entityVolumes[entity] = value
-        if currentRadioSources[entity] and IsValid(currentRadioSources[entity]) then
-            currentRadioSources[entity]:SetVolume(value)
+        if rRadio.cl.radioSources[entity] and IsValid(rRadio.cl.radioSources[entity]) then
+            rRadio.cl.radioSources[entity]:SetVolume(value)
         end
         updateVolumeIcon(volumeIcon, value)
         local currentTime = CurTime()
@@ -1087,7 +1062,7 @@ net.Receive(
         local isPlaying = net.ReadBool()
         local status = net.ReadString()
         if IsValid(entity) then
-            BoomboxStatuses[entity:EntIndex()] = {
+            rRadio.cl.BoomboxStatuses[entity:EntIndex()] = {
                 stationStatus = status,
                 stationName = stationName
             }
@@ -1122,12 +1097,12 @@ net.Receive(
         end
 
         local currentCount = rRadio.interface.updateStationCount()
-        if not currentRadioSources[entity] and currentCount >= MAX_CLIENT_STATIONS then
+        if not rRadio.cl.radioSources[entity] and currentCount >= MAX_CLIENT_STATIONS then
             return
         end
-        if currentRadioSources[entity] and IsValid(currentRadioSources[entity]) then
-            currentRadioSources[entity]:Stop()
-            currentRadioSources[entity] = nil
+        if rRadio.cl.radioSources[entity] and IsValid(rRadio.cl.radioSources[entity]) then
+            rRadio.cl.radioSources[entity]:Stop()
+            rRadio.cl.radioSources[entity] = nil
             activeStationCount = rRadio.interface.updateStationCount()
         end
         sound.PlayURL(
@@ -1138,7 +1113,7 @@ net.Receive(
                     station:SetPos(entity:GetPos())
                     station:SetVolume(volume)
                     station:Play()
-                    currentRadioSources[entity] = station
+                    rRadio.cl.radioSources[entity] = station
                     activeStationCount = rRadio.interface.updateStationCount()
 
                     local cfg = rRadio.interface.getEntityConfig(entity)
@@ -1160,13 +1135,13 @@ net.Receive(
         end
         entity = rRadio.interface.GetVehicleEntity(entity)
 
-        if currentRadioSources[entity] and IsValid(currentRadioSources[entity]) then
-            currentRadioSources[entity]:Stop()
-            currentRadioSources[entity] = nil
+        if rRadio.cl.radioSources[entity] and IsValid(rRadio.cl.radioSources[entity]) then
+            rRadio.cl.radioSources[entity]:Stop()
+            rRadio.cl.radioSources[entity] = nil
             activeStationCount = rRadio.interface.updateStationCount()
         end
 
-        if IsValid(entity) and (entity:GetClass() == "boombox" or entity:GetClass() == "golden_boombox") then
+        if IsValid(entity) and rRadio.utils.IsBoombox(entity) then
             rRadio.utils.clearRadioStatus(entity)
         end
     end
@@ -1176,12 +1151,12 @@ hook.Add(
     "Think",
     "rRadio.UpdateAllStations",
     function()
-        for ent, station in pairs(currentRadioSources) do
+        for ent, station in pairs(rRadio.cl.radioSources) do
             if not IsValid(ent) or not IsValid(station) then
                 if IsValid(station) then
                     station:Stop()
                 end
-                currentRadioSources[ent] = nil
+                rRadio.cl.radioSources[ent] = nil
                 activeStationCount = rRadio.interface.updateStationCount()
             else
                 local actual = ent
@@ -1218,7 +1193,7 @@ net.Receive(
             return
         end
         local ply = LocalPlayer()
-        if ent:GetClass() == "boombox" or ent:GetClass() == "golden_boombox" then
+        if rRadio.utils.IsBoombox(ent) then
             ply.currentRadioEntity = ent
             if not radioMenuOpen then
                 openRadioMenu()
@@ -1240,7 +1215,7 @@ net.Receive(
 net.Receive(
     "RadioConfigUpdate",
     function()
-        for entity, source in pairs(currentRadioSources) do
+        for entity, source in pairs(rRadio.cl.radioSources) do
             if IsValid(entity) and IsValid(source) then
                 local volume = rRadio.interface.ClampVolume(entityVolumes[entity] or rRadio.interface.getEntityConfig(entity).Volume())
                 source:SetVolume(volume)
@@ -1252,38 +1227,46 @@ hook.Add(
     "EntityRemoved",
     "rRadio.CleanupRadioStationCount",
     function(entity)
-        if currentRadioSources[entity] then
-            if IsValid(currentRadioSources[entity]) then
-                currentRadioSources[entity]:Stop()
+        if rRadio.cl.radioSources[entity] then
+            if IsValid(rRadio.cl.radioSources[entity]) then
+                rRadio.cl.radioSources[entity]:Stop()
             end
-            currentRadioSources[entity] = nil
+            rRadio.cl.radioSources[entity] = nil
             activeStationCount = rRadio.interface.updateStationCount()
         end
     end
 )
-timer.Create(
-    "ValidateStationCount",
-    30,
-    0,
-    function()
-        local actualCount = 0
-        for ent, source in pairs(currentRadioSources) do
-            if IsValid(ent) and IsValid(source) then
-                actualCount = actualCount + 1
-            else
-                currentRadioSources[ent] = nil
+if not timer.Exists("ValidateStationCount") then
+    timer.Create(
+        "ValidateStationCount",
+        30,
+        0,
+        function()
+            local actualCount = 0
+            for ent, source in pairs(rRadio.cl.radioSources) do
+                if IsValid(ent) and IsValid(source) then
+                    actualCount = actualCount + 1
+                else
+                    rRadio.cl.radioSources[ent] = nil
+                end
             end
+            activeStationCount = actualCount
         end
-        activeStationCount = actualCount
+    )
+end
+hook.Add("ShutDown", "rRadio.CleanupValidateTimer", function()
+    if timer.Exists("ValidateStationCount") then
+        timer.Remove("ValidateStationCount")
     end
-)
+end)
+
 rRadio.interface.loadFavorites()
 hook.Add(
     "EntityRemoved",
     "rRadio.BoomboxCleanup",
     function(ent)
-        if IsValid(ent) and (ent:GetClass() == "boombox" or ent:GetClass() == "golden_boombox") then
-            BoomboxStatuses[ent:EntIndex()] = nil
+        if IsValid(ent) and rRadio.utils.IsBoombox(ent) then
+            rRadio.cl.BoomboxStatuses[ent:EntIndex()] = nil
         end
     end
 )
@@ -1314,3 +1297,5 @@ hook.Add("InitPostEntity", "rRadio.ApplySettingsOnJoin", function()
     rRadio.addClConVars()
     rRadio.interface.loadSavedSettings()
 end)
+
+rRadio.clCoreLoaded = true

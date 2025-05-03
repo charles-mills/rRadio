@@ -23,10 +23,15 @@ function rRadio.sv.utils.GetVehicleEntity(entity)
     return entity
 end
 
+function rRadio.sv.utils.getOwner(ent)
+    if not IsValid(ent) then return nil end
+    return ent:GetNWEntity("Owner")
+end
+
 function rRadio.sv.utils.CountPlayerRadios(ply)
     local cnt = 0
     for _, data in pairs(rRadio.sv.ActiveRadios) do
-        if IsValid(data.entity) and rRadio.utils.getOwner(data.entity) == ply then
+        if IsValid(data.entity) and rRadio.sv.utils.getOwner(data.entity) == ply then
             cnt = cnt + 1
         end
     end
@@ -146,7 +151,7 @@ end
 function rRadio.sv.utils.CleanupInactiveRadios()
     local currentTime = SysTime()
     for entIndex, radio in pairs(rRadio.sv.ActiveRadios) do
-        if not IsValid(radio.entity) or currentTime - radio.timestamp > InactiveTimeout() then
+        if not IsValid(radio.entity) or currentTime - radio.timestamp > rRadio.config.InactiveTimeout() then
             rRadio.sv.utils.RemoveActiveRadio(Entity(entIndex))
         end
     end
@@ -237,9 +242,9 @@ end
 function rRadio.sv.utils.GetDefaultVolume(entity)
     if not IsValid(entity) then return 0.5 end
     local class = entity:GetClass()
-    if class == "golden_boombox" then
+    if class == "rammel_boombox_gold" then
         return GetConVar("rammel_rradio_sv_gold_default_volume"):GetFloat()
-    elseif class == "boombox" then
+    elseif class == "rammel_boombox" then
         return GetConVar("rammel_rradio_sv_boombox_default_volume"):GetFloat()
     else
         return GetConVar("rammel_rradio_sv_vehicle_default_volume"):GetFloat()
