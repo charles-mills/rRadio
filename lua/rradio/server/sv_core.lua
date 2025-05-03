@@ -14,16 +14,12 @@ hook.Run("rRadio.PostServerLoad")
 local ActiveRadios        = ActiveRadios or {}
 local PlayerRetryAttempts = PlayerRetryAttempts or {}
 local PlayerCooldowns     = PlayerCooldowns or {}
-local VolumeUpdateTimers  = VolumeUpdateTimers or {}
 local volumeUpdateQueue   = volumeUpdateQueue or {}
 local EntityVolumes       = EntityVolumes or {}
 BoomboxStatuses     = BoomboxStatuses or {}
 
 local GLOBAL_COOLDOWN = 1
 local lastGlobalAction = 0
-local STATION_CHANGE_COOLDOWN = 0.5
-local lastStationChangeTimes = {}
-
 local InactiveTimeout       = rRadio.config.InactiveTimeout
 local CleanupInterval       = rRadio.config.CleanupInterval
 local VolumeUpdateDebounce  = rRadio.config.VolumeUpdateDebounce
@@ -428,7 +424,6 @@ local RadioTimers = {
 }
 
 local RadioDataTables = {
-    VolumeUpdateTimers  = true,
     volumeUpdateQueue   = true,
 }
 
