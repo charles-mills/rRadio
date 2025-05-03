@@ -92,6 +92,7 @@ net.Receive("PlayCarRadioStation", function(len, ply)
     if rRadio.utils.IsBoombox(ent) then
         rRadio.utils.setRadioStatus(ent, "tuning", station)
         rRadio.sv.BoomboxStatuses[idx] = rRadio.sv.BoomboxStatuses[idx] or {}
+        rRadio.sv.BoomboxStatuses[idx].stationName = station
         rRadio.sv.BoomboxStatuses[idx].url = stationURL
     end
 
