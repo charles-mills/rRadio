@@ -5,6 +5,9 @@ rRadio.cl = rRadio.cl or {}
 rRadio.cl.radioSources = rRadio.cl.radioSources or {}
 rRadio.cl.BoomboxStatuses = rRadio.cl.BoomboxStatuses or {}
 
+local allowedURLSet = {}
+local StationData = {}
+
 local entityVolumes = entityVolumes or {}
 local MAX_CLIENT_STATIONS = 10
 local currentFrame = nil
@@ -146,12 +149,13 @@ local function MakePlayableStationButton(parent, station, displayText, updateLis
     return btn
 end
 
-local StationData = {}
 local function LoadStationData()
     if stationDataLoaded then
         return
     end
+
     StationData = {}
+    
     local files = file.Find("rradio/client/stations/*.lua", "LUA")
     for _, f in ipairs(files) do
         local data = include("rradio/client/stations/" .. f)
@@ -163,6 +167,7 @@ local function LoadStationData()
                 end
                 for _, station in ipairs(stations) do
                     table.insert(StationData[baseCountry], {name = station.n, url = station.u})
+                    allowedURLSet[station.u] = true
                 end
             end
         else
@@ -174,32 +179,7 @@ end
 LoadStationData()
 
 local function IsUrlAllowed(urlToCheck)
-    -- Only called if rRadio.config.SecureStationLoad is enabled
-
-    if not StationData then
-        return false
-    end
-
-    for countryCode, stationList in pairs(StationData) do
-        for _, stationData in ipairs(stationList) do
-            if stationData.url == urlToCheck then
-                return true
-            end
-        end
-    end
-    local favorites = rRadio.interface.favoriteStations or {}
-    for country, favData in pairs(favorites) do
-        for stationName, isFavorite in pairs(favData) do
-            if isFavorite and StationData[country] then
-                for _, station in ipairs(StationData[country]) do
-                    if station.name == stationName and station.url == urlToCheck then
-                        return true
-                    end
-                end
-            end
-        end
-    end
-    return false
+    return allowedURLSet[urlToCheck] == true
 end
 
 local function populateList(stationListPanel, backButton, searchBox, resetSearch)
