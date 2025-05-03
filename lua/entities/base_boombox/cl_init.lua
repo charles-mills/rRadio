@@ -19,6 +19,14 @@ else
 
     local ColorAlpha = ColorAlpha
     local Lerp = Lerp
+    local function LerpColor(t, c1, c2)
+        return Color(
+            math_floor(c1.r + (c2.r - c1.r) * t),
+            math_floor(c1.g + (c2.g - c1.g) * t),
+            math_floor(c1.b + (c2.b - c1.b) * t),
+            math_floor(c1.a + (c2.a - c1.a) * t)
+        )
+    end
     local CurTime = CurTime
     local LocalPlayer = LocalPlayer
     local FrameTime = FrameTime
@@ -96,7 +104,20 @@ else
         [4] = "...."
     }
 
-    -- Text width caching
+    local MAX_DYNAMIC_TEXT_ENTRIES = 100
+    local dynamicTextOrder = {}
+    local DYNAMIC_TEXT_WIDTHS = {}
+    local CLIPPED_TEXT_CACHE = {}
+    local function AddDynamicTextEntry(text, width)
+        DYNAMIC_TEXT_WIDTHS[text] = width
+        table.insert(dynamicTextOrder, text)
+        if #dynamicTextOrder > MAX_DYNAMIC_TEXT_ENTRIES then
+            local oldest = table.remove(dynamicTextOrder, 1)
+            DYNAMIC_TEXT_WIDTHS[oldest] = nil
+            CLIPPED_TEXT_CACHE[oldest] = nil
+        end
+    end
+
     local STATIC_TEXTS = {
         interact = rRadio.config.Lang["Interact"] or "Press E to Interact",
         paused   = rRadio.config.Lang["Paused"] or "PAUSED",
@@ -108,12 +129,7 @@ else
         [STATIC_TEXTS.paused]   = surface_GetTextSize(STATIC_TEXTS.paused),
         [STATIC_TEXTS.tuning]   = surface_GetTextSize(STATIC_TEXTS.tuning),
     }
-    local DYNAMIC_TEXT_WIDTHS = {}
-    local CLIPPED_TEXT_CACHE = {}
-    local dynamicTextCount = 0
-    local MAX_DYNAMIC_TEXT_ENTRIES = 100
 
-    -- Color caching by string key to avoid unbounded growth
     local color_cache = {}
     local function GetCachedColor(baseColor, alpha)
         if type(baseColor) ~= "table" or type(baseColor.r) ~= "number" then
@@ -286,13 +302,7 @@ else
             if not w then
                 surface_SetFont("rRadio_BoomboxHUD")
                 w = surface_GetTextSize(text)
-                DYNAMIC_TEXT_WIDTHS[text] = w
-                dynamicTextCount = dynamicTextCount + 1
-                if dynamicTextCount > MAX_DYNAMIC_TEXT_ENTRIES then
-                    DYNAMIC_TEXT_WIDTHS = {}
-                    CLIPPED_TEXT_CACHE = {}
-                    dynamicTextCount = 0
-                end
+                AddDynamicTextEntry(text, w)
             end
             return text, w
         elseif stationName ~= "" then
@@ -301,13 +311,7 @@ else
             if not w then
                 surface_SetFont("rRadio_BoomboxHUD")
                 w = surface_GetTextSize(text)
-                DYNAMIC_TEXT_WIDTHS[text] = w
-                dynamicTextCount = dynamicTextCount + 1
-                if dynamicTextCount > MAX_DYNAMIC_TEXT_ENTRIES then
-                    DYNAMIC_TEXT_WIDTHS = {}
-                    CLIPPED_TEXT_CACHE = {}
-                    dynamicTextCount = 0
-                end
+                AddDynamicTextEntry(text, w)
             end
             return text, w
         end
@@ -336,13 +340,7 @@ else
                 end
                 finalText = clipped .. "..."
                 CLIPPED_TEXT_CACHE[text] = finalText
-                DYNAMIC_TEXT_WIDTHS[finalText] = finalWidth
-                dynamicTextCount = dynamicTextCount + 1
-                if dynamicTextCount > MAX_DYNAMIC_TEXT_ENTRIES then
-                    DYNAMIC_TEXT_WIDTHS = {}
-                    CLIPPED_TEXT_CACHE = {}
-                    dynamicTextCount = 0
-                end
+                AddDynamicTextEntry(finalText, finalWidth)
             end
         end
         self.cachedText = finalText

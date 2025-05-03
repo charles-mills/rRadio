@@ -103,7 +103,7 @@ function rRadio.utils.setRadioStatus(entity, status, stationName, isPlaying, upd
     isPlaying = (status == "playing" or status == "tuning")
   end
 
-  local statuses = (SERVER and rRadio.sv.BoomboxStatuses) or BoomboxStatuses
+  local statuses = SERVER and rRadio.sv.BoomboxStatuses or rRadio.cl.BoomboxStatuses or {}
   if not statuses[entIndex] then
     statuses[entIndex] = {}
   end
