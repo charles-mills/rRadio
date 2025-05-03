@@ -7,8 +7,6 @@ local dataDir = "rradio"
 rRadio.interface.favoriteCountriesFile = dataDir .. "/favorite_countries.json"
 rRadio.interface.favoriteStationsFile = dataDir .. "/favorite_stations.json"
 
-rRadio.DevPrint("Loading interface utils")
-
 if not file.IsDir(dataDir, "DATA") then
     file.CreateDir(dataDir)
 end
@@ -20,6 +18,43 @@ end)
 
 local function Scale(value)
     return value * (ScrW() / 2560)
+end
+
+function rRadio.interface.fuzzyMatch(needle, haystack)
+    needle = string.lower(needle or "")
+    haystack = string.lower(haystack or "")
+    local nLen = #needle
+    if nLen == 0 then return 1 end
+    local hLen = #haystack
+    local scoreSum = 0
+    local lastPos = 1
+    for i = 1, nLen do
+        local c = needle:sub(i, i)
+        local found = haystack:find(c, lastPos, true)
+        if not found then return 0 end
+        scoreSum = scoreSum + (1 - (found - lastPos) / hLen)
+        lastPos = found + 1
+    end
+    return scoreSum / nLen
+end
+
+function rRadio.interface.fuzzyFilter(needle, items, keyFn, minScore, boostFn)
+    local matches = {}
+    for _, item in ipairs(items) do
+        local text = keyFn(item) or ""
+        local score = rRadio.interface.fuzzyMatch(needle, text)
+        if boostFn then score = score + (boostFn(item) or 0) end
+        if score >= (minScore or 0) then
+            table.insert(matches, {item=item, score=score})
+        end
+    end
+    table.sort(matches, function(a, b)
+        if a.score ~= b.score then return a.score > b.score end
+        return (keyFn(a.item) or "") < (keyFn(b.item) or "")
+    end)
+    local results = {}
+    for _, v in ipairs(matches) do results[#results + 1] = v.item end
+    return results
 end
 
 function rRadio.interface.MakeIconButton(parent, materialPath, url, xOffset)
@@ -282,15 +317,15 @@ end
 
 function rRadio.interface.updateStationCount()
     local count = 0
-    for ent, source in pairs(currentRadioSources or {}) do
+    for ent, source in pairs(rRadio.cl.radioSources or {}) do
         if IsValid(ent) and IsValid(source) then
             count = count + 1
         else
             if IsValid(source) then
                 source:Stop()
             end
-            if currentRadioSources then
-                currentRadioSources[ent] = nil
+            if rRadio.cl.radioSources then
+                rRadio.cl.radioSources[ent] = nil
             end
         end
     end
@@ -421,6 +456,22 @@ function rRadio.interface.getEntityConfig(entity)
     return rRadio.utils.GetEntityConfig(entity)
 end
 
+function rRadio.interface.CalculateVolume(entity, player, distanceSqr)
+    if not IsValid(entity) or not IsValid(player) then return 0 end
+    local entityConfig = rRadio.utils.GetEntityConfig(entity)
+    if not entityConfig then return 0 end
+    local baseVolume = entity:GetNWFloat("Volume", entityConfig.Volume())
+    if player:GetVehicle() == entity or distanceSqr <= entityConfig.MinVolumeDistance()^2 then
+        return baseVolume
+    end
+    local maxDist = entityConfig.MaxHearingDistance()
+    local distance = math.sqrt(distanceSqr)
+    if distance >= maxDist then return 0 end
+    local falloff = 1 - math.Clamp((distance - entityConfig.MinVolumeDistance()) /
+    (maxDist - entityConfig.MinVolumeDistance()), 0, 1)
+    return baseVolume * falloff
+  end
+
 function rRadio.interface.updateRadioVolume(station, distanceSqr, isPlayerInCar, entity)
     if not GetConVar("rammel_rradio_enabled"):GetBool() then
         station:SetVolume(0)
@@ -445,7 +496,7 @@ function rRadio.interface.updateRadioVolume(station, distanceSqr, isPlayerInCar,
     local minDist = entityConfig.MinVolumeDistance()
     local maxDist = entityConfig.MaxHearingDistance()
     station:Set3DFadeDistance(minDist, maxDist)
-    local finalVolume = rRadio.config.CalculateVolume(entity, LocalPlayer(), distanceSqr)
+    local finalVolume = rRadio.interface.CalculateVolume(entity, LocalPlayer(), distanceSqr)
     station:SetVolume(finalVolume)
 end
 

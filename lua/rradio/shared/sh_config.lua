@@ -23,49 +23,21 @@ end
 
 rRadio.config.RadioStations = rRadio.config.RadioStations or {}
 rRadio.config.Lang = rRadio.config.Lang or {}
-rRadio.config.UI = rRadio.config.UI or {}
 
+local DEFAULT_UI = {
+    BackgroundColor = Color(0,0,0,255),
+    AccentPrimary   = Color(58,114,255),
+    Highlight       = Color(58,114,255),
+    TextColor       = Color(255,255,255,255),
+    Disabled        = Color(180,180,180,255)
+}
+rRadio.config.UI = rRadio.config.UI or DEFAULT_UI
 rRadio.config.RadioVersion = "1.2.1"
 
 rRadio.config.RegisteredConVars = rRadio.config.RegisteredConVars or {
     server = {},
     client = {}
 }
-
-function rRadio.config.DistanceToDb(distance, referenceDistance)
-    if distance <= referenceDistance then return 0 end
-    return -20 * math.log10(distance / referenceDistance)
-end
-
-function rRadio.config.DbToVolume(db)
-    return math.Clamp(10^(db/20), 0, 1)
-end
-
-function rRadio.config.CalculateVolumeAtDistance(distance, maxDist, minDist, baseVolume)
-    if distance >= maxDist then return 0 end
-    if distance <= minDist then return baseVolume end
-    local db = rRadio.config.DistanceToDb(distance, minDist)
-    local atmosphericLoss = (distance - minDist) * 0.0005
-    db = db - atmosphericLoss
-    local volumeMultiplier = rRadio.config.DbToVolume(db)
-    return math.Clamp(volumeMultiplier * baseVolume, 0, baseVolume)
-end
-
-function rRadio.config.CalculateVolume(entity, player, distanceSqr)
-    if not IsValid(entity) or not IsValid(player) then return 0 end
-    local entityConfig = rRadio.utils.GetEntityConfig(entity)
-    if not entityConfig then return 0 end
-    local baseVolume = entity:GetNWFloat("Volume", entityConfig.Volume())
-    if player:GetVehicle() == entity or distanceSqr <= entityConfig.MinVolumeDistance()^2 then
-        return baseVolume
-    end
-    local maxDist = entityConfig.MaxHearingDistance()
-    local distance = math.sqrt(distanceSqr)
-    if distance >= maxDist then return 0 end
-    local falloff = 1 - math.Clamp((distance - entityConfig.MinVolumeDistance()) /
-    (maxDist - entityConfig.MinVolumeDistance()), 0, 1)
-    return baseVolume * falloff
-end
 
 local function CreateSharedConVar(name, default, helpText)
     rRadio.config.RegisteredConVars.server[name] = default
@@ -88,6 +60,43 @@ CreateSharedConVar("rammel_rradio_sv_inactive_timeout", "3600", "Time in seconds
 CreateSharedConVar("rammel_rradio_sv_cleanup_interval", "300", "Interval in seconds between cleanup runs.")
 CreateSharedConVar("rammel_rradio_sv_volume_update_debounce", "0.1", "Debounce time for volume updates (seconds).")
 CreateSharedConVar("rammel_rradio_sv_station_update_debounce", "10", "Debounce time for station update saves (seconds).")
+
+function rRadio.config.ReloadConVars()
+    for name, defaultValue in pairs(rRadio.config.RegisteredConVars.server) do
+        local cvar = GetConVar(name)
+        if cvar then
+            local value = cvar:GetFloat()
+
+            if name == "rammel_rradio_sv_boombox_default_volume" then
+                rRadio.config.Boombox.Volume = function() return value end
+            elseif name == "rammel_rradio_sv_boombox_max_distance" then
+                rRadio.config.Boombox.MaxHearingDistance = function() return value end
+            elseif name == "rammel_rradio_sv_boombox_min_distance" then
+                rRadio.config.Boombox.MinVolumeDistance = function() return value end
+            elseif name == "rammel_rradio_sv_gold_default_volume" then
+                rRadio.config.GoldenBoombox.Volume = function() return value end
+            elseif name == "rammel_rradio_sv_gold_max_distance" then
+                rRadio.config.GoldenBoombox.MaxHearingDistance = function() return value end
+            elseif name == "rammel_rradio_sv_gold_min_distance" then
+                rRadio.config.GoldenBoombox.MinVolumeDistance = function() return value end
+            elseif name == "rammel_rradio_sv_vehicle_default_volume" then
+                rRadio.config.VehicleRadio.Volume = function() return value end
+            elseif name == "rammel_rradio_sv_vehicle_max_distance" then
+                rRadio.config.VehicleRadio.MaxHearingDistance = function() return value end
+            elseif name == "rammel_rradio_sv_vehicle_min_distance" then
+                rRadio.config.VehicleRadio.MinVolumeDistance = function() return value end
+            elseif name == "rammel_rradio_sv_vehicle_volume_limit" then
+                rRadio.config.MaxVolume = function() return value end
+            elseif name == "rammel_rradio_sv_animation_cooldown" then
+                rRadio.config.MessageCooldown = function() return value end
+            elseif name == "rammel_rradio_sv_volume_update_debounce" then
+                rRadio.config.VolumeUpdateDebounce = function() return value end
+            elseif name == "rammel_rradio_sv_station_update_debounce" then
+                rRadio.config.StationUpdateDebounce = function() return value end
+            end
+        end
+    end
+end
 
 rRadio.config.Boombox = {
     Volume = function()
@@ -124,7 +133,6 @@ rRadio.config.VehicleRadio = {
 
 rRadio.config.MessageCooldown = function() return GetConVar("rammel_rradio_sv_animation_cooldown"):GetFloat() end
 rRadio.config.MaxVolume = function() return GetConVar("rammel_rradio_sv_vehicle_volume_limit"):GetFloat() end
-rRadio.config.VolumeAttenuationExponent = 0.8
 rRadio.config.InactiveTimeout = function() return GetConVar("rammel_rradio_sv_inactive_timeout"):GetFloat() end
 rRadio.config.CleanupInterval = function() return GetConVar("rammel_rradio_sv_cleanup_interval"):GetFloat() end
 rRadio.config.VolumeUpdateDebounce = function() return GetConVar("rammel_rradio_sv_volume_update_debounce"):GetFloat() end
@@ -171,47 +179,7 @@ if CLIENT then
             end
         end
     end)
-end
 
-rRadio.config.RegisteredConVars = {
-    server = {},
-    client = {}
-}
-
-function rRadio.config.ReloadConVars()
-    for name, defaultValue in pairs(rRadio.config.RegisteredConVars.server) do
-        local cvar = GetConVar(name)
-        if cvar then
-            local value = cvar:GetFloat()
-
-            if name == "rammel_rradio_sv_boombox_default_volume" then
-                rRadio.config.Boombox.Volume = function() return value end
-            elseif name == "rammel_rradio_sv_boombox_max_distance" then
-                rRadio.config.Boombox.MaxHearingDistance = function() return value end
-            elseif name == "rammel_rradio_sv_boombox_min_distance" then
-                rRadio.config.Boombox.MinVolumeDistance = function() return value end
-            elseif name == "rammel_rradio_sv_gold_default_volume" then
-                rRadio.config.GoldenBoombox.Volume = function() return value end
-            elseif name == "rammel_rradio_sv_gold_max_distance" then
-                rRadio.config.GoldenBoombox.MaxHearingDistance = function() return value end
-            elseif name == "rammel_rradio_sv_gold_min_distance" then
-                rRadio.config.GoldenBoombox.MinVolumeDistance = function() return value end
-            elseif name == "rammel_rradio_sv_vehicle_default_volume" then
-                rRadio.config.VehicleRadio.Volume = function() return value end
-            elseif name == "rammel_rradio_sv_vehicle_max_distance" then
-                rRadio.config.VehicleRadio.MaxHearingDistance = function() return value end
-            elseif name == "rammel_rradio_sv_vehicle_min_distance" then
-                rRadio.config.VehicleRadio.MinVolumeDistance = function() return value end
-            elseif name == "rammel_rradio_sv_vehicle_volume_limit" then
-                rRadio.config.MaxVolume = function() return value end
-            elseif name == "rammel_rradio_sv_animation_cooldown" then
-                rRadio.config.MessageCooldown = function() return value
-            end
-        end
-    end
-end
-
-if CLIENT then
     for name, defaultValue in pairs(rRadio.config.RegisteredConVars.client) do
         local cvar = GetConVar(name)
         if cvar then
@@ -227,9 +195,8 @@ if CLIENT then
     net.Receive("RadioConfigUpdate", function()
         rRadio.config.ReloadConVars()
     end)
-end
-
-if SERVER then
+else
+    util.AddNetworkString("RadioConfigUpdate")
     net.Start("RadioConfigUpdate")
     net.Broadcast()
 
@@ -243,12 +210,11 @@ if SERVER then
             rRadio.config.ReloadConVars()
         end)
     end
+
     for cvarName, _ in pairs(rRadio.config.RegisteredConVars.server) do
         AddConVarCallback(cvarName)
     end
 end
 
 hook.Run("RadioConfig_Updated")
-end
-
 return rRadio.config

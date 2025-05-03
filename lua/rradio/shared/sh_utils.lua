@@ -46,11 +46,6 @@ function rRadio.utils.isSitAnywhereSeat(vehicle)
   return false
 end
 
-function rRadio.utils.getOwner(ent)
-  if not IsValid(ent) then return nil end
-  return ent:GetNWEntity("Owner")
-end
-
 function rRadio.utils.canInteractWithBoombox(ply, boombox)
   rRadio.DevPrint("Checking if player can interact with boombox")
 
@@ -66,7 +61,7 @@ function rRadio.utils.canInteractWithBoombox(ply, boombox)
      return true
   end
 
-  local owner = rRadio.utils.getOwner(boombox)
+  local owner = rRadio.sv.utils.getOwner(boombox)
 
   rRadio.DevPrint("Owner is valid, checking if player is owner")
 
@@ -84,9 +79,9 @@ end
 function rRadio.utils.GetEntityConfig(entity)
   if not IsValid(entity) then return nil end
   local entityClass = entity:GetClass()
-  if entityClass == "golden_boombox" then
+  if entityClass == "rammel_boombox_gold" then
     return rRadio.config.GoldenBoombox
-  elseif entityClass == "boombox" then
+  elseif entityClass == "rammel_boombox" then
     return rRadio.config.Boombox
   elseif rRadio.utils.GetVehicle(entity) then
     return rRadio.config.VehicleRadio
@@ -108,24 +103,25 @@ function rRadio.utils.setRadioStatus(entity, status, stationName, isPlaying, upd
     isPlaying = (status == "playing" or status == "tuning")
   end
 
-  if not BoomboxStatuses[entIndex] then
-    BoomboxStatuses[entIndex] = {}
+  local statuses = SERVER and rRadio.sv.BoomboxStatuses or rRadio.cl.BoomboxStatuses or {}
+  if not statuses[entIndex] then
+    statuses[entIndex] = {}
   end
 
   if not updateNameOnly then
     entity:SetNWString("Status", status)
     entity:SetNWBool("IsPlaying", isPlaying)
-    BoomboxStatuses[entIndex].stationStatus = status
+    statuses[entIndex].stationStatus = status
   end
 
   entity:SetNWString("StationName", stationName)
-  BoomboxStatuses[entIndex].stationName = stationName
+  statuses[entIndex].stationName = stationName
   if SERVER then
     net.Start("UpdateRadioStatus")
     net.WriteEntity(entity)
     net.WriteString(stationName)
     net.WriteBool(isPlaying)
-    local statusToSend = (updateNameOnly and BoomboxStatuses[entIndex].stationStatus or status)
+    local statusToSend = (updateNameOnly and statuses[entIndex].stationStatus or status)
     net.WriteString(statusToSend or "")
     net.Broadcast()
   end
@@ -146,7 +142,7 @@ end
 function rRadio.utils.IsBoombox(entity)
   if not IsValid(entity) then return false end
   local class = entity:GetClass()
-  return class == "boombox" or class == "golden_boombox"
+  return class == "rammel_boombox" or class == "rammel_boombox_gold"
 end
 
 function rRadio.utils.canUseRadio(entity)

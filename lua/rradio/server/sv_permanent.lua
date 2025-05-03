@@ -149,7 +149,7 @@ end
 function rRadio.sv.permanent.LoadPermanentBoomboxes(isReload)
 table.Empty(spawnedBoomboxes)
 table.Empty(spawnedBoomboxesByPosition)
-for _, ent in ipairs(ents.FindByClass("boombox")) do
+for _, ent in ipairs(ents.FindByClass("rammel_boombox")) do
 if ent.IsPermanent then
 ent:Remove()
 end
@@ -170,7 +170,7 @@ local posKey = string.format("%.2f,%.2f,%.2f", row.pos_x, row.pos_y, row.pos_z)
 if spawnedBoomboxesByPosition[posKey] then
 continue
 end
-local ent = ents.Create("boombox")
+local ent = ents.Create("rammel_boombox")
 if not IsValid(ent) then
 continue
 end
@@ -231,7 +231,7 @@ ply:ChatPrint("You do not have permission to perform this action.")
 return
 end
 local ent = net.ReadEntity()
-if not IsValid(ent) or (ent:GetClass() ~= "boombox" and ent:GetClass() ~= "golden_boombox") then
+if not IsValid(ent) or (ent:GetClass() ~= "rammel_boombox" and ent:GetClass() ~= "rammel_boombox_gold") then
 ply:ChatPrint("Invalid boombox entity.")
 return
 end
@@ -252,7 +252,7 @@ ply:ChatPrint("You do not have permission to perform this action.")
 return
 end
 local ent = net.ReadEntity()
-if not IsValid(ent) or (ent:GetClass() ~= "boombox" and ent:GetClass() ~= "golden_boombox") then
+if not IsValid(ent) or (ent:GetClass() ~= "rammel_boombox" and ent:GetClass() ~= "rammel_boombox_gold") then
 ply:ChatPrint("Invalid boombox entity.")
 return
 end
@@ -287,7 +287,7 @@ if IsValid(ply) and not ply:IsSuperAdmin() then
 ply:ChatPrint("You must be a superadmin to use this command.")
 return
 end
-for _, ent in ipairs(ents.FindByClass("boombox")) do
+for _, ent in ipairs(ents.FindByClass("rammel_boombox")) do
 if ent.IsPermanent then
 ent:Remove()
 end
