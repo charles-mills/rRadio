@@ -55,9 +55,9 @@ function rRadio.addClConVars()
 end
 
 function rRadio.isClientLoadDisabled()
-    if not rRadio.config then return end
+    if not rRadio.config then return false end
 
-    if SERVER then return end
+    if SERVER then return false end
 
     local cv = GetConVar("rammel_rradio_enabled")
 
@@ -82,6 +82,7 @@ local function addCSLuaFiles()
     local dirs = {
         "rradio/shared",
         "rradio/client",
+        "rradio/client/interface",
         "rradio/client/lang",
         "rradio/client/stations",
         "entities/rammel_base_boombox",
@@ -152,8 +153,6 @@ elseif CLIENT then
     for _, f in ipairs(file.Find("rradio/client/stations/*.lua", "LUA")) do
         addClientFile("client/stations/" .. f)
     end
-
-    addPrivileges()
 
     rRadio.FormattedOutput("Loaded " .. cl_count .. "/37 client-side files")
     rRadio.FormattedOutput("Finished client-side initialization")

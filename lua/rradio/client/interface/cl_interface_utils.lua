@@ -7,8 +7,6 @@ local dataDir = "rradio"
 rRadio.interface.favoriteCountriesFile = dataDir .. "/favorite_countries.json"
 rRadio.interface.favoriteStationsFile = dataDir .. "/favorite_stations.json"
 
-rRadio.DevPrint("Loading interface utils")
-
 if not file.IsDir(dataDir, "DATA") then
     file.CreateDir(dataDir)
 end
@@ -282,15 +280,15 @@ end
 
 function rRadio.interface.updateStationCount()
     local count = 0
-    for ent, source in pairs(currentRadioSources or {}) do
+    for ent, source in pairs(rRadio.cl.radioSources or {}) do
         if IsValid(ent) and IsValid(source) then
             count = count + 1
         else
             if IsValid(source) then
                 source:Stop()
             end
-            if currentRadioSources then
-                currentRadioSources[ent] = nil
+            if rRadio.cl.radioSources then
+                rRadio.cl.radioSources[ent] = nil
             end
         end
     end

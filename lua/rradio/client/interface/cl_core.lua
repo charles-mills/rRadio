@@ -1,23 +1,12 @@
-if CLIENT then
-    hook.Remove("Think",          "rRadio.OpenCarRadioMenu")
-    hook.Remove("Think",          "rRadio.UpdateAllStations")
-    hook.Remove("EntityRemoved",  "rRadio.CleanupRadioStationCount")
-    hook.Remove("EntityRemoved",  "rRadio.BoomboxCleanup")
-    hook.Remove("EntityRemoved",  "rRadio.ClearRadioEntity")
-    hook.Remove("VehicleChanged", "rRadio.ClearRadioEntity")
-    hook.Remove("InitPostEntity", "rRadio.ApplySettingsOnJoin")
-    timer.Remove("ValidateStationCount")
-end
+if rRadio.clCoreLoaded then return end
 
 rRadio.cl = rRadio.cl or {}
+
+rRadio.cl.radioSources = rRadio.cl.radioSources or {}
 rRadio.cl.BoomboxStatuses = rRadio.cl.BoomboxStatuses or {}
 
-
-currentRadioSources = currentRadioSources or {}
 local entityVolumes = entityVolumes or {}
-
 local MAX_CLIENT_STATIONS = 10
-
 local currentFrame = nil
 local settingsMenuOpen = false
 local openRadioMenu
@@ -1016,8 +1005,8 @@ openRadioMenu = function(openSettings, opts)
         local maxVol = (rRadio.config.MaxVolume and rRadio.config.MaxVolume() or 1.0)
         value = math.min(value, maxVol)
         entityVolumes[entity] = value
-        if currentRadioSources[entity] and IsValid(currentRadioSources[entity]) then
-            currentRadioSources[entity]:SetVolume(value)
+        if rRadio.cl.radioSources[entity] and IsValid(rRadio.cl.radioSources[entity]) then
+            rRadio.cl.radioSources[entity]:SetVolume(value)
         end
         updateVolumeIcon(volumeIcon, value)
         local currentTime = CurTime()
@@ -1127,12 +1116,12 @@ net.Receive(
         end
 
         local currentCount = rRadio.interface.updateStationCount()
-        if not currentRadioSources[entity] and currentCount >= MAX_CLIENT_STATIONS then
+        if not rRadio.cl.radioSources[entity] and currentCount >= MAX_CLIENT_STATIONS then
             return
         end
-        if currentRadioSources[entity] and IsValid(currentRadioSources[entity]) then
-            currentRadioSources[entity]:Stop()
-            currentRadioSources[entity] = nil
+        if rRadio.cl.radioSources[entity] and IsValid(rRadio.cl.radioSources[entity]) then
+            rRadio.cl.radioSources[entity]:Stop()
+            rRadio.cl.radioSources[entity] = nil
             activeStationCount = rRadio.interface.updateStationCount()
         end
         sound.PlayURL(
@@ -1143,7 +1132,7 @@ net.Receive(
                     station:SetPos(entity:GetPos())
                     station:SetVolume(volume)
                     station:Play()
-                    currentRadioSources[entity] = station
+                    rRadio.cl.radioSources[entity] = station
                     activeStationCount = rRadio.interface.updateStationCount()
 
                     local cfg = rRadio.interface.getEntityConfig(entity)
@@ -1165,9 +1154,9 @@ net.Receive(
         end
         entity = rRadio.interface.GetVehicleEntity(entity)
 
-        if currentRadioSources[entity] and IsValid(currentRadioSources[entity]) then
-            currentRadioSources[entity]:Stop()
-            currentRadioSources[entity] = nil
+        if rRadio.cl.radioSources[entity] and IsValid(rRadio.cl.radioSources[entity]) then
+            rRadio.cl.radioSources[entity]:Stop()
+            rRadio.cl.radioSources[entity] = nil
             activeStationCount = rRadio.interface.updateStationCount()
         end
 
@@ -1181,12 +1170,12 @@ hook.Add(
     "Think",
     "rRadio.UpdateAllStations",
     function()
-        for ent, station in pairs(currentRadioSources) do
+        for ent, station in pairs(rRadio.cl.radioSources) do
             if not IsValid(ent) or not IsValid(station) then
                 if IsValid(station) then
                     station:Stop()
                 end
-                currentRadioSources[ent] = nil
+                rRadio.cl.radioSources[ent] = nil
                 activeStationCount = rRadio.interface.updateStationCount()
             else
                 local actual = ent
@@ -1245,7 +1234,7 @@ net.Receive(
 net.Receive(
     "RadioConfigUpdate",
     function()
-        for entity, source in pairs(currentRadioSources) do
+        for entity, source in pairs(rRadio.cl.radioSources) do
             if IsValid(entity) and IsValid(source) then
                 local volume = rRadio.interface.ClampVolume(entityVolumes[entity] or rRadio.interface.getEntityConfig(entity).Volume())
                 source:SetVolume(volume)
@@ -1257,11 +1246,11 @@ hook.Add(
     "EntityRemoved",
     "rRadio.CleanupRadioStationCount",
     function(entity)
-        if currentRadioSources[entity] then
-            if IsValid(currentRadioSources[entity]) then
-                currentRadioSources[entity]:Stop()
+        if rRadio.cl.radioSources[entity] then
+            if IsValid(rRadio.cl.radioSources[entity]) then
+                rRadio.cl.radioSources[entity]:Stop()
             end
-            currentRadioSources[entity] = nil
+            rRadio.cl.radioSources[entity] = nil
             activeStationCount = rRadio.interface.updateStationCount()
         end
     end
@@ -1272,11 +1261,11 @@ timer.Create(
     0,
     function()
         local actualCount = 0
-        for ent, source in pairs(currentRadioSources) do
+        for ent, source in pairs(rRadio.cl.radioSources) do
             if IsValid(ent) and IsValid(source) then
                 actualCount = actualCount + 1
             else
-                currentRadioSources[ent] = nil
+                rRadio.cl.radioSources[ent] = nil
             end
         end
         activeStationCount = actualCount
@@ -1319,3 +1308,5 @@ hook.Add("InitPostEntity", "rRadio.ApplySettingsOnJoin", function()
     rRadio.addClConVars()
     rRadio.interface.loadSavedSettings()
 end)
+
+rRadio.clCoreLoaded = true
