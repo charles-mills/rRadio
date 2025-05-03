@@ -44,10 +44,15 @@ end
 
 function rRadio.sv.utils.AddActiveRadio(entity, stationName, url, volume)
     local entIndex = entity:EntIndex()
+    rRadio.DevPrint("[rRADIO] Adding active radio for entity " .. entIndex)
+    
     rRadio.sv.EntityVolumes[entIndex] = rRadio.sv.EntityVolumes[entIndex] or volume or rRadio.sv.utils.GetDefaultVolume(entity)
     entity:SetNWString("StationName", stationName)
     entity:SetNWString("StationURL", url)
     entity:SetNWFloat("Volume", rRadio.sv.EntityVolumes[entIndex])
+    
+    rRadio.DevPrint("[rRADIO] Setting volume for entity " .. entIndex .. " to " .. tostring(rRadio.sv.EntityVolumes[entIndex]))
+    
     rRadio.sv.ActiveRadios[entIndex] = {
         entity = entity,
         stationName = stationName,
@@ -55,13 +60,17 @@ function rRadio.sv.utils.AddActiveRadio(entity, stationName, url, volume)
         volume = rRadio.sv.EntityVolumes[entIndex],
         timestamp = SysTime()
     }
+    
     if rRadio.utils.IsBoombox(entity) then
+        rRadio.DevPrint("[rRADIO] Entity " .. entIndex .. " is a boombox, updating status")
         rRadio.sv.BoomboxStatuses[entIndex] = {
             stationStatus = "playing",
             stationName = stationName,
             url = url
         }
     end
+    
+    rRadio.DevPrint("[rRADIO] Successfully added entity " .. entIndex .. " to active radios")
 end
 
 function rRadio.sv.utils.BroadcastPlay(ent, st, url, vol)
@@ -71,31 +80,41 @@ function rRadio.sv.utils.BroadcastPlay(ent, st, url, vol)
 end
 
 function rRadio.sv.utils.SendActiveRadiosToPlayer(ply)
-    if not IsValid(ply) then return end
+    if not IsValid(ply) then
+        rRadio.DevPrint("[rRADIO] SendActiveRadiosToPlayer: Invalid player")
+        return
+    end
 
     if not rRadio.sv.PlayerRetryAttempts[ply] then
         rRadio.sv.PlayerRetryAttempts[ply] = 1
+        rRadio.DevPrint("[rRADIO] SendActiveRadiosToPlayer: First attempt for " .. ply:Nick())
     end
 
     local attempt = rRadio.sv.PlayerRetryAttempts[ply]
     if next(rRadio.sv.ActiveRadios) == nil then
+        rRadio.DevPrint("[rRADIO] SendActiveRadiosToPlayer: No active radios found, attempt " .. attempt)
         if attempt >= 3 then
+            rRadio.DevPrint("[rRADIO] SendActiveRadiosToPlayer: Max attempts reached for " .. ply:Nick())
             rRadio.sv.PlayerRetryAttempts[ply] = nil
             return
         end
         rRadio.sv.PlayerRetryAttempts[ply] = attempt + 1
         timer.Simple(5, function()
             if IsValid(ply) then
+                rRadio.DevPrint("[rRADIO] SendActiveRadiosToPlayer: Retrying for " .. ply:Nick())
                 rRadio.sv.utils.SendActiveRadiosToPlayer(ply)
             else
+                rRadio.DevPrint("[rRADIO] SendActiveRadiosToPlayer: Player no longer valid during retry")
                 rRadio.sv.PlayerRetryAttempts[ply] = nil
             end
         end)
         return
     end
 
+    rRadio.DevPrint("[rRADIO] SendActiveRadiosToPlayer: Sending " .. table.Count(rRadio.sv.ActiveRadios) .. " active radios to " .. ply:Nick())
     for entIndex, radio in pairs(rRadio.sv.ActiveRadios) do
         local entity = Entity(entIndex)
+        rRadio.DevPrint("[rRADIO] Sending radio info for entity " .. entIndex .. " to " .. ply:Nick())
         net.Start("PlayCarRadioStation")
         net.WriteEntity(entity)
         net.WriteString(radio.stationName)
@@ -104,6 +123,7 @@ function rRadio.sv.utils.SendActiveRadiosToPlayer(ply)
         net.Send(ply)
     end
 
+    rRadio.DevPrint("[rRADIO] SendActiveRadiosToPlayer: Completed for " .. ply:Nick())
     rRadio.sv.PlayerRetryAttempts[ply] = nil
 end
 
