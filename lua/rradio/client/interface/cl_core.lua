@@ -761,6 +761,11 @@ openRadioMenu = function(openSettings, opts)
         settingsMenuOpen = false
         favoritesMenuOpen = false
         selectedCountry = nil
+        if IsValid(settingsFrame) then
+            settingsFrame:Remove()
+            settingsFrame = nil
+        end
+        currentFrame = nil
     end
     frame.Paint = function(self, w, h)
         draw.RoundedBox(8, 0, 0, w, h, rRadio.config.UI.BackgroundColor)
@@ -1255,22 +1260,30 @@ hook.Add(
         end
     end
 )
-timer.Create(
-    "ValidateStationCount",
-    30,
-    0,
-    function()
-        local actualCount = 0
-        for ent, source in pairs(rRadio.cl.radioSources) do
-            if IsValid(ent) and IsValid(source) then
-                actualCount = actualCount + 1
-            else
-                rRadio.cl.radioSources[ent] = nil
+if not timer.Exists("ValidateStationCount") then
+    timer.Create(
+        "ValidateStationCount",
+        30,
+        0,
+        function()
+            local actualCount = 0
+            for ent, source in pairs(rRadio.cl.radioSources) do
+                if IsValid(ent) and IsValid(source) then
+                    actualCount = actualCount + 1
+                else
+                    rRadio.cl.radioSources[ent] = nil
+                end
             end
+            activeStationCount = actualCount
         end
-        activeStationCount = actualCount
+    )
+end
+hook.Add("ShutDown", "rRadio.CleanupValidateTimer", function()
+    if timer.Exists("ValidateStationCount") then
+        timer.Remove("ValidateStationCount")
     end
-)
+end)
+
 rRadio.interface.loadFavorites()
 hook.Add(
     "EntityRemoved",
