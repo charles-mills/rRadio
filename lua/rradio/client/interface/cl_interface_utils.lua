@@ -445,7 +445,7 @@ function rRadio.interface.updateRadioVolume(station, distanceSqr, isPlayerInCar,
     local minDist = entityConfig.MinVolumeDistance()
     local maxDist = entityConfig.MaxHearingDistance()
     station:Set3DFadeDistance(minDist, maxDist)
-    local finalVolume = rRadio.config.CalculateVolume(entity, LocalPlayer(), distanceSqr)
+    local finalVolume = rRadio.utils.CalculateVolume(entity, LocalPlayer(), distanceSqr)
     station:SetVolume(finalVolume)
 end
 

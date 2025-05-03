@@ -17,6 +17,22 @@ rRadio.utils.SitAnywhereSeats = {
   ["Chair_Wood"] = true,
 }
 
+function rRadio.utils.CalculateVolume(entity, player, distanceSqr)
+  if not IsValid(entity) or not IsValid(player) then return 0 end
+  local entityConfig = rRadio.utils.GetEntityConfig(entity)
+  if not entityConfig then return 0 end
+  local baseVolume = entity:GetNWFloat("Volume", entityConfig.Volume())
+  if player:GetVehicle() == entity or distanceSqr <= entityConfig.MinVolumeDistance()^2 then
+      return baseVolume
+  end
+  local maxDist = entityConfig.MaxHearingDistance()
+  local distance = math.sqrt(distanceSqr)
+  if distance >= maxDist then return 0 end
+  local falloff = 1 - math.Clamp((distance - entityConfig.MinVolumeDistance()) /
+  (maxDist - entityConfig.MinVolumeDistance()), 0, 1)
+  return baseVolume * falloff
+end
+
 function rRadio.utils.GetVehicle(ent)
   if not IsValid(ent) then return end
   local parent = ent:GetParent()
