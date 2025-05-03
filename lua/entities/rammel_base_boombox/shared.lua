@@ -1,8 +1,5 @@
 ENT.Type = "anim"
 ENT.Base = "base_gmodentity"
-ENT.PrintName = "Base Boombox"
-ENT.Author = "Rammel"
-ENT.Category = "RML Radio"
 ENT.Spawnable = false
 ENT.AdminSpawnable = false
 

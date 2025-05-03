@@ -23,7 +23,7 @@ end
 
 rRadio.config.RadioStations = rRadio.config.RadioStations or {}
 rRadio.config.Lang = rRadio.config.Lang or {}
--- Static default UI theme: fallback for missing custom themes
+
 local DEFAULT_UI = {
     BackgroundColor = Color(0,0,0,255),
     AccentPrimary   = Color(58,114,255),
