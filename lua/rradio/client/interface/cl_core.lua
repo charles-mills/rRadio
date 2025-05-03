@@ -9,7 +9,10 @@ if CLIENT then
     timer.Remove("ValidateStationCount")
 end
 
-BoomboxStatuses = BoomboxStatuses or {}
+rRadio.cl = rRadio.cl or {}
+rRadio.cl.BoomboxStatuses = rRadio.cl.BoomboxStatuses or {}
+
+
 currentRadioSources = currentRadioSources or {}
 local entityVolumes = entityVolumes or {}
 
@@ -1087,7 +1090,7 @@ net.Receive(
         local isPlaying = net.ReadBool()
         local status = net.ReadString()
         if IsValid(entity) then
-            BoomboxStatuses[entity:EntIndex()] = {
+            rRadio.cl.BoomboxStatuses[entity:EntIndex()] = {
                 stationStatus = status,
                 stationName = stationName
             }
@@ -1283,7 +1286,7 @@ hook.Add(
     "rRadio.BoomboxCleanup",
     function(ent)
         if IsValid(ent) and (ent:GetClass() == "boombox" or ent:GetClass() == "golden_boombox") then
-            BoomboxStatuses[ent:EntIndex()] = nil
+            rRadio.cl.BoomboxStatuses[ent:EntIndex()] = nil
         end
     end
 )

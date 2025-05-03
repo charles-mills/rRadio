@@ -283,7 +283,7 @@ function ENT:Draw()
     UpdateNetworkedValues(self)
     
     local entIndex = self:EntIndex()
-    local statusData = BoomboxStatuses[entIndex] or {}
+    local statusData = rRadio.cl.BoomboxStatuses[entIndex] or {}
     local status = statusData.stationStatus or self.nwStatus
     local stationName = statusData.stationName or self.nwStationName
     
@@ -464,7 +464,7 @@ function ENT:DrawEqualizer(x, y, alpha, color)
     local barWidth = 4
     local spacing = 4
     local maxHeight = HUD.DIMENSIONS.HEIGHT * 0.7
-    local volume = entityVolumes[self] or 1
+    local volume = entityVolumes[self:EntIndex()] or 1
 
     self:UpdateEqualizerHeights(volume, FrameTime() * 2)
     
