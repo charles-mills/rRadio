@@ -92,7 +92,6 @@ else
 
     local ActiveBoomboxes = ActiveBoomboxes or {}
     local DIST_CHECK_VECTOR = Vector(0, 0, 0)
-    local UPDATE_INTERVAL = 0.1
     local CLEANUP_INTERVAL = 5
 
     local entityVolumes = entityVolumes or {}
@@ -186,43 +185,9 @@ else
                 removed = true
             end
         end
-        if removed and not next(ActiveBoomboxes) then
-            timer.Pause("BoomboxDistanceCheck")
-        end
     end
 
     timer.Create("BoomboxCleanup", CLEANUP_INTERVAL, 0, CleanupInvalidBoomboxes)
-
-    local function BoomboxDistanceCheck()
-        if not next(ActiveBoomboxes) then
-            timer.Pause("BoomboxDistanceCheck")
-            return
-        end
-        
-        local playerPos = GetLocalPlayerEyePos()
-        local fadeEndSqr = FADE_END_SQR
-        local cullDistSqr = MODEL_CULL_DISTANCE_SQR
-        
-        for ent in pairs(ActiveBoomboxes) do
-            DIST_CHECK_VECTOR:Set(playerPos)
-            DIST_CHECK_VECTOR:Sub(ent:GetPos())
-            local distSqr = DIST_CHECK_VECTOR:LengthSqr()
-            
-            ent.lastDistanceResult = distSqr
-            local wasVisible = ent.hudVisible
-            ent.hudVisible = distSqr < fadeEndSqr
-
-            local shouldBeHidden = distSqr >= cullDistSqr
-            if shouldBeHidden ~= ent.isHidden then
-                ent:SetNoDraw(shouldBeHidden)
-                ent.isHidden = shouldBeHidden
-            end
-        end
-    end
-
-    timer.Create("BoomboxDistanceCheck", UPDATE_INTERVAL, 0, BoomboxDistanceCheck)
-    timer.Pause("BoomboxDistanceCheck")
-
     local function UpdateNetworkedValues(self)
         local oldStatus = self.nwStatus
         self.nwStatus = self:GetNWString("Status", "stopped")
@@ -233,7 +198,7 @@ else
             self.anim.lastStatus = oldStatus
         end
     end
-
+    
     function ENT:Initialize()
         local mins, maxs = self:GetModelBounds()
         maxs.z = maxs.z + 20
@@ -253,7 +218,6 @@ else
         UpdateNetworkedValues(self)
         
         ActiveBoomboxes[self] = true
-        timer.UnPause("BoomboxDistanceCheck")
     end
 
     function ENT:OnRemove()
@@ -263,13 +227,11 @@ else
     function ENT:Draw()
         self:DrawModel()
         
-        if not GetConVar("rammel_rradio_boombox_hud"):GetBool() or not self.hudVisible then 
-            return 
-        end
-
+        if not GetConVar("rammel_rradio_boombox_hud"):GetBool() then return end
         if not GetConVar("rammel_rradio_enabled"):GetBool() then return end
         
-        local alpha = self:CalculateVisibility()
+        local distSqr = EyePos():DistToSqr(self:GetPos())
+        local alpha = math_Clamp(255 * (1 - (distSqr - FADE_START_SQR) * FADE_RANGE_INV), 0, 255)
         if alpha <= 0 then return end
 
         UpdateNetworkedValues(self)
@@ -476,36 +438,6 @@ else
         end
     end
 
-    function ENT:CalculateVisibility()
-        if not self.hudVisible then return 0 end
-        
-        local curTime = CurTime()
-        if curTime - self.lastVisibilityCheck < UPDATE_INTERVAL then
-            return self.lastVisibilityResult
-        end
-        self.lastVisibilityCheck = curTime
-
-        local playerPos = GetLocalPlayerEyePos()
-        DIST_CHECK_VECTOR:Set(playerPos)
-        DIST_CHECK_VECTOR:Sub(self:GetPos())
-        local distSqr = DIST_CHECK_VECTOR:LengthSqr()
-        
-        self.lastDistanceResult = distSqr
-
-        if distSqr >= FADE_END_SQR then
-            self.lastVisibilityResult = 0
-            return 0
-        end
-        if distSqr <= FADE_START_SQR then
-            self.lastVisibilityResult = 255
-            return 255
-        end
-        
-        local alpha = math_Clamp(255 * (1 - (distSqr - FADE_START_SQR) * FADE_RANGE_INV), 0, 255)
-        self.lastVisibilityResult = alpha
-        return alpha
-    end
-
     function ENT:UpdateAnimations(status, dt)
         if not self.anim then
             self.anim = createAnimationState()
@@ -562,7 +494,6 @@ else
     end)
 
     hook.Add("ShutDown", "CleanupBoomboxTimers", function()
-        timer.Remove("BoomboxDistanceCheck")
         timer.Remove("BoomboxCleanup")
     end)
 end
