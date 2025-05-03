@@ -421,6 +421,22 @@ function rRadio.interface.getEntityConfig(entity)
     return rRadio.utils.GetEntityConfig(entity)
 end
 
+function rRadio.interface.CalculateVolume(entity, player, distanceSqr)
+    if not IsValid(entity) or not IsValid(player) then return 0 end
+    local entityConfig = rRadio.utils.GetEntityConfig(entity)
+    if not entityConfig then return 0 end
+    local baseVolume = entity:GetNWFloat("Volume", entityConfig.Volume())
+    if player:GetVehicle() == entity or distanceSqr <= entityConfig.MinVolumeDistance()^2 then
+        return baseVolume
+    end
+    local maxDist = entityConfig.MaxHearingDistance()
+    local distance = math.sqrt(distanceSqr)
+    if distance >= maxDist then return 0 end
+    local falloff = 1 - math.Clamp((distance - entityConfig.MinVolumeDistance()) /
+    (maxDist - entityConfig.MinVolumeDistance()), 0, 1)
+    return baseVolume * falloff
+  end
+
 function rRadio.interface.updateRadioVolume(station, distanceSqr, isPlayerInCar, entity)
     if not GetConVar("rammel_rradio_enabled"):GetBool() then
         station:SetVolume(0)
@@ -445,7 +461,7 @@ function rRadio.interface.updateRadioVolume(station, distanceSqr, isPlayerInCar,
     local minDist = entityConfig.MinVolumeDistance()
     local maxDist = entityConfig.MaxHearingDistance()
     station:Set3DFadeDistance(minDist, maxDist)
-    local finalVolume = rRadio.utils.CalculateVolume(entity, LocalPlayer(), distanceSqr)
+    local finalVolume = rRadio.interface.CalculateVolume(entity, LocalPlayer(), distanceSqr)
     station:SetVolume(finalVolume)
 end
 

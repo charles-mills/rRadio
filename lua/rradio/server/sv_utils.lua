@@ -23,10 +23,15 @@ function rRadio.sv.utils.GetVehicleEntity(entity)
     return entity
 end
 
+function rRadio.sv.utils.getOwner(ent)
+    if not IsValid(ent) then return nil end
+    return ent:GetNWEntity("Owner")
+end
+
 function rRadio.sv.utils.CountPlayerRadios(ply)
     local cnt = 0
     for _, data in pairs(rRadio.sv.ActiveRadios) do
-        if IsValid(data.entity) and rRadio.utils.getOwner(data.entity) == ply then
+        if IsValid(data.entity) and rRadio.sv.utils.getOwner(data.entity) == ply then
             cnt = cnt + 1
         end
     end
