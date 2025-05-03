@@ -84,6 +84,10 @@ CreateSharedConVar("rammel_rradio_sv_gold_min_distance", "250000", "Distance at 
 CreateSharedConVar("rammel_rradio_sv_vehicle_default_volume", "1.0", "Default volume for vehicle radios")
 CreateSharedConVar("rammel_rradio_sv_vehicle_max_distance", "800", "Maximum hearing distance for vehicle radios")
 CreateSharedConVar("rammel_rradio_sv_vehicle_min_distance", "500", "Distance at which vehicle radio volume starts to drop off")
+CreateSharedConVar("rammel_rradio_sv_inactive_timeout", "3600", "Time in seconds before inactive radios are removed.")
+CreateSharedConVar("rammel_rradio_sv_cleanup_interval", "300", "Interval in seconds between cleanup runs.")
+CreateSharedConVar("rammel_rradio_sv_volume_update_debounce", "0.1", "Debounce time for volume updates (seconds).")
+CreateSharedConVar("rammel_rradio_sv_station_update_debounce", "10", "Debounce time for station update saves (seconds).")
 
 rRadio.config.Boombox = {
     Volume = function()
@@ -121,6 +125,10 @@ rRadio.config.VehicleRadio = {
 rRadio.config.MessageCooldown = function() return GetConVar("rammel_rradio_sv_animation_cooldown"):GetFloat() end
 rRadio.config.MaxVolume = function() return GetConVar("rammel_rradio_sv_vehicle_volume_limit"):GetFloat() end
 rRadio.config.VolumeAttenuationExponent = 0.8
+rRadio.config.InactiveTimeout = function() return GetConVar("rammel_rradio_sv_inactive_timeout"):GetFloat() end
+rRadio.config.CleanupInterval = function() return GetConVar("rammel_rradio_sv_cleanup_interval"):GetFloat() end
+rRadio.config.VolumeUpdateDebounce = function() return GetConVar("rammel_rradio_sv_volume_update_debounce"):GetFloat() end
+rRadio.config.StationUpdateDebounce = function() return GetConVar("rammel_rradio_sv_station_update_debounce"):GetFloat() end
 
 if CLIENT then
     local gmodLang = GetConVar("gmod_language")
