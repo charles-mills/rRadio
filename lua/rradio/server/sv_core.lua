@@ -105,8 +105,8 @@ net.Receive("PlayCarRadioStation", function(len, ply)
 
     rRadio.sv.utils.BroadcastPlay(ent, station, stationURL, volume)
 
-    if ent.IsPermanent and SavePermanentBoombox then
-        SavePermanentBoombox(ent)
+    if ent.IsPermanent then
+        rRadio.sv.permanent.SavePermanentBoombox(ent)
     end
 
     timer.Create("StationUpdate_" .. idx, 2, 1, function()
@@ -144,8 +144,8 @@ net.Receive("StopCarRadioStation", function(len, ply)
         timer.Remove("StationUpdate_" .. entIndex)
     end
     timer.Create("StationUpdate_" .. entIndex, StationUpdateDebounce(), 1, function()
-        if IsValid(entity) and entity.IsPermanent and SavePermanentBoombox then
-            SavePermanentBoombox(entity)
+        if IsValid(entity) and entity.IsPermanent then
+            rRadio.sv.permanent.SavePermanentBoombox(entity)
         end
     end)
 
@@ -242,9 +242,7 @@ hook.Add("InitPostEntity", "rRadio.initalizePostEntity", function()
     end)
 
     timer.Simple(0.5, function()
-        if _G.LoadPermanentBoomboxes then
-            _G.LoadPermanentBoomboxes()
-        end
+        rRadio.sv.permanent.LoadPermanentBoomboxes()
     end)
 end)
 

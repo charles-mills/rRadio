@@ -1,3 +1,5 @@
+rRadio.sv.permanent = rRadio.sv.permanent or {}
+
 local initialLoadComplete = false
 local spawnedBoomboxesByPosition = {}
 local spawnedBoomboxes = {}
@@ -51,7 +53,8 @@ end
 local function GeneratePermanentID()
 return os.time() .. "_" .. math.random(1000, 9999)
 end
-local function SavePermanentBoombox(ent)
+
+function rRadio.sv.permanent.SavePermanentBoombox(ent)
 if not IsValid(ent) then
 return
 end
@@ -142,7 +145,8 @@ WHERE map = '%s' AND permanent_id = '%s';
 ]], currentMap, permanentID)
 local success = sql.Query(deleteQuery)
 end
-local function LoadPermanentBoomboxes(isReload)
+
+function rRadio.sv.permanent.LoadPermanentBoomboxes(isReload)
 table.Empty(spawnedBoomboxes)
 table.Empty(spawnedBoomboxesByPosition)
 for _, ent in ipairs(ents.FindByClass("boombox")) do
@@ -214,10 +218,10 @@ hook.Remove("PostCleanupMap", "rRadio.ReloadPermanentBoomboxes")
 hook.Add("PostCleanupMap", "rRadio.LoadPermanentBoomboxes", function()
 timer.Simple(5, function()
 if not initialLoadComplete then
-LoadPermanentBoomboxes()
+rRadio.sv.permanent.LoadPermanentBoomboxes()
 initialLoadComplete = true
 else
-LoadPermanentBoomboxes()
+rRadio.sv.permanent.LoadPermanentBoomboxes()
 end
 end)
 end)
@@ -237,7 +241,7 @@ return
 end
 ent.IsPermanent = true
 ent:SetNWBool("IsPermanent", true)
-SavePermanentBoombox(ent)
+rRadio.sv.permanent.SavePermanentBoombox(ent)
 net.Start("BoomboxPermanentConfirmation")
 net.WriteString("Boombox has been marked as permanent.")
 net.Send(ply)
@@ -288,14 +292,12 @@ if ent.IsPermanent then
 ent:Remove()
 end
 end
-LoadPermanentBoomboxes(true)
+rRadio.sv.permanent.LoadPermanentBoomboxes(true)
 if IsValid(ply) then
 ply:ChatPrint("Permanent boomboxes have been reloaded.")
 end
 end)
-_G.LoadPermanentBoomboxes = function()
-LoadPermanentBoomboxes(false)
-end
+
 hook.Add("Initialize", "rRadio.UpdateCurrentMapForPermanentBoomboxes", function()
 currentMap = game.GetMap()
 end)
