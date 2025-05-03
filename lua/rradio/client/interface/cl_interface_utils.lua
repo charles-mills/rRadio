@@ -20,6 +20,43 @@ local function Scale(value)
     return value * (ScrW() / 2560)
 end
 
+function rRadio.interface.fuzzyMatch(needle, haystack)
+    needle = string.lower(needle or "")
+    haystack = string.lower(haystack or "")
+    local nLen = #needle
+    if nLen == 0 then return 1 end
+    local hLen = #haystack
+    local scoreSum = 0
+    local lastPos = 1
+    for i = 1, nLen do
+        local c = needle:sub(i, i)
+        local found = haystack:find(c, lastPos, true)
+        if not found then return 0 end
+        scoreSum = scoreSum + (1 - (found - lastPos) / hLen)
+        lastPos = found + 1
+    end
+    return scoreSum / nLen
+end
+
+function rRadio.interface.fuzzyFilter(needle, items, keyFn, minScore, boostFn)
+    local matches = {}
+    for _, item in ipairs(items) do
+        local text = keyFn(item) or ""
+        local score = rRadio.interface.fuzzyMatch(needle, text)
+        if boostFn then score = score + (boostFn(item) or 0) end
+        if score >= (minScore or 0) then
+            table.insert(matches, {item=item, score=score})
+        end
+    end
+    table.sort(matches, function(a, b)
+        if a.score ~= b.score then return a.score > b.score end
+        return (keyFn(a.item) or "") < (keyFn(b.item) or "")
+    end)
+    local results = {}
+    for _, v in ipairs(matches) do results[#results + 1] = v.item end
+    return results
+end
+
 function rRadio.interface.MakeIconButton(parent, materialPath, url, xOffset)
     local icon = vgui.Create("DImageButton", parent)
     local size = Scale(32)

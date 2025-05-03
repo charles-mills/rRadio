@@ -268,36 +268,22 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                 draw.RoundedBox(0, 0, 0, w, h, rRadio.config.UI.ButtonColor)
             end
         end
-        local countries = {}
+        local rawCountries = {}
         for country, _ in pairs(StationData) do
-            local formattedCountry =
-                country:gsub("_", " "):gsub(
-                "(%a)([%w_']*)",
-                function(first, rest)
-                    return first:upper() .. rest:lower()
-                end
-            )
-
+            local formattedCountry = country:gsub("_", " "):gsub("(%a)([%w_']*)", function(first, rest)
+                return first:upper() .. rest:lower()
+            end)
             local translatedCountry = rRadio.LanguageManager:GetCountryTranslation(formattedCountry) or formattedCountry
-            if filterText == "" or translatedCountry:lower():find(filterText, 1, true) then
-                table.insert(
-                    countries,
-                    {
-                        original = country,
-                        translated = translatedCountry,
-                        isPrioritized = rRadio.interface.favoriteCountries[country]
-                    }
-                )
-            end
+            rawCountries[#rawCountries+1] = {
+                original = country,
+                translated = translatedCountry,
+                isPrioritized = rRadio.interface.favoriteCountries[country]
+            }
         end
-        table.sort(
-            countries,
-            function(a, b)
-                if a.isPrioritized ~= b.isPrioritized then
-                    return a.isPrioritized
-                end
-                return a.translated < b.translated
-            end
+        local countries = rRadio.interface.fuzzyFilter(filterText, rawCountries,
+            function(c) return c.translated end,
+            0,
+            function(c) return c.isPrioritized and 0.1 or 0 end
         )
         for _, country in ipairs(countries) do
             local countryButton = rRadio.interface.MakeStationButton(stationListPanel, nil)
@@ -336,32 +322,24 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
             backButton:SetEnabled(false)
         end
     elseif selectedCountry == "favorites" then
-        local favoritesList = {}
+        local rawFav = {}
         for country, stations in pairs(rRadio.interface.favoriteStations) do
             if StationData[country] then
                 for _, station in ipairs(StationData[country]) do
-                    if stations[station.name] and (filterText == "" or station.name:lower():find(filterText, 1, true)) then
+                    if stations[station.name] then
                         local translatedName = rRadio.utils.FormatAndTranslateCountry(country)
-                        table.insert(
-                            favoritesList,
-                            {
-                                station = station,
-                                country = country,
-                                countryName = translatedName
-                            }
-                        )
+                        rawFav[#rawFav+1] = {
+                            station = station,
+                            country = country,
+                            countryName = translatedName
+                        }
                     end
                 end
             end
         end
-        table.sort(
-            favoritesList,
-            function(a, b)
-                if a.countryName == b.countryName then
-                    return a.station.name < b.station.name
-                end
-                return a.countryName < b.countryName
-            end
+        local favoritesList = rRadio.interface.fuzzyFilter(filterText, rawFav,
+            function(f) return f.countryName .. " - " .. f.station.name end,
+            0
         )
         for _, favorite in ipairs(favoritesList) do
             local stationButton = MakePlayableStationButton(
@@ -376,22 +354,17 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
             createStarIcon(stationButton, favorite.country, favorite.station, updateList)
         end
     else
-        local stations = StationData[selectedCountry] or {}
-        local favoriteStationsList = {}
-        for _, station in ipairs(stations) do
-            if station and station.name and (filterText == "" or station.name:lower():find(filterText, 1, true)) then
+        local rawList = {}
+        for _, station in ipairs(StationData[selectedCountry] or {}) do
+            if station and station.name then
                 local isFavorite = rRadio.interface.favoriteStations[selectedCountry] and rRadio.interface.favoriteStations[selectedCountry][station.name]
-                table.insert(favoriteStationsList, {station = station, favorite = isFavorite})
+                rawList[#rawList+1] = {station = station, favorite = isFavorite}
             end
         end
-        table.sort(
-            favoriteStationsList,
-            function(a, b)
-                if a.favorite ~= b.favorite then
-                    return a.favorite
-                end
-                return (a.station.name or "") < (b.station.name or "")
-            end
+        local favoriteStationsList = rRadio.interface.fuzzyFilter(filterText, rawList,
+            function(s) return s.station.name end,
+            0,
+            function(s) return s.favorite and 0.1 or 0 end
         )
         for _, stationData in ipairs(favoriteStationsList) do
             local station = stationData.station
@@ -806,6 +779,9 @@ openRadioMenu = function(openSettings, opts)
     searchBox:SetPlaceholderText(rRadio.config.Lang and rRadio.config.Lang["SearchPlaceholder"] or "Search")
     searchBox:SetTextColor(rRadio.config.UI.TextColor)
     searchBox:SetDrawBackground(false)
+    searchBox.OnValueChanged = function(self, txt)
+        populateList(stationListPanel, backButton, searchBox, false)
+    end
     searchBox.Paint = function(self, w, h)
         draw.RoundedBox(8, 0, 0, w, h, rRadio.config.UI.SearchBoxColor)
         self:DrawTextEntryText(rRadio.config.UI.TextColor, Color(120, 120, 120), rRadio.config.UI.TextColor)
