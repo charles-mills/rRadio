@@ -222,5 +222,3 @@ rRadio.themes["volcanic"] = CreateTheme({
     border = Color(81, 52, 52),
     highlight = Color(205, 71, 71, 30)
 })
-
-return rRadio.themes
