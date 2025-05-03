@@ -14,28 +14,26 @@ hook.Run("rRadio.PostServerLoad")
 local ActiveRadios        = ActiveRadios or {}
 local PlayerRetryAttempts = PlayerRetryAttempts or {}
 local PlayerCooldowns     = PlayerCooldowns or {}
-local LatestVolumeUpdates = LatestVolumeUpdates or {}
 local VolumeUpdateTimers  = VolumeUpdateTimers or {}
+local volumeUpdateQueue   = volumeUpdateQueue or {}
 local EntityVolumes       = EntityVolumes or {}
 BoomboxStatuses     = BoomboxStatuses or {}
 
-local SavePermanentBoombox, LoadPermanentBoomboxes
-
-SavePermanentBoombox     = _G.SavePermanentBoombox
-RemovePermanentBoombox   = _G.RemovePermanentBoombox
-LoadPermanentBoomboxes   = _G.LoadPermanentBoomboxes
-
-local DEBOUNCE_TIME = 10
-local MAX_ACTIVE_RADIOS = 100
-local PLAYER_RADIO_LIMIT = 5
 local GLOBAL_COOLDOWN = 1
 local lastGlobalAction = 0
-local VOLUME_UPDATE_DEBOUNCE_TIME = 0.1
-local volumeUpdateQueue = {}
 local STATION_CHANGE_COOLDOWN = 0.5
 local lastStationChangeTimes = {}
 
-_G.AddActiveRadio = AddActiveRadio
+local InactiveTimeout       = rRadio.config.InactiveTimeout
+local CleanupInterval       = rRadio.config.CleanupInterval
+local VolumeUpdateDebounce  = rRadio.config.VolumeUpdateDebounce
+local StationUpdateDebounce = rRadio.config.StationUpdateDebounce
+
+local function BroadcastStop(ent)
+    net.Start("StopCarRadioStation")
+    net.WriteEntity(ent)
+    net.Broadcast()
+end
 
 local function ClampVolume(volume)
     if type(volume) ~= "number" then return 0.5 end
@@ -209,11 +207,6 @@ local function BroadcastPlay(ent, st, url, vol)
     net.Broadcast()
 end
 
-local function BroadcastStop(ent)
-    net.Start("StopCarRadioStation") net.WriteEntity(ent)
-    net.Broadcast()
-end
-
 local function ProcessVolumeUpdate(entity, volume, ply)
     if not IsValid(entity) then return end
     entity = rRadio.utils.GetVehicle(entity) or entity
@@ -250,7 +243,7 @@ end
 local function CleanupInactiveRadios()
     local currentTime = SysTime()
     for entIndex, radio in pairs(ActiveRadios) do
-        if not IsValid(radio.entity) or currentTime - radio.timestamp > 3600 then
+        if not IsValid(radio.entity) or currentTime - radio.timestamp > InactiveTimeout() then
             RemoveActiveRadio(Entity(entIndex))
         end
     end
@@ -435,7 +428,6 @@ local RadioTimers = {
 }
 
 local RadioDataTables = {
-    LatestVolumeUpdates = true,
     VolumeUpdateTimers  = true,
     volumeUpdateQueue   = true,
 }
@@ -453,6 +445,7 @@ local function CleanupEntityData(entIndex)
             _G[tableName][entIndex] = nil
         end
     end
+    EntityVolumes[entIndex] = nil
 end
 
 local function IsDarkRP()
@@ -506,11 +499,11 @@ net.Receive("PlayCarRadioStation", function(len, ply)
     end
     PlayerCooldowns[ply] = now
 
-    if table.Count(ActiveRadios) >= MAX_ACTIVE_RADIOS then
+    if table.Count(ActiveRadios) >= 100 then
         ClearOldestActiveRadio()
     end
 
-    if CountPlayerRadios(ply) >= PLAYER_RADIO_LIMIT then
+    if CountPlayerRadios(ply) >= 5 then
         ply:ChatPrint("You have reached your maximum number of active radios.")
         return
     end
@@ -571,9 +564,7 @@ net.Receive("StopCarRadioStation", function(len, ply)
         end
         rRadio.utils.setRadioStatus(entity, "stopped")
         RemoveActiveRadio(entity)
-        net.Start("StopCarRadioStation")
-        net.WriteEntity(entity)
-        net.Broadcast()
+        BroadcastStop(entity)
         net.Start("UpdateRadioStatus")
         net.WriteEntity(entity)
         net.WriteString("")
@@ -584,7 +575,7 @@ net.Receive("StopCarRadioStation", function(len, ply)
         if timer.Exists("StationUpdate_" .. entIndex) then
             timer.Remove("StationUpdate_" .. entIndex)
         end
-        timer.Create("StationUpdate_" .. entIndex, DEBOUNCE_TIME, 1, function()
+        timer.Create("StationUpdate_" .. entIndex, StationUpdateDebounce(), 1, function()
             if IsValid(entity) and entity.IsPermanent and SavePermanentBoombox then
                 SavePermanentBoombox(entity)
             end
@@ -592,9 +583,7 @@ net.Receive("StopCarRadioStation", function(len, ply)
     elseif entity:IsVehicle() or lvsVehicle then
         local radioEntity = lvsVehicle or entity
         RemoveActiveRadio(radioEntity)
-        net.Start("StopCarRadioStation")
-        net.WriteEntity(radioEntity)
-        net.Broadcast()
+        BroadcastStop(radioEntity)
         net.Start("UpdateRadioStatus")
         net.WriteEntity(radioEntity)
         net.WriteString("")
@@ -622,16 +611,14 @@ net.Receive("UpdateRadioVolume", function(len, ply)
     end
     local updateData = volumeUpdateQueue[entIndex]
     local currentTime = SysTime()
-    updateData.pendingVolume = volume
-    updateData.pendingPlayer = ply
-    if currentTime - updateData.lastUpdate >= VOLUME_UPDATE_DEBOUNCE_TIME then
+    if currentTime - updateData.lastUpdate >= VolumeUpdateDebounce() then
         ProcessVolumeUpdate(entity, volume, ply)
         updateData.lastUpdate = currentTime
         updateData.pendingVolume = nil
         updateData.pendingPlayer = nil
     else
         if not timer.Exists("VolumeUpdate_" .. entIndex) then
-            timer.Create("VolumeUpdate_" .. entIndex, VOLUME_UPDATE_DEBOUNCE_TIME, 1, function()
+            timer.Create("VolumeUpdate_" .. entIndex, VolumeUpdateDebounce(), 1, function()
                 if updateData.pendingVolume and IsValid(updateData.pendingPlayer) then
                     ProcessVolumeUpdate(entity, updateData.pendingVolume, updateData.pendingPlayer)
                     updateData.lastUpdate = SysTime()
@@ -700,8 +687,8 @@ hook.Add("InitPostEntity", "rRadio.initalizePostEntity", function()
     end)
 
     timer.Simple(0.5, function()
-        if LoadPermanentBoomboxes then
-            LoadPermanentBoomboxes()
+        if _G.LoadPermanentBoomboxes then
+            _G.LoadPermanentBoomboxes()
         end
     end)
 
@@ -710,7 +697,7 @@ hook.Add("InitPostEntity", "rRadio.initalizePostEntity", function()
     end
 end)
 
-timer.Create("CleanupInactiveRadios", 300, 0, CleanupInactiveRadios)
+timer.Create("CleanupInactiveRadios", CleanupInterval(), 0, CleanupInactiveRadios)
 
 hook.Add("OnEntityCreated", "rRadio.InitializeRadio", function(entity)
     timer.Simple(0, function()
@@ -748,26 +735,13 @@ hook.Add("EntityRemoved", "rRadio.CleanupEntityRemoved", function(entity)
     end
 end)
 
-hook.Add("EntityRemoved", "rRadio.ServerCleanupActiveRadios", function(entity)
-    if not IsValid(entity) then return end
-    local idx = entity:EntIndex()
-    if ActiveRadios[idx] then
-        rRadio.DevPrint("[rRADIO] Removing ActiveRadio entry for removed entity idx=" .. idx)
-        ActiveRadios[idx] = nil
-    end
-end)
-
 hook.Add("PlayerDisconnected", "rRadio.CleanupPlayerDisconnected", function(ply)
     PlayerRetryAttempts[ply] = nil
     PlayerCooldowns[ply] = nil
 
-    for entIndex, updateData in pairs(LatestVolumeUpdates) do
-        if updateData.ply == ply then
-            LatestVolumeUpdates[entIndex] = nil
-            if VolumeUpdateTimers[entIndex] then
-                timer.Remove(VolumeUpdateTimers[entIndex])
-                VolumeUpdateTimers[entIndex] = nil
-            end
+    for entIndex, updateData in pairs(volumeUpdateQueue) do
+        if updateData.pendingPlayer == ply then
+            CleanupEntityData(entIndex)
         end
     end
 

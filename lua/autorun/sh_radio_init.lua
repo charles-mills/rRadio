@@ -21,7 +21,7 @@ local dev_id = "3465709662"
 local pub_id = "3318060741"
 
 rRadio = rRadio or {}
-rRadio.DEV = false
+rRadio.DEV = true
 
 function rRadio.DevPrint(text)
     if not rRadio.DEV then return end
@@ -112,13 +112,8 @@ end
 if SERVER then
     local resourceStr = ""
 
-    if rRadio.DEV then
-        resourceStr = "developer"
-        resource.AddWorkshop(dev_id)
-    else
-        resourceStr = "public"
-        resource.AddWorkshop(pub_id)
-    end
+    resourceStr = rRadio.DEV and "developer" or "public"
+    resource.AddWorkshop(rRadio.DEV and dev_id or pub_id)
 
     rRadio.FormattedOutput("Starting server-side initialization")
     addCSLuaFiles()
@@ -153,7 +148,7 @@ elseif CLIENT then
     addClientFile("client/lang/cl_country_translations_a.lua")
     addClientFile("client/lang/cl_country_translations_b.lua")
 
-    for _, f in ipairs(file.Find("radio/client/stations/*.lua", "LUA")) do
+    for _, f in ipairs(file.Find("rradio/client/stations/*.lua", "LUA")) do
         addClientFile("client/stations/" .. f)
     end
 
