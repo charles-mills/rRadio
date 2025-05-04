@@ -35,6 +35,9 @@ local VOLUME_ICONS = {
 local STAR_FULL  = Material("hud/star_full.png", "smooth")
 local STAR_EMPTY = Material("hud/star.png",      "smooth")
 
+local VOLUME_DEBOUNCE_TIMER = "rRadio.VolumeDebounce"
+local pendingVolume, pendingEntity
+
 local function isFav(tbl, key, subKey)
     if subKey then
         return tbl[key] and tbl[key][subKey]
@@ -145,7 +148,6 @@ local function IsUrlAllowed(urlToCheck)
     return allowedURLSet[urlToCheck] == true
 end
 
--- Extracted: build favorites header section
 local function populateFavorites(panel, updateList)
     local items = {}
     local hasFavorites = false
@@ -900,7 +902,6 @@ openRadioMenu = function(openSettings, opts)
         draw.RoundedBox(12, 0, Scale(-2), w * 2, h * 2, rRadio.config.UI.BackgroundColor)
     end
     volumeSlider.TextArea:SetVisible(false)
-    local lastServerUpdate = 0
     volumeSlider.OnValueChanged = function(_, value)
         local entity = LocalPlayer().currentRadioEntity
         if not IsValid(entity) then
@@ -920,14 +921,17 @@ openRadioMenu = function(openSettings, opts)
             rRadio.cl.radioSources[entity]:SetVolume(value)
         end
         updateVolumeIcon(volumeIcon, value)
-        local currentTime = CurTime()
-        if currentTime - lastServerUpdate >= 0.1 then
-            lastServerUpdate = currentTime
+
+        pendingVolume = value
+        pendingEntity = entity
+        timer.Remove(VOLUME_DEBOUNCE_TIMER)
+        timer.Create(VOLUME_DEBOUNCE_TIMER, 0.1, 1, function()
+            if not IsValid(pendingEntity) then return end
             net.Start("rRadio.SetRadioVolume")
-            net.WriteEntity(entity)
-            net.WriteFloat(value)
+            net.WriteEntity(pendingEntity)
+            net.WriteFloat(pendingVolume)
             net.SendToServer()
-        end
+        end)
     end
     if not settingsMenuOpen then
         populateList(stationListPanel, backButton, searchBox, true)
