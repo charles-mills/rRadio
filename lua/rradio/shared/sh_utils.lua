@@ -112,7 +112,7 @@ function rRadio.utils.setRadioStatus(entity, status, stationName, isPlaying, upd
   entity:SetNWString("StationName", stationName)
   statuses[entIndex].stationName = stationName
   if SERVER then
-    net.Start("UpdateRadioStatus")
+    net.Start("rRadio.UpdateRadioStatus")
     net.WriteEntity(entity)
     net.WriteString(stationName)
     net.WriteBool(isPlaying)

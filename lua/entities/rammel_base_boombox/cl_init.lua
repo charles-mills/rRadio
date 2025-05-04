@@ -456,7 +456,7 @@ function ENT:GetColorScheme()
     return scheme
 end
 
-net.Receive("UpdateRadioVolume", function()
+net.Receive("rRadio.SetRadioVolume", function()
     local entity = net.ReadEntity()
     local volume = net.ReadFloat()
     if IsValid(entity) then entityVolumes[entity:EntIndex()] = volume end

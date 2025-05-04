@@ -1,9 +1,9 @@
-util.AddNetworkString("PlayCarRadioStation")
-util.AddNetworkString("StopCarRadioStation")
-util.AddNetworkString("OpenRadioMenu")
-util.AddNetworkString("CarRadioMessage")
-util.AddNetworkString("UpdateRadioStatus")
-util.AddNetworkString("UpdateRadioVolume")
+util.AddNetworkString("rRadio.PlayStation")
+util.AddNetworkString("rRadio.StopStation")
+util.AddNetworkString("rRadio.OpenMenu")
+util.AddNetworkString("rRadio.PlayVehicleAnimation")
+util.AddNetworkString("rRadio.UpdateRadioStatus")
+util.AddNetworkString("rRadio.SetRadioVolume")
 util.AddNetworkString("MakeBoomboxPermanent")
 util.AddNetworkString("RemoveBoomboxPermanent")
 util.AddNetworkString("BoomboxPermanentConfirmation")
@@ -32,8 +32,8 @@ rRadio.sv.RadioDataTables = {
     volumeUpdateQueue   = true,
 }
 
-net.Receive("PlayCarRadioStation", function(len, ply)
-    rRadio.DevPrint("[rRADIO] Server got PlayCarRadioStation from: " .. ply:Nick())
+net.Receive("rRadio.PlayStation", function(len, ply)
+    rRadio.DevPrint("[rRADIO] Server got rRadio.PlayStation from: " .. ply:Nick())
     for entIdx, data in pairs(rRadio.sv.ActiveRadios) do
         local ent = data.entity or Entity(entIdx)
         if not IsValid(ent) then
@@ -115,7 +115,7 @@ net.Receive("PlayCarRadioStation", function(len, ply)
     hook.Run("rRadio.PostPlayStation", ply, ent, station, stationURL, volume)
 end)
 
-net.Receive("StopCarRadioStation", function(len, ply)
+net.Receive("rRadio.StopStation", function(len, ply)
     local entity = net.ReadEntity()
 
     if not IsValid(entity) then return end
@@ -130,7 +130,7 @@ net.Receive("StopCarRadioStation", function(len, ply)
     rRadio.utils.setRadioStatus(entity, "stopped")
     rRadio.sv.utils.RemoveActiveRadio(entity)
     rRadio.sv.utils.BroadcastStop(entity)
-    net.Start("UpdateRadioStatus")
+    net.Start("rRadio.UpdateRadioStatus")
     net.WriteEntity(entity)
     net.WriteString("")
     net.WriteBool(false)
@@ -149,7 +149,7 @@ net.Receive("StopCarRadioStation", function(len, ply)
     hook.Run("rRadio.PostStopStation", ply, entity)
 end)
 
-net.Receive("UpdateRadioVolume", function(len, ply)
+net.Receive("rRadio.SetRadioVolume", function(len, ply)
     local entity = net.ReadEntity()
     local volume = net.ReadFloat()
     local entIndex = IsValid(entity) and entity:EntIndex() or nil
@@ -207,7 +207,7 @@ hook.Add("PlayerEnteredVehicle", "rRadio.RadioVehicleHandling", function(ply, ve
         return
     end
 
-    net.Start("CarRadioMessage")
+    net.Start("rRadio.PlayVehicleAnimation")
     net.WriteEntity(vehicle)
     net.WriteBool(vehicle:GetDriver() == ply)
     net.Send(ply)

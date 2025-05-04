@@ -106,13 +106,13 @@ local function MakePlayableStationButton(parent, station, displayText, updateLis
         local entity = LocalPlayer().currentRadioEntity
         if not IsValid(entity) then return end
         if currentlyPlayingStations[entity] then
-            net.Start("StopCarRadioStation") net.WriteEntity(entity) net.SendToServer()
+            net.Start("rRadio.StopStation") net.WriteEntity(entity) net.SendToServer()
         end
         local entityConfig = rRadio.interface.getEntityConfig(entity)
         local volume = entityVolumes[entity] or (entityConfig and entityConfig.Volume()) or 0.5
         timer.Simple(0, function()
             if not IsValid(entity) then return end
-            net.Start("PlayCarRadioStation")
+            net.Start("rRadio.PlayStation")
             net.WriteEntity(entity)
             net.WriteString(station.name)
             net.WriteString(station.url)
@@ -844,7 +844,7 @@ openRadioMenu = function(openSettings, opts)
             surface.PlaySound("buttons/button6.wav")
             local entity = LocalPlayer().currentRadioEntity
             if IsValid(entity) then
-                net.Start("StopCarRadioStation")
+                net.Start("rRadio.StopStation")
                 net.WriteEntity(entity)
                 net.SendToServer()
                 currentlyPlayingStations[entity] = nil
@@ -950,7 +950,7 @@ openRadioMenu = function(openSettings, opts)
         local currentTime = CurTime()
         if currentTime - lastServerUpdate >= 0.1 then
             lastServerUpdate = currentTime
-            net.Start("UpdateRadioVolume")
+            net.Start("rRadio.SetRadioVolume")
             net.WriteEntity(entity)
             net.WriteFloat(value)
             net.SendToServer()
@@ -1012,7 +1012,7 @@ hook.Add(
 )
 
 net.Receive(
-    "UpdateRadioStatus",
+    "rRadio.UpdateRadioStatus",
     function()
         local entity = net.ReadEntity()
         local stationName = net.ReadString()
@@ -1035,7 +1035,7 @@ net.Receive(
     end
 )
 net.Receive(
-    "PlayCarRadioStation",
+    "rRadio.PlayStation",
     function()
         if not GetConVar("rammel_rradio_enabled"):GetBool() then
             return
@@ -1084,7 +1084,7 @@ net.Receive(
 )
 
 net.Receive(
-    "StopCarRadioStation",
+    "rRadio.StopStation",
     function()
         local entity = net.ReadEntity()
         if not IsValid(entity) then
@@ -1144,7 +1144,7 @@ hook.Add(
     end
 )
 net.Receive(
-    "OpenRadioMenu",
+    "rRadio.OpenMenu",
     function()
         local ent = net.ReadEntity()
         if not IsValid(ent) then
@@ -1160,7 +1160,7 @@ net.Receive(
     end
 )
 net.Receive(
-    "CarRadioMessage",
+    "rRadio.PlayVehicleAnimation",
     function()
         rRadio.DevPrint("Received car radio message")
         local veh = net.ReadEntity()
