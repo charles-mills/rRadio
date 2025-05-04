@@ -32,27 +32,6 @@ local VOLUME_ICONS = {
     HIGH = Material("hud/vol_up.png", "smooth")
 }
 
-local function createFonts()
-    surface.CreateFont(
-        "Roboto18",
-        {
-            font = "Roboto",
-            size = ScreenScale(5),
-            weight = 500
-        }
-    )
-    surface.CreateFont(
-        "HeaderFont",
-        {
-            font = "Roboto",
-            size = ScreenScale(8),
-            weight = 700
-        }
-    )
-end
-
-createFonts()
-
 local function toggleFavorite(list, key, subkey)
     if subkey then
         list[key] = list[key] or {}

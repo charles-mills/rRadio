@@ -86,6 +86,23 @@ local function createFonts()
         antialias = true,
         extended = true
     })
+
+    surface.CreateFont(
+        "Roboto18",
+        {
+            font = "Roboto",
+            size = ScreenScale(5),
+            weight = 500
+        }
+    )
+    surface.CreateFont(
+        "HeaderFont",
+        {
+            font = "Roboto",
+            size = ScreenScale(8),
+            weight = 700
+        }
+    )
 end
 
 local function addCSLuaFiles()
