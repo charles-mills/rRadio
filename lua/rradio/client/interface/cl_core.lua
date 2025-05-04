@@ -32,29 +32,35 @@ local VOLUME_ICONS = {
     HIGH = Material("hud/vol_up.png", "smooth")
 }
 
-local function createStarIcon(parent, country, station, updateList)
-    local starIcon = vgui.Create("DImageButton", parent)
-    starIcon:SetSize(Scale(24), Scale(24))
-    starIcon:SetPos(Scale(8), (Scale(40) - Scale(24)) / 2)
-    local isFavorite =
-        station and (rRadio.interface.favoriteStations[country] and rRadio.interface.favoriteStations[country][station.name]) or
-        (not station and rRadio.interface.favoriteCountries[country])
-    starIcon:SetImage(isFavorite and "hud/star_full.png" or "hud/star.png")
-    starIcon.DoClick = function()
-        if station then
-            rRadio.interface.toggleFavorite(rRadio.interface.favoriteStations, country, station.name)
-        else
-            rRadio.interface.toggleFavorite(rRadio.interface.favoriteCountries, country)
-        end
-        local newIsFavorite =
-            station and (rRadio.interface.favoriteStations[country] and rRadio.interface.favoriteStations[country][station.name]) or
-            (not station and rRadio.interface.favoriteCountries[country])
-        starIcon:SetImage(newIsFavorite and "hud/star_full.png" or "hud/star.png")
-        if updateList then
-            updateList()
-        end
+local STAR_FULL  = Material("hud/star_full.png", "smooth")
+local STAR_EMPTY = Material("hud/star.png",      "smooth")
+
+local function isFav(tbl, key, subKey)
+    if subKey then
+        return tbl[key] and tbl[key][subKey]
+    else
+        return tbl[key]
     end
-    return starIcon
+end
+
+local function makeStarIcon(parent, catTable, key, subKey, updateList)
+    local icon = vgui.Create("DImageButton", parent)
+    icon:SetSize(Scale(24), Scale(24))
+    icon:SetPos(Scale(8), (Scale(40) - Scale(24)) / 2)
+    icon.Paint = function(self, w, h)
+        surface.SetMaterial(isFav(catTable, key, subKey) and STAR_FULL or STAR_EMPTY)
+        surface.SetDrawColor(rRadio.config.UI.TextColor)
+        surface.DrawTexturedRect(0, 0, w, h)
+    end
+    icon.DoClick = function()
+        if subKey then
+            rRadio.interface.toggleFavorite(catTable, key, subKey)
+        else
+            rRadio.interface.toggleFavorite(catTable, key)
+        end
+        if updateList then updateList() end
+    end
+    return icon
 end
 
 local function MakePlayableStationButton(parent, station, displayText, updateList, backButton, searchBox, resetSearch)
@@ -78,6 +84,7 @@ local function MakePlayableStationButton(parent, station, displayText, updateLis
         elseif x + textWidth * 0.5 > w - rightMargin then x = w - rightMargin - textWidth * 0.5 end
         draw.SimpleText(outputText, "rRadio.Roboto18", x, h/2, rRadio.config.UI.TextColor, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
     end
+    makeStarIcon(btn, rRadio.interface.favoriteStations, station.country, station.name, updateList)
     btn.DoClick = function()
         local currentTime = CurTime()
         if currentTime - lastStationSelectTime < 2 then return end
@@ -217,7 +224,7 @@ local function populateCountries(panel, filterText, updateList)
             local x = math.Clamp(w*0.5, left+tw*0.5, w-right-tw*0.5)
             draw.SimpleText(txt, "rRadio.Roboto18", x, h/2, rRadio.config.UI.TextColor, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
         end
-        createStarIcon(btn, c.original, nil, updateList)
+        makeStarIcon(btn, rRadio.interface.favoriteCountries, c.original, nil, updateList)
         btn.DoClick = function()
             surface.PlaySound("buttons/button3.wav")
             selectedCountry = c.original
@@ -247,7 +254,7 @@ local function populateStations(panel, country, filterText, updateList, backButt
         for _, f in ipairs(favList) do
             local btn = MakePlayableStationButton(panel, f.station,
                 f.countryName.." - "..f.station.name, updateList, backButton, searchBox, false)
-            createStarIcon(btn, f.country, f.station, updateList)
+            makeStarIcon(btn, rRadio.interface.favoriteStations, f.country, f.station.name, updateList)
             table.insert(items, btn)
         end
     else
@@ -264,7 +271,7 @@ local function populateStations(panel, country, filterText, updateList, backButt
         for _, d in ipairs(sorted) do
             local btn = MakePlayableStationButton(panel, d.station,
                 d.station.name, updateList, backButton, searchBox, false)
-            createStarIcon(btn, country, d.station, updateList)
+            makeStarIcon(btn, rRadio.interface.favoriteStations, country, d.station.name, updateList)
             table.insert(items, btn)
         end
     end
