@@ -5,6 +5,9 @@ if (rRadio.isClientLoadDisabled() and rRadio.config.ClientHardDisable) then
 else
     include("shared.lua")
 
+    local cvHud     = GetConVar("rammel_rradio_boombox_hud")
+    local cvEnabled = GetConVar("rammel_rradio_enabled")
+
     surface.CreateFont("rRadio_BoomboxHUD", {
         font = "Roboto",
         size = 24,
@@ -13,31 +16,21 @@ else
         extended = true
     })
 
-    local math_sin = math.sin
-    local math_min = math.min
-    local math_max = math.max
-    local math_Clamp = math.Clamp
-    local math_abs = math.abs
-    local math_floor = math.floor
-
-    local surface_SetFont = surface.SetFont
-    local surface_GetTextSize = surface.GetTextSize
     local draw_RoundedBox = draw.RoundedBox
     local draw_SimpleText = draw.SimpleText
 
     local STATIC_TEXTS = nil
     local STATIC_TEXT_WIDTHS = nil
 
-    local ColorAlpha = ColorAlpha
-    local Lerp = Lerp
     local function LerpColor(t, c1, c2)
         return Color(
-            math_floor(c1.r + (c2.r - c1.r) * t),
-            math_floor(c1.g + (c2.g - c1.g) * t),
-            math_floor(c1.b + (c2.b - c1.b) * t),
-            math_floor(c1.a + (c2.a - c1.a) * t)
+            math.floor(c1.r + (c2.r - c1.r) * t),
+            math.floor(c1.g + (c2.g - c1.g) * t),
+            math.floor(c1.b + (c2.b - c1.b) * t),
+            math.floor(c1.a + (c2.a - c1.a) * t)
         )
     end
+
     local CurTime = CurTime
     local LocalPlayer = LocalPlayer
     local FrameTime = FrameTime
@@ -98,6 +91,10 @@ else
     local ICON_SIZE = HUD.DIMENSIONS.ICON_SIZE
     local HUD_ICON_OFFSET = HUD_PADDING * 2 + ICON_SIZE + 8
 
+    local HUD_OFFSET_FORWARD = 4.6
+    local HUD_OFFSET_UP      = 14.5
+    local HUD_SCALE          = 0.06
+
     local ACCENT_ALPHA_BRIGHT = 0.8
     local ACCENT_ALPHA_DIM = 0.2
 
@@ -145,11 +142,11 @@ else
     end
 
     local function initializeStaticTextWidths()
-        surface_SetFont("rRadio_BoomboxHUD")
+        surface.SetFont("rRadio_BoomboxHUD")
         STATIC_TEXT_WIDTHS = {
-            [STATIC_TEXTS.interact] = surface_GetTextSize(STATIC_TEXTS.interact),
-            [STATIC_TEXTS.paused]   = surface_GetTextSize(STATIC_TEXTS.paused),
-            [STATIC_TEXTS.tuning]   = surface_GetTextSize(STATIC_TEXTS.tuning),
+            [STATIC_TEXTS.interact] = surface.GetTextSize(STATIC_TEXTS.interact),
+            [STATIC_TEXTS.paused]   = surface.GetTextSize(STATIC_TEXTS.paused),
+            [STATIC_TEXTS.tuning]   = surface.GetTextSize(STATIC_TEXTS.tuning),
         }
     end
 
@@ -159,11 +156,11 @@ else
     local color_cache = {}
     local function GetCachedColor(baseColor, alpha)
         if type(baseColor) ~= "table" or type(baseColor.r) ~= "number" then
-            return Color(255,255,255, math_floor(alpha or 255))
+            return Color(255,255,255, math.floor(alpha or 255))
         end
-        local r = math_floor(baseColor.r)
-        local g = math_floor(baseColor.g)
-        local b = math_floor(baseColor.b)
+        local r = math.floor(baseColor.r)
+        local g = math.floor(baseColor.g)
+        local b = math.floor(baseColor.b)
         local a = tonumber(alpha) or 255
         local baseKey = r..","..g..","..b
         local bucket = color_cache[baseKey]
@@ -171,7 +168,7 @@ else
             bucket = {}
             color_cache[baseKey] = bucket
         end
-        local aKey = math_floor(a)
+        local aKey = math.floor(a)
         local col = bucket[aKey]
         if not col then
             col = Color(r * aKey / 255, g * aKey / 255, b * aKey / 255, aKey)
@@ -251,14 +248,12 @@ else
         
         if distSqr > MODEL_CULL_DISTANCE_SQR then return end
         
-        if not GetConVar("rammel_rradio_boombox_hud"):GetBool() then return end
-        if not GetConVar("rammel_rradio_enabled"):GetBool() then return end
+        if not cvHud:GetBool() then return end
+        if not cvEnabled:GetBool() then return end
         
-        local alpha = math_Clamp(255 * (1 - (distSqr - FADE_START_SQR) * FADE_RANGE_INV), 0, 255)
+        local alpha = math.Clamp(255 * (1 - (distSqr - FADE_START_SQR) * FADE_RANGE_INV), 0, 255)
         if alpha <= 0 then return end
 
-        UpdateNetworkedValues(self)
-        
         local entIndex = self:EntIndex()
         local statusData = rRadio.cl.BoomboxStatuses[entIndex] or {}
         local status = statusData.stationStatus or self.nwStatus
@@ -267,19 +262,18 @@ else
         self:UpdateAnimations(status, FrameTime())
         
         local pos = self:GetPos()
-        pos:Add(self:GetForward() * 4.6)
-        pos:Add(self:GetUp() * 14.5)
+        pos:Add(self:GetForward() * HUD_OFFSET_FORWARD)
+        pos:Add(self:GetUp() * HUD_OFFSET_UP)
         
         local ang = self:GetAngles()
         ang:RotateAroundAxis(ang:Up(), -90)
         ang:RotateAroundAxis(ang:Forward(), 90)
         ang:RotateAroundAxis(ang:Right(), 180)
         
-        cam.Start3D2D(pos, ang, 0.06)
-        local success, err = pcall(function() self:DrawHUD(status, stationName, alpha) end)
+        cam.Start3D2D(pos, ang, HUD_SCALE)
+        self:DrawHUD(status, stationName, alpha)
         cam.End3D2D()
         
-        if not success then ErrorNoHalt("Error in DrawHUD: " .. tostring(err) .. "\n") end
     end
 
     function ENT:GetDisplayText(status, stationName)
@@ -290,12 +284,12 @@ else
             return STATIC_TEXTS.paused, STATIC_TEXT_WIDTHS[STATIC_TEXTS.paused]
         elseif status == "tuning" then
             local base = STATIC_TEXTS.tuning
-            local dots = cached_dots[math_floor(CurTime() * 2) % #cached_dots]
+            local dots = cached_dots[math.floor(CurTime() * 2) % #cached_dots]
             local text = base .. dots
             local w = DYNAMIC_TEXT_WIDTHS[text]
             if not w then
-                surface_SetFont("rRadio_BoomboxHUD")
-                w = surface_GetTextSize(text)
+                surface.SetFont("rRadio_BoomboxHUD")
+                w = surface.GetTextSize(text)
                 AddDynamicTextEntry(text, w)
             end
             return text, w
@@ -303,8 +297,8 @@ else
             local text = stationName
             local w = DYNAMIC_TEXT_WIDTHS[text]
             if not w then
-                surface_SetFont("rRadio_BoomboxHUD")
-                w = surface_GetTextSize(text)
+                surface.SetFont("rRadio_BoomboxHUD")
+                w = surface.GetTextSize(text)
                 AddDynamicTextEntry(text, w)
             end
             return text, w
@@ -324,13 +318,13 @@ else
             local cachedTxt = CLIPPED_TEXT_CACHE[text]
             if cachedTxt then
                 finalText = cachedTxt
-                finalWidth = DYNAMIC_TEXT_WIDTHS[cachedTxt] or surface_GetTextSize(cachedTxt)
+                finalWidth = DYNAMIC_TEXT_WIDTHS[cachedTxt] or surface.GetTextSize(cachedTxt)
             else
                 local clipped = text
-                surface_SetFont("rRadio_BoomboxHUD")
+                surface.SetFont("rRadio_BoomboxHUD")
                 while finalWidth > maxWidth and #clipped > 0 do
                     clipped = string.sub(clipped, 1, #clipped - 1)
-                    finalWidth = surface_GetTextSize(clipped .. "...")
+                    finalWidth = surface.GetTextSize(clipped .. "...")
                 end
                 finalText = clipped .. "..."
                 CLIPPED_TEXT_CACHE[text] = finalText
@@ -338,7 +332,7 @@ else
             end
         end
         self.cachedText = finalText
-        local newWidth = math_max(finalWidth + HUD_PADDING * 3 + ICON_SIZE, HUD_DIMS.MIN_WIDTH)
+        local newWidth = math.max(finalWidth + HUD_PADDING * 3 + ICON_SIZE, HUD_DIMS.MIN_WIDTH)
         if newWidth ~= self.cachedWidth then
             self.cachedWidth = newWidth
             self.halfWidth = newWidth * 0.5
@@ -408,7 +402,7 @@ else
             if status == "playing" then
                 return colors.ACCENT
             elseif status == "tuning" then
-                local pulse = math_sin(CurTime() * 4) * 0.5 + 0.5
+                local pulse = math.sin(CurTime() * 4) * 0.5 + 0.5
                 return LerpColor(pulse, colors.INACTIVE, colors.ACCENT)
             else
                 return colors.INACTIVE
@@ -420,7 +414,7 @@ else
         if status == "playing" then
             return accent
         elseif status == "tuning" then
-            local pulse = math_sin(CurTime() * 4) * 0.5 + 0.5
+            local pulse = math.sin(CurTime() * 4) * 0.5 + 0.5
             return LerpColor(pulse, inactive, accent)
         else
             return inactive
@@ -452,11 +446,11 @@ else
         local timeOffsets = {0, 0.33, 0.66}
         
         for i = 1, HUD.EQUALIZER.BARS do
-            local wave1 = math_sin((curTime + timeOffsets[i]) * HUD.EQUALIZER.FREQUENCIES[i])
-            local wave2 = math_sin((curTime + timeOffsets[i]) * HUD.EQUALIZER.FREQUENCIES[i] * 1.5)
+            local wave1 = math.sin((curTime + timeOffsets[i]) * HUD.EQUALIZER.FREQUENCIES[i])
+            local wave2 = math.sin((curTime + timeOffsets[i]) * HUD.EQUALIZER.FREQUENCIES[i] * 1.5)
             local combinedWave = (wave1 + wave2) * 0.5
             
-            local targetHeight = HUD.EQUALIZER.MIN_HEIGHT + (math_abs(combinedWave) * HUD.EQUALIZER.MAX_HEIGHT * volume)
+            local targetHeight = HUD.EQUALIZER.MIN_HEIGHT + (math.abs(combinedWave) * HUD.EQUALIZER.MAX_HEIGHT * volume)
             self.anim.equalizerHeights[i] = Lerp(dt * 4, self.anim.equalizerHeights[i], targetHeight)
         end
     end
@@ -472,10 +466,10 @@ else
             self.anim.statusTransition = 0
             self.anim.lastStatus = status
         end
-        self.anim.statusTransition = math_min(1, self.anim.statusTransition + dt * HUD.ANIMATION.SPEED)
+        self.anim.statusTransition = math.min(1, self.anim.statusTransition + dt * HUD.ANIMATION.SPEED)
 
         if status == "tuning" then
-            self.anim.tuningOffset = (math_sin(CurTime() * 3) * 0.5 + 0.5)
+            self.anim.tuningOffset = (math.sin(CurTime() * 3) * 0.5 + 0.5)
         end
     end
 
