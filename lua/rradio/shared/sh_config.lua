@@ -196,7 +196,6 @@ if CLIENT then
         rRadio.config.ReloadConVars()
     end)
 else
-    util.AddNetworkString("rRadio.SetConfigUpdate")
     net.Start("rRadio.SetConfigUpdate")
     net.Broadcast()
 

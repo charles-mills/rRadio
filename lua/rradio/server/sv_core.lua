@@ -1,14 +1,3 @@
-util.AddNetworkString("rRadio.PlayStation")
-util.AddNetworkString("rRadio.StopStation")
-util.AddNetworkString("rRadio.OpenMenu")
-util.AddNetworkString("rRadio.PlayVehicleAnimation")
-util.AddNetworkString("rRadio.UpdateRadioStatus")
-util.AddNetworkString("rRadio.SetRadioVolume")
-util.AddNetworkString("rRadio.SetPersistent")
-util.AddNetworkString("rRadio.RemovePersistent")
-util.AddNetworkString("rRadio.SendPersistentConfirmation")
-util.AddNetworkString("rRadio.SetConfigUpdate")
-
 hook.Run("rRadio.PostServerLoad")
 
 rRadio.sv = rRadio.sv or {}

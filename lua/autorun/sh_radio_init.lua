@@ -135,6 +135,19 @@ local function addPrivileges()
     end
 end
 
+local function registerNetStrings()
+    util.AddNetworkString("rRadio.PlayStation")
+    util.AddNetworkString("rRadio.StopStation")
+    util.AddNetworkString("rRadio.OpenMenu")
+    util.AddNetworkString("rRadio.PlayVehicleAnimation")
+    util.AddNetworkString("rRadio.UpdateRadioStatus")
+    util.AddNetworkString("rRadio.SetRadioVolume")
+    util.AddNetworkString("rRadio.SetPersistent")
+    util.AddNetworkString("rRadio.RemovePersistent")
+    util.AddNetworkString("rRadio.SendPersistentConfirmation")
+    util.AddNetworkString("rRadio.SetConfigUpdate")
+end
+
 if SERVER then
     local resourceStr = ""
 
@@ -144,18 +157,22 @@ if SERVER then
     rRadio.FormattedOutput("Starting server-side initialization")
     addCSLuaFiles()
     rRadio.FormattedOutput("Assigned " .. cl_load_count .. " client-side files")
-    rRadio.FormattedOutput("Assigned " .. resourceStr .. " resource files") 
+    rRadio.FormattedOutput("Using " .. resourceStr .. " resources")
+
+    registerNetStrings()
+    rRadio.FormattedOutput("Registered network strings")
+
     include("rradio/shared/sh_config.lua")
     include("rradio/shared/sh_utils.lua")
     include("rradio/server/sv_utils.lua")
     include("rradio/server/sv_core.lua")
     include("rradio/server/sv_permanent.lua")
     addPrivileges()
-
+    
     rRadio.FormattedOutput("Finished server-side initialization")
 elseif CLIENT then
     createFonts()
-    
+
     addClientFile("shared/sh_utils.lua")
     addClientFile("client/interface/cl_themes.lua")
     addClientFile("client/lang/cl_language_manager.lua")
