@@ -699,7 +699,11 @@ openRadioMenu = function(openSettings, opts)
     searchBox:SetTextColor(rRadio.config.UI.TextColor)
     searchBox:SetDrawBackground(false)
     searchBox.OnValueChanged = function(self, txt)
-        populateList(stationListPanel, backButton, searchBox, false)
+        timer.Remove("rRadio.SearchDebounce")
+        timer.Create("rRadio.SearchDebounce", 0.2, 1, function()
+            if not IsValid(frame) then return end
+            populateList(stationListPanel, backButton, searchBox, false)
+        end)
     end
     searchBox.Paint = function(self, w, h)
         draw.RoundedBox(8, 0, 0, w, h, rRadio.config.UI.SearchBoxColor)
