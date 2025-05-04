@@ -32,7 +32,7 @@ local DEFAULT_UI = {
     Disabled        = Color(180,180,180,255)
 }
 rRadio.config.UI = rRadio.config.UI or DEFAULT_UI
-rRadio.config.RadioVersion = "1.2.1"
+rRadio.config.RadioVersion = "1.2.2"
 
 rRadio.config.RegisteredConVars = rRadio.config.RegisteredConVars or {
     server = {},
