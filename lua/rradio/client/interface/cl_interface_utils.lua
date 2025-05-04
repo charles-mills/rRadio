@@ -442,6 +442,27 @@ function rRadio.interface.saveFavorites()
     end
 end
 
+function rRadio.interface.toggleFavorite(list, key, subkey)
+    if subkey then
+        list[key] = list[key] or {}
+        if list[key][subkey] then
+            list[key][subkey] = nil
+            if not next(list[key]) then
+                list[key] = nil
+            end
+        else
+            list[key][subkey] = true
+        end
+    else
+        if list[key] then
+            list[key] = nil
+        else
+            list[key] = true
+        end
+    end
+    rRadio.interface.saveFavorites()
+end
+
 function rRadio.interface.GetVehicleEntity(entity)
     if IsValid(entity) and entity:IsVehicle() then
         local parent = entity:GetParent()

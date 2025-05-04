@@ -32,27 +32,6 @@ local VOLUME_ICONS = {
     HIGH = Material("hud/vol_up.png", "smooth")
 }
 
-local function toggleFavorite(list, key, subkey)
-    if subkey then
-        list[key] = list[key] or {}
-        if list[key][subkey] then
-            list[key][subkey] = nil
-            if not next(list[key]) then
-                list[key] = nil
-            end
-        else
-            list[key][subkey] = true
-        end
-    else
-        if list[key] then
-            list[key] = nil
-        else
-            list[key] = true
-        end
-    end
-    rRadio.interface.saveFavorites()
-end
-
 local function createStarIcon(parent, country, station, updateList)
     local starIcon = vgui.Create("DImageButton", parent)
     starIcon:SetSize(Scale(24), Scale(24))
@@ -63,9 +42,9 @@ local function createStarIcon(parent, country, station, updateList)
     starIcon:SetImage(isFavorite and "hud/star_full.png" or "hud/star.png")
     starIcon.DoClick = function()
         if station then
-            toggleFavorite(rRadio.interface.favoriteStations, country, station.name)
+            rRadio.interface.toggleFavorite(rRadio.interface.favoriteStations, country, station.name)
         else
-            toggleFavorite(rRadio.interface.favoriteCountries, country)
+            rRadio.interface.toggleFavorite(rRadio.interface.favoriteCountries, country)
         end
         local newIsFavorite =
             station and (rRadio.interface.favoriteStations[country] and rRadio.interface.favoriteStations[country][station.name]) or
