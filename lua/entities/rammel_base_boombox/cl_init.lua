@@ -11,32 +11,59 @@ end
 local cvHud     = GetConVar("rammel_rradio_boombox_hud")
 local cvEnabled = GetConVar("rammel_rradio_enabled")
 
-surface.CreateFont("rRadio_BoomboxHUD", {
-    font = "Roboto",
-    size = 24,
-    weight = 500,
-    antialias = true,
-    extended = true
-})
+local FADE_START_SQR = 400 * 400
+local FADE_END_SQR = 500 * 500
+local FADE_RANGE_INV = 1 / (FADE_END_SQR - FADE_START_SQR)
+local MODEL_CULL_DISTANCE_SQR = 7500 * 7500
 
+local CurTime = CurTime
+local LocalPlayer = LocalPlayer
+local FrameTime = FrameTime
 local draw_RoundedBox = draw.RoundedBox
 local draw_SimpleText = draw.SimpleText
 
 local STATIC_TEXTS = nil
 local STATIC_TEXT_WIDTHS = nil
 
-local function LerpColor(t, c1, c2)
-    return Color(
-        math.floor(c1.r + (c2.r - c1.r) * t),
-        math.floor(c1.g + (c2.g - c1.g) * t),
-        math.floor(c1.b + (c2.b - c1.b) * t),
-        math.floor(c1.a + (c2.a - c1.a) * t)
-    )
-end
+local HUD_PADDING = HUD.DIMENSIONS.PADDING
+local HUD_HEIGHT = HUD.DIMENSIONS.HEIGHT * HUD.DIMENSIONS.HEIGHT_MULT
+local HUD_HALF_HEIGHT = HUD_HEIGHT * 0.5
+local HUD_Y = -HUD_HALF_HEIGHT
+local ICON_SIZE = HUD.DIMENSIONS.ICON_SIZE
+local HUD_ICON_OFFSET = HUD_PADDING * 2 + ICON_SIZE + 8
 
-local CurTime = CurTime
-local LocalPlayer = LocalPlayer
-local FrameTime = FrameTime
+local HUD_OFFSET_FORWARD = 4.6
+local HUD_OFFSET_UP      = 14.5
+local HUD_SCALE          = 0.06
+
+local ACCENT_ALPHA_BRIGHT = 0.8
+local ACCENT_ALPHA_DIM = 0.2
+
+local ActiveBoomboxes = ActiveBoomboxes or {}
+local DIST_CHECK_VECTOR = Vector(0, 0, 0)
+local CLEANUP_INTERVAL = 5
+
+local MAX_DYNAMIC_TEXT_ENTRIES = 100
+local dynamicTextOrder = {}
+local DYNAMIC_TEXT_WIDTHS = {}
+local CLIPPED_TEXT_CACHE = {}
+
+local entityVolumes = entityVolumes or {}
+local entityColorSchemes = setmetatable({}, {__mode = "k"})
+
+local HUD_DIMS = {
+    MIN_WIDTH = 380,
+    ICON_OFFSET = HUD_ICON_OFFSET,
+    TEXT_MAX_OFFSET = HUD_PADDING * 4 + ICON_SIZE + 16
+}
+
+local cached_dots = {
+    [0] = "",
+    [1] = ".",
+    [2] = "..",
+    [3] = "...",
+    [4] = "...."
+}
 
 local DEFAULT_UI = {
     BackgroundColor = Color(0,0,0,255),
@@ -45,11 +72,6 @@ local DEFAULT_UI = {
     TextColor       = Color(255,255,255,255),
     Disabled        = Color(180,180,180,255)
 }
-
-local FADE_START_SQR = 400 * 400
-local FADE_END_SQR = 500 * 500
-local FADE_RANGE_INV = 1 / (FADE_END_SQR - FADE_START_SQR)
-local MODEL_CULL_DISTANCE_SQR = 7500 * 7500
 
 local HUD = {
     DIMENSIONS = {
@@ -87,45 +109,14 @@ local HUD = {
 
 HUD.COLORS.default = HUD.COLORS.boombox
 
-local HUD_PADDING = HUD.DIMENSIONS.PADDING
-local HUD_HEIGHT = HUD.DIMENSIONS.HEIGHT * HUD.DIMENSIONS.HEIGHT_MULT
-local HUD_HALF_HEIGHT = HUD_HEIGHT * 0.5
-local HUD_Y = -HUD_HALF_HEIGHT
-local ICON_SIZE = HUD.DIMENSIONS.ICON_SIZE
-local HUD_ICON_OFFSET = HUD_PADDING * 2 + ICON_SIZE + 8
-
-local HUD_OFFSET_FORWARD = 4.6
-local HUD_OFFSET_UP      = 14.5
-local HUD_SCALE          = 0.06
-
-local ACCENT_ALPHA_BRIGHT = 0.8
-local ACCENT_ALPHA_DIM = 0.2
-
-local ActiveBoomboxes = ActiveBoomboxes or {}
-local DIST_CHECK_VECTOR = Vector(0, 0, 0)
-local CLEANUP_INTERVAL = 5
-
-local entityVolumes = entityVolumes or {}
-local entityColorSchemes = setmetatable({}, {__mode = "k"})
-
-local HUD_DIMS = {
-    MIN_WIDTH = 380,
-    ICON_OFFSET = HUD_ICON_OFFSET,
-    TEXT_MAX_OFFSET = HUD_PADDING * 4 + ICON_SIZE + 16
-}
-
-local cached_dots = {
-    [0] = "",
-    [1] = ".",
-    [2] = "..",
-    [3] = "...",
-    [4] = "...."
-}
-
-local MAX_DYNAMIC_TEXT_ENTRIES = 100
-local dynamicTextOrder = {}
-local DYNAMIC_TEXT_WIDTHS = {}
-local CLIPPED_TEXT_CACHE = {}
+local function LerpColor(t, c1, c2)
+    return Color(
+        math.floor(c1.r + (c2.r - c1.r) * t),
+        math.floor(c1.g + (c2.g - c1.g) * t),
+        math.floor(c1.b + (c2.b - c1.b) * t),
+        math.floor(c1.a + (c2.a - c1.a) * t)
+    )
+end
 
 local function AddDynamicTextEntry(text, width)
     DYNAMIC_TEXT_WIDTHS[text] = width

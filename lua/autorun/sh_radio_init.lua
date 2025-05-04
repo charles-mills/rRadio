@@ -78,6 +78,16 @@ local function addCSLua(filename)
     cl_load_count = cl_load_count + 1
 end
 
+local function createFonts()
+    surface.CreateFont("rRadio_BoomboxHUD", {
+        font = "Roboto",
+        size = 24,
+        weight = 500,
+        antialias = true,
+        extended = true
+    })
+end
+
 local function addCSLuaFiles()
     local dirs = {
         "rradio/shared",
