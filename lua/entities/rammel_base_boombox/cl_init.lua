@@ -25,13 +25,6 @@ local draw_SimpleText = draw.SimpleText
 local STATIC_TEXTS = nil
 local STATIC_TEXT_WIDTHS = nil
 
-local HUD_PADDING = HUD.DIMENSIONS.PADDING
-local HUD_HEIGHT = HUD.DIMENSIONS.HEIGHT * HUD.DIMENSIONS.HEIGHT_MULT
-local HUD_HALF_HEIGHT = HUD_HEIGHT * 0.5
-local HUD_Y = -HUD_HALF_HEIGHT
-local ICON_SIZE = HUD.DIMENSIONS.ICON_SIZE
-local HUD_ICON_OFFSET = HUD_PADDING * 2 + ICON_SIZE + 8
-
 local HUD_OFFSET_FORWARD = 4.6
 local HUD_OFFSET_UP      = 14.5
 local HUD_SCALE          = 0.06
@@ -50,12 +43,6 @@ local CLIPPED_TEXT_CACHE = {}
 
 local entityVolumes = entityVolumes or {}
 local entityColorSchemes = setmetatable({}, {__mode = "k"})
-
-local HUD_DIMS = {
-    MIN_WIDTH = 380,
-    ICON_OFFSET = HUD_ICON_OFFSET,
-    TEXT_MAX_OFFSET = HUD_PADDING * 4 + ICON_SIZE + 16
-}
 
 local cached_dots = {
     [0] = "",
@@ -107,7 +94,20 @@ local HUD = {
     }
 }
 
+local HUD_PADDING = HUD.DIMENSIONS.PADDING
+local HUD_HEIGHT = HUD.DIMENSIONS.HEIGHT * HUD.DIMENSIONS.HEIGHT_MULT
+local HUD_HALF_HEIGHT = HUD_HEIGHT * 0.5
+local HUD_Y = -HUD_HALF_HEIGHT
+local ICON_SIZE = HUD.DIMENSIONS.ICON_SIZE
+local HUD_ICON_OFFSET = HUD_PADDING * 2 + ICON_SIZE + 8
+
 HUD.COLORS.default = HUD.COLORS.boombox
+
+local HUD_DIMS = {
+    MIN_WIDTH = 380,
+    ICON_OFFSET = HUD_ICON_OFFSET,
+    TEXT_MAX_OFFSET = HUD_PADDING * 4 + ICON_SIZE + 16
+}
 
 local function LerpColor(t, c1, c2)
     return Color(
@@ -137,7 +137,7 @@ local function initializeStaticTexts()
 end
 
 local function initializeStaticTextWidths()
-    surface.SetFont("rRadio_BoomboxHUD")
+    surface.SetFont("rRadio.Roboto24")
     STATIC_TEXT_WIDTHS = {
         [STATIC_TEXTS.interact] = surface.GetTextSize(STATIC_TEXTS.interact),
         [STATIC_TEXTS.paused]   = surface.GetTextSize(STATIC_TEXTS.paused),
@@ -251,7 +251,7 @@ function ENT:GetDisplayText(status, stationName)
         local text = base .. dots
         local w = DYNAMIC_TEXT_WIDTHS[text]
         if not w then
-            surface.SetFont("rRadio_BoomboxHUD")
+            surface.SetFont("rRadio.Roboto24")
             w = surface.GetTextSize(text)
             AddDynamicTextEntry(text, w)
         end
@@ -260,7 +260,7 @@ function ENT:GetDisplayText(status, stationName)
         local text = stationName
         local w = DYNAMIC_TEXT_WIDTHS[text]
         if not w then
-            surface.SetFont("rRadio_BoomboxHUD")
+            surface.SetFont("rRadio.Roboto24")
             w = surface.GetTextSize(text)
             AddDynamicTextEntry(text, w)
         end
@@ -284,7 +284,7 @@ function ENT:ProcessDisplayText(status, stationName)
             finalWidth = DYNAMIC_TEXT_WIDTHS[cachedTxt] or surface.GetTextSize(cachedTxt)
         else
             local clipped = text
-            surface.SetFont("rRadio_BoomboxHUD")
+            surface.SetFont("rRadio.Roboto24")
             while finalWidth > maxWidth and #clipped > 0 do
                 clipped = string.sub(clipped, 1, #clipped - 1)
                 finalWidth = surface.GetTextSize(clipped .. "...")
@@ -334,7 +334,7 @@ local function DrawTextAndEqualizer(self, status, stationName, alpha, textColor)
     local text = self:ProcessDisplayText(status, stationName)
     draw_SimpleText(
         text,
-        "rRadio_BoomboxHUD",
+        "rRadio.Roboto24",
         self.hudX + HUD_ICON_OFFSET,
         HUD_Y + HUD_HALF_HEIGHT,
         GetCachedColor(textColor, alpha * self.anim.statusTransition),

@@ -79,28 +79,25 @@ local function addCSLua(filename)
 end
 
 local function createFonts()
-    surface.CreateFont("rRadio_BoomboxHUD", {
-        font = "Roboto",
-        size = 24,
-        weight = 500,
-        antialias = true,
-        extended = true
-    })
+    surface.CreateFont(
+        "rRadio.Roboto24",
+        {
+            font = "Roboto",
+            size = 24,
+            weight = 500,
+            antialias = true,
+            extended = true
+        }
+    )
 
     surface.CreateFont(
-        "Roboto18",
+        "rRadio.Roboto18",
         {
             font = "Roboto",
             size = ScreenScale(5),
-            weight = 500
-        }
-    )
-    surface.CreateFont(
-        "HeaderFont",
-        {
-            font = "Roboto",
-            size = ScreenScale(8),
-            weight = 700
+            weight = 500,
+            antialias = true,
+            extended = true
         }
     )
 end
@@ -157,6 +154,8 @@ if SERVER then
 
     rRadio.FormattedOutput("Finished server-side initialization")
 elseif CLIENT then
+    createFonts()
+    
     addClientFile("shared/sh_utils.lua")
     addClientFile("client/interface/cl_themes.lua")
     addClientFile("client/lang/cl_language_manager.lua")

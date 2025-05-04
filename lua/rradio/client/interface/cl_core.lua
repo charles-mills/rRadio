@@ -88,16 +88,16 @@ local function MakePlayableStationButton(parent, station, displayText, updateLis
             draw.RoundedBox(8, 0, 0, w, h, rRadio.config.UI.ButtonHoverColor)
         end
         local text = displayText
-        surface.SetFont("Roboto18")
+        surface.SetFont("rRadio.Roboto18")
         local regionLeft = Scale(8 + 24 + 8)
         local rightMargin = Scale(8)
         local availWidth = w - regionLeft - rightMargin
-        local outputText = rRadio.interface.TruncateText(text, "Roboto18", availWidth)
+        local outputText = rRadio.interface.TruncateText(text, "rRadio.Roboto18", availWidth)
         local textWidth = surface.GetTextSize(outputText)
         local x = w * 0.5
         if x - textWidth * 0.5 < regionLeft then x = regionLeft + textWidth * 0.5
         elseif x + textWidth * 0.5 > w - rightMargin then x = w - rightMargin - textWidth * 0.5 end
-        draw.SimpleText(outputText, "Roboto18", x, h/2, rRadio.config.UI.TextColor, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+        draw.SimpleText(outputText, "rRadio.Roboto18", x, h/2, rRadio.config.UI.TextColor, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
     end
     btn.DoClick = function()
         local currentTime = CurTime()
@@ -198,7 +198,7 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
             favoritesButton:DockMargin(Scale(5), Scale(5), Scale(5), Scale(5))
             favoritesButton:SetTall(Scale(40))
             favoritesButton:SetText(rRadio.config.Lang["FavoriteStations"] or "Favorite Stations")
-            favoritesButton:SetFont("Roboto18")
+            favoritesButton:SetFont("rRadio.Roboto18")
             favoritesButton:SetTextColor(rRadio.config.UI.TextColor)
             favoritesButton.Paint = function(self, w, h)
                 local bgColor = self:IsHovered() and rRadio.config.UI.ButtonHoverColor or rRadio.config.UI.ButtonColor
@@ -250,11 +250,11 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                     draw.RoundedBox(8, 0, 0, w, h, rRadio.config.UI.ButtonHoverColor)
                 end
                 local text = country.translated
-                surface.SetFont("Roboto18")
+                surface.SetFont("rRadio.Roboto18")
                 local regionLeft = Scale(8 + 24 + 8)
                 local rightMargin = Scale(8)
                 local availWidth = w - regionLeft - rightMargin
-                local outputText = rRadio.interface.TruncateText(text, "Roboto18", availWidth)
+                local outputText = rRadio.interface.TruncateText(text, "rRadio.Roboto18", availWidth)
                 local textWidth = surface.GetTextSize(outputText)
                 local x = w * 0.5
                 if x - textWidth * 0.5 < regionLeft then
@@ -262,7 +262,7 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
                 elseif x + textWidth * 0.5 > w - rightMargin then
                     x = w - rightMargin - textWidth * 0.5
                 end
-                draw.SimpleText(outputText, "Roboto18", x, h / 2, rRadio.config.UI.TextColor, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+                draw.SimpleText(outputText, "rRadio.Roboto18", x, h / 2, rRadio.config.UI.TextColor, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
             end
             createStarIcon(countryButton, country.original, nil, updateList)
             countryButton.DoClick = function()
@@ -356,7 +356,7 @@ local function openSettingsMenu(parentFrame, backButton)
     local function addHeader(text, isFirst)
         local header = vgui.Create("DLabel", scrollPanel)
         header:SetText(text)
-        header:SetFont("Roboto18")
+        header:SetFont("rRadio.Roboto18")
         header:SetTextColor(rRadio.config.UI.TextColor)
         header:Dock(TOP)
         if isFirst then
@@ -377,7 +377,7 @@ local function openSettingsMenu(parentFrame, backButton)
 
         local label = vgui.Create("DLabel", container)
         label:SetText(text)
-        label:SetFont("Roboto18")
+        label:SetFont("rRadio.Roboto18")
         label:SetTextColor(rRadio.config.UI.TextColor)
         label:Dock(LEFT)
         label:DockMargin(Scale(10), 0, 0, 0)
@@ -390,7 +390,7 @@ local function openSettingsMenu(parentFrame, backButton)
         dropdown:DockMargin(0, Scale(5), Scale(10), Scale(5))
         dropdown:SetValue(currentValue)
         dropdown:SetTextColor(rRadio.config.UI.TextColor)
-        dropdown:SetFont("Roboto18")
+        dropdown:SetFont("rRadio.Roboto18")
         dropdown:SetSortItems(false)
 
         dropdown.Paint = function(self, w, h)
@@ -450,7 +450,7 @@ local function openSettingsMenu(parentFrame, backButton)
                 )
 
                 option:SetTextColor(rRadio.config.UI.TextColor)
-                option:SetFont("Roboto18")
+                option:SetFont("rRadio.Roboto18")
                 option.Paint = function(pnl, w, h)
                     if pnl:IsHovered() then
                         draw.RoundedBox(4, 2, 0, w - 4, h, rRadio.config.UI.ButtonHoverColor)
@@ -500,7 +500,7 @@ local function openSettingsMenu(parentFrame, backButton)
         local label = vgui.Create("DLabel", container)
         label:SetText(text)
         label:SetTextColor(rRadio.config.UI.TextColor)
-        label:SetFont("Roboto18")
+        label:SetFont("rRadio.Roboto18")
         label:SizeToContents()
         label:SetPos(Scale(40), (container:GetTall() - label:GetTall()) / 2)
         checkbox.OnChange = function(self, value)
@@ -732,7 +732,7 @@ openRadioMenu = function(openSettings, opts)
     local searchBox = vgui.Create("DTextEntry", frame)
     searchBox:SetPos(Scale(10), Scale(50))
     searchBox:SetSize(Scale(rRadio.config.UI.FrameSize.width) - Scale(20), Scale(30))
-    searchBox:SetFont("Roboto18")
+    searchBox:SetFont("rRadio.Roboto18")
     searchBox:SetPlaceholderText(rRadio.config.Lang and rRadio.config.Lang["SearchPlaceholder"] or "Search")
     searchBox:SetTextColor(rRadio.config.UI.TextColor)
     searchBox:SetDrawBackground(false)
@@ -781,7 +781,7 @@ openRadioMenu = function(openSettings, opts)
         button:SetPos(x, y)
         button:SetSize(w, h)
         button:SetText(text)
-        button:SetFont("Roboto18")
+        button:SetFont("rRadio.Roboto18")
         button:SetTextColor(textColor)
         button.Paint = function(self, w, h)
             local bgColor = self:IsHovered() and hoverColor or bgColor

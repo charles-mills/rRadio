@@ -131,7 +131,7 @@ function rRadio.interface.MakeStationButton(parent, onClick)
     btn:DockMargin(Scale(5), Scale(5), Scale(5), 0)
     btn:SetTall(Scale(40))
     btn:SetText("")
-    btn:SetFont("Roboto18")
+    btn:SetFont("rRadio.Roboto18")
     btn:SetTextColor(rRadio.config.UI.TextColor)
     btn.DoClick = onClick
     return btn
@@ -252,7 +252,7 @@ function rRadio.interface.DisplayVehicleEnterAnimation(argVehicle, isDriverOverr
         surface.DrawLine(keyX + keyWidth + Scale(7), h * 0.3, keyX + keyWidth + Scale(7), h * 0.7)
         draw.SimpleText(
             keyName,
-            "Roboto18",
+            "rRadio.Roboto18",
             keyX + keyWidth / 2,
             h / 2,
             ColorAlpha(rRadio.config.UI.TextColor, alpha * 255),
@@ -262,7 +262,7 @@ function rRadio.interface.DisplayVehicleEnterAnimation(argVehicle, isDriverOverr
         local messageX = keyX + keyWidth + Scale(15)
         draw.SimpleText(
             rRadio.config.Lang["ToOpenRadio"] or "to open radio",
-            "Roboto18",
+            "rRadio.Roboto18",
             messageX,
             h / 2,
             ColorAlpha(rRadio.config.UI.TextColor, alpha * 255),
