@@ -584,18 +584,18 @@ local function openSettingsMenu(parentFrame, backButton)
                         return
                     end
                     if value then
-                        net.Start("MakeBoomboxPermanent")
+                        net.Start("rRadio.SetPersistent")
                         net.WriteEntity(currentEntity)
                         net.SendToServer()
                     else
-                        net.Start("RemoveBoomboxPermanent")
+                        net.Start("rRadio.RemovePersistent")
                         net.WriteEntity(currentEntity)
                         net.SendToServer()
                     end
                 end
             )
             net.Receive(
-                "BoomboxPermanentConfirmation",
+                "rRadio.SendPersistentConfirmation",
                 function()
                     local message = net.ReadString()
                     chat.AddText(Color(0, 255, 0), "[Boombox] ", Color(255, 255, 255), message)
@@ -1171,7 +1171,7 @@ net.Receive(
     end
 )
 net.Receive(
-    "RadioConfigUpdate",
+    "rRadio.SetConfigUpdate",
     function()
         for entity, source in pairs(rRadio.cl.radioSources) do
             if IsValid(entity) and IsValid(source) then

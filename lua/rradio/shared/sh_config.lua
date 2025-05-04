@@ -192,12 +192,12 @@ if CLIENT then
         end
     end
 
-    net.Receive("RadioConfigUpdate", function()
+    net.Receive("rRadio.SetConfigUpdate", function()
         rRadio.config.ReloadConVars()
     end)
 else
-    util.AddNetworkString("RadioConfigUpdate")
-    net.Start("RadioConfigUpdate")
+    util.AddNetworkString("rRadio.SetConfigUpdate")
+    net.Start("rRadio.SetConfigUpdate")
     net.Broadcast()
 
     concommand.Add("radio_reload_config", function(ply)
