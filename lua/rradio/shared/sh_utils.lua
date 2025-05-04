@@ -17,6 +17,8 @@ rRadio.utils.SitAnywhereSeats = {
   ["Chair_Wood"] = true,
 }
 
+function rRadio.utils.Scale(val) return val * (ScrW() / 2560) end
+
 function rRadio.utils.GetVehicle(ent)
   if not IsValid(ent) then return end
   local parent = ent:GetParent()
@@ -110,7 +112,7 @@ function rRadio.utils.setRadioStatus(entity, status, stationName, isPlaying, upd
   entity:SetNWString("StationName", stationName)
   statuses[entIndex].stationName = stationName
   if SERVER then
-    net.Start("UpdateRadioStatus")
+    net.Start("rRadio.UpdateRadioStatus")
     net.WriteEntity(entity)
     net.WriteString(stationName)
     net.WriteBool(isPlaying)

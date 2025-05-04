@@ -7,6 +7,8 @@ local dataDir = "rradio"
 rRadio.interface.favoriteCountriesFile = dataDir .. "/favorite_countries.json"
 rRadio.interface.favoriteStationsFile = dataDir .. "/favorite_stations.json"
 
+local Scale = rRadio.utils.Scale
+
 if not file.IsDir(dataDir, "DATA") then
     file.CreateDir(dataDir)
 end
@@ -15,10 +17,6 @@ local stopFontCache = {}
 hook.Add("LanguageUpdated", "rRadio.ClearStopFontCache", function()
     stopFontCache = {}
 end)
-
-local function Scale(value)
-    return value * (ScrW() / 2560)
-end
 
 function rRadio.interface.fuzzyMatch(needle, haystack)
     needle = string.lower(needle or "")
@@ -133,7 +131,7 @@ function rRadio.interface.MakeStationButton(parent, onClick)
     btn:DockMargin(Scale(5), Scale(5), Scale(5), 0)
     btn:SetTall(Scale(40))
     btn:SetText("")
-    btn:SetFont("Roboto18")
+    btn:SetFont("rRadio.Roboto18")
     btn:SetTextColor(rRadio.config.UI.TextColor)
     btn.DoClick = onClick
     return btn
@@ -254,7 +252,7 @@ function rRadio.interface.DisplayVehicleEnterAnimation(argVehicle, isDriverOverr
         surface.DrawLine(keyX + keyWidth + Scale(7), h * 0.3, keyX + keyWidth + Scale(7), h * 0.7)
         draw.SimpleText(
             keyName,
-            "Roboto18",
+            "rRadio.Roboto18",
             keyX + keyWidth / 2,
             h / 2,
             ColorAlpha(rRadio.config.UI.TextColor, alpha * 255),
@@ -264,7 +262,7 @@ function rRadio.interface.DisplayVehicleEnterAnimation(argVehicle, isDriverOverr
         local messageX = keyX + keyWidth + Scale(15)
         draw.SimpleText(
             rRadio.config.Lang["ToOpenRadio"] or "to open radio",
-            "Roboto18",
+            "rRadio.Roboto18",
             messageX,
             h / 2,
             ColorAlpha(rRadio.config.UI.TextColor, alpha * 255),
@@ -442,6 +440,27 @@ function rRadio.interface.saveFavorites()
     else
         print("[rRADIO] Error converting favorite stations to JSON")
     end
+end
+
+function rRadio.interface.toggleFavorite(list, key, subkey)
+    if subkey then
+        list[key] = list[key] or {}
+        if list[key][subkey] then
+            list[key][subkey] = nil
+            if not next(list[key]) then
+                list[key] = nil
+            end
+        else
+            list[key][subkey] = true
+        end
+    else
+        if list[key] then
+            list[key] = nil
+        else
+            list[key] = true
+        end
+    end
+    rRadio.interface.saveFavorites()
 end
 
 function rRadio.interface.GetVehicleEntity(entity)
