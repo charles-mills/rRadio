@@ -84,6 +84,7 @@ local function addCSLuaFiles()
         "rradio/client",
         "rradio/client/interface",
         "rradio/client/lang",
+        "rradio/client/lang/data",
         "rradio/client/stations",
         "entities/rammel_base_boombox",
         "entities/rammel_boombox",
@@ -147,13 +148,15 @@ elseif CLIENT then
     addClientFile("client/interface/cl_core.lua")
 
     addClientFile("client/lang/cl_localisation_strings.lua")
-    addClientFile("client/lang/cl_country_translations_a.lua")
-    addClientFile("client/lang/cl_country_translations_b.lua")
+
+    addClientFile("client/lang/data/data_1.lua")
+    addClientFile("client/lang/data/data_2.lua")
+    addClientFile("client/lang/data/data_3.lua")
 
     for _, f in ipairs(file.Find("rradio/client/stations/*.lua", "LUA")) do
         addClientFile("client/stations/" .. f)
     end
 
-    rRadio.FormattedOutput("Loaded " .. cl_count .. "/37 client-side files")
+    rRadio.FormattedOutput("Loaded " .. cl_count .. "/38 client-side files")
     rRadio.FormattedOutput("Finished client-side initialization")
 end

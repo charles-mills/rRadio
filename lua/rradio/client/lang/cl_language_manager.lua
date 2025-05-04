@@ -16,27 +16,27 @@ rRadio.LanguageManager.languages = {
 
 rRadio.LanguageManager.currentLanguage = "en"
 rRadio.LanguageManager.translations = include("cl_localisation_strings.lua")
-rRadio.LanguageManager.countryTranslationsA = include("cl_country_translations_a.lua")
-rRadio.LanguageManager.countryTranslationsB = include("cl_country_translations_b.lua")
+
+rRadio.LanguageManager.countryTranslationsA = include("data/data_1.lua")
+rRadio.LanguageManager.countryTranslationsB = include("data/data_2.lua")
+rRadio.LanguageManager.countryTranslationsC = include("data/data_3.lua")
+
 rRadio.LanguageManager.countryTranslations = {}
 
-for lang, translations in pairs(rRadio.LanguageManager.countryTranslationsA) do
-    if type(translations) == "table" then
-        rRadio.LanguageManager.countryTranslations[lang] = rRadio.LanguageManager.countryTranslations[lang] or {}
-        for k, v in pairs(translations) do
-            rRadio.LanguageManager.countryTranslations[lang][k] = v
+local function merge(src)
+    for lang, tbl in pairs(src) do
+        if type(tbl) == "table" then
+            rRadio.LanguageManager.countryTranslations[lang] = rRadio.LanguageManager.countryTranslations[lang] or {}
+            for k, v in pairs(tbl) do
+                rRadio.LanguageManager.countryTranslations[lang][k] = v
+            end
         end
     end
 end
 
-for lang, translations in pairs(rRadio.LanguageManager.countryTranslationsB) do
-    if type(translations) == "table" then
-        rRadio.LanguageManager.countryTranslations[lang] = rRadio.LanguageManager.countryTranslations[lang] or {}
-        for k, v in pairs(translations) do
-            rRadio.LanguageManager.countryTranslations[lang][k] = v
-        end
-    end
-end
+merge(rRadio.LanguageManager.countryTranslationsA)
+merge(rRadio.LanguageManager.countryTranslationsB)
+merge(rRadio.LanguageManager.countryTranslationsC)
 
 local function getClientLanguageCode()
     local raw = GetConVar("gmod_language"):GetString() or "en"
