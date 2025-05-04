@@ -1,10 +1,12 @@
+include("shared.lua")
+
 if (rRadio.isClientLoadDisabled() and rRadio.config.ClientHardDisable) then
     function ENT:Draw()
         self:DrawModel()
     end
-else
-    include("shared.lua")
 
+    return
+else
     local cvHud     = GetConVar("rammel_rradio_boombox_hud")
     local cvEnabled = GetConVar("rammel_rradio_enabled")
 
