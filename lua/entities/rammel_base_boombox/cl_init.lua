@@ -242,38 +242,6 @@ else
 
     function ENT:Draw()
         self:DrawModel()
-
-        local plyEye = LocalPlayer():EyePos()
-        local distSqr = plyEye:DistToSqr(self:GetPos())
-        
-        if distSqr > MODEL_CULL_DISTANCE_SQR then return end
-        
-        if not cvHud:GetBool() then return end
-        if not cvEnabled:GetBool() then return end
-        
-        local alpha = math.Clamp(255 * (1 - (distSqr - FADE_START_SQR) * FADE_RANGE_INV), 0, 255)
-        if alpha <= 0 then return end
-
-        local entIndex = self:EntIndex()
-        local statusData = rRadio.cl.BoomboxStatuses[entIndex] or {}
-        local status = statusData.stationStatus or self.nwStatus
-        local stationName = statusData.stationName or self.nwStationName
-        
-        self:UpdateAnimations(status, FrameTime())
-        
-        local pos = self:GetPos()
-        pos:Add(self:GetForward() * HUD_OFFSET_FORWARD)
-        pos:Add(self:GetUp() * HUD_OFFSET_UP)
-        
-        local ang = self:GetAngles()
-        ang:RotateAroundAxis(ang:Up(), -90)
-        ang:RotateAroundAxis(ang:Forward(), 90)
-        ang:RotateAroundAxis(ang:Right(), 180)
-        
-        cam.Start3D2D(pos, ang, HUD_SCALE)
-        self:DrawHUD(status, stationName, alpha)
-        cam.End3D2D()
-        
     end
 
     function ENT:GetDisplayText(status, stationName)
@@ -505,9 +473,43 @@ else
 
     hook.Add("EntityRemoved", "CleanupBoomboxVolumes", function(ent)
         entityVolumes[ent:EntIndex()] = nil
+        ActiveBoomboxes[ent] = nil
     end)
 
     hook.Add("ShutDown", "CleanupBoomboxTimers", function()
         timer.Remove("BoomboxCleanup")
+    end)
+
+    hook.Add("PostDrawOpaqueRenderables", "rRadio_DrawAllBoomboxHUDs", function()
+        local plyEye = LocalPlayer():EyePos()
+        local dt     = FrameTime()
+
+        for ent in pairs(ActiveBoomboxes) do
+            local distSqr = plyEye:DistToSqr(ent:GetPos())
+            if distSqr <= MODEL_CULL_DISTANCE_SQR and cvHud:GetBool() and cvEnabled:GetBool() then
+                local alpha = math.Clamp(255 * (1 - (distSqr - FADE_START_SQR) * FADE_RANGE_INV), 0, 255)
+                if alpha > 0 then
+                    local idx        = ent:EntIndex()
+                    local statusData = rRadio.cl.BoomboxStatuses[idx] or {}
+                    local status      = statusData.stationStatus or ent.nwStatus
+                    local stationName = statusData.stationName   or ent.nwStationName
+
+                    ent:UpdateAnimations(status, dt)
+
+                    local pos = ent:GetPos()
+                    pos:Add(ent:GetForward() * HUD_OFFSET_FORWARD)
+                    pos:Add(ent:GetUp()      * HUD_OFFSET_UP)
+
+                    local ang = ent:GetAngles()
+                    ang:RotateAroundAxis(ang:Up(),    -90)
+                    ang:RotateAroundAxis(ang:Forward(), 90)
+                    ang:RotateAroundAxis(ang:Right(),   180)
+
+                    cam.Start3D2D(pos, ang, HUD_SCALE)
+                        ent:DrawHUD(status, stationName, alpha)
+                    cam.End3D2D()
+                end
+            end
+        end
     end)
 end
