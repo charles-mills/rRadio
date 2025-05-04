@@ -25,6 +25,9 @@ else
     local draw_RoundedBox = draw.RoundedBox
     local draw_SimpleText = draw.SimpleText
 
+    local STATIC_TEXTS = nil
+    local STATIC_TEXT_WIDTHS = nil
+
     local ColorAlpha = ColorAlpha
     local Lerp = Lerp
     local function LerpColor(t, c1, c2)
@@ -133,18 +136,26 @@ else
         end
     end
 
-    local STATIC_TEXTS = {
-        interact = rRadio.config.Lang["Interact"] or "Press E to Interact",
-        paused   = rRadio.config.Lang["Paused"] or "PAUSED",
-        tuning   = rRadio.config.Lang["TuningIn"] or "Tuning in",
-    }
-    surface_SetFont("rRadio_BoomboxHUD")
-    local STATIC_TEXT_WIDTHS = {
-        [STATIC_TEXTS.interact] = surface_GetTextSize(STATIC_TEXTS.interact),
-        [STATIC_TEXTS.paused]   = surface_GetTextSize(STATIC_TEXTS.paused),
-        [STATIC_TEXTS.tuning]   = surface_GetTextSize(STATIC_TEXTS.tuning),
-    }
+    local function initializeStaticTexts()
+        STATIC_TEXTS = {
+            interact = rRadio.config.Lang["Interact"] or "Press E to Interact",
+            paused   = rRadio.config.Lang["Paused"] or "PAUSED",
+            tuning   = rRadio.config.Lang["TuningIn"] or "Tuning in",
+        }
+    end
 
+    local function initializeStaticTextWidths()
+        surface_SetFont("rRadio_BoomboxHUD")
+        STATIC_TEXT_WIDTHS = {
+            [STATIC_TEXTS.interact] = surface_GetTextSize(STATIC_TEXTS.interact),
+            [STATIC_TEXTS.paused]   = surface_GetTextSize(STATIC_TEXTS.paused),
+            [STATIC_TEXTS.tuning]   = surface_GetTextSize(STATIC_TEXTS.tuning),
+        }
+    end
+
+    initializeStaticTexts()
+    initializeStaticTextWidths()
+    
     local color_cache = {}
     local function GetCachedColor(baseColor, alpha)
         if type(baseColor) ~= "table" or type(baseColor.r) ~= "number" then
@@ -477,6 +488,11 @@ else
         local entity = net.ReadEntity()
         local volume = net.ReadFloat()
         if IsValid(entity) then entityVolumes[entity:EntIndex()] = volume end
+    end)
+
+    hook.Add("LanguageUpdated", "rRadio.ClearBoomboxTextCache", function()
+        initializeStaticTexts()
+        initializeStaticTextWidths()
     end)
 
     hook.Add("NetworkEntityCreated", "BoomboxNetworkedValues", function(ent)
