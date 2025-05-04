@@ -21,7 +21,7 @@ local dev_id = "3465709662"
 local pub_id = "3318060741"
 
 rRadio = rRadio or {}
-rRadio.DEV = true
+rRadio.DEV = false
 
 function rRadio.DevPrint(text)
     if not rRadio.DEV then return end
