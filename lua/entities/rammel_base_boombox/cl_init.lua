@@ -245,11 +245,15 @@ else
 
     function ENT:Draw()
         self:DrawModel()
+
+        local plyEye = LocalPlayer():EyePos()
+        local distSqr = plyEye:DistToSqr(self:GetPos())
+        
+        if distSqr > MODEL_CULL_DISTANCE_SQR then return end
         
         if not GetConVar("rammel_rradio_boombox_hud"):GetBool() then return end
         if not GetConVar("rammel_rradio_enabled"):GetBool() then return end
         
-        local distSqr = EyePos():DistToSqr(self:GetPos())
         local alpha = math_Clamp(255 * (1 - (distSqr - FADE_START_SQR) * FADE_RANGE_INV), 0, 255)
         if alpha <= 0 then return end
 
@@ -346,7 +350,7 @@ else
     function ENT:DrawHUD(status, stationName, alpha)
         local bgAlpha = alpha * 1.0
         local colors
-        if self:GetClass() == "golden_boombox" then
+        if self:GetClass() == "rammel_boombox_gold" then
             colors = HUD.COLORS.golden_boombox
         else
             local theme = rRadio.config.UI or DEFAULT_UI
@@ -399,7 +403,7 @@ else
     end
 
     function ENT:GetStatusColor(status)
-        if self:GetClass() == "golden_boombox" then
+        if self:GetClass() == "rammel_boombox_gold" then
             local colors = HUD.COLORS.golden_boombox
             if status == "playing" then
                 return colors.ACCENT
