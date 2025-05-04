@@ -15,11 +15,11 @@ rRadio.LanguageManager.languages = {
 }
 
 rRadio.LanguageManager.currentLanguage = "en"
-rRadio.LanguageManager.translations = include("cl_localisation_strings.lua")
+rRadio.LanguageManager.translations = include("rradio/client/lang/cl_localisation_strings.lua")
 
-rRadio.LanguageManager.countryTranslationsA = include("data/data_1.lua")
-rRadio.LanguageManager.countryTranslationsB = include("data/data_2.lua")
-rRadio.LanguageManager.countryTranslationsC = include("data/data_3.lua")
+rRadio.LanguageManager.countryTranslationsA = include("rradio/client/lang/data/data_1.lua")
+rRadio.LanguageManager.countryTranslationsB = include("rradio/client/lang/data/data_2.lua")
+rRadio.LanguageManager.countryTranslationsC = include("rradio/client/lang/data/data_3.lua")
 
 rRadio.LanguageManager.countryTranslations = {}
 
