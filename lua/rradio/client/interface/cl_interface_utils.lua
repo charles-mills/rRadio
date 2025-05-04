@@ -7,6 +7,8 @@ local dataDir = "rradio"
 rRadio.interface.favoriteCountriesFile = dataDir .. "/favorite_countries.json"
 rRadio.interface.favoriteStationsFile = dataDir .. "/favorite_stations.json"
 
+local Scale = rRadio.utils.Scale
+
 if not file.IsDir(dataDir, "DATA") then
     file.CreateDir(dataDir)
 end
@@ -15,10 +17,6 @@ local stopFontCache = {}
 hook.Add("LanguageUpdated", "rRadio.ClearStopFontCache", function()
     stopFontCache = {}
 end)
-
-local function Scale(value)
-    return value * (ScrW() / 2560)
-end
 
 function rRadio.interface.fuzzyMatch(needle, haystack)
     needle = string.lower(needle or "")

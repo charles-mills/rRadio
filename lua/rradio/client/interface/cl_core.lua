@@ -24,15 +24,13 @@ local currentlyPlayingStations = {}
 local stationDataLoaded = false
 local isSearching = false
 
+local Scale = rRadio.utils.Scale
+
 local VOLUME_ICONS = {
     MUTE = Material("hud/vol_mute.png", "smooth"),
     LOW = Material("hud/vol_down.png", "smooth"),
     HIGH = Material("hud/vol_up.png", "smooth")
 }
-
-local function Scale(value)
-    return value * (ScrW() / 2560)
-end
 
 local function createFonts()
     surface.CreateFont(

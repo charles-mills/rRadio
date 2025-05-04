@@ -17,6 +17,8 @@ rRadio.utils.SitAnywhereSeats = {
   ["Chair_Wood"] = true,
 }
 
+function rRadio.utils.Scale(val) return val * (ScrW() / 2560) end
+
 function rRadio.utils.GetVehicle(ent)
   if not IsValid(ent) then return end
   local parent = ent:GetParent()
