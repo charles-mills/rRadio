@@ -78,12 +78,37 @@ local function addCSLua(filename)
     cl_load_count = cl_load_count + 1
 end
 
+local function createFonts()
+    surface.CreateFont(
+        "rRadio.Roboto24",
+        {
+            font = "Roboto",
+            size = 24,
+            weight = 500,
+            antialias = true,
+            extended = true
+        }
+    )
+
+    surface.CreateFont(
+        "rRadio.Roboto18",
+        {
+            font = "Roboto",
+            size = ScreenScale(5),
+            weight = 500,
+            antialias = true,
+            extended = true
+        }
+    )
+end
+
 local function addCSLuaFiles()
     local dirs = {
         "rradio/shared",
         "rradio/client",
         "rradio/client/interface",
         "rradio/client/lang",
+        "rradio/client/lang/data",
         "rradio/client/stations",
         "entities/rammel_base_boombox",
         "entities/rammel_boombox",
@@ -110,6 +135,19 @@ local function addPrivileges()
     end
 end
 
+local function registerNetStrings()
+    util.AddNetworkString("rRadio.PlayStation")
+    util.AddNetworkString("rRadio.StopStation")
+    util.AddNetworkString("rRadio.OpenMenu")
+    util.AddNetworkString("rRadio.PlayVehicleAnimation")
+    util.AddNetworkString("rRadio.UpdateRadioStatus")
+    util.AddNetworkString("rRadio.SetRadioVolume")
+    util.AddNetworkString("rRadio.SetPersistent")
+    util.AddNetworkString("rRadio.RemovePersistent")
+    util.AddNetworkString("rRadio.SendPersistentConfirmation")
+    util.AddNetworkString("rRadio.SetConfigUpdate")
+end
+
 if SERVER then
     local resourceStr = ""
 
@@ -119,16 +157,22 @@ if SERVER then
     rRadio.FormattedOutput("Starting server-side initialization")
     addCSLuaFiles()
     rRadio.FormattedOutput("Assigned " .. cl_load_count .. " client-side files")
-    rRadio.FormattedOutput("Assigned " .. resourceStr .. " resource files") 
+    rRadio.FormattedOutput("Using " .. resourceStr .. " resources")
+
+    registerNetStrings()
+    rRadio.FormattedOutput("Registered network strings")
+
     include("rradio/shared/sh_config.lua")
     include("rradio/shared/sh_utils.lua")
     include("rradio/server/sv_utils.lua")
     include("rradio/server/sv_core.lua")
     include("rradio/server/sv_permanent.lua")
     addPrivileges()
-
+    
     rRadio.FormattedOutput("Finished server-side initialization")
 elseif CLIENT then
+    createFonts()
+
     addClientFile("shared/sh_utils.lua")
     addClientFile("client/interface/cl_themes.lua")
     addClientFile("client/lang/cl_language_manager.lua")
@@ -147,13 +191,15 @@ elseif CLIENT then
     addClientFile("client/interface/cl_core.lua")
 
     addClientFile("client/lang/cl_localisation_strings.lua")
-    addClientFile("client/lang/cl_country_translations_a.lua")
-    addClientFile("client/lang/cl_country_translations_b.lua")
+
+    addClientFile("client/lang/data/data_1.lua")
+    addClientFile("client/lang/data/data_2.lua")
+    addClientFile("client/lang/data/data_3.lua")
 
     for _, f in ipairs(file.Find("rradio/client/stations/*.lua", "LUA")) do
         addClientFile("client/stations/" .. f)
     end
 
-    rRadio.FormattedOutput("Loaded " .. cl_count .. "/37 client-side files")
+    rRadio.FormattedOutput("Loaded " .. cl_count .. "/38 client-side files")
     rRadio.FormattedOutput("Finished client-side initialization")
 end

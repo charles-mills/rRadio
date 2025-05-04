@@ -39,7 +39,7 @@ function ENT:Use(activator, caller)
     self.NextUse = now + self.InteractCooldown
 
     if rRadio.utils.canInteractWithBoombox(activator, self) then
-        net.Start("OpenRadioMenu")
+        net.Start("rRadio.OpenMenu")
         net.WriteEntity(self)
         net.Send(activator)
     else
@@ -67,7 +67,7 @@ function ENT:SpawnFunction(ply, tr, className)
 end
 
 function ENT:StopRadio()
-    net.Start("StopCarRadioStation")
+    net.Start("rRadio.StopStation")
     net.WriteEntity(self)
     net.Broadcast()
 end

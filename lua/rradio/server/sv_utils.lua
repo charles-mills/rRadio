@@ -79,7 +79,7 @@ function rRadio.sv.utils.AddActiveRadio(entity, stationName, url, volume)
 end
 
 function rRadio.sv.utils.BroadcastPlay(ent, st, url, vol)
-    net.Start("PlayCarRadioStation") net.WriteEntity(ent)
+    net.Start("rRadio.PlayStation") net.WriteEntity(ent)
     net.WriteString(st) net.WriteString(url) net.WriteFloat(vol)
     net.Broadcast()
 end
@@ -120,7 +120,7 @@ function rRadio.sv.utils.SendActiveRadiosToPlayer(ply)
     for entIndex, radio in pairs(rRadio.sv.ActiveRadios) do
         local entity = Entity(entIndex)
         rRadio.DevPrint("[rRADIO] Sending radio info for entity " .. entIndex .. " to " .. ply:Nick())
-        net.Start("PlayCarRadioStation")
+        net.Start("rRadio.PlayStation")
         net.WriteEntity(entity)
         net.WriteString(radio.stationName)
         net.WriteString(radio.url)
@@ -189,7 +189,7 @@ function rRadio.sv.utils.ProcessVolumeUpdate(entity, volume, ply)
     volume = rRadio.sv.utils.ClampVolume(volume)
     rRadio.sv.EntityVolumes[entIndex] = volume
     entity:SetNWFloat("Volume", volume)
-    net.Start("UpdateRadioVolume")
+    net.Start("rRadio.SetRadioVolume")
     net.WriteEntity(entity)
     net.WriteFloat(volume)
     net.SendPAS(entity:GetPos())
@@ -211,7 +211,7 @@ function rRadio.sv.utils.RemoveActiveRadio(entity)
 end
 
 function rRadio.sv.utils.BroadcastStop(ent)
-    net.Start("StopCarRadioStation")
+    net.Start("rRadio.StopStation")
     net.WriteEntity(ent)
     net.Broadcast()
 end

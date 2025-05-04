@@ -201,7 +201,7 @@ ent:SetNWString("StationName", row.station_name)
 ent:SetNWString("StationURL", row.station_url)
 ent:SetNWString("Status", "playing")
 ent:SetNWBool("IsPlaying", true)
-net.Start("PlayCarRadioStation")
+net.Start("rRadio.PlayStation")
 net.WriteEntity(ent)
 net.WriteString(row.station_name or "")
 net.WriteString(row.station_url)
@@ -225,7 +225,7 @@ rRadio.sv.permanent.LoadPermanentBoomboxes()
 end
 end)
 end)
-net.Receive("MakeBoomboxPermanent", function(len, ply)
+net.Receive("rRadio.SetPersistent", function(len, ply)
 if not IsValid(ply) or not ply:IsSuperAdmin() then
 ply:ChatPrint("You do not have permission to perform this action.")
 return
@@ -242,11 +242,11 @@ end
 ent.IsPermanent = true
 ent:SetNWBool("IsPermanent", true)
 rRadio.sv.permanent.SavePermanentBoombox(ent)
-net.Start("BoomboxPermanentConfirmation")
+net.Start("rRadio.SendPersistentConfirmation")
 net.WriteString("Boombox has been marked as permanent.")
 net.Send(ply)
 end)
-net.Receive("RemoveBoomboxPermanent", function(len, ply)
+net.Receive("rRadio.RemovePersistent", function(len, ply)
 if not IsValid(ply) or not ply:IsSuperAdmin() then
 ply:ChatPrint("You do not have permission to perform this action.")
 return
@@ -266,7 +266,7 @@ RemovePermanentBoombox(ent)
 if ent.StopRadio then
 ent:StopRadio()
 end
-net.Start("BoomboxPermanentConfirmation")
+net.Start("rRadio.SendPersistentConfirmation")
 net.WriteString("Boombox permanence has been removed.")
 net.Send(ply)
 end)
