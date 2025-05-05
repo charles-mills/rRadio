@@ -91,13 +91,22 @@ local function createFonts()
     )
 
     surface.CreateFont(
-        "rRadio.Roboto18",
+        "rRadio.Roboto5",
         {
             font = "Roboto",
             size = ScreenScale(5),
             weight = 500,
             antialias = true,
             extended = true
+        }
+    )
+
+    surface.CreateFont(
+        "rRadio.Roboto8",
+        {
+            font = "Roboto",
+            size = ScreenScale(8),
+            weight = 700
         }
     )
 end
