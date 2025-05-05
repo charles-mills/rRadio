@@ -131,7 +131,7 @@ function rRadio.interface.MakeStationButton(parent, onClick)
     btn:DockMargin(Scale(5), Scale(5), Scale(5), 0)
     btn:SetTall(Scale(40))
     btn:SetText("")
-    btn:SetFont("rRadio.Roboto18")
+    btn:SetFont("rRadio.Roboto5")
     btn:SetTextColor(rRadio.config.UI.TextColor)
     btn.DoClick = onClick
     return btn
@@ -252,7 +252,7 @@ function rRadio.interface.DisplayVehicleEnterAnimation(argVehicle, isDriverOverr
         surface.DrawLine(keyX + keyWidth + Scale(7), h * 0.3, keyX + keyWidth + Scale(7), h * 0.7)
         draw.SimpleText(
             keyName,
-            "rRadio.Roboto18",
+            "rRadio.Roboto5",
             keyX + keyWidth / 2,
             h / 2,
             ColorAlpha(rRadio.config.UI.TextColor, alpha * 255),
@@ -262,7 +262,7 @@ function rRadio.interface.DisplayVehicleEnterAnimation(argVehicle, isDriverOverr
         local messageX = keyX + keyWidth + Scale(15)
         draw.SimpleText(
             rRadio.config.Lang["ToOpenRadio"] or "to open radio",
-            "rRadio.Roboto18",
+            "rRadio.Roboto5",
             messageX,
             h / 2,
             ColorAlpha(rRadio.config.UI.TextColor, alpha * 255),
@@ -493,6 +493,11 @@ function rRadio.interface.CalculateVolume(entity, player, distanceSqr)
 
 function rRadio.interface.updateRadioVolume(station, distanceSqr, isPlayerInCar, entity)
     if not GetConVar("rammel_rradio_enabled"):GetBool() then
+        station:SetVolume(0)
+        return
+    end
+
+    if rRadio.cl.mutedBoomboxes and rRadio.cl.mutedBoomboxes[entity] then
         station:SetVolume(0)
         return
     end
