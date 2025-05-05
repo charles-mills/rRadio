@@ -2,7 +2,7 @@ rRadio.LanguageManager = {}
 rRadio.LanguageManager.languages = {
     de = "Deutsch",
     en = "English",
-    es = "Español",
+    es_es = "Español",
     fr = "Français",
     it = "Italiano",
     ja = "日本語",
@@ -42,7 +42,7 @@ local function getClientLanguageCode()
     local raw = GetConVar("gmod_language"):GetString() or "en"
     raw = raw:lower():gsub("%s+", "_"):gsub("-", "_"):gsub("[()]", "")
     local langMap = {
-        english = "en", german = "de", spanish = "es", ["español"] = "es",
+        english = "en", german = "de", spanish = "es_es", ["español"] = "es_es",
         french = "fr", ["français"] = "fr", italian = "it", ["italiano"] = "it",
         japanese = "ja", korean = "ko", portuguese = "pt_br", ["pt_br"] = "pt_br",
         russian = "ru", chinese = "zh_cn", ["simplified_chinese"] = "zh_cn",
