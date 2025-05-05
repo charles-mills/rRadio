@@ -14,6 +14,15 @@ Steam: https://steamcommunity.com/id/rammel/
 
 ]]
 
+--[[
+
+Remaining bugs:
+
+- CAMI check spam (cl and sv)
+- Language packs not loading
+
+]]
+
 local cl_count = 0
 local cl_load_count = 0
 
@@ -21,7 +30,7 @@ local dev_id = "3465709662"
 local pub_id = "3318060741"
 
 rRadio = rRadio or {}
-rRadio.DEV = false
+rRadio.DEV = true
 
 function rRadio.DevPrint(text)
     if not rRadio.DEV then return end
