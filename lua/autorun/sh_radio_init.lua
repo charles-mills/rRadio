@@ -133,7 +133,7 @@ end
 local function addClProperties()
     properties.Add("radio_mute", {
         MenuLabel = "Mute",
-        Order     = 1000,
+        Order     = 1501,
         MenuIcon  = "icon16/SOUND_MUTE.png",
         Filter    = function(self, ent, ply)
             return rRadio.utils.canUseRadio(ent) and not rRadio.cl.mutedBoomboxes[ent]
@@ -145,7 +145,7 @@ local function addClProperties()
 
     properties.Add("radio_unmute", {
         MenuLabel = "Unmute",
-        Order     = 1001,
+        Order     = 1502,
         MenuIcon  = "icon16/SOUND.png",
         Filter    = function(self, ent, ply)
             return rRadio.utils.canUseRadio(ent) and rRadio.cl.mutedBoomboxes[ent]

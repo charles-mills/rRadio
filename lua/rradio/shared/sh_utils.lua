@@ -48,11 +48,16 @@ function rRadio.utils.isSitAnywhereSeat(vehicle)
   return false
 end
 
+function rRadio.utils.getOwner(ent)
+  if not IsValid(ent) then return nil end
+  return ent:GetNWEntity("Owner")
+end
+
 function rRadio.utils.canInteractWithBoombox(ply, boombox)
   rRadio.DevPrint("Checking if player can interact with boombox")
 
   if not IsValid(ply) or not IsValid(boombox) then return false end
-  local owner = rRadio.sv.utils.getOwner(boombox)
+  local owner = rRadio.utils.getOwner(boombox)
 
   rRadio.DevPrint("Owner is valid, checking if player is owner")
 

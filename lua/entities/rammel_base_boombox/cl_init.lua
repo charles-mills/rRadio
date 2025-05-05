@@ -241,9 +241,10 @@ end
 
 function ENT:GetDisplayText(status, stationName)
     if status == "stopped" then
-        if LocalPlayer() == self.nwOwner or LocalPlayer():IsSuperAdmin() then
+        if rRadio.utils.canInteractWithBoombox(LocalPlayer(), self) then
             return STATIC_TEXTS.interact, STATIC_TEXT_WIDTHS[STATIC_TEXTS.interact]
         end
+        
         return STATIC_TEXTS.paused, STATIC_TEXT_WIDTHS[STATIC_TEXTS.paused]
     elseif status == "tuning" then
         local base = STATIC_TEXTS.tuning
