@@ -66,11 +66,12 @@ function rRadio.utils.canInteractWithBoombox(ply, boombox)
     return true
   end
 
-  rRadio.DevPrint("Player is valid, checking CAMI")
-
-  if CAMI.PlayerHasAccess(ply, "rradio.UseAll") then
-     rRadio.DevPrint("Player has rradio.UseAll")
-     return true
+  if SERVER then
+    rRadio.DevPrint("Player is valid, checking CAMI (server)")
+    if CAMI.PlayerHasAccess(ply, "rradio.UseAll") then
+      rRadio.DevPrint("Player has rradio.UseAll")
+      return true
+    end
   end
 
   return false

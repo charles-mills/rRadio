@@ -131,7 +131,7 @@ end
 local function initializeStaticTexts()
     STATIC_TEXTS = {
         interact = rRadio.config.Lang["Interact"] or "Press E to Interact",
-        paused   = rRadio.config.Lang["Paused"] or "PAUSED",
+        paused   = rRadio.config.Lang["Paused"] or "Paused",
         tuning   = rRadio.config.Lang["TuningIn"] or "Tuning in",
     }
 end
