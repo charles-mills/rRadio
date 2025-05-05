@@ -404,6 +404,10 @@ function ENT:DrawEqualizer(x, y, alpha, color)
     local maxHeight = HUD.DIMENSIONS.HEIGHT * 0.7
     local volume = entityVolumes[self:EntIndex()] or 1
 
+    if rRadio.cl.mutedBoomboxes and rRadio.cl.mutedBoomboxes[self] then
+        volume = 0
+    end
+
     self:UpdateEqualizerHeights(volume, FrameTime() * 2)
     
     local colorWithAlpha = GetCachedColor(color, alpha)

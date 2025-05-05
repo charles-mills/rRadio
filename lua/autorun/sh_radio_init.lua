@@ -130,6 +130,32 @@ local function addCSLuaFiles()
     end
 end
 
+local function addClProperties()
+    properties.Add("radio_mute", {
+        MenuLabel = "Mute",
+        Order     = 100,
+        MenuIcon  = "icon16/SOUND_MUTE.png",
+        Filter    = function(self, ent, ply)
+            return rRadio.utils.IsBoombox(ent) and not rRadio.cl.mutedBoomboxes[ent]
+        end,
+        Action    = function(self, ent)
+            rRadio.cl.mutedBoomboxes[ent] = true
+        end
+    })
+
+    properties.Add("radio_unmute", {
+        MenuLabel = "Unmute",
+        Order     = 101,
+        MenuIcon  = "icon16/SOUND.png",
+        Filter    = function(self, ent, ply)
+            return rRadio.utils.IsBoombox(ent) and rRadio.cl.mutedBoomboxes[ent]
+        end,
+        Action    = function(self, ent)
+            rRadio.cl.mutedBoomboxes[ent] = nil
+        end
+    })
+end
+
 local function addPrivileges()
     local privs = {
         {
@@ -186,7 +212,12 @@ elseif CLIENT then
     addClientFile("client/interface/cl_themes.lua")
     addClientFile("client/lang/cl_language_manager.lua")
     addClientFile("shared/sh_config.lua")
+
+    rRadio.cl = rRadio.cl or {}
+    rRadio.cl.mutedBoomboxes = rRadio.cl.mutedBoomboxes or {}
+
     rRadio.addClConVars()
+    addClProperties()
 
     if (rRadio.isClientLoadDisabled()) then
         rRadio.FormattedOutput("Client-side load disabled")

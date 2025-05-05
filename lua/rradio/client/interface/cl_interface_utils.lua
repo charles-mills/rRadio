@@ -497,6 +497,11 @@ function rRadio.interface.updateRadioVolume(station, distanceSqr, isPlayerInCar,
         return
     end
 
+    if rRadio.cl.mutedBoomboxes and rRadio.cl.mutedBoomboxes[entity] then
+        station:SetVolume(0)
+        return
+    end
+
     local entityConfig = rRadio.interface.getEntityConfig(entity)
     if not entityConfig then
         return
