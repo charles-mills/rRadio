@@ -136,7 +136,7 @@ local function addClProperties()
         Order     = 100,
         MenuIcon  = "icon16/SOUND_MUTE.png",
         Filter    = function(self, ent, ply)
-            return rRadio.utils.IsBoombox(ent) and not rRadio.cl.mutedBoomboxes[ent]
+            return rRadio.utils.canUseRadio(ent) and not rRadio.cl.mutedBoomboxes[ent]
         end,
         Action    = function(self, ent)
             rRadio.cl.mutedBoomboxes[ent] = true
@@ -148,7 +148,7 @@ local function addClProperties()
         Order     = 101,
         MenuIcon  = "icon16/SOUND.png",
         Filter    = function(self, ent, ply)
-            return rRadio.utils.IsBoombox(ent) and rRadio.cl.mutedBoomboxes[ent]
+            return rRadio.utils.canUseRadio(ent) and rRadio.cl.mutedBoomboxes[ent]
         end,
         Action    = function(self, ent)
             rRadio.cl.mutedBoomboxes[ent] = nil
