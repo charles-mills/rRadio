@@ -116,6 +116,7 @@ local function addCSLuaFiles()
         "rradio/shared",
         "rradio/client",
         "rradio/client/interface",
+        "rradio/client/data/langpacks",
         "rradio/client/data/stationpacks",
         "entities/rammel_base_boombox",
         "entities/rammel_boombox",
