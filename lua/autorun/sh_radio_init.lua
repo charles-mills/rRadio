@@ -91,13 +91,22 @@ local function createFonts()
     )
 
     surface.CreateFont(
-        "rRadio.Roboto18",
+        "rRadio.Roboto5",
         {
             font = "Roboto",
             size = ScreenScale(5),
             weight = 500,
             antialias = true,
             extended = true
+        }
+    )
+
+    surface.CreateFont(
+        "rRadio.Roboto8",
+        {
+            font = "Roboto",
+            size = ScreenScale(8),
+            weight = 700
         }
     )
 end
@@ -119,6 +128,32 @@ local function addCSLuaFiles()
             addCSLua(dir .. "/" .. f)
         end
     end
+end
+
+local function addClProperties()
+    properties.Add("radio_mute", {
+        MenuLabel = "Mute",
+        Order     = 1000,
+        MenuIcon  = "icon16/SOUND_MUTE.png",
+        Filter    = function(self, ent, ply)
+            return rRadio.utils.canUseRadio(ent) and not rRadio.cl.mutedBoomboxes[ent]
+        end,
+        Action    = function(self, ent)
+            rRadio.cl.mutedBoomboxes[ent] = true
+        end
+    })
+
+    properties.Add("radio_unmute", {
+        MenuLabel = "Unmute",
+        Order     = 1001,
+        MenuIcon  = "icon16/SOUND.png",
+        Filter    = function(self, ent, ply)
+            return rRadio.utils.canUseRadio(ent) and rRadio.cl.mutedBoomboxes[ent]
+        end,
+        Action    = function(self, ent)
+            rRadio.cl.mutedBoomboxes[ent] = nil
+        end
+    })
 end
 
 local function addPrivileges()
@@ -177,7 +212,12 @@ elseif CLIENT then
     addClientFile("client/interface/cl_themes.lua")
     addClientFile("client/lang/cl_language_manager.lua")
     addClientFile("shared/sh_config.lua")
+
+    rRadio.cl = rRadio.cl or {}
+    rRadio.cl.mutedBoomboxes = rRadio.cl.mutedBoomboxes or {}
+
     rRadio.addClConVars()
+    addClProperties()
 
     if (rRadio.isClientLoadDisabled()) then
         rRadio.FormattedOutput("Client-side load disabled")

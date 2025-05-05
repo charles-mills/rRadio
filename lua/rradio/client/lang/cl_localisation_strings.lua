@@ -1,7 +1,7 @@
 local LANG = LANG or {
     de = {},
     en = {},
-    es = {},
+    es_es = {},
     fr = {},
     it = {},
     ja = {},
@@ -140,32 +140,32 @@ local LANG = LANG or {
   LANG.en_pt["ToOpenRadio"]         = "to set sail"
   
   -- Spanish
-  LANG.es["SelectCountry"]        = "Seleccionar país"
-  LANG.es["StopRadio"]           = "PARAR"
-  LANG.es["SearchPlaceholder"]   = "Buscar..."
-  LANG.es["PressKeyToOpen"]      = "Presione {key} para elegir una estación"
-  LANG.es["NoStations"]          = "Advertencia: No se encontraron estaciones para {country}"
-  LANG.es["Interact"]            = "Presiona E para interactuar"
-  LANG.es["PAUSED"]              = "PAUSADO"
-  LANG.es["Settings"]            = "Ajustes"
-  LANG.es["LanguageSelection"]   = "Selección de idioma"
-  LANG.es["ThemeSelection"]      = "Selección de tema"
-  LANG.es["SelectTheme"]         = "Seleccionar tema"
-  LANG.es["SelectLanguage"]      = "Seleccionar idioma"
-  LANG.es["SelectKey"]           = "Selecciona la tecla para abrir el menú de radio del auto"
-  LANG.es["GeneralOptions"]      = "Opciones generales"
-  LANG.es["ShowCarMessages"]     = "Mostrar animación al entrar en el vehículo"
-  LANG.es["ShowBoomboxHUD"]      = "Mostrar la interfaz del radio portátil"
-  LANG.es["Contribute"]          = "¿Quieres contribuir?"
-  LANG.es["SubmitPullRequest"]   = "Enviar una solicitud de cambios :)"
-  LANG.es["SuperadminSettings"]  = "Configuraciones de Administrador Principal"
-  LANG.es["MakeBoomboxPermanent"] = "Marcar radio portátil como permanente"
-  LANG.es["Enabled"]             = "Activado"
-  LANG.es["Disabled"]            = "Desactivado"
-  LANG.es["FavoriteStations"]    = "Estaciones favoritas"
-  LANG.es["TuningIn"]            = "Sintonizando"
-  LANG.es["KeyBinds"]            = "Asignación de teclas"
-  LANG.es["ToOpenRadio"]         = "para abrir la radio"
+  LANG.es_es["SelectCountry"]        = "Seleccionar país"
+  LANG.es_es["StopRadio"]           = "PARAR"
+  LANG.es_es["SearchPlaceholder"]   = "Buscar..."
+  LANG.es_es["PressKeyToOpen"]      = "Presione {key} para elegir una estación"
+  LANG.es_es["NoStations"]          = "Advertencia: No se encontraron estaciones para {country}"
+  LANG.es_es["Interact"]            = "Presiona E para interactuar"
+  LANG.es_es["PAUSED"]              = "PAUSADO"
+  LANG.es_es["Settings"]            = "Ajustes"
+  LANG.es_es["LanguageSelection"]   = "Selección de idioma"
+  LANG.es_es["ThemeSelection"]      = "Selección de tema"
+  LANG.es_es["SelectTheme"]         = "Seleccionar tema"
+  LANG.es_es["SelectLanguage"]      = "Seleccionar idioma"
+  LANG.es_es["SelectKey"]           = "Selecciona la tecla para abrir el menú de radio del auto"
+  LANG.es_es["GeneralOptions"]      = "Opciones generales"
+  LANG.es_es["ShowCarMessages"]     = "Mostrar animación al entrar en el vehículo"
+  LANG.es_es["ShowBoomboxHUD"]      = "Mostrar la interfaz del radio portátil"
+  LANG.es_es["Contribute"]          = "¿Quieres contribuir?"
+  LANG.es_es["SubmitPullRequest"]   = "Enviar una solicitud de cambios :)"
+  LANG.es_es["SuperadminSettings"]  = "Configuraciones de Administrador Principal"
+  LANG.es_es["MakeBoomboxPermanent"] = "Marcar radio portátil como permanente"
+  LANG.es_es["Enabled"]             = "Activado"
+  LANG.es_es["Disabled"]            = "Desactivado"
+  LANG.es_es["FavoriteStations"]    = "Estaciones favoritas"
+  LANG.es_es["TuningIn"]            = "Sintonizando"
+  LANG.es_es["KeyBinds"]            = "Asignación de teclas"
+  LANG.es_es["ToOpenRadio"]         = "para abrir la radio"
   
   -- French
   LANG.fr["SelectCountry"]        = "Sélectionnez un pays"
@@ -475,34 +475,6 @@ local LANG = LANG or {
   LANG.hr["KeyBinds"]            = "Dodjela tipki"
   LANG.hr["ToOpenRadio"]         = "za otvaranje radija"
   
-  -- Hebrew
-  LANG.he["SelectCountry"]        = "בחר מדינה"
-  LANG.he["StopRadio"]           = "עצור"
-  LANG.he["SearchPlaceholder"]   = "חיפוש..."
-  LANG.he["PressKeyToOpen"]      = "לחץ על {key} כדי לבחור תחנה"
-  LANG.he["NoStations"]          = "אזהרה: לא נמצאו תחנות עבור {country}"
-  LANG.he["Interact"]            = "לחץ על E כדי לקיים אינטראקציה"
-  LANG.he["PAUSED"]              = "מושהה"
-  LANG.he["Settings"]            = "הגדרות"
-  LANG.he["LanguageSelection"]   = "בחירת שפה"
-  LANG.he["ThemeSelection"]      = "בחירת ערכת נושא"
-  LANG.he["SelectTheme"]         = "בחר ערכת נושא"
-  LANG.he["SelectLanguage"]      = "בחר שפה"
-  LANG.he["SelectKey"]           = "בחר מקש לתפריט רדיו הרכב"
-  LANG.he["GeneralOptions"]      = "אפשרויות כלליות"
-  LANG.he["ShowCarMessages"]     = "הצג אנימציה בעת כניסה לרכב"
-  LANG.he["ShowBoomboxHUD"]      = "הצג את ממשק Boombox"
-  LANG.he["Contribute"]          = "רוצה לתרום?"
-  LANG.he["SubmitPullRequest"]   = "שלח Pull Request :)"
-  LANG.he["SuperadminSettings"]  = "הגדרות סופר-מנהל"
-  LANG.he["MakeBoomboxPermanent"] = "הפוך את ה-Boombox לקבוע"
-  LANG.he["Enabled"]             = "מופעל"
-  LANG.he["Disabled"]            = "מושבת"
-  LANG.he["FavoriteStations"]    = "תחנות מועדפות"
-  LANG.he["TuningIn"]            = "מכוון"
-  LANG.he["KeyBinds"]            = "קביעת מקשים"
-  LANG.he["ToOpenRadio"]         = "כדי לפתוח את הרדיו"
-  
   -- Slovak
   LANG.sk["SelectCountry"]        = "Vyberte krajinu"
   LANG.sk["StopRadio"]           = "STOP"
@@ -778,7 +750,7 @@ local LANG = LANG or {
     -- Pirate English
     LANG.en_pt[theme]   = LANG.en[theme]
     -- Spanish
-    LANG.es[theme]      = ({ dark="Oscuro", sleek="Elegante", cyberpunk="Cyberpunk", sunset="Atardecer", emerald="Esmeralda", synthwave="Synthwave", forest="Bosque", ocean="Océano", volcanic="Volcánico" })[theme]
+    LANG.es_es[theme]      = ({ dark="Oscuro", sleek="Elegante", cyberpunk="Cyberpunk", sunset="Atardecer", emerald="Esmeralda", synthwave="Synthwave", forest="Bosque", ocean="Océano", volcanic="Volcánico" })[theme]
     -- French
     LANG.fr[theme]      = ({ dark="Sombre", sleek="Élégant", cyberpunk="Cyberpunk", sunset="Coucher de soleil", emerald="Émeraude", synthwave="Synthwave", forest="Forêt", ocean="Océan", volcanic="Volcanique" })[theme]
     -- Italian

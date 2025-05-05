@@ -32,7 +32,7 @@ local DEFAULT_UI = {
     Disabled        = Color(180,180,180,255)
 }
 rRadio.config.UI = rRadio.config.UI or DEFAULT_UI
-rRadio.config.RadioVersion = "1.2.1"
+rRadio.config.RadioVersion = "1.2.2"
 
 rRadio.config.RegisteredConVars = rRadio.config.RegisteredConVars or {
     server = {},
@@ -146,7 +146,7 @@ if CLIENT then
         local code = raw:lower()
         code = code:gsub("%s+", "_"):gsub("-", "_"):gsub("[()]", "")
         local langMap = {
-        english = "en", german = "de", spanish = "es", español = "es",
+        english = "en", german = "de", spanish = "es_es", español = "es_es",
         french = "fr", français = "fr", italian = "it", italiano = "it",
         japanese = "ja", korean = "ko", portuguese = "pt_br", pt_br = "pt_br",
         russian = "ru", chinese = "zh_cn", simplified_chinese = "zh_cn",
