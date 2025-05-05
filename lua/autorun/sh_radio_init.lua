@@ -116,9 +116,7 @@ local function addCSLuaFiles()
         "rradio/shared",
         "rradio/client",
         "rradio/client/interface",
-        "rradio/client/lang",
-        "rradio/client/lang/data",
-        "rradio/client/stations",
+        "rradio/client/data/stationpacks",
         "entities/rammel_base_boombox",
         "entities/rammel_boombox",
         "entities/rammel_boombox_gold"
@@ -207,7 +205,7 @@ if SERVER then
     rRadio.FormattedOutput("Finished server-side initialization")
 elseif CLIENT then
     createFonts()
-
+    addPrivileges()
     addClientFile("shared/sh_utils.lua")
     addClientFile("client/interface/cl_themes.lua")
     addClientFile("client/lang/cl_language_manager.lua")
@@ -232,12 +230,12 @@ elseif CLIENT then
 
     addClientFile("client/lang/cl_localisation_strings.lua")
 
-    addClientFile("client/lang/data/data_1.lua")
-    addClientFile("client/lang/data/data_2.lua")
-    addClientFile("client/lang/data/data_3.lua")
+    addClientFile("client/data/stationpacks/data_1.lua")
+    addClientFile("client/data/stationpacks/data_2.lua")
+    addClientFile("client/data/stationpacks/data_3.lua")
 
-    for _, f in ipairs(file.Find("rradio/client/stations/*.lua", "LUA")) do
-        addClientFile("client/stations/" .. f)
+    for _, f in ipairs(file.Find("rradio/client/data/stationpacks/*.lua", "LUA")) do
+        addClientFile("client/data/stationpacks/" .. f)
     end
 
     rRadio.FormattedOutput("Loaded " .. cl_count .. "/38 client-side files")
