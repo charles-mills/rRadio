@@ -4,65 +4,49 @@ include("shared.lua")
 
 SavedBoomboxStates = SavedBoomboxStates or {}
 local lastPermissionMessageTime = lastPermissionMessageTime or {}
-local PERMISSION_MESSAGE_COOLDOWN = 3
+local PERMISSION_MESSAGE_COOLDOWN = 2.5
 
 function ENT:Initialize()
     self:SetModel(self.Model or "models/rammel/boombox.mdl")
     self:PhysicsInit(SOLID_VPHYSICS)
     self:SetMoveType(MOVETYPE_VPHYSICS)
     self:SetSolid(SOLID_VPHYSICS)
-
-    if self.Color then
-    self:SetColor(self.Color)
-    end
+    if self.Color then self:SetColor(self.Color) end
     local phys = self:GetPhysicsObject()
-    if phys:IsValid() then
-    phys:Wake()
-    end
+    if phys:IsValid() then phys:Wake() end
     self:SetNWString("StationName", "")
     self:SetNWString("StationURL", "")
     self:SetNWString("Status", "stopped")
     self:SetNWBool("IsPlaying", false)
     self:SetNWBool("IsPermanent", false)
-    if self.Config and self.Config.Volume then
-    self:SetNWFloat("Volume", self.Config.Volume())
-    end
+    if self.Config and self.Config.Volume then self:SetNWFloat("Volume", self.Config.Volume()) end
     self.IsPermanent = false
     self.NextUse = 0
-    self.InteractCooldown = 0.25
+    self.InteractCooldown = 0.2
 end
 
 function ENT:Use(activator, caller)
-    if not IsValid(activator) or not activator:IsPlayer() then return end
-    local now = CurTime()
-    if now < (self.NextUse or 0) then return end
-    self.NextUse = now + self.InteractCooldown
-
+    if not IsValid(activator) or not activator:IsPlayer() or CurTime() < (self.NextUse or 0) then return end
+    self.NextUse = CurTime() + self.InteractCooldown
     if rRadio.utils.canInteractWithBoombox(activator, self) then
         net.Start("rRadio.OpenMenu")
         net.WriteEntity(self)
         net.Send(activator)
-    else
-        if not lastPermissionMessageTime[activator] or
-           now - lastPermissionMessageTime[activator] >= PERMISSION_MESSAGE_COOLDOWN then
-            activator:ChatPrint("You do not have permission to use this boombox.")
-            lastPermissionMessageTime[activator] = now
-        end
+    elseif not lastPermissionMessageTime[activator] or CurTime() - lastPermissionMessageTime[activator] >= PERMISSION_MESSAGE_COOLDOWN then
+        activator:ChatPrint("You do not have permission to use this boombox.")
+        lastPermissionMessageTime[activator] = CurTime()
     end
 end
 
 function ENT:SpawnFunction(ply, tr, className)
     if not tr.Hit then return end
-    local spawnPos = tr.HitPos + tr.HitNormal * 16
     local ent = ents.Create(className)
     if not IsValid(ent) then return end
-    ent:SetPos(spawnPos)
+    ent:SetPos(tr.HitPos + tr.HitNormal * 15)
     ent:SetAngles(Angle(0, ply:EyeAngles().y - 90, 0))
     ent:Spawn()
     ent:Activate()
-    if IsValid(ply) then
-    ent:SetNWEntity("Owner", ply)
-    end
+    if IsValid(ply) then ent:SetNWEntity("Owner", ply) end
     return ent
 end
 
@@ -73,20 +57,15 @@ function ENT:StopRadio()
 end
 
 function ENT:CanTool(ply, trace, tool)
-    if not IsValid(ply) then return false end
-    if ply:IsSuperAdmin() then return true end
-    return ply == self:GetNWEntity("Owner")
-    end
-    function ENT:PhysgunPickup(ply)
-    if not IsValid(ply) then return false end
-    if ply:IsSuperAdmin() then return true end
-    return ply == self:GetNWEntity("Owner")
+    return IsValid(ply) and (ply:IsSuperAdmin() or ply == self:GetNWEntity("Owner"))
+end
+
+function ENT:PhysgunPickup(ply)
+    return IsValid(ply) and (ply:IsSuperAdmin() or ply == self:GetNWEntity("Owner"))
 end
 
 if rRadio.config.DisablePushDamage then
-    function ENT:PhysicsCollide(data, phys)
-        return
-    end
+    function ENT:PhysicsCollide(data, phys) end
 end
 
 hook.Add("PlayerDisconnected", "CleanupBoomboxPermissionCooldowns", function(ply)
