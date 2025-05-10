@@ -1165,6 +1165,28 @@ net.Receive(
         end
     end
 )
+
+net.Receive("rRadio.ListCustomStations", function()
+    local count = net.ReadUInt(16)
+    if count == 0 then
+        MsgC(Color(255,255,255), "[rRadio] No custom stations found.\n")
+        return
+    end
+
+    MsgC(Color(255,0,0),   "[rRadio] Custom stations:\n")
+    for i = 1, count do
+        local name = net.ReadString()
+        local url  = net.ReadString()
+        MsgC(Color(255,0,0), "["..i.."] ",
+             Color(255,255,255), name..": "..url.."\n")
+    end
+
+    MsgC(Color(255,0,0), "\n!! ",
+         Color(255,255,255), "Remove a Station: !radiorem <Name> or <URL>\n")
+    MsgC(Color(255,0,0), "!! ",
+         Color(255,255,255), "Add a Station: !radioadd <Name> <URL>\n")
+end)
+
 net.Receive(
     "rRadio.PlayVehicleAnimation",
     function()

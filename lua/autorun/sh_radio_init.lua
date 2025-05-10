@@ -197,6 +197,7 @@ local function registerNetStrings()
     util.AddNetworkString("rRadio.SendPersistentConfirmation")
     util.AddNetworkString("rRadio.SetConfigUpdate")
     util.AddNetworkString("rRadio.CustomStationsUpdate")
+    util.AddNetworkString("rRadio.ListCustomStations")
 end
 
 if SERVER then

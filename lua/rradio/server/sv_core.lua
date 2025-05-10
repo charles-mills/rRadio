@@ -423,22 +423,27 @@ concommand.Add("radio_reload_config", function(ply)
     end
 end)
 
-concommand.Add("rammel_rradio_list_custom", function(ply)
-    if not CAMI.PlayerHasAccess(ply, "rradio.AddCustomStation", nil) then
+
+concommand.Add(
+    "rammel_rradio_list_custom",
+    function(ply, cmd, args)
+      if not IsValid(ply)
+        or not CAMI.PlayerHasAccess(ply, "rradio.AddCustomStation", nil)
+      then
         ply:ChatPrint("You do not have permission to use this command.")
         return
-    end
+      end
 
-    local stations = rRadio.sv.CustomStations:GetAll() 
-
-    if #stations == 0 then
-        MsgC(Color(255,255,255), "No custom stations found.\n")
-    end
-
-    for x, station in ipairs(stations) do
-        MsgC(Color(255,0,0), "[" .. x .. "] ", Color(255,255,255), station.name .. ": " .. station.url .. "\n")
-    end
-
-    MsgC(Color(255,0,0), "\n!! ", Color(255,255,255), "Remove a Station: !radiorem <Station Name> or !radiorem <Station URL>")
-    MsgC(Color(255,0,0), "\n!! ", Color(255,255,255), "Add a Station: !radioadd <Station Name> <Station URL>\n")
-end)
+      local stations = rRadio.sv.CustomStations:GetAll()
+      net.Start("rRadio.ListCustomStations")
+        net.WriteUInt(#stations, 16)
+        for _, st in ipairs(stations) do
+          net.WriteString(st.name)
+          net.WriteString(st.url)
+        end
+      net.Send(ply)
+    end,
+    nil,
+    "Lists all custom radio stations",
+    FCVAR_CLIENTCMD_CAN_EXECUTE
+)
