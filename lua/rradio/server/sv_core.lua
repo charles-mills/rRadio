@@ -8,7 +8,7 @@ rRadio.sv.PlayerCooldowns     = rRadio.sv.PlayerCooldowns or {}
 rRadio.sv.volumeUpdateQueue   = rRadio.sv.volumeUpdateQueue or {}
 rRadio.sv.EntityVolumes       = rRadio.sv.EntityVolumes or {}
 rRadio.sv.BoomboxStatuses     = rRadio.sv.BoomboxStatuses or {}
-rRadio.sv.CustomStations      = rRadio.sv.CustomStations or { data = {} }
+rRadio.sv.CustomStations      = rRadio.sv.CustomStations or { data = {}, urlMap = {}, nameMap = {} }
 
 local GLOBAL_COOLDOWN = 1
 local lastGlobalAction = 0
@@ -26,6 +26,8 @@ function rRadio.sv.CustomStations:Load()
     local contents = file.Read("rradio/customstations.json", "DATA")
     local tbl = contents and util.JSONToTable(contents) or {}
     self.data = {}
+    self.urlMap = {}
+    self.nameMap = {}
 
     for _, v in ipairs(tbl) do
         if type(v) == "string" then
@@ -33,6 +35,8 @@ function rRadio.sv.CustomStations:Load()
         elseif type(v) == "table" and v.url then
             table.insert(self.data, v)
         end
+        self.urlMap[v.url] = true
+        self.nameMap[v.name] = true
     end
 end
 
@@ -42,11 +46,10 @@ function rRadio.sv.CustomStations:Save()
 end
 
 function rRadio.sv.CustomStations:Add(name, url)
-    for _, st in ipairs(self.data) do
-        if st.url == url then return end
-        if st.name == name then return end
-    end
+    if self.urlMap[url] or self.nameMap[name] then return end
     table.insert(self.data, { name = name, url = url })
+    self.urlMap[url] = true
+    self.nameMap[name] = true
     self:Save()
 end
 

@@ -196,7 +196,6 @@ local function registerNetStrings()
     util.AddNetworkString("rRadio.RemovePersistent")
     util.AddNetworkString("rRadio.SendPersistentConfirmation")
     util.AddNetworkString("rRadio.SetConfigUpdate")
-    util.AddNetworkString("rRadio.AddCustomStation")
     util.AddNetworkString("rRadio.CustomStationsUpdate")
 end
 
