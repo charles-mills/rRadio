@@ -1054,7 +1054,7 @@ net.Receive(
         local volume = net.ReadFloat()
 
         if rRadio.config.SecureStationLoad then
-            if not IsUrlAllowed(url) then
+            if not (IsUrlAllowed(url) or (IsValid(entity) and entity:GetNWBool("IsPermanent"))) then
                 return
             end
         end

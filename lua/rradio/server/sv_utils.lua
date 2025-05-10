@@ -112,9 +112,12 @@ function rRadio.sv.utils.SendActiveRadiosToPlayer(ply)
     end
 
     rRadio.DevPrint("[rRADIO] SendActiveRadiosToPlayer: Sending " .. table.Count(rRadio.sv.ActiveRadios) .. " active radios to " .. ply:Nick())
+
     for entIndex, radio in pairs(rRadio.sv.ActiveRadios) do
         local entity = Entity(entIndex)
         rRadio.DevPrint("[rRADIO] Sending radio info for entity " .. entIndex .. " to " .. ply:Nick())
+        rRadio.DevPrint("[rRADIO] Radio station name: " .. radio.stationName .. " URL: " .. radio.url)
+
         net.Start("rRadio.PlayStation")
         net.WriteEntity(entity)
         net.WriteString(radio.stationName)
