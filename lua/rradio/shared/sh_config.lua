@@ -13,7 +13,7 @@ rRadio.config.PrioritiseCustom  = true -- the custom / server added station cate
 
 -- name of the category for all custom stations, e.g. "Our Favourite Stations!"
 -- the key is only localised if set to "Custom" (case sensitive)
-rRadio.config.CustomStationCategoryName = "Custom"
+rRadio.config.CustomStationCategory = "Custom"
 
 -----------------------------------------------------------------------
 
@@ -22,6 +22,7 @@ if rRadio.DEV then
     rRadio.config.DriverPlayOnly = true
     rRadio.config.AnimationDefaultOn = false
     rRadio.config.ClientHardDisable = true
+    rRadio.config.CustomStationCategory = "Rammel's Top Stations"
 end
 
 -----------------------------------------------------------------------

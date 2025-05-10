@@ -57,6 +57,27 @@ function rRadio.sv.CustomStations:GetAll()
     return self.data
 end
 
+function rRadio.sv.CustomStations:Remove(key)
+    local removed = false
+    for i = #self.data, 1, -1 do
+        local st = self.data[i]
+        if st.url == key or st.name == key then
+            table.remove(self.data, i)
+            removed = true
+        end
+    end
+    if removed then
+        self.urlMap = {}
+        self.nameMap = {}
+        for _, st in ipairs(self.data) do
+            self.urlMap[st.url] = true
+            self.nameMap[st.name] = true
+        end
+        self:Save()
+    end
+    return removed
+end
+
 rRadio.sv.CustomStations:Load()
 
 net.Receive("rRadio.PlayStation", function(len, ply)
@@ -247,6 +268,25 @@ hook.Add("PlayerSay", "rRadio.HandleAddStation", function(ply, text, teamChat)
     net.Start("rRadio.CustomStationsUpdate")
         net.WriteTable(rRadio.sv.CustomStations:GetAll())
     net.Broadcast()
+    return ""
+end)
+
+hook.Add("PlayerSay", "rRadio.HandleRemoveStation", function(ply, text, teamChat)
+    local key = text:match('^!radiorem%s+"([^"]+)"')
+    if not key then return end
+    if not CAMI.PlayerHasAccess(ply, "rradio.AddCustomStation", nil) then
+        ply:ChatPrint("[rRadio] You don't have permission.")
+        return ""
+    end
+    local removed = rRadio.sv.CustomStations:Remove(key)
+    if removed then
+        ply:ChatPrint(string.format("[rRadio] Removed custom station '%s'.", key))
+        net.Start("rRadio.CustomStationsUpdate")
+            net.WriteTable(rRadio.sv.CustomStations:GetAll())
+        net.Broadcast()
+    else
+        ply:ChatPrint("[rRadio] No matching station found for " .. key)
+    end
     return ""
 end)
 

@@ -145,7 +145,7 @@ LoadStationData()
 
 net.Receive("rRadio.CustomStationsUpdate", function()
     local list = net.ReadTable()
-    local cat = rRadio.config.CustomStationCategoryName or "Custom"
+    local cat = rRadio.config.CustomStationCategory or "Custom"
     StationData[cat] = {}
     for _, st in ipairs(list) do
         if type(st)=="table" and st.name and st.url then
@@ -225,6 +225,17 @@ local function populateCountries(panel, filterText, updateList)
         function(c) return c.translated end, 0,
         function(c) return c.isPrioritized and 0.1 or 0 end
     )
+
+    if rRadio.config.PrioritiseCustom then
+        local customKey = rRadio.config.CustomStationCategory or rRadio.config.CustomStationCategoryName or "Custom"
+        for i, c in ipairs(countries) do
+            if c.original == customKey then
+                table.remove(countries, i)
+                table.insert(countries, 1, c)
+                break
+            end
+        end
+    end
     for _, c in ipairs(countries) do
         local btn = rRadio.interface.MakeStationButton(panel)
         btn.Paint = function(self,w,h)
@@ -800,14 +811,8 @@ openRadioMenu = function(openSettings, opts)
             end
             searchBox:SetVisible(true)
             stationListPanel:SetVisible(true)
-            stationDataLoaded = false
-            LoadStationData()
-            timer.Simple(0, function()
-                populateList(stationListPanel, backButton, searchBox, true)
-            end)
-            backButton:SetVisible(selectedCountry ~= nil or favoritesMenuOpen)
-            backButton:SetEnabled(selectedCountry ~= nil or favoritesMenuOpen)
-        elseif selectedCountry or favoritesMenuOpen then
+            populateList(stationListPanel, backButton, searchBox, true)
+        else
             selectedCountry = nil
             favoritesMenuOpen = false
             backButton:SetVisible(false)
