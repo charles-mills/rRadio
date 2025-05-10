@@ -18,8 +18,7 @@ Steam: https://steamcommunity.com/id/rammel/
 
 Remaining bugs:
 
-- CAMI check spam (cl and sv)
-- Language packs not loading
+- (Some) Language packs not loading for an extremely mysterious reason unknown to all
 
 ]]
 
@@ -30,7 +29,7 @@ local dev_id = "3465709662"
 local pub_id = "3318060741"
 
 rRadio = rRadio or {}
-rRadio.DEV = true
+rRadio.DEV = false
 
 function rRadio.DevPrint(text)
     if not rRadio.DEV then return end
@@ -125,12 +124,14 @@ local function addCSLuaFiles()
         "rradio/shared",
         "rradio/client",
         "rradio/client/interface",
+        "rradio/client/lang",
         "rradio/client/data/langpacks",
         "rradio/client/data/stationpacks",
         "entities/rammel_base_boombox",
         "entities/rammel_boombox",
         "entities/rammel_boombox_gold"
     }
+    
     for _, dir in ipairs(dirs) do
         for _, f in ipairs(file.Find(dir .. "/*.lua", "LUA")) do
             addCSLua(dir .. "/" .. f)
@@ -168,7 +169,13 @@ local function addPrivileges()
     local privs = {
         {
             Name = "rradio.UseAll",
-            Description = "Allows a player (typically an admin) to use all boomboxes",
+            Description = "Allows a usergroup to use all boomboxes regardless of owner",
+            MinAccess = "superadmin"
+        },
+
+        {
+            Name = "rradio.AddCustomStation",
+            Description = "Allows a usergroup to add custom stations to the client station list",
             MinAccess = "superadmin"
         }
     }
@@ -189,6 +196,8 @@ local function registerNetStrings()
     util.AddNetworkString("rRadio.RemovePersistent")
     util.AddNetworkString("rRadio.SendPersistentConfirmation")
     util.AddNetworkString("rRadio.SetConfigUpdate")
+    util.AddNetworkString("rRadio.AddCustomStation")
+    util.AddNetworkString("rRadio.CustomStationsUpdate")
 end
 
 if SERVER then
@@ -219,6 +228,7 @@ elseif CLIENT then
     addClientFile("shared/sh_utils.lua")
     addClientFile("client/interface/cl_themes.lua")
     addClientFile("client/lang/cl_language_manager.lua")
+    addClientFile("client/lang/cl_localisation_strings.lua")
     addClientFile("shared/sh_config.lua")
 
     rRadio.cl = rRadio.cl or {}
@@ -238,11 +248,9 @@ elseif CLIENT then
     addClientFile("client/interface/cl_interface_utils.lua")
     addClientFile("client/interface/cl_core.lua")
 
-    addClientFile("client/lang/cl_localisation_strings.lua")
-
-    addClientFile("client/data/stationpacks/data_1.lua")
-    addClientFile("client/data/stationpacks/data_2.lua")
-    addClientFile("client/data/stationpacks/data_3.lua")
+    addClientFile("client/data/langpacks/data_1.lua")
+    addClientFile("client/data/langpacks/data_2.lua")
+    addClientFile("client/data/langpacks/data_3.lua")
 
     for _, f in ipairs(file.Find("rradio/client/data/stationpacks/*.lua", "LUA")) do
         addClientFile("client/data/stationpacks/" .. f)

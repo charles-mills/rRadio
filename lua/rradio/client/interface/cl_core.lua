@@ -143,6 +143,19 @@ local function LoadStationData()
 end
 LoadStationData()
 
+net.Receive("rRadio.CustomStationsUpdate", function()
+    local list = net.ReadTable()
+    local cat = rRadio.config.CustomStationCategoryName or "Custom"
+    StationData[cat] = {}
+    for _, st in ipairs(list) do
+        if type(st)=="table" and st.name and st.url then
+            table.insert(StationData[cat], { name = st.name, url = st.url })
+            allowedURLSet[st.url] = true
+        end
+    end
+    if radioMenuOpen then openRadioMenu() end
+end)
+
 local function IsUrlAllowed(urlToCheck)
     return allowedURLSet[urlToCheck] == true
 end

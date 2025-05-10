@@ -8,6 +8,7 @@ rRadio.sv.PlayerCooldowns     = rRadio.sv.PlayerCooldowns or {}
 rRadio.sv.volumeUpdateQueue   = rRadio.sv.volumeUpdateQueue or {}
 rRadio.sv.EntityVolumes       = rRadio.sv.EntityVolumes or {}
 rRadio.sv.BoomboxStatuses     = rRadio.sv.BoomboxStatuses or {}
+rRadio.sv.CustomStations      = rRadio.sv.CustomStations or { data = {} }
 
 local GLOBAL_COOLDOWN = 1
 local lastGlobalAction = 0
@@ -20,6 +21,40 @@ rRadio.sv.RadioTimers = {
 rRadio.sv.RadioDataTables = {
     volumeUpdateQueue   = true,
 }
+
+function rRadio.sv.CustomStations:Load()
+    local contents = file.Read("rradio/customstations.json", "DATA")
+    local tbl = contents and util.JSONToTable(contents) or {}
+    self.data = {}
+
+    for _, v in ipairs(tbl) do
+        if type(v) == "string" then
+            table.insert(self.data, { name = v, url = v })
+        elseif type(v) == "table" and v.url then
+            table.insert(self.data, v)
+        end
+    end
+end
+
+function rRadio.sv.CustomStations:Save()
+    file.CreateDir("rradio")
+    file.Write("rradio/customstations.json", util.TableToJSON(self.data))
+end
+
+function rRadio.sv.CustomStations:Add(name, url)
+    for _, st in ipairs(self.data) do
+        if st.url == url then return end
+        if st.name == name then return end
+    end
+    table.insert(self.data, { name = name, url = url })
+    self:Save()
+end
+
+function rRadio.sv.CustomStations:GetAll()
+    return self.data
+end
+
+rRadio.sv.CustomStations:Load()
 
 net.Receive("rRadio.PlayStation", function(len, ply)
     rRadio.DevPrint("[rRADIO] Server got rRadio.PlayStation from: " .. ply:Nick())
@@ -178,6 +213,38 @@ hook.Add("PlayerInitialSpawn", "rRadio.SendActiveRadiosOnJoin", function(ply)
             rRadio.sv.utils.SendActiveRadiosToPlayer(ply)
         end
     end)
+end)
+
+hook.Add("PlayerInitialSpawn", "rRadio.SendCustomStations", function(ply)
+    timer.Simple(1, function()
+        if IsValid(ply) then
+            net.Start("rRadio.CustomStationsUpdate")
+                net.WriteTable(rRadio.sv.CustomStations:GetAll())
+            net.Send(ply)
+        end
+    end)
+end)
+
+hook.Add("PlayerSay", "rRadio.HandleAddStation", function(ply, text, teamChat)
+    local name, url = text:match('^!radioadd%s+"([^"]+)"%s+"([^"]+)"')
+    if not name or not url then return end
+    if not CAMI.PlayerHasAccess(ply, "rradio.AddCustomStation", nil) then
+        ply:ChatPrint("[rRadio] You don't have permission.")
+        return ""
+    end
+
+    if not url:match("^https?://") then
+        ply:ChatPrint("[rRadio] Invalid URL.")
+        return ""
+    end
+
+    rRadio.sv.CustomStations:Add(name, url)
+    ply:ChatPrint(string.format("[rRadio] Added custom station '%s'.", name))
+    
+    net.Start("rRadio.CustomStationsUpdate")
+        net.WriteTable(rRadio.sv.CustomStations:GetAll())
+    net.Broadcast()
+    return ""
 end)
 
 hook.Add("PlayerEnteredVehicle", "rRadio.RadioVehicleHandling", function(ply, vehicle)
