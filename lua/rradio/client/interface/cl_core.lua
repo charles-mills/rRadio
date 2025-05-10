@@ -216,10 +216,13 @@ end
 local function populateCountries(panel, filterText, updateList)
     local items = {}
     local raw = {}
+    local customKey = rRadio.config.CustomStationCategory or "Custom"
     for country,_ in pairs(StationData) do
-        local formatted = country:gsub("_"," "):gsub("(%a)([%w_']*)", function(f,r) return f:upper()..r:lower() end)
-        local trans = rRadio.LanguageManager:GetCountryTranslation(formatted) or formatted
-        raw[#raw+1] = { original=country, translated=trans, isPrioritized=rRadio.interface.favoriteCountries[country] }
+        if not (country == customKey and (#StationData[country] == 0)) then
+            local formatted = country:gsub("_"," "):gsub("(%a)([%w_']*)", function(f,r) return f:upper()..r:lower() end)
+            local trans = rRadio.LanguageManager:GetCountryTranslation(formatted) or formatted
+            raw[#raw+1] = { original=country, translated=trans, isPrioritized=rRadio.interface.favoriteCountries[country] }
+        end
     end
     local countries = rRadio.interface.fuzzyFilter(filterText, raw,
         function(c) return c.translated end, 0,
@@ -227,11 +230,20 @@ local function populateCountries(panel, filterText, updateList)
     )
 
     if rRadio.config.PrioritiseCustom then
-        local customKey = rRadio.config.CustomStationCategory or rRadio.config.CustomStationCategoryName or "Custom"
         for i, c in ipairs(countries) do
             if c.original == customKey then
-                table.remove(countries, i)
-                table.insert(countries, 1, c)
+
+                local customEntry = table.remove(countries, i)
+
+                local insertAt = 1
+                for j, d in ipairs(countries) do
+                    if not d.isPrioritized then
+                        insertAt = j
+                        break
+                    end
+                    insertAt = j + 1
+                end
+                table.insert(countries, insertAt, customEntry)
                 break
             end
         end

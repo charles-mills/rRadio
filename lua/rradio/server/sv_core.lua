@@ -148,6 +148,13 @@ net.Receive("rRadio.PlayStation", function(len, ply)
     rRadio.sv.utils.AddActiveRadio(ent, station, stationURL, volume)
     rRadio.DevPrint("[rRADIO] ActiveRadios now contains:")
 
+    for k, v in pairs(rRadio.sv.ActiveRadios) do
+        rRadio.DevPrint("[rRADIO] ActiveRadio " .. k .. ": " .. v.entity:EntIndex())
+        rRadio.DevPrint("[rRADIO] ActiveRadio " .. k .. ": " .. v.stationName)
+        rRadio.DevPrint("[rRADIO] ActiveRadio " .. k .. ": " .. v.url)
+        rRadio.DevPrint("[rRADIO] ActiveRadio " .. k .. ": " .. v.volume)
+    end
+
     rRadio.sv.utils.BroadcastPlay(ent, station, stationURL, volume)
 
     if ent.IsPermanent then
@@ -414,4 +421,24 @@ concommand.Add("radio_reload_config", function(ply)
     else
         print("[rRADIO] Configuration reloaded!")
     end
+end)
+
+concommand.Add("rammel_rradio_list_custom", function(ply)
+    if not CAMI.PlayerHasAccess(ply, "rradio.AddCustomStation", nil) then
+        ply:ChatPrint("You do not have permission to use this command.")
+        return
+    end
+
+    local stations = rRadio.sv.CustomStations:GetAll() 
+
+    if #stations == 0 then
+        MsgC(Color(255,255,255), "No custom stations found.\n")
+    end
+
+    for x, station in ipairs(stations) do
+        MsgC(Color(255,0,0), "[" .. x .. "] ", Color(255,255,255), station.name .. ": " .. station.url .. "\n")
+    end
+
+    MsgC(Color(255,0,0), "\n!! ", Color(255,255,255), "Remove a Station: !radiorem <Station Name> or !radiorem <Station URL>")
+    MsgC(Color(255,0,0), "\n!! ", Color(255,255,255), "Add a Station: !radioadd <Station Name> <Station URL>\n")
 end)
