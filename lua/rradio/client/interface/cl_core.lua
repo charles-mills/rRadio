@@ -25,6 +25,10 @@ local stationDataLoaded = false
 local isSearching = false
 
 local Scale = rRadio.utils.Scale
+local IsValid, pairs, ipairs = IsValid, pairs, ipairs
+local LocalPlayer, ents = LocalPlayer, ents
+
+local playerVeh = nil
 
 local VOLUME_ICONS = {
     MUTE = Material("hud/vol_mute.png", "smooth"),
@@ -1111,44 +1115,29 @@ net.Receive(
     end
 )
 
-hook.Add(
-    "Think",
-    "rRadio.UpdateAllStations",
-    function()
-        for ent, station in pairs(rRadio.cl.radioSources) do
-            if not IsValid(ent) or not IsValid(station) then
-                if IsValid(station) then
-                    station:Stop()
-                end
-                rRadio.cl.radioSources[ent] = nil
-                activeStationCount = rRadio.interface.updateStationCount()
-            else
-                local actual = ent
-                if ent:IsVehicle() then
-                    local parent = ent:GetParent()
-                    if IsValid(parent) then actual = parent end
-                end
-                station:SetPos(actual:GetPos())
-                local plyPos = LocalPlayer():GetPos()
-                local entPos = actual:GetPos()
-                local distSqr = plyPos:DistToSqr(entPos)
-                local inCar = false
-                if actual:IsVehicle() then
-                    if LocalPlayer():GetVehicle() == ent then
-                        inCar = true
-                    else
-                        for _, pod in ipairs(ents.FindByClass("prop_vehicle_prisoner_pod")) do
-                            if IsValid(pod) and pod:GetParent() == actual and pod:GetDriver() == LocalPlayer() then
-                                inCar = true; break
-                            end
-                        end
-                    end
-                end
-                rRadio.interface.updateRadioVolume(station, distSqr, inCar, actual)
-            end
+local function UpdateAllStations()
+    local ply = LocalPlayer()
+    local plyPos = ply:GetPos()
+    if not playerVeh then
+        playerVeh = rRadio.utils.GetVehicle(ply:GetVehicle())
+    end
+    for ent, station in pairs(rRadio.cl.radioSources) do
+        if not IsValid(ent) or not IsValid(station) then
+            if IsValid(station) then station:Stop() end
+            rRadio.cl.radioSources[ent] = nil
+            activeStationCount = rRadio.interface.updateStationCount()
+        else
+            local actual = rRadio.interface.GetVehicleEntity(ent)
+            station:SetPos(actual:GetPos())
+            local distSqr = plyPos:DistToSqr(actual:GetPos())
+            local inCar = (playerVeh == actual)
+            rRadio.interface.updateRadioVolume(station, distSqr, inCar, actual)
         end
     end
-)
+end
+
+timer.Create("rRadio.UpdateStationsTimer", 0.2, 0, UpdateAllStations)
+
 net.Receive(
     "rRadio.OpenMenu",
     function()
