@@ -30,14 +30,18 @@ local LocalPlayer, ents = LocalPlayer, ents
 
 local playerVeh = nil
 
-local VOLUME_ICONS = {
+local icons = icons or {}
+
+icons.volume = {
     MUTE = Material("hud/vol_mute.png", "smooth"),
     LOW = Material("hud/vol_down.png", "smooth"),
     HIGH = Material("hud/vol_up.png", "smooth")
 }
 
-local STAR_FULL  = Material("hud/star_full.png", "smooth")
-local STAR_EMPTY = Material("hud/star.png",      "smooth")
+icons.star = {
+    FULL = Material("hud/star_full.png", "smooth"),
+    EMPTY = Material("hud/star.png", "smooth")
+}
 
 local VOLUME_DEBOUNCE_TIMER = "rRadio.VolumeDebounce"
 local pendingVolume, pendingEntity
@@ -65,7 +69,7 @@ end
 local function SharedStarPaint(self, w, h)
     local entry = UIRegistry.stars[self.UIKey]
     if not entry then return end
-    local mat = isFav(entry.catTable, entry.key, entry.subKey) and STAR_FULL or STAR_EMPTY
+    local mat = isFav(entry.catTable, entry.key, entry.subKey) and icons.star.FULL or icons.star.EMPTY
     surface.SetMaterial(mat)
     surface.SetDrawColor(rRadio.config.UI.TextColor)
     surface.DrawTexturedRect(0, 0, w, h)
@@ -229,7 +233,7 @@ local function populateFavorites(panel, updateList)
         favBtn.Paint = function(self,w,h)
             local bg = self:IsHovered() and rRadio.config.UI.ButtonHoverColor or rRadio.config.UI.ButtonColor
             draw.RoundedBox(8,0,0,w,h,bg)
-            surface.SetMaterial(Material("hud/star_full.png"))
+            surface.SetMaterial(icons.star.FULL)
             surface.SetDrawColor(rRadio.config.UI.TextColor)
             surface.DrawTexturedRect(Scale(10), h/2-Scale(12), Scale(24),Scale(24))
         end
@@ -911,7 +915,7 @@ openRadioMenu = function(openSettings, opts)
     local volumeIcon = vgui.Create("DImage", volumePanel)
     volumeIcon:SetPos(Scale(10), (volumePanel:GetTall() - volumeIconSize) / 2)
     volumeIcon:SetSize(volumeIconSize, volumeIconSize)
-    volumeIcon:SetMaterial(VOLUME_ICONS.HIGH)
+    volumeIcon:SetMaterial(icons.volume.HIGH)
     local function updateVolumeIcon(volumeIcon, value)
         if not IsValid(volumeIcon) then
             return
@@ -923,11 +927,11 @@ openRadioMenu = function(openSettings, opts)
         local maxVol = (rRadio.config.MaxVolume and rRadio.config.MaxVolume() or 1.0)
         value = math.min(value, maxVol)
         if value < 0.01 then
-            iconMat = VOLUME_ICONS.MUTE
+            iconMat = icons.volume.MUTE
         elseif value <= 0.65 then
-            iconMat = VOLUME_ICONS.LOW
+            iconMat = icons.volume.LOW
         else
-            iconMat = VOLUME_ICONS.HIGH
+            iconMat = icons.volume.HIGH
         end
         if iconMat then
             volumeIcon:SetMaterial(iconMat)
