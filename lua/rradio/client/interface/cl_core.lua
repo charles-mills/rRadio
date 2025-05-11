@@ -2,13 +2,15 @@ if rRadio.clCoreLoaded or SERVER then return end
 
 rRadio.cl = rRadio.cl or {}
 
-rRadio.cl.radioSources = rRadio.cl.radioSources or {}
+rRadio.cl.radioSources = setmetatable({}, {__mode = "v"})
 rRadio.cl.BoomboxStatuses = rRadio.cl.BoomboxStatuses or {}
 
 local allowedURLSet = {}
 local StationData = {}
 
-local entityVolumes = entityVolumes or {}
+local entityVolumes = setmetatable({}, {__mode = "k"})
+local currentlyPlayingStations = setmetatable({}, {__mode = "k"})
+
 local MAX_CLIENT_STATIONS = 10
 local currentFrame = nil
 local settingsMenuOpen = false
@@ -20,7 +22,6 @@ local activeStationCount = 0
 local selectedCountry = nil
 local radioMenuOpen = false
 local lastStationSelectTime = 0
-local currentlyPlayingStations = {}
 local stationDataLoaded = false
 local isSearching = false
 
