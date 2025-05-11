@@ -1,5 +1,4 @@
 --[[
-
            /$$$$$$$                  /$$ /$$          
           | $$__  $$                | $$|__/          
   /$$$$$$ | $$  \ $$  /$$$$$$   /$$$$$$$ /$$  /$$$$$$ 
@@ -11,12 +10,10 @@
 
 Discord: crjmx
 Steam: https://steamcommunity.com/id/rammel/
-
 ]]
 
 local cl_count = 0
 local cl_load_count = 0
-
 local dev_id = "3465709662"
 local pub_id = "3318060741"
 
@@ -25,51 +22,43 @@ rRadio.DEV = false
 
 function rRadio.DevPrint(text)
     if not rRadio.DEV then return end
-
-    print("[RRADIO DEV] " .. text .. "\n")
+    print("[RRADIO DEV] " .. text)
 end
 
 function rRadio.FormattedOutput(text)
-    if SERVER then
-        MsgC(Color(0,200,255), "[rRadio] ", Color(255,255,255), text .. "\n")
-    elseif CLIENT then
-        MsgC(Color(0,255,0), "[rRadio] ", Color(255,255,255), text .. "\n")
-    end
+    local prefixColor = SERVER and Color(0,200,255) or Color(0,255,0)
+    MsgC(prefixColor, "[rRadio] ", Color(255,255,255), text .. "\n")
 end
 
 function rRadio.addClConVars()
     if not rRadio.config then 
-        rRadio.FormattedOutput("[RRADIO] rRadio.config not found, skipping client-side convars")
+        rRadio.FormattedOutput("Config not found, skipping client convars")
         return false
     end
 
     if SERVER then return end
     
-    CreateClientConVar("rammel_rradio_vehicle_animation", rRadio.config.AnimationDefaultOn and "1" or "0", true, false, "Toggle the animation upon entering a vehicle.")
-    CreateClientConVar("rammel_rradio_boombox_hud", "1", true, false, "Show or hide the HUD for the boombox.")
-    CreateClientConVar("rammel_rradio_menu_key", "21", true, false, "Select the key to open the car radio menu.")
-    CreateClientConVar("rammel_rradio_menu_theme", "dark", true, false, "Set the theme for the radio.")
-    CreateClientConVar("rammel_rradio_enabled", "1", true, false, "Enable or disable rRadio.")
+    CreateClientConVar("rammel_rradio_vehicle_animation", rRadio.config.AnimationDefaultOn and "1" or "0", true, false, "Toggle vehicle entry animation")
+    CreateClientConVar("rammel_rradio_boombox_hud", "1", true, false, "Toggle boombox HUD")
+    CreateClientConVar("rammel_rradio_menu_key", "21", true, false, "Car radio menu key")
+    CreateClientConVar("rammel_rradio_menu_theme", "dark", true, false, "Radio theme")
+    CreateClientConVar("rammel_rradio_enabled", "1", true, false, "Enable rRadio")
 
     return true
 end
 
 function rRadio.isClientLoadDisabled()
-    if not rRadio.config then return false end
-
-    if SERVER then return false end
-
+    if SERVER or not rRadio.config then return false end
     local cv = GetConVar("rammel_rradio_enabled")
-
-    if not cv then
-        return false
-    end
-
-    return rRadio.config.ClientHardDisable and not cv:GetBool()
+    return cv and rRadio.config.ClientHardDisable and not cv:GetBool()
 end
 
 local function addClientFile(filename)
-    include("rradio/" .. filename)
+    local success, err = pcall(include, "rradio/" .. filename)
+    if not success then
+        rRadio.FormattedOutput("Failed to load " .. filename .. ": " .. err)
+        return
+    end
     cl_count = cl_count + 1
 end
 
@@ -79,36 +68,15 @@ local function addCSLua(filename)
 end
 
 local function createFonts()
-    surface.CreateFont(
-        "rRadio.Roboto24",
-        {
-            font = "Roboto",
-            size = 24,
-            weight = 500,
-            antialias = true,
-            extended = true
-        }
-    )
-
-    surface.CreateFont(
-        "rRadio.Roboto5",
-        {
-            font = "Roboto",
-            size = ScreenScale(5),
-            weight = 500,
-            antialias = true,
-            extended = true
-        }
-    )
-
-    surface.CreateFont(
-        "rRadio.Roboto8",
-        {
-            font = "Roboto",
-            size = ScreenScale(8),
-            weight = 700
-        }
-    )
+    local fonts = {
+        ["rRadio.Roboto24"] = { font = "Roboto", size = 24, weight = 500, antialias = true, extended = true },
+        ["rRadio.Roboto5"] = { font = "Roboto", size = ScreenScale(5), weight = 500, antialias = true, extended = true },
+        ["rRadio.Roboto8"] = { font = "Roboto", size = ScreenScale(8), weight = 700, antialias = true, extended = true }
+    }
+    
+    for name, settings in pairs(fonts) do
+        surface.CreateFont(name, settings)
+    end
 end
 
 local function addCSLuaFiles()
@@ -117,52 +85,48 @@ local function addCSLuaFiles()
         "rradio/client",
         "rradio/client/interface",
         "rradio/client/lang",
-        "rradio/client/lang/data",
-        "rradio/client/stations",
+        "rradio/client/data/langpacks",
+        "rradio/client/data/stationpacks",
         "entities/rammel_base_boombox",
         "entities/rammel_boombox",
         "entities/rammel_boombox_gold"
     }
+    
     for _, dir in ipairs(dirs) do
-        for _, f in ipairs(file.Find(dir .. "/*.lua", "LUA")) do
+        local files = file.Find(dir .. "/*.lua", "LUA")
+        for _, f in ipairs(files) do
             addCSLua(dir .. "/" .. f)
         end
     end
 end
 
 local function addClProperties()
-    properties.Add("radio_mute", {
-        MenuLabel = "Mute",
-        Order     = 1000,
-        MenuIcon  = "icon16/SOUND_MUTE.png",
-        Filter    = function(self, ent, ply)
-            return rRadio.utils.canUseRadio(ent) and not rRadio.cl.mutedBoomboxes[ent]
-        end,
-        Action    = function(self, ent)
-            rRadio.cl.mutedBoomboxes[ent] = true
-        end
-    })
+    local propertiesData = {
+        radio_mute = {
+            MenuLabel = "Mute",
+            Order = 1501,
+            MenuIcon = "icon16/SOUND_MUTE.png",
+            Filter = function(self, ent, ply) return rRadio.utils.canUseRadio(ent) and not rRadio.cl.mutedBoomboxes[ent] end,
+            Action = function(self, ent) rRadio.cl.mutedBoomboxes[ent] = true end
+        },
+        radio_unmute = {
+            MenuLabel = "Unmute",
+            Order = 1502,
+            MenuIcon = "icon16/SOUND.png",
+            Filter = function(self, ent, ply) return rRadio.utils.canUseRadio(ent) and rRadio.cl.mutedBoomboxes[ent] end,
+            Action = function(self, ent) rRadio.cl.mutedBoomboxes[ent] = nil end
+        }
+    }
 
-    properties.Add("radio_unmute", {
-        MenuLabel = "Unmute",
-        Order     = 1001,
-        MenuIcon  = "icon16/SOUND.png",
-        Filter    = function(self, ent, ply)
-            return rRadio.utils.canUseRadio(ent) and rRadio.cl.mutedBoomboxes[ent]
-        end,
-        Action    = function(self, ent)
-            rRadio.cl.mutedBoomboxes[ent] = nil
-        end
-    })
+    for id, data in pairs(propertiesData) do
+        properties.Add(id, data)
+    end
 end
 
 local function addPrivileges()
     local privs = {
-        {
-            Name = "rradio.UseAll",
-            Description = "Allows a player (typically an admin) to use all boomboxes",
-            MinAccess = "superadmin"
-        }
+        { Name = "rradio.UseAll", Description = "Use all boomboxes regardless of owner", MinAccess = "superadmin" },
+        { Name = "rradio.AddCustomStation", Description = "Add custom stations to client list", MinAccess = "superadmin" }
     }
 
     for _, priv in ipairs(privs) do
@@ -171,47 +135,97 @@ local function addPrivileges()
 end
 
 local function registerNetStrings()
-    util.AddNetworkString("rRadio.PlayStation")
-    util.AddNetworkString("rRadio.StopStation")
-    util.AddNetworkString("rRadio.OpenMenu")
-    util.AddNetworkString("rRadio.PlayVehicleAnimation")
-    util.AddNetworkString("rRadio.UpdateRadioStatus")
-    util.AddNetworkString("rRadio.SetRadioVolume")
-    util.AddNetworkString("rRadio.SetPersistent")
-    util.AddNetworkString("rRadio.RemovePersistent")
-    util.AddNetworkString("rRadio.SendPersistentConfirmation")
-    util.AddNetworkString("rRadio.SetConfigUpdate")
+    local netStrings = {
+        "PlayStation", "StopStation", "OpenMenu", "PlayVehicleAnimation",
+        "UpdateRadioStatus", "SetRadioVolume", "SetPersistent", "RemovePersistent",
+        "SendPersistentConfirmation", "SetConfigUpdate", "AddCustomStation", "CustomStationsUpdate"
+    }
+    
+    for _, str in ipairs(netStrings) do
+        util.AddNetworkString("rRadio." .. str)
+    end
+end
+
+local function createRadioAddMenu()
+    if SERVER then return end
+    
+    local frame = vgui.Create("DFrame")
+    frame:SetSize(400, 300)
+    frame:Center()
+    frame:SetTitle("Add Custom Radio Station")
+    frame:SetDraggable(true)
+    frame:ShowCloseButton(true)
+    frame:MakePopup()
+
+    local nameEntry = vgui.Create("DTextEntry", frame)
+    nameEntry:SetPos(20, 50)
+    nameEntry:SetSize(360, 30)
+    nameEntry:SetPlaceholderText("Station Name")
+
+    local urlEntry = vgui.Create("DTextEntry", frame)
+    urlEntry:SetPos(20, 100)
+    urlEntry:SetSize(360, 30)
+    urlEntry:SetPlaceholderText("Station URL")
+
+    local addButton = vgui.Create("DButton", frame)
+    addButton:SetPos(20, 150)
+    addButton:SetSize(360, 40)
+    addButton:SetText("Add Station")
+    addButton.DoClick = function()
+        local name = nameEntry:GetValue()
+        local url = urlEntry:GetValue()
+        
+        if name ~= "" and url ~= "" then
+            net.Start("rRadio.AddCustomStation")
+            net.WriteString(name)
+            net.WriteString(url)
+            net.SendToServer()
+            frame:Close()
+        else
+            Derma_Message("Please fill in both fields!", "Error", "OK")
+        end
+    end
 end
 
 if SERVER then
-    local resourceStr = ""
-
-    resourceStr = rRadio.DEV and "developer" or "public"
+    local resourceStr = rRadio.DEV and "developer" or "public"
     resource.AddWorkshop(rRadio.DEV and dev_id or pub_id)
 
-    rRadio.FormattedOutput("Starting server-side initialization")
+    rRadio.FormattedOutput("Starting server initialization")
     addCSLuaFiles()
-    rRadio.FormattedOutput("Assigned " .. cl_load_count .. " client-side files")
-    rRadio.FormattedOutput("Using " .. resourceStr .. " resources")
-
     registerNetStrings()
-    rRadio.FormattedOutput("Registered network strings")
-
-    include("rradio/shared/sh_config.lua")
-    include("rradio/shared/sh_utils.lua")
-    include("rradio/server/sv_utils.lua")
-    include("rradio/server/sv_core.lua")
-    include("rradio/server/sv_permanent.lua")
     addPrivileges()
+
+    local serverFiles = {
+        "shared/sh_config.lua",
+        "shared/sh_utils.lua",
+        "server/sv_utils.lua",
+        "server/sv_core.lua",
+        "server/sv_permanent.lua"
+    }
+
+    for _, f in ipairs(serverFiles) do
+        include("rradio/" .. f)
+    end
     
-    rRadio.FormattedOutput("Finished server-side initialization")
+    rRadio.FormattedOutput("Assigned " .. cl_load_count .. " client files")
+    rRadio.FormattedOutput("Using " .. resourceStr .. " resources")
+    rRadio.FormattedOutput("Server initialization complete")
 elseif CLIENT then
     createFonts()
+    addPrivileges()
+    
+    local clientFiles = {
+        "shared/sh_utils.lua",
+        "client/interface/cl_themes.lua",
+        "client/lang/cl_language_manager.lua",
+        "client/lang/cl_localisation_strings.lua",
+        "shared/sh_config.lua"
+    }
 
-    addClientFile("shared/sh_utils.lua")
-    addClientFile("client/interface/cl_themes.lua")
-    addClientFile("client/lang/cl_language_manager.lua")
-    addClientFile("shared/sh_config.lua")
+    for _, f in ipairs(clientFiles) do
+        addClientFile(f)
+    end
 
     rRadio.cl = rRadio.cl or {}
     rRadio.cl.mutedBoomboxes = rRadio.cl.mutedBoomboxes or {}
@@ -219,27 +233,37 @@ elseif CLIENT then
     rRadio.addClConVars()
     addClProperties()
 
-    if (rRadio.isClientLoadDisabled()) then
-        rRadio.FormattedOutput("Client-side load disabled")
-        rRadio.FormattedOutput("Use rammel_rradio_enabled 1 to re-enable")
+    if rRadio.isClientLoadDisabled() then
+        rRadio.FormattedOutput("Client load disabled")
+        rRadio.FormattedOutput("Use rammel_rradio_enabled 1 to enable")
         return
     end
 
-    rRadio.FormattedOutput("Starting client-side initialization")
+    rRadio.FormattedOutput("Starting client initialization")
     
-    addClientFile("client/interface/cl_interface_utils.lua")
-    addClientFile("client/interface/cl_core.lua")
+    local clientCoreFiles = {
+        "client/interface/cl_interface_utils.lua",
+        "client/interface/cl_core.lua"
+    }
 
-    addClientFile("client/lang/cl_localisation_strings.lua")
-
-    addClientFile("client/lang/data/data_1.lua")
-    addClientFile("client/lang/data/data_2.lua")
-    addClientFile("client/lang/data/data_3.lua")
-
-    for _, f in ipairs(file.Find("rradio/client/stations/*.lua", "LUA")) do
-        addClientFile("client/stations/" .. f)
+    for _, f in ipairs(clientCoreFiles) do
+        addClientFile(f)
     end
 
-    rRadio.FormattedOutput("Loaded " .. cl_count .. "/38 client-side files")
-    rRadio.FormattedOutput("Finished client-side initialization")
+    -- Load language packs with error handling
+    local langPacks = {"data_1.lua", "data_2.lua", "data_3.lua"}
+    for _, lp in ipairs(langPacks) do
+        addClientFile("client/data/langpacks/" .. lp)
+    end
+
+    -- Load station packs
+    for _, f in ipairs(file.Find("rradio/client/data/stationpacks/*.lua", "LUA")) do
+        addClientFile("client/data/stationpacks/" .. f)
+    end
+
+    rRadio.FormattedOutput("Loaded " .. cl_count .. " client files")
+    rRadio.FormattedOutput("Client initialization complete")
+
+    -- Add radioadd command
+    concommand.Add("radioadd", createRadioAddMenu, nil, "Opens menu to add custom radio station")
 end
