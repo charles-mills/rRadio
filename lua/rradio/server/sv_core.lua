@@ -257,8 +257,13 @@ hook.Add("PlayerInitialSpawn", "rRadio.SendCustomStations", function(ply)
 end)
 
 hook.Add("PlayerSay", "rRadio.HandleAddStation", function(ply, text, teamChat)
-    local name, url = text:match('^!radioadd%s+"([^"]+)"%s+"([^"]+)"')
-    if not name or not url then return end
+    local name, url = text:match('^' .. rRadio.config.CommandAddStation .. '%s+"([^"]+)"%s+"([^"]+)"')
+
+    if not name or not url then
+        ply:ChatPrint("[rRadio] Invalid command format. Usage: " .. rRadio.config.CommandAddStation .. ' "name" "url"')
+        return ""
+    end
+    
     if not CAMI.PlayerHasAccess(ply, "rradio.AddCustomStation", nil) then
         ply:ChatPrint("[rRadio] You don't have permission.")
         return ""
@@ -279,12 +284,18 @@ hook.Add("PlayerSay", "rRadio.HandleAddStation", function(ply, text, teamChat)
 end)
 
 hook.Add("PlayerSay", "rRadio.HandleRemoveStation", function(ply, text, teamChat)
-    local key = text:match('^!radiorem%s+"([^"]+)"')
-    if not key then return end
+    local key = text:match('^' .. rRadio.config.CommandRemoveStation .. '%s+"([^"]+)"')
+
+    if not key then
+        ply:ChatPrint("[rRadio] Invalid command format. Usage: " .. rRadio.config.CommandRemoveStation .. ' "key"')
+        return ""
+    end
+    
     if not CAMI.PlayerHasAccess(ply, "rradio.AddCustomStation", nil) then
         ply:ChatPrint("[rRadio] You don't have permission.")
         return ""
     end
+    
     local removed = rRadio.sv.CustomStations:Remove(key)
     if removed then
         ply:ChatPrint(string.format("[rRadio] Removed custom station '%s'.", key))

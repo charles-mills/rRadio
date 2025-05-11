@@ -15,6 +15,9 @@ rRadio.config.PrioritiseCustom  = true -- the custom / server added station cate
 -- the key is only localised if set to "Custom" (case sensitive)
 rRadio.config.CustomStationCategory = "Custom"
 
+rRadio.config.CommandAddStation = "!radioadd"
+rRadio.config.CommandRemoveStation = "!radiorem"
+
 -----------------------------------------------------------------------
 
 if rRadio.DEV then
