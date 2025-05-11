@@ -260,6 +260,7 @@ hook.Add("PlayerInitialSpawn", "rRadio.SendCustomStations", function(ply)
 end)
 
 hook.Add("PlayerSay", "rRadio.HandleAddStation", function(ply, text, teamChat)
+    if text:sub(1, #rRadio.config.CommandAddStation) ~= rRadio.config.CommandAddStation then return end
     local name, url = text:match('^' .. rRadio.config.CommandAddStation .. '%s+"([^"]+)"%s+"([^"]+)"')
 
     if not name or not url then
@@ -287,6 +288,7 @@ hook.Add("PlayerSay", "rRadio.HandleAddStation", function(ply, text, teamChat)
 end)
 
 hook.Add("PlayerSay", "rRadio.HandleRemoveStation", function(ply, text, teamChat)
+    if text:sub(1, #rRadio.config.CommandRemoveStation) ~= rRadio.config.CommandRemoveStation then return end
     local key = text:match('^' .. rRadio.config.CommandRemoveStation .. '%s+"([^"]+)"')
 
     if not key then
