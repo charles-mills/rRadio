@@ -16,8 +16,8 @@ rRadio.config.AllowCreatePermanentBoombox = true -- allow new permanent boomboxe
 -- name of the category for all custom stations, e.g. "Our Favourite Stations!"
 -- the key is only localised if set to "Custom" (case sensitive)
 rRadio.config.CustomStationCategory = "Custom"
-rRadio.config.CommandAddStation = "!radioadd"
-rRadio.config.CommandRemoveStation = "!radiorem"
+rRadio.config.CommandAddStation = "!rradioadd"
+rRadio.config.CommandRemoveStation = "!rradiorem"
 
 -----------------------------------------------------------------------
 

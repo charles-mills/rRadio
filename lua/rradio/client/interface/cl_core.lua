@@ -59,7 +59,7 @@ end
 local UIRegistry = { stars = {}, stations = {} }
 local starIdCounter, stationIdCounter = 0, 0
 
-local function isFav(tbl, key, subKey)
+local function getFavoriteStatus(tbl, key, subKey)
     if subKey then
         return tbl[key] and tbl[key][subKey]
     else
@@ -70,7 +70,7 @@ end
 local function SharedStarPaint(self, w, h)
     local entry = UIRegistry.stars[self.UIKey]
     if not entry then return end
-    local mat = isFav(entry.catTable, entry.key, entry.subKey) and icons.star.FULL or icons.star.EMPTY
+    local mat = getFavoriteStatus(entry.catTable, entry.key, entry.subKey) and icons.star.FULL or icons.star.EMPTY
     surface.SetMaterial(mat)
     surface.SetDrawColor(rRadio.config.UI.TextColor)
     surface.DrawTexturedRect(0, 0, w, h)
