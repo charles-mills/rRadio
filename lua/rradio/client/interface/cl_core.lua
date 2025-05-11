@@ -1125,7 +1125,7 @@ net.Receive(
         end
         sound.PlayURL(
             url,
-            "3d mono",
+            "3d",
             function(station, errorID, errorName)
                 if IsValid(station) and IsValid(entity) then
                     station:SetPos(entity:GetPos())

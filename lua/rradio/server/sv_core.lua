@@ -6,6 +6,7 @@ rRadio.sv.ActiveRadios        = rRadio.sv.ActiveRadios or {}
 rRadio.sv.PlayerRetryAttempts = rRadio.sv.PlayerRetryAttempts or {}
 rRadio.sv.PlayerCooldowns     = rRadio.sv.PlayerCooldowns or {}
 rRadio.sv.volumeUpdateQueue   = rRadio.sv.volumeUpdateQueue or {}
+rRadio.sv.stationUpdateQueue  = rRadio.sv.stationUpdateQueue or {}
 rRadio.sv.EntityVolumes       = rRadio.sv.EntityVolumes or {}
 rRadio.sv.BoomboxStatuses     = rRadio.sv.BoomboxStatuses or {}
 rRadio.sv.CustomStations      = rRadio.sv.CustomStations or { data = {}, urlMap = {}, nameMap = {} }
@@ -22,6 +23,33 @@ rRadio.sv.RadioDataTables = {
 
 local GLOBAL_COOLDOWN = 1
 local lastGlobalAction = 0
+
+timer.Create("rRadio.GlobalUpdateSweep", 0.25, 0, function()
+    local now = SysTime()
+
+    for entIdx, data in pairs(rRadio.sv.stationUpdateQueue) do
+        if now - data.timestamp >= 2 then
+            local ent = Entity(entIdx)
+            if IsValid(ent) then
+                rRadio.utils.setRadioStatus(ent, "playing", data.station)
+                rRadio.sv.utils.BroadcastPlay(ent, data.station, data.url, data.volume)
+            end
+            rRadio.sv.stationUpdateQueue[entIdx] = nil
+        end
+    end
+    
+    for entIdx, upd in pairs(rRadio.sv.volumeUpdateQueue) do
+        if upd.pendingVolume and now - (upd.lastUpdate or 0) >= rRadio.config.VolumeUpdateDebounce() then
+            local ent = Entity(entIdx)
+            if IsValid(ent) and IsValid(upd.pendingPlayer) then
+                rRadio.sv.utils.ProcessVolumeUpdate(ent, upd.pendingVolume, upd.pendingPlayer)
+            end
+            upd.lastUpdate     = now
+            upd.pendingVolume  = nil
+            upd.pendingPlayer  = nil
+        end
+    end
+end)
 
 function rRadio.sv.CustomStations:Load()
     local contents = file.Read("rradio/customstations.json", "DATA")
@@ -155,11 +183,12 @@ net.Receive("rRadio.PlayStation", function(len, ply)
         rRadio.sv.permanent.SavePermanentBoombox(ent)
     end
 
-    timer.Create("StationUpdate_" .. idx, 2, 1, function()
-        if IsValid(ent) then
-            rRadio.utils.setRadioStatus(ent, "playing", station)
-        end
-    end)
+    rRadio.sv.stationUpdateQueue[idx] = {
+        station   = station,
+        url       = stationURL,
+        volume    = volume,
+        timestamp = SysTime()
+    }
 
     hook.Run("rRadio.PostPlayStation", ply, ent, station, stationURL, volume)
 end)
@@ -186,9 +215,7 @@ net.Receive("rRadio.StopStation", function(len, ply)
     net.WriteString("stopped")
     net.Broadcast()
     local entIndex = entity:EntIndex()
-    if timer.Exists("StationUpdate_" .. entIndex) then
-        timer.Remove("StationUpdate_" .. entIndex)
-    end
+    rRadio.sv.stationUpdateQueue[entIndex] = nil
     timer.Create("StationUpdate_" .. entIndex, rRadio.config.StationUpdateDebounce(), 1, function()
         if IsValid(entity) and entity.IsPermanent then
             rRadio.sv.permanent.SavePermanentBoombox(entity)
@@ -203,32 +230,14 @@ net.Receive("rRadio.SetRadioVolume", function(len, ply)
     local volume = net.ReadFloat()
     local entIndex = IsValid(entity) and entity:EntIndex() or nil
     if not entIndex then return end
-    if not rRadio.sv.volumeUpdateQueue[entIndex] then
-        rRadio.sv.volumeUpdateQueue[entIndex] = {
-            lastUpdate = 0,
-            pendingVolume = nil,
-            pendingPlayer = nil
-        }
-    end
-    local updateData = rRadio.sv.volumeUpdateQueue[entIndex]
-    local currentTime = SysTime()
 
-    if currentTime - updateData.lastUpdate >= rRadio.config.VolumeUpdateDebounce() then
-        rRadio.sv.utils.ProcessVolumeUpdate(entity, volume, ply)
-        updateData.lastUpdate = currentTime
-        updateData.pendingVolume = nil
-        updateData.pendingPlayer = nil
+    local upd = rRadio.sv.volumeUpdateQueue[entIndex]
+    if not upd then
+        upd = { lastUpdate = 0, pendingVolume = volume, pendingPlayer = ply }
+        rRadio.sv.volumeUpdateQueue[entIndex] = upd
     else
-        if not timer.Exists("VolumeUpdate_" .. entIndex) then
-            timer.Create("VolumeUpdate_" .. entIndex, rRadio.config.VolumeUpdateDebounce(), 1, function()
-                if updateData.pendingVolume and IsValid(updateData.pendingPlayer) then
-                    rRadio.sv.utils.ProcessVolumeUpdate(entity, updateData.pendingVolume, updateData.pendingPlayer)
-                    updateData.lastUpdate = SysTime()
-                    updateData.pendingVolume = nil
-                    updateData.pendingPlayer = nil
-                end
-            end)
-        end
+        upd.pendingVolume = volume
+        upd.pendingPlayer = ply
     end
 end)
 
@@ -373,15 +382,8 @@ end)
 
 hook.Add("EntityRemoved", "rRadio.CleanupEntityRemoved", function(entity)
     local entIndex = entity:EntIndex()
-    if timer.Exists("VolumeUpdate_" .. entIndex) then
-        timer.Remove("VolumeUpdate_" .. entIndex)
-    end
-
     rRadio.sv.volumeUpdateQueue[entIndex] = nil
-
-    if timer.Exists("StationUpdate_" .. entIndex) then
-        timer.Remove("StationUpdate_" .. entIndex)
-    end
+    rRadio.sv.stationUpdateQueue[entIndex] = nil
 
     if IsValid(entity) then
         rRadio.sv.utils.CleanupEntityData(entity:EntIndex())
