@@ -11,10 +11,11 @@ rRadio.config.ClientHardDisable = false  -- disables file loading when client's 
 rRadio.config.DisablePushDamage = true  -- disable push damage
 rRadio.config.PrioritiseCustom  = true -- the custom / server added station category will appear at the top of the menu (instead of alphabetical)
 
+rRadio.config.AllowCreatePermanentBoombox = true -- allow new permanent boomboxes to be created by superadmins
+
 -- name of the category for all custom stations, e.g. "Our Favourite Stations!"
 -- the key is only localised if set to "Custom" (case sensitive)
 rRadio.config.CustomStationCategory = "Custom"
-
 rRadio.config.CommandAddStation = "!radioadd"
 rRadio.config.CommandRemoveStation = "!radiorem"
 
@@ -40,6 +41,7 @@ local DEFAULT_UI = {
     TextColor       = Color(255,255,255,255),
     Disabled        = Color(180,180,180,255)
 }
+
 rRadio.config.UI = rRadio.config.UI or DEFAULT_UI
 rRadio.config.RadioVersion = "1.2.2"
 

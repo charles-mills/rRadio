@@ -604,7 +604,7 @@ local function openSettingsMenu(parentFrame, backButton)
                 "rRadio.SendPersistentConfirmation",
                 function()
                     local message = net.ReadString()
-                    chat.AddText(Color(0, 255, 0), "[Boombox] ", Color(255, 255, 255), message)
+                    chat.AddText(Color(0, 255, 0), "[rRadio] ", Color(255, 255, 255), message)
                     if string.find(message, "marked as permanent") then
                         permanentCheckbox:SetChecked(true)
                     elseif string.find(message, "permanence has been removed") then
