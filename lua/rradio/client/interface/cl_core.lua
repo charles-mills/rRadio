@@ -41,6 +41,15 @@ local STAR_EMPTY = Material("hud/star.png",      "smooth")
 
 local VOLUME_DEBOUNCE_TIMER = "rRadio.VolumeDebounce"
 local pendingVolume, pendingEntity
+local volumeDebounceActive = false
+
+local function SendPendingVolume()
+    if not IsValid(pendingEntity) then return end
+    net.Start("rRadio.SetRadioVolume")
+    net.WriteEntity(pendingEntity)
+    net.WriteFloat(pendingVolume)
+    net.SendToServer()
+end
 
 local UIRegistry = { stars = {}, stations = {} }
 local starIdCounter, stationIdCounter = 0, 0
@@ -984,14 +993,25 @@ openRadioMenu = function(openSettings, opts)
 
         pendingVolume = value
         pendingEntity = entity
-        timer.Remove(VOLUME_DEBOUNCE_TIMER)
-        timer.Create(VOLUME_DEBOUNCE_TIMER, 0.1, 1, function()
-            if not IsValid(pendingEntity) then return end
-            net.Start("rRadio.SetRadioVolume")
-            net.WriteEntity(pendingEntity)
-            net.WriteFloat(pendingVolume)
-            net.SendToServer()
-        end)
+        if not volumeDebounceActive then
+            volumeDebounceActive = true
+            timer.Create(VOLUME_DEBOUNCE_TIMER, 0.1, 1, function()
+                SendPendingVolume()
+                volumeDebounceActive = false
+            end)
+        end
+    end
+    do
+        local knob = volumeSlider.Slider
+        local origRelease = knob.OnMouseReleased
+        knob.OnMouseReleased = function(self, mcode)
+            if origRelease then origRelease(self, mcode) end
+            if timer.Exists(VOLUME_DEBOUNCE_TIMER) then
+                timer.Remove(VOLUME_DEBOUNCE_TIMER)
+                SendPendingVolume()
+                volumeDebounceActive = false
+            end
+        end
     end
     if not settingsMenuOpen then
         populateList(stationListPanel, backButton, searchBox, true)
