@@ -42,6 +42,9 @@ local STAR_EMPTY = Material("hud/star.png",      "smooth")
 local VOLUME_DEBOUNCE_TIMER = "rRadio.VolumeDebounce"
 local pendingVolume, pendingEntity
 
+local UIRegistry = { stars = {}, stations = {} }
+local starIdCounter, stationIdCounter = 0, 0
+
 local function isFav(tbl, key, subKey)
     if subKey then
         return tbl[key] and tbl[key][subKey]
@@ -50,71 +53,95 @@ local function isFav(tbl, key, subKey)
     end
 end
 
+local function SharedStarPaint(self, w, h)
+    local entry = UIRegistry.stars[self.UIKey]
+    if not entry then return end
+    local mat = isFav(entry.catTable, entry.key, entry.subKey) and STAR_FULL or STAR_EMPTY
+    surface.SetMaterial(mat)
+    surface.SetDrawColor(rRadio.config.UI.TextColor)
+    surface.DrawTexturedRect(0, 0, w, h)
+end
+
+local function SharedStarClick(self)
+    local entry = UIRegistry.stars[self.UIKey]
+    if not entry then return end
+    if entry.subKey then
+        rRadio.interface.toggleFavorite(entry.catTable, entry.key, entry.subKey)
+    else
+        rRadio.interface.toggleFavorite(entry.catTable, entry.key)
+    end
+    if entry.updateList then entry.updateList() end
+end
+
+local function SharedStationPaint(self, w, h)
+    local entry = UIRegistry.stations[self.UIKey]
+    if not entry then return end
+    local entity = LocalPlayer().currentRadioEntity
+    local isPlaying = IsValid(entity) and currentlyPlayingStations[entity] and currentlyPlayingStations[entity].name == entry.station.name
+    draw.RoundedBox(8, 0, 0, w, h, isPlaying and rRadio.config.UI.PlayingButtonColor or rRadio.config.UI.ButtonColor)
+    if not isPlaying and self:IsHovered() then
+        draw.RoundedBox(8, 0, 0, w, h, rRadio.config.UI.ButtonHoverColor)
+    end
+    local text = entry.displayText
+    surface.SetFont("rRadio.Roboto5")
+    local regionLeft = Scale(8 + 24 + 8)
+    local rightMargin = Scale(8)
+    local availWidth = w - regionLeft - rightMargin
+    local outputText = rRadio.interface.TruncateText(text, "rRadio.Roboto5", availWidth)
+    local textWidth = surface.GetTextSize(outputText)
+    local x = w * 0.5
+    if x - textWidth * 0.5 < regionLeft then x = regionLeft + textWidth * 0.5
+    elseif x + textWidth * 0.5 > w - rightMargin then x = w - rightMargin - textWidth * 0.5 end
+    draw.SimpleText(outputText, "rRadio.Roboto5", x, h/2, rRadio.config.UI.TextColor, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+end
+
+local function SharedStationClick(self)
+    local entry = UIRegistry.stations[self.UIKey]
+    if not entry then return end
+    local currentTime = CurTime()
+    if currentTime - lastStationSelectTime < 2 then return end
+    surface.PlaySound("buttons/button17.wav")
+    local entity = LocalPlayer().currentRadioEntity
+    if not IsValid(entity) then return end
+    if currentlyPlayingStations[entity] then
+        net.Start("rRadio.StopStation") net.WriteEntity(entity) net.SendToServer()
+    end
+    local entityConfig = rRadio.interface.getEntityConfig(entity)
+    local volume = entityVolumes[entity] or (entityConfig and entityConfig.Volume()) or 0.5
+    if not IsValid(entity) then return end
+    net.Start("rRadio.PlayStation")
+    net.WriteEntity(entity)
+    net.WriteString(entry.station.name)
+    net.WriteString(entry.station.url)
+    net.WriteFloat(volume)
+    net.SendToServer()
+    currentlyPlayingStations[entity] = entry.station
+    lastStationSelectTime = currentTime
+    if entry.updateList then entry.updateList() end
+end
+
 local function makeStarIcon(parent, catTable, key, subKey, updateList)
+    starIdCounter = starIdCounter + 1
+    local id = "star" .. starIdCounter
+    UIRegistry.stars[id] = { catTable = catTable, key = key, subKey = subKey, updateList = updateList }
     local icon = vgui.Create("DImageButton", parent)
     icon:SetSize(Scale(24), Scale(24))
     icon:SetPos(Scale(8), (Scale(40) - Scale(24)) / 2)
-    icon.Paint = function(self, w, h)
-        surface.SetMaterial(isFav(catTable, key, subKey) and STAR_FULL or STAR_EMPTY)
-        surface.SetDrawColor(rRadio.config.UI.TextColor)
-        surface.DrawTexturedRect(0, 0, w, h)
-    end
-    icon.DoClick = function()
-        if subKey then
-            rRadio.interface.toggleFavorite(catTable, key, subKey)
-        else
-            rRadio.interface.toggleFavorite(catTable, key)
-        end
-        if updateList then updateList() end
-    end
+    icon.UIKey = id
+    icon.Paint = SharedStarPaint
+    icon.DoClick = SharedStarClick
     return icon
 end
 
 local function MakePlayableStationButton(parent, station, displayText, updateList, backButton, searchBox, resetSearch)
+    stationIdCounter = stationIdCounter + 1
+    local id = "station" .. stationIdCounter
+    UIRegistry.stations[id] = { station = station, displayText = displayText, updateList = updateList }
     local btn = rRadio.interface.MakeStationButton(parent)
-    btn.Paint = function(self, w, h)
-        local entity = LocalPlayer().currentRadioEntity
-        local isPlaying = IsValid(entity) and currentlyPlayingStations[entity] and currentlyPlayingStations[entity].name == station.name
-        draw.RoundedBox(8, 0, 0, w, h, isPlaying and rRadio.config.UI.PlayingButtonColor or rRadio.config.UI.ButtonColor)
-        if not isPlaying and self:IsHovered() then
-            draw.RoundedBox(8, 0, 0, w, h, rRadio.config.UI.ButtonHoverColor)
-        end
-        local text = displayText
-        surface.SetFont("rRadio.Roboto5")
-        local regionLeft = Scale(8 + 24 + 8)
-        local rightMargin = Scale(8)
-        local availWidth = w - regionLeft - rightMargin
-        local outputText = rRadio.interface.TruncateText(text, "rRadio.Roboto5", availWidth)
-        local textWidth = surface.GetTextSize(outputText)
-        local x = w * 0.5
-        if x - textWidth * 0.5 < regionLeft then x = regionLeft + textWidth * 0.5
-        elseif x + textWidth * 0.5 > w - rightMargin then x = w - rightMargin - textWidth * 0.5 end
-        draw.SimpleText(outputText, "rRadio.Roboto5", x, h/2, rRadio.config.UI.TextColor, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
-    end
+    btn.UIKey = id
+    btn.Paint = SharedStationPaint
     makeStarIcon(btn, rRadio.interface.favoriteStations, station.country, station.name, updateList)
-    btn.DoClick = function()
-        local currentTime = CurTime()
-        if currentTime - lastStationSelectTime < 2 then return end
-        surface.PlaySound("buttons/button17.wav")
-        local entity = LocalPlayer().currentRadioEntity
-        if not IsValid(entity) then return end
-        if currentlyPlayingStations[entity] then
-            net.Start("rRadio.StopStation") net.WriteEntity(entity) net.SendToServer()
-        end
-        local entityConfig = rRadio.interface.getEntityConfig(entity)
-        local volume = entityVolumes[entity] or (entityConfig and entityConfig.Volume()) or 0.5
-
-        if not IsValid(entity) then return end
-        net.Start("rRadio.PlayStation")
-        net.WriteEntity(entity)
-        net.WriteString(station.name)
-        net.WriteString(station.url)
-        net.WriteFloat(volume)
-        net.SendToServer()
-        currentlyPlayingStations[entity] = station
-        lastStationSelectTime = currentTime
-        updateList()
-    end
+    btn.DoClick = SharedStationClick
     return btn
 end
 
@@ -1123,7 +1150,6 @@ local function UpdateAllStations()
     end
     for ent, station in pairs(rRadio.cl.radioSources) do
         if not IsValid(ent) or not IsValid(station) then
-            if IsValid(station) then station:Stop() end
             rRadio.cl.radioSources[ent] = nil
             activeStationCount = rRadio.interface.updateStationCount()
         else
