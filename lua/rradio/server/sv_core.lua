@@ -9,10 +9,8 @@ rRadio.sv.volumeUpdateQueue   = rRadio.sv.volumeUpdateQueue or {}
 rRadio.sv.EntityVolumes       = rRadio.sv.EntityVolumes or {}
 rRadio.sv.BoomboxStatuses     = rRadio.sv.BoomboxStatuses or {}
 rRadio.sv.CustomStations      = rRadio.sv.CustomStations or { data = {}, urlMap = {}, nameMap = {} }
-
-local GLOBAL_COOLDOWN = 1
-local lastGlobalAction = 0
-
+rRadio.sv.ActiveRadiosCount   = rRadio.sv.ActiveRadiosCount or 0
+rRadio.sv.PlayerRadios        = rRadio.sv.PlayerRadios or {}
 rRadio.sv.RadioTimers = {
     "VolumeUpdate_",
     "StationUpdate_",
@@ -21,6 +19,9 @@ rRadio.sv.RadioTimers = {
 rRadio.sv.RadioDataTables = {
     volumeUpdateQueue   = true,
 }
+
+local GLOBAL_COOLDOWN = 1
+local lastGlobalAction = 0
 
 function rRadio.sv.CustomStations:Load()
     local contents = file.Read("rradio/customstations.json", "DATA")
@@ -82,14 +83,6 @@ rRadio.sv.CustomStations:Load()
 
 net.Receive("rRadio.PlayStation", function(len, ply)
     rRadio.DevPrint("[rRADIO] Server got rRadio.PlayStation from: " .. ply:Nick())
-    for entIdx, data in pairs(rRadio.sv.ActiveRadios) do
-        local ent = data.entity or Entity(entIdx)
-        if not IsValid(ent) then
-            rRadio.DevPrint("[rRADIO] Purging invalid ActiveRadio entry idx="..entIdx)
-            rRadio.sv.ActiveRadios[entIdx] = nil
-        end
-    end
-
     local now = SysTime()
     if now - lastGlobalAction < GLOBAL_COOLDOWN then
         ply:ChatPrint("The radio system is busy. Please try again in a moment.")
@@ -117,7 +110,7 @@ net.Receive("rRadio.PlayStation", function(len, ply)
     end
     rRadio.sv.PlayerCooldowns[ply] = now
 
-    if table.Count(rRadio.sv.ActiveRadios) >= 100 then
+    if rRadio.sv.utils.CountActiveRadios() >= 100 then
         rRadio.sv.utils.ClearOldestActiveRadio()
     end
 
@@ -146,6 +139,7 @@ net.Receive("rRadio.PlayStation", function(len, ply)
     end
 
     rRadio.sv.utils.AddActiveRadio(ent, station, stationURL, volume)
+
     rRadio.DevPrint("[rRADIO] ActiveRadios now contains:")
 
     for k, v in pairs(rRadio.sv.ActiveRadios) do
@@ -402,6 +396,7 @@ end)
 hook.Add("PlayerDisconnected", "rRadio.CleanupPlayerDisconnected", function(ply)
     rRadio.sv.PlayerRetryAttempts[ply] = nil
     rRadio.sv.PlayerCooldowns[ply] = nil
+    rRadio.sv.PlayerRadios[ply] = nil
 
     for entIndex, updateData in pairs(rRadio.sv.volumeUpdateQueue) do
         if updateData.pendingPlayer == ply then

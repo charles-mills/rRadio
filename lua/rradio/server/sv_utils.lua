@@ -24,12 +24,9 @@ function rRadio.sv.utils.GetVehicleEntity(entity)
 end
 
 function rRadio.sv.utils.CountPlayerRadios(ply)
+    local tbl = rRadio.sv.PlayerRadios[ply]
     local cnt = 0
-    for _, data in pairs(rRadio.sv.ActiveRadios) do
-        if IsValid(data.entity) and rRadio.utils.getOwner(data.entity) == ply then
-            cnt = cnt + 1
-        end
-    end
+    if tbl then for _ in pairs(tbl) do cnt = cnt + 1 end end
     return cnt
 end
 
@@ -60,6 +57,13 @@ function rRadio.sv.utils.AddActiveRadio(entity, stationName, url, volume)
         volume = rRadio.sv.EntityVolumes[entIndex],
         timestamp = SysTime()
     }
+
+    rRadio.sv.ActiveRadiosCount = (rRadio.sv.ActiveRadiosCount or 0) + 1
+    local ply = rRadio.utils.getOwner(entity)
+    if ply then
+        rRadio.sv.PlayerRadios[ply] = rRadio.sv.PlayerRadios[ply] or {}
+        rRadio.sv.PlayerRadios[ply][entIndex] = true
+    end
     
     if rRadio.utils.IsBoombox(entity) then
         rRadio.DevPrint("[rRADIO] Entity " .. entIndex .. " is a boombox, updating status")
@@ -111,7 +115,7 @@ function rRadio.sv.utils.SendActiveRadiosToPlayer(ply)
         return
     end
 
-    rRadio.DevPrint("[rRADIO] SendActiveRadiosToPlayer: Sending " .. table.Count(rRadio.sv.ActiveRadios) .. " active radios to " .. ply:Nick())
+    rRadio.DevPrint("[rRADIO] SendActiveRadiosToPlayer: Sending " .. (rRadio.sv.utils.CountActiveRadios() or 0) .. " active radios to " .. ply:Nick())
 
     for entIndex, radio in pairs(rRadio.sv.ActiveRadios) do
         local entity = Entity(entIndex)
@@ -205,7 +209,17 @@ end
 function rRadio.sv.utils.RemoveActiveRadio(entity)
     local idx = entity:EntIndex()
     rRadio.DevPrint("[rRADIO] Removing ActiveRadio entry idx="..idx)
-    rRadio.sv.ActiveRadios[idx] = nil
+    if rRadio.sv.ActiveRadios[idx] then
+
+        local oldData = rRadio.sv.ActiveRadios[idx]
+        local ply = rRadio.utils.getOwner(oldData.entity)
+        if ply and rRadio.sv.PlayerRadios[ply] then
+            rRadio.sv.PlayerRadios[ply][idx] = nil
+        end
+
+        rRadio.sv.ActiveRadiosCount = math.max((rRadio.sv.ActiveRadiosCount or 1) - 1, 0)
+        rRadio.sv.ActiveRadios[idx] = nil
+    end
 end
 
 function rRadio.sv.utils.BroadcastStop(ent)
@@ -247,6 +261,10 @@ function rRadio.sv.utils.GetDefaultVolume(entity)
     else
         return GetConVar("rammel_rradio_sv_vehicle_default_volume"):GetFloat()
     end
+end
+
+function rRadio.sv.utils.CountActiveRadios()
+    return rRadio.sv.ActiveRadiosCount or 0
 end
 
 local function AddRadioCommand(name, helpText)
