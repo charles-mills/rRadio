@@ -259,48 +259,37 @@ hook.Add("PlayerInitialSpawn", "rRadio.SendCustomStations", function(ply)
     end)
 end)
 
-hook.Add("PlayerSay", "rRadio.HandleAddStation", function(ply, text, teamChat)
-    if text:sub(1, #rRadio.config.CommandAddStation) ~= rRadio.config.CommandAddStation then return end
+local function HandleAddStation(ply, text)
     local name, url = text:match('^' .. rRadio.config.CommandAddStation .. '%s+"([^"]+)"%s+"([^"]+)"')
-
     if not name or not url then
         ply:ChatPrint("[rRadio] Invalid command format. Usage: " .. rRadio.config.CommandAddStation .. ' "name" "url"')
-        return ""
+        return
     end
-    
     if not CAMI.PlayerHasAccess(ply, "rradio.AddCustomStation", nil) then
         ply:ChatPrint("[rRadio] You don't have permission.")
-        return ""
+        return
     end
-
     if not url:match("^https?://") then
         ply:ChatPrint("[rRadio] Invalid URL.")
-        return ""
+        return
     end
-
     rRadio.sv.CustomStations:Add(name, url)
     ply:ChatPrint(string.format("[rRadio] Added custom station '%s'.", name))
-    
     net.Start("rRadio.CustomStationsUpdate")
         net.WriteTable(rRadio.sv.CustomStations:GetAll())
     net.Broadcast()
-    return ""
-end)
+end
 
-hook.Add("PlayerSay", "rRadio.HandleRemoveStation", function(ply, text, teamChat)
-    if text:sub(1, #rRadio.config.CommandRemoveStation) ~= rRadio.config.CommandRemoveStation then return end
+local function HandleRemoveStation(ply, text)
     local key = text:match('^' .. rRadio.config.CommandRemoveStation .. '%s+"([^"]+)"')
-
     if not key then
         ply:ChatPrint("[rRadio] Invalid command format. Usage: " .. rRadio.config.CommandRemoveStation .. ' "key"')
-        return ""
+        return
     end
-    
     if not CAMI.PlayerHasAccess(ply, "rradio.AddCustomStation", nil) then
         ply:ChatPrint("[rRadio] You don't have permission.")
-        return ""
+        return
     end
-    
     local removed = rRadio.sv.CustomStations:Remove(key)
     if removed then
         ply:ChatPrint(string.format("[rRadio] Removed custom station '%s'.", key))
@@ -310,7 +299,16 @@ hook.Add("PlayerSay", "rRadio.HandleRemoveStation", function(ply, text, teamChat
     else
         ply:ChatPrint("[rRadio] No matching station found for " .. key)
     end
-    return ""
+end
+
+hook.Add("PlayerSay", "rRadio.HandleCommands", function(ply, text, teamChat)
+    if text:sub(1, #rRadio.config.CommandAddStation) == rRadio.config.CommandAddStation then
+        HandleAddStation(ply, text)
+        return ""
+    elseif text:sub(1, #rRadio.config.CommandRemoveStation) == rRadio.config.CommandRemoveStation then
+        HandleRemoveStation(ply, text)
+        return ""
+    end
 end)
 
 hook.Add("PlayerEnteredVehicle", "rRadio.RadioVehicleHandling", function(ply, vehicle)
