@@ -2,14 +2,14 @@ if rRadio.clCoreLoaded or SERVER then return end
 
 rRadio.cl = rRadio.cl or {}
 
-rRadio.cl.radioSources = setmetatable({}, {__mode = "v"})
+rRadio.cl.radioSources = {}
 rRadio.cl.BoomboxStatuses = rRadio.cl.BoomboxStatuses or {}
+
+local entityVolumes = {}
+local currentlyPlayingStations = {}
 
 local allowedURLSet = {}
 local StationData = {}
-
-local entityVolumes = setmetatable({}, {__mode = "k"})
-local currentlyPlayingStations = setmetatable({}, {__mode = "k"})
 
 local MAX_CLIENT_STATIONS = 10
 local currentFrame = nil
@@ -1170,9 +1170,7 @@ net.Receive(
 local function UpdateAllStations()
     local ply = LocalPlayer()
     local plyPos = ply:GetPos()
-    if not playerVeh then
-        playerVeh = rRadio.utils.GetVehicle(ply:GetVehicle())
-    end
+    playerVeh = rRadio.utils.GetVehicle(ply:GetVehicle())
     for ent, station in pairs(rRadio.cl.radioSources) do
         if not IsValid(ent) or not IsValid(station) then
             rRadio.cl.radioSources[ent] = nil

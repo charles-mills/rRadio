@@ -37,7 +37,7 @@ timer.Create("rRadio.GlobalUpdateSweep", 0.25, 0, function()
             rRadio.sv.stationUpdateQueue[entIdx] = nil
         end
     end
-    
+
     for entIdx, upd in pairs(rRadio.sv.volumeUpdateQueue) do
         if upd.pendingVolume and now - (upd.lastUpdate or 0) >= rRadio.config.VolumeUpdateDebounce() then
             local ent = Entity(entIdx)
