@@ -9,6 +9,15 @@ rRadio.config.DriverPlayOnly = false     -- only allow driver to control radio
 rRadio.config.AnimationDefaultOn = true  -- enable animations by default
 rRadio.config.ClientHardDisable = false  -- disables file loading when client's rradio_enabled convar is set to 0 (relog required to re-enable) (does not include config and its dependencies)
 rRadio.config.DisablePushDamage = true  -- disable push damage
+rRadio.config.PrioritiseCustom  = true -- the custom / server added station category will appear at the top of the menu (instead of alphabetical)
+
+rRadio.config.AllowCreatePermanentBoombox = true -- allow new permanent boomboxes to be created by superadmins
+
+-- name of the category for all custom stations, e.g. "Our Favourite Stations!"
+-- the key is only localised if set to "Custom" (case sensitive)
+rRadio.config.CustomStationCategory = "Custom"
+rRadio.config.CommandAddStation = "!rradioadd"
+rRadio.config.CommandRemoveStation = "!rradiorem"
 
 -----------------------------------------------------------------------
 
@@ -17,6 +26,7 @@ if rRadio.DEV then
     rRadio.config.DriverPlayOnly = true
     rRadio.config.AnimationDefaultOn = false
     rRadio.config.ClientHardDisable = true
+    rRadio.config.CustomStationCategory = "Rammel's Top Stations"
 end
 
 -----------------------------------------------------------------------
@@ -31,6 +41,7 @@ local DEFAULT_UI = {
     TextColor       = Color(255,255,255,255),
     Disabled        = Color(180,180,180,255)
 }
+
 rRadio.config.UI = rRadio.config.UI or DEFAULT_UI
 rRadio.config.RadioVersion = "1.2.2"
 
