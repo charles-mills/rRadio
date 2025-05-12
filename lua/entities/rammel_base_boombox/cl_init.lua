@@ -423,6 +423,17 @@ net.Receive("rRadio.SetRadioVolume", function()
     if IsValid(entity) then entityVolumes[entity:EntIndex()] = volume end
 end)
 
+hook.Add("Think", "rRadio.StepBoomboxAnimation", function()
+    local eqDt = FrameTime() * 2
+    for ent in pairs(ActiveBoomboxes) do
+        local rawVol = entityVolumes[ent:EntIndex()]
+        local defaultVol = rawVol or 1
+        local isMuted = rRadio.cl.mutedBoomboxes and rRadio.cl.mutedBoomboxes[ent]
+        local vol = isMuted and 0 or defaultVol
+        ent:UpdateEqualizerHeights(vol, eqDt)
+    end
+end)
+
 hook.Add("LanguageUpdated", "rRadio.ClearBoomboxTextCache", function()
     initializeStaticTexts()
     initializeStaticTextWidths()
@@ -445,11 +456,6 @@ hook.Add("PostDrawOpaqueRenderables", "rRadio_DrawAllBoomboxHUDs", function()
                 local stationName = statusData.stationName or ent:GetNWString("StationName", "")
 
                 ent:UpdateAnimations(status, dt)
-                local rawVol = entityVolumes[ent:EntIndex()]
-                local defaultVol = rawVol or 1
-                local isMuted = rRadio.cl.mutedBoomboxes and rRadio.cl.mutedBoomboxes[ent]
-                local vol = isMuted and 0 or defaultVol
-                ent:UpdateEqualizerHeights(vol, dt * 2)
 
                 local pos = ent:GetPos()
                 pos:Add(ent:GetForward() * HUD_OFFSET_FORWARD)
