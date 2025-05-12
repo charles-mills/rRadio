@@ -19,6 +19,7 @@ Steam: https://steamcommunity.com/id/rammel/
 Remaining bugs:
 
 - (Some) Language packs not loading for an extremely mysterious reason unknown to all
+- Double play ? 
 
 ]]
 

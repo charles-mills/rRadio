@@ -24,6 +24,8 @@ local draw_SimpleText = draw.SimpleText
 local math_min = math.min
 local math_max = math.max
 local string_rep = string.rep
+local utf8len = string.utf8len or (utf8 and utf8.len) or function(s) return #s end
+local utf8sub = string.utf8sub or (utf8 and utf8.sub) or function(s,i,j) return string.sub(s,i,j) end
 
 local STATIC_TEXTS = nil
 
@@ -265,12 +267,19 @@ function ENT:GetDisplayText(status, stationName)
     local finalWidth = textWidth
     local maxWidth = HUD_DIMS.MIN_WIDTH - HUD_DIMS.TEXT_MAX_OFFSET
     if finalWidth > maxWidth then
-        local clipped = text
-        while GetTextWidth(clipped .. "...") > maxWidth and #clipped > 0 do
-            clipped = string.sub(clipped, 1, #clipped - 1)
+        local suffix = "..."
+        local suffixWidth = GetTextWidth(suffix)
+        local clippedLen = utf8len(text)
+        local clippedWidth = finalWidth
+        while clippedLen > 0 and (clippedWidth + suffixWidth) > maxWidth do
+            local ch = utf8sub(text, clippedLen, clippedLen)
+            local w = GetTextWidth(ch)
+            clippedWidth = clippedWidth - w
+            clippedLen = clippedLen - 1
         end
-        finalText = clipped .. "..."
-        finalWidth = GetTextWidth(finalText)
+        finalText = utf8sub(text, 1, clippedLen) .. suffix
+        finalWidth = clippedWidth + suffixWidth
+        TEXT_WIDTH_CACHE[finalText] = { width = finalWidth, isStatic = true }
     end
     self.cachedText = finalText
     local newWidth = math_max(finalWidth + HUD_PADDING * 3 + ICON_SIZE, HUD_DIMS.MIN_WIDTH)
@@ -324,20 +333,28 @@ local function DrawTextAndEqualizer(self, status, stationName, alpha, textColor)
     end
 end
 
+function ENT:GetColorScheme()
+    local scheme = entityColorSchemes[self]
+    if not scheme then
+        if self:GetClass() == "rammel_boombox_gold" then
+            scheme = HUD.COLORS.golden_boombox
+        else
+            local theme = rRadio.config.UI or DEFAULT_UI
+            scheme = {
+                BACKGROUND = theme.BackgroundColor,
+                ACCENT     = theme.AccentPrimary or theme.Highlight,
+                TEXT       = theme.TextColor,
+                INACTIVE   = theme.Disabled or theme.TextColor
+            }
+        end
+        entityColorSchemes[self] = scheme
+    end
+    return scheme
+end
+
 function ENT:DrawHUD(status, stationName, alpha)
     local bgAlpha = alpha * 1.0
-    local colors
-    if self:GetClass() == "rammel_boombox_gold" then
-        colors = HUD.COLORS.golden_boombox
-    else
-        local theme = rRadio.config.UI or DEFAULT_UI
-        colors = {
-            BACKGROUND = theme.BackgroundColor,
-            ACCENT     = theme.AccentPrimary or theme.Highlight,
-            TEXT       = theme.TextColor,
-            INACTIVE   = theme.Disabled or theme.TextColor
-        }
-    end
+    local colors = self:GetColorScheme()
     local background, accent, textColor, inactive = colors.BACKGROUND, colors.ACCENT, colors.TEXT, colors.INACTIVE
     
     do local c = GetCachedColor(background, bgAlpha) surface.SetDrawColor(c.r, c.g, c.b, c.a) end
@@ -350,20 +367,9 @@ end
 
 function ENT:GetStatusColor(status)
     local ct = CurTime()
-    if self:GetClass() == "rammel_boombox_gold" then
-        local colors = HUD.COLORS.golden_boombox
-        if status == rRadio.status.PLAYING then
-            return colors.ACCENT
-        elseif status == rRadio.status.TUNING then
-            local pulse = math_sin(ct * 4) * 0.5 + 0.5
-            return LerpColor(pulse, colors.INACTIVE, colors.ACCENT)
-        else
-            return colors.INACTIVE
-        end
-    end
-    local theme = rRadio.config.UI or {}
-    local accent = theme.AccentPrimary or theme.Highlight
-    local inactive = theme.Disabled or theme.TextColor
+    local colors = self:GetColorScheme()
+    local accent = colors.ACCENT
+    local inactive = colors.INACTIVE
     if status == rRadio.status.PLAYING then
         return accent
     elseif status == rRadio.status.TUNING then
@@ -375,12 +381,8 @@ function ENT:GetStatusColor(status)
 end
 
 function ENT:DrawEqualizer(x, y, alpha, color)
-    local barWidth = 4
-    local spacing = 4
+    local barWidth, spacing = 4, 4
     local maxHeight = HUD.DIMENSIONS.HEIGHT * 0.7
-    local volume = entityVolumes[self:EntIndex()] or 1
-    self:UpdateEqualizerHeights(volume, FrameTime() * 2)
-    
     local c = GetCachedColor(color, alpha)
     for i = 1, #self.anim.equalizerHeights do
         local height = maxHeight * self.anim.equalizerHeights[i]
@@ -390,40 +392,29 @@ end
 
 function ENT:UpdateEqualizerHeights(volume, dt)
     local ct = CurTime()
-    
     for i = 1, HUD.EQUALIZER.BARS do
         local offset = HUD.EQUALIZER.OFFSETS[i]
         local freq   = HUD.EQUALIZER.FREQUENCIES[i]
         local wave1  = math_sin((ct + offset) * freq)
         local wave2  = math_sin((ct + offset) * freq * 1.5)
-        local combinedWave = (wave1 + wave2) * 0.5
-        local targetHeight = HUD.EQUALIZER.MIN_HEIGHT + (math_abs(combinedWave) * HUD.EQUALIZER.MAX_HEIGHT * volume)
-        self.anim.equalizerHeights[i] = Lerp(dt * 4, self.anim.equalizerHeights[i], targetHeight)
+        local combined = (wave1 + wave2) * 0.5
+        local target = HUD.EQUALIZER.MIN_HEIGHT + (math_abs(combined) * HUD.EQUALIZER.MAX_HEIGHT * volume)
+        self.anim.equalizerHeights[i] = Lerp(dt * 4, self.anim.equalizerHeights[i], target)
     end
 end
 
 function ENT:UpdateAnimations(status, dt)
+    local ct = CurTime()
     local targetProgress = (status == rRadio.status.PLAYING or status == rRadio.status.TUNING) and 1 or 0
     self.anim.progress = Lerp(dt * HUD.ANIMATION.SPEED, self.anim.progress, targetProgress)
-    
     if status ~= self.anim.lastStatus then
         self.anim.statusTransition = 0
         self.anim.lastStatus = status
     end
     self.anim.statusTransition = math_min(1, self.anim.statusTransition + dt * HUD.ANIMATION.SPEED)
-
     if status == rRadio.status.TUNING then
-        self.anim.tuningOffset = (math_sin(CurTime() * 3) * 0.5 + 0.5)
+        self.anim.tuningOffset = (math_sin(ct * 3) * 0.5 + 0.5)
     end
-end
-
-function ENT:GetColorScheme()
-    local scheme = entityColorSchemes[self]
-    if not scheme then
-        scheme = HUD.COLORS[self:GetClass()] or HUD.COLORS.default
-        entityColorSchemes[self] = scheme
-    end
-    return scheme
 end
 
 net.Receive("rRadio.SetRadioVolume", function()
@@ -435,6 +426,8 @@ end)
 hook.Add("LanguageUpdated", "rRadio.ClearBoomboxTextCache", function()
     initializeStaticTexts()
     initializeStaticTextWidths()
+
+    for ent in pairs(entityColorSchemes) do entityColorSchemes[ent] = nil end
 end)
 
 hook.Add("PostDrawOpaqueRenderables", "rRadio_DrawAllBoomboxHUDs", function()
@@ -452,6 +445,11 @@ hook.Add("PostDrawOpaqueRenderables", "rRadio_DrawAllBoomboxHUDs", function()
                 local stationName = statusData.stationName or ent:GetNWString("StationName", "")
 
                 ent:UpdateAnimations(status, dt)
+                local rawVol = entityVolumes[ent:EntIndex()]
+                local defaultVol = rawVol or 1
+                local isMuted = rRadio.cl.mutedBoomboxes and rRadio.cl.mutedBoomboxes[ent]
+                local vol = isMuted and 0 or defaultVol
+                ent:UpdateEqualizerHeights(vol, dt * 2)
 
                 local pos = ent:GetPos()
                 pos:Add(ent:GetForward() * HUD_OFFSET_FORWARD)
