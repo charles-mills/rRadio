@@ -21,6 +21,8 @@ local LocalPlayer = LocalPlayer
 local FrameTime = FrameTime
 local draw_RoundedBox = draw.RoundedBox
 local draw_SimpleText = draw.SimpleText
+local math_min = math.min
+local string_rep = string.rep
 
 local STATIC_TEXTS = nil
 
@@ -34,7 +36,6 @@ local ACCENT_ALPHA_BRIGHT = 0.8
 local ACCENT_ALPHA_DIM = 0.2
 
 local ActiveBoomboxes = ActiveBoomboxes or {}
-local DIST_CHECK_VECTOR = Vector(0, 0, 0)
 local CLEANUP_INTERVAL = 5
 
 local MAX_DYNAMIC_TEXT_ENTRIES = 100
@@ -42,14 +43,6 @@ local dynamicTextOrder = {}
 
 local entityVolumes = entityVolumes or {}
 local entityColorSchemes = setmetatable({}, {__mode = "k"})
-
-local cached_dots = {
-    [0] = "",
-    [1] = ".",
-    [2] = "..",
-    [3] = "...",
-    [4] = "...."
-}
 
 local DEFAULT_UI = {
     BackgroundColor = Color(0,0,0,255),
@@ -109,20 +102,26 @@ local HUD_DIMS = {
     TEXT_MAX_OFFSET = HUD_PADDING * 4 + ICON_SIZE + 16
 }
 
+local surface_SetFont, surface_GetTextSize = surface.SetFont, surface.GetTextSize
+local math_sin, math_abs, math_floor, math_Clamp = math.sin, math.abs, math.floor, math.Clamp
+local Lerp, LerpColor = Lerp, LerpColor
+local cam_Start3D2D, cam_End3D2D = cam.Start3D2D, cam.End3D2D
+local vector_origin = vector_origin
+
 local function LerpColor(t, c1, c2)
     return Color(
-        math.floor(c1.r + (c2.r - c1.r) * t),
-        math.floor(c1.g + (c2.g - c1.g) * t),
-        math.floor(c1.b + (c2.b - c1.b) * t),
-        math.floor(c1.a + (c2.a - c1.a) * t)
+        math_floor(c1.r + (c2.r - c1.r) * t),
+        math_floor(c1.g + (c2.g - c1.g) * t),
+        math_floor(c1.b + (c2.b - c1.b) * t),
+        math_floor(c1.a + (c2.a - c1.a) * t)
     )
 end
 
 local function GetTextWidth(text)
     local entry = TEXT_WIDTH_CACHE[text]
     if entry then return entry.width end
-    surface.SetFont("rRadio.Roboto24")
-    local w = surface.GetTextSize(text)
+    surface_SetFont("rRadio.Roboto24")
+    local w = surface_GetTextSize(text)
     TEXT_WIDTH_CACHE[text] = { width = w, isStatic = false }
     table.insert(dynamicTextOrder, text)
     if #dynamicTextOrder > MAX_DYNAMIC_TEXT_ENTRIES then
@@ -144,9 +143,9 @@ local function initializeStaticTexts()
 end
 
 local function initializeStaticTextWidths()
-    surface.SetFont("rRadio.Roboto24")
+    surface_SetFont("rRadio.Roboto24")
     for _, txt in pairs(STATIC_TEXTS) do
-        local w = surface.GetTextSize(txt)
+        local w = surface_GetTextSize(txt)
         TEXT_WIDTH_CACHE[txt] = { width = w, isStatic = true }
     end
 end
@@ -157,9 +156,9 @@ initializeStaticTextWidths()
 local color_cache = {}
 local function GetCachedColor(baseColor, alpha)
     if type(baseColor) ~= "table" or type(baseColor.r) ~= "number" then
-        return Color(255,255,255, math.floor(alpha or 255))
+        return Color(255,255,255, math_floor(alpha or 255))
     end
-    local a = math.floor(alpha or baseColor.a or 255)
+    local a = math_floor(alpha or baseColor.a or 255)
     if a == 255 then
         return baseColor
     end
@@ -167,9 +166,9 @@ local function GetCachedColor(baseColor, alpha)
     local key = baseColor.r..","..baseColor.g..","..baseColor.b..","..a
     local col = color_cache[key]
     if not col then
-        local r = math.floor(baseColor.r * a / 255)
-        local g = math.floor(baseColor.g * a / 255)
-        local b = math.floor(baseColor.b * a / 255)
+        local r = math_floor(baseColor.r * a / 255)
+        local g = math_floor(baseColor.g * a / 255)
+        local b = math_floor(baseColor.b * a / 255)
         col = Color(r, g, b, a)
         color_cache[key] = col
     end
@@ -195,20 +194,8 @@ local AnimMT = {
 
 local function GetLocalPlayerEyePos()
     local lp = LocalPlayer()
-    return IsValid(lp) and lp:EyePos() or Vector(0, 0, 0)
+    return IsValid(lp) and lp:EyePos() or vector_origin
 end
-
-local function CleanupInvalidBoomboxes()
-    local removed = false
-    for ent in pairs(ActiveBoomboxes) do
-        if not IsValid(ent) then
-            ActiveBoomboxes[ent] = nil
-            removed = true
-        end
-    end
-end
-
-timer.Create("BoomboxCleanup", CLEANUP_INTERVAL, 0, CleanupInvalidBoomboxes)
 
 local function UpdateNetworkedValues(self)
     local oldStatus = self.nwStatus
@@ -220,6 +207,18 @@ local function UpdateNetworkedValues(self)
         self.anim.lastStatus = oldStatus
     end
 end
+
+hook.Add("NetworkEntityCreated", "rRadio.BoomboxNetworkedValues", function(ent)
+    if not IsValid(ent) or not rRadio.utils.IsBoombox(ent) or ent.anim then return end
+    ent.anim = setmetatable({}, AnimMT)
+    ActiveBoomboxes[ent] = true
+    UpdateNetworkedValues(ent)
+end)
+
+hook.Add("EntityRemoved", "rRadio.CleanupBoomboxVolumes", function(ent)
+    entityVolumes[ent:EntIndex()] = nil
+    ActiveBoomboxes[ent] = nil
+end)
 
 function ENT:Initialize()
     local mins, maxs = self:GetModelBounds()
@@ -259,7 +258,8 @@ function ENT:GetDisplayText(status, stationName)
             text = STATIC_TEXTS.paused
         end
     elseif status == rRadio.status.TUNING then
-        text = STATIC_TEXTS.tuning .. cached_dots[math.floor(CurTime() * 2) % #cached_dots]
+        local dotCount = math_floor(CurTime() * 2) % 4
+        text = STATIC_TEXTS.tuning .. string_rep(".", dotCount)
     elseif stationName ~= "" then
         text = stationName
     else
@@ -356,12 +356,13 @@ function ENT:DrawHUD(status, stationName, alpha)
 end
 
 function ENT:GetStatusColor(status)
+    local ct = CurTime()
     if self:GetClass() == "rammel_boombox_gold" then
         local colors = HUD.COLORS.golden_boombox
         if status == rRadio.status.PLAYING then
             return colors.ACCENT
         elseif status == rRadio.status.TUNING then
-            local pulse = math.sin(CurTime() * 4) * 0.5 + 0.5
+            local pulse = math_sin(ct * 4) * 0.5 + 0.5
             return LerpColor(pulse, colors.INACTIVE, colors.ACCENT)
         else
             return colors.INACTIVE
@@ -373,7 +374,7 @@ function ENT:GetStatusColor(status)
     if status == rRadio.status.PLAYING then
         return accent
     elseif status == rRadio.status.TUNING then
-        local pulse = math.sin(CurTime() * 4) * 0.5 + 0.5
+        local pulse = math_sin(ct * 4) * 0.5 + 0.5
         return LerpColor(pulse, inactive, accent)
     else
         return inactive
@@ -390,37 +391,38 @@ function ENT:DrawEqualizer(x, y, alpha, color)
         volume = 0
     end
     
-    self:UpdateEqualizerHeights(volume, FrameTime() * 2)
+    local ft = FrameTime()
+    local ct = CurTime()
+    self:UpdateEqualizerHeights(volume, ft * 2)
     
-    local colorWithAlpha = GetCachedColor(color, alpha)
-    local baseY = y
-    
+    local c = GetCachedColor(color, alpha)
+    local by = y
+
     for i = 1, HUD.EQUALIZER.BARS do
         local offset = HUD.EQUALIZER.OFFSETS[i]
         local freq   = HUD.EQUALIZER.FREQUENCIES[i]
-        local wave1  = math.sin((CurTime() + offset) * freq)
-        local wave2  = math.sin((CurTime() + offset) * freq * 1.5)
+        local wave1  = math_sin((ct + offset) * freq)
+        local wave2  = math_sin((ct + offset) * freq * 1.5)
         local combinedWave = (wave1 + wave2) * 0.5
-        
-        local targetHeight = HUD.EQUALIZER.MIN_HEIGHT + (math.abs(combinedWave) * HUD.EQUALIZER.MAX_HEIGHT * volume)
-        self.anim.equalizerHeights[i] = Lerp(FrameTime() * 4, self.anim.equalizerHeights[i], targetHeight)
-        
+
+        local targetHeight = HUD.EQUALIZER.MIN_HEIGHT + (math_abs(combinedWave) * HUD.EQUALIZER.MAX_HEIGHT * volume)
+        self.anim.equalizerHeights[i] = Lerp(ft * 4, self.anim.equalizerHeights[i], targetHeight)
+
         local height = maxHeight * self.anim.equalizerHeights[i]
-        draw_RoundedBox(1, x + (i - 1) * (barWidth + spacing), baseY - height * 0.5, barWidth, height, colorWithAlpha)
+        draw_RoundedBox(1, x + (i - 1) * (barWidth + spacing), by - height * 0.5, barWidth, height, c)
     end
 end
 
 function ENT:UpdateEqualizerHeights(volume, dt)
-    local curTime = CurTime()
+    local ct = CurTime()
     
     for i = 1, HUD.EQUALIZER.BARS do
         local offset = HUD.EQUALIZER.OFFSETS[i]
         local freq   = HUD.EQUALIZER.FREQUENCIES[i]
-        local wave1  = math.sin((curTime + offset) * freq)
-        local wave2  = math.sin((curTime + offset) * freq * 1.5)
+        local wave1  = math_sin((ct + offset) * freq)
+        local wave2  = math_sin((ct + offset) * freq * 1.5)
         local combinedWave = (wave1 + wave2) * 0.5
-        
-        local targetHeight = HUD.EQUALIZER.MIN_HEIGHT + (math.abs(combinedWave) * HUD.EQUALIZER.MAX_HEIGHT * volume)
+        local targetHeight = HUD.EQUALIZER.MIN_HEIGHT + (math_abs(combinedWave) * HUD.EQUALIZER.MAX_HEIGHT * volume)
         self.anim.equalizerHeights[i] = Lerp(dt * 4, self.anim.equalizerHeights[i], targetHeight)
     end
 end
@@ -433,10 +435,10 @@ function ENT:UpdateAnimations(status, dt)
         self.anim.statusTransition = 0
         self.anim.lastStatus = status
     end
-    self.anim.statusTransition = math.min(1, self.anim.statusTransition + dt * HUD.ANIMATION.SPEED)
+    self.anim.statusTransition = math_min(1, self.anim.statusTransition + dt * HUD.ANIMATION.SPEED)
 
     if status == rRadio.status.TUNING then
-        self.anim.tuningOffset = (math.sin(CurTime() * 3) * 0.5 + 0.5)
+        self.anim.tuningOffset = (math_sin(CurTime() * 3) * 0.5 + 0.5)
     end
 end
 
@@ -460,25 +462,6 @@ hook.Add("LanguageUpdated", "rRadio.ClearBoomboxTextCache", function()
     initializeStaticTextWidths()
 end)
 
-hook.Add("NetworkEntityCreated", "BoomboxNetworkedValues", function(ent)
-    if not IsValid(ent) or not rRadio.utils.IsBoombox(ent) then return end
-
-    timer.Simple(0, function()
-        if IsValid(ent) then
-            UpdateNetworkedValues(ent)
-        end
-    end)
-end)
-
-hook.Add("EntityRemoved", "CleanupBoomboxVolumes", function(ent)
-    entityVolumes[ent:EntIndex()] = nil
-    ActiveBoomboxes[ent] = nil
-end)
-
-hook.Add("ShutDown", "CleanupBoomboxTimers", function()
-    timer.Remove("BoomboxCleanup")
-end)
-
 hook.Add("PostDrawOpaqueRenderables", "rRadio_DrawAllBoomboxHUDs", function()
     local plyEye = LocalPlayer():EyePos()
     local dt = FrameTime()
@@ -486,7 +469,7 @@ hook.Add("PostDrawOpaqueRenderables", "rRadio_DrawAllBoomboxHUDs", function()
     for ent in pairs(ActiveBoomboxes) do
         local distSqr = plyEye:DistToSqr(ent:GetPos())
         if distSqr <= MODEL_CULL_DISTANCE_SQR and cvHud:GetBool() and cvEnabled:GetBool() then
-            local alpha = math.Clamp(255 * (1 - (distSqr - FADE_START_SQR) * FADE_RANGE_INV), 0, 255)
+            local alpha = math_Clamp(255 * (1 - (distSqr - FADE_START_SQR) * FADE_RANGE_INV), 0, 255)
             if alpha > 0 then
                 local idx = ent:EntIndex()
                 local statusData = rRadio.cl.BoomboxStatuses[idx] or {}
@@ -504,9 +487,9 @@ hook.Add("PostDrawOpaqueRenderables", "rRadio_DrawAllBoomboxHUDs", function()
                 ang:RotateAroundAxis(ang:Forward(), 90)
                 ang:RotateAroundAxis(ang:Right(), 180)
 
-                cam.Start3D2D(pos, ang, HUD_SCALE)
+                cam_Start3D2D(pos, ang, HUD_SCALE)
                     ent:DrawHUD(status, stationName, alpha)
-                cam.End3D2D()
+                cam_End3D2D()
             end
         end
     end
