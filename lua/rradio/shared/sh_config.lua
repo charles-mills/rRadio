@@ -19,6 +19,13 @@ rRadio.config.CustomStationCategory = "Custom"
 rRadio.config.CommandAddStation = "!rradioadd"
 rRadio.config.CommandRemoveStation = "!rradiorem"
 
+rRadio.config.VehicleClassOverides = {
+    "lvs_",
+    "ses_",
+    "sw_",
+    "drs_"
+}
+
 -----------------------------------------------------------------------
 
 if rRadio.DEV then

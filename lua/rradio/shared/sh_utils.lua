@@ -25,12 +25,15 @@ function rRadio.utils.GetVehicle(ent)
   ent = IsValid(parent) and parent or ent
   if rRadio.utils.SitAnywhereSeats[ent:GetClass()] then return end
 
-  if rRadio.utils.VehicleClasses[ent:GetClass()] or ent:IsVehicle() or
-    string.StartWith(ent:GetClass(), "lvs_") or
-    string.StartWith(ent:GetClass(), "ses_") or
-    string.StartWith(ent:GetClass(), "sw_") or
-    string.StartWith(ent:GetClass(), "drs_")
-  then return ent end
+  local class = ent:GetClass()
+  if rRadio.utils.VehicleClasses[class] or ent:IsVehicle() then
+    return ent
+  end
+  for _, prefix in ipairs(rRadio.config.VehicleClassOverides or {}) do
+    if string.StartWith(class, prefix) then
+      return ent
+    end
+  end
 end
 
 function rRadio.utils.isSitAnywhereSeat(vehicle)
