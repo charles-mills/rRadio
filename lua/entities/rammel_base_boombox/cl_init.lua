@@ -75,7 +75,8 @@ local HUD = {
         BARS = 3,
         MIN_HEIGHT = 0.3,
         MAX_HEIGHT = 0.7,
-        FREQUENCIES = {1.5, 2.0, 2.5}
+        FREQUENCIES = {1.5, 2.0, 2.5},
+        OFFSETS    = {0,    0.33, 0.66}
     },
     COLORS = {
         boombox = {
@@ -126,7 +127,10 @@ local function GetTextWidth(text)
     table.insert(dynamicTextOrder, text)
     if #dynamicTextOrder > MAX_DYNAMIC_TEXT_ENTRIES then
         local oldest = table.remove(dynamicTextOrder, 1)
-        TEXT_WIDTH_CACHE[oldest] = nil
+        local oe = TEXT_WIDTH_CACHE[oldest]
+        if oe and not oe.isStatic then
+            TEXT_WIDTH_CACHE[oldest] = nil
+        end
     end
     return w
 end
@@ -155,35 +159,39 @@ local function GetCachedColor(baseColor, alpha)
     if type(baseColor) ~= "table" or type(baseColor.r) ~= "number" then
         return Color(255,255,255, math.floor(alpha or 255))
     end
-    local r = math.floor(baseColor.r)
-    local g = math.floor(baseColor.g)
-    local b = math.floor(baseColor.b)
-    local a = tonumber(alpha) or 255
-    local baseKey = r..","..g..","..b
-    local bucket = color_cache[baseKey]
-    if not bucket then
-        bucket = {}
-        color_cache[baseKey] = bucket
+    local a = math.floor(alpha or baseColor.a or 255)
+    if a == 255 then
+        return baseColor
     end
-    local aKey = math.floor(a)
-    local col = bucket[aKey]
+
+    local key = baseColor.r..","..baseColor.g..","..baseColor.b..","..a
+    local col = color_cache[key]
     if not col then
-        col = Color(r * aKey / 255, g * aKey / 255, b * aKey / 255, aKey)
-        bucket[aKey] = col
+        local r = math.floor(baseColor.r * a / 255)
+        local g = math.floor(baseColor.g * a / 255)
+        local b = math.floor(baseColor.b * a / 255)
+        col = Color(r, g, b, a)
+        color_cache[key] = col
     end
     return col
 end
 
-local function createAnimationState()
-    return {
-        progress = 0,
-        textOffset = 0,
-        lastStatus = "",
-        statusTransition = 0,
-        equalizerHeights = {0, 0, 0},
-        tuningOffset = 0
-    }
-end
+local AnimMT = {
+   __index = function(self, key)
+       if key == "progress"         then rawset(self,"progress",0);         return 0 end
+       if key == "textOffset"       then rawset(self,"textOffset",0);       return 0 end
+       if key == "lastStatus"       then rawset(self,"lastStatus","" );    return "" end
+       if key == "statusTransition" then rawset(self,"statusTransition",0); return 0 end
+       if key == "equalizerHeights" then
+           local arr = {}
+           for i = 1, HUD.EQUALIZER.BARS do arr[i] = 0 end
+           rawset(self,"equalizerHeights",arr);
+           return arr
+       end
+       if key == "tuningOffset"     then rawset(self,"tuningOffset",0);    return 0 end
+       return nil
+   end
+}
 
 local function GetLocalPlayerEyePos()
     local lp = LocalPlayer()
@@ -201,6 +209,7 @@ local function CleanupInvalidBoomboxes()
 end
 
 timer.Create("BoomboxCleanup", CLEANUP_INTERVAL, 0, CleanupInvalidBoomboxes)
+
 local function UpdateNetworkedValues(self)
     local oldStatus = self.nwStatus
     self.nwStatus = self:GetNWInt("Status", rRadio.status.STOPPED)
@@ -217,7 +226,7 @@ function ENT:Initialize()
     maxs.z = maxs.z + 20
     self:SetRenderBounds(mins, maxs)
     
-    self.anim = createAnimationState()
+    self.anim = setmetatable({}, AnimMT)
     self.lastVisibilityCheck = 0
     self.lastVisibilityResult = 0
     self.lastDistanceResult = 0
@@ -242,22 +251,21 @@ function ENT:Draw()
 end
 
 function ENT:GetDisplayText(status, stationName)
+    local text
     if status == rRadio.status.STOPPED then
         if rRadio.utils.canInteractWithBoombox(LocalPlayer(), self) then
-            return STATIC_TEXTS.interact
+            text = STATIC_TEXTS.interact
+        else
+            text = STATIC_TEXTS.paused
         end
-        
-        return STATIC_TEXTS.paused
     elseif status == rRadio.status.TUNING then
-        return STATIC_TEXTS.tuning .. cached_dots[math.floor(CurTime() * 2) % #cached_dots]
+        text = STATIC_TEXTS.tuning .. cached_dots[math.floor(CurTime() * 2) % #cached_dots]
     elseif stationName ~= "" then
-        return stationName
+        text = stationName
+    else
+        text = "Radio"
     end
-    return "Radio"
-end
 
-function ENT:ProcessDisplayText(status, stationName)
-    local text = self:GetDisplayText(status, stationName)
     local textWidth = GetTextWidth(text)
     if self.cachedText == text then return self.cachedText end
     local finalText = text
@@ -308,7 +316,7 @@ local function DrawIndicatorBar(self, status, alpha)
 end
 
 local function DrawTextAndEqualizer(self, status, stationName, alpha, textColor)
-    local text = self:ProcessDisplayText(status, stationName)
+    local text = self:GetDisplayText(status, stationName)
     draw_SimpleText(
         text,
         "rRadio.Roboto24",
@@ -373,9 +381,6 @@ function ENT:GetStatusColor(status)
 end
 
 function ENT:DrawEqualizer(x, y, alpha, color)
-    if not self.anim then self.anim = createAnimationState() end
-    if not self.anim.equalizerHeights then self.anim.equalizerHeights = {0, 0, 0} end
-    
     local barWidth = 4
     local spacing = 4
     local maxHeight = HUD.DIMENSIONS.HEIGHT * 0.7
@@ -384,25 +389,35 @@ function ENT:DrawEqualizer(x, y, alpha, color)
     if rRadio.cl.mutedBoomboxes and rRadio.cl.mutedBoomboxes[self] then
         volume = 0
     end
-
+    
     self:UpdateEqualizerHeights(volume, FrameTime() * 2)
     
     local colorWithAlpha = GetCachedColor(color, alpha)
     local baseY = y
     
     for i = 1, HUD.EQUALIZER.BARS do
-        local height = maxHeight * (self.anim.equalizerHeights[i] or 0)
+        local offset = HUD.EQUALIZER.OFFSETS[i]
+        local freq   = HUD.EQUALIZER.FREQUENCIES[i]
+        local wave1  = math.sin((CurTime() + offset) * freq)
+        local wave2  = math.sin((CurTime() + offset) * freq * 1.5)
+        local combinedWave = (wave1 + wave2) * 0.5
+        
+        local targetHeight = HUD.EQUALIZER.MIN_HEIGHT + (math.abs(combinedWave) * HUD.EQUALIZER.MAX_HEIGHT * volume)
+        self.anim.equalizerHeights[i] = Lerp(FrameTime() * 4, self.anim.equalizerHeights[i], targetHeight)
+        
+        local height = maxHeight * self.anim.equalizerHeights[i]
         draw_RoundedBox(1, x + (i - 1) * (barWidth + spacing), baseY - height * 0.5, barWidth, height, colorWithAlpha)
     end
 end
 
 function ENT:UpdateEqualizerHeights(volume, dt)
     local curTime = CurTime()
-    local timeOffsets = {0, 0.33, 0.66}
     
     for i = 1, HUD.EQUALIZER.BARS do
-        local wave1 = math.sin((curTime + timeOffsets[i]) * HUD.EQUALIZER.FREQUENCIES[i])
-        local wave2 = math.sin((curTime + timeOffsets[i]) * HUD.EQUALIZER.FREQUENCIES[i] * 1.5)
+        local offset = HUD.EQUALIZER.OFFSETS[i]
+        local freq   = HUD.EQUALIZER.FREQUENCIES[i]
+        local wave1  = math.sin((curTime + offset) * freq)
+        local wave2  = math.sin((curTime + offset) * freq * 1.5)
         local combinedWave = (wave1 + wave2) * 0.5
         
         local targetHeight = HUD.EQUALIZER.MIN_HEIGHT + (math.abs(combinedWave) * HUD.EQUALIZER.MAX_HEIGHT * volume)
@@ -411,9 +426,6 @@ function ENT:UpdateEqualizerHeights(volume, dt)
 end
 
 function ENT:UpdateAnimations(status, dt)
-    if not self.anim then
-        self.anim = createAnimationState()
-    end
     local targetProgress = (status == rRadio.status.PLAYING or status == rRadio.status.TUNING) and 1 or 0
     self.anim.progress = Lerp(dt * HUD.ANIMATION.SPEED, self.anim.progress, targetProgress)
     
