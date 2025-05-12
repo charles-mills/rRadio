@@ -99,7 +99,7 @@ function rRadio.utils.setRadioStatus(entity, status, stationName, isPlaying, upd
 
   stationName = stationName or ""
   if isPlaying == nil then
-    isPlaying = (status == "playing" or status == "tuning")
+    isPlaying = (status == rRadio.status.PLAYING or status == rRadio.status.TUNING)
   end
 
   local statuses = SERVER and rRadio.sv.BoomboxStatuses or rRadio.cl.BoomboxStatuses or {}

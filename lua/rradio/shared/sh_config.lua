@@ -34,6 +34,14 @@ end
 rRadio.config.RadioStations = rRadio.config.RadioStations or {}
 rRadio.config.Lang = rRadio.config.Lang or {}
 
+rRadio.status = rRadio.status or {}
+
+rRadio.status = {
+    STOPPED = "stopped",
+    TUNING = "tuning",
+    PLAYING = "playing"
+}
+
 local DEFAULT_UI = {
     BackgroundColor = Color(0,0,0,255),
     AccentPrimary   = Color(58,114,255),

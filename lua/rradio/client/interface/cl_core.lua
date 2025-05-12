@@ -1088,9 +1088,9 @@ net.Receive(
             entity:SetNWString("Status", status)
             entity:SetNWString("StationName", stationName)
             entity:SetNWBool("IsPlaying", isPlaying)
-            if status == "playing" then
+            if status == rRadio.status.PLAYING then
                 currentlyPlayingStations[entity] = {name = stationName}
-            elseif status == "stopped" then
+            elseif status == rRadio.status.STOPPED then
                 currentlyPlayingStations[entity] = nil
             end
         end

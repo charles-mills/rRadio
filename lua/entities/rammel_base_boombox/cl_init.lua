@@ -240,13 +240,13 @@ function ENT:Draw()
 end
 
 function ENT:GetDisplayText(status, stationName)
-    if status == "stopped" then
+    if status == rRadio.status.STOPPED then
         if rRadio.utils.canInteractWithBoombox(LocalPlayer(), self) then
             return STATIC_TEXTS.interact, STATIC_TEXT_WIDTHS[STATIC_TEXTS.interact]
         end
         
         return STATIC_TEXTS.paused, STATIC_TEXT_WIDTHS[STATIC_TEXTS.paused]
-    elseif status == "tuning" then
+    elseif status == rRadio.status.TUNING then
         local base = STATIC_TEXTS.tuning
         local dots = cached_dots[math.floor(CurTime() * 2) % #cached_dots]
         local text = base .. dots
@@ -306,7 +306,7 @@ function ENT:ProcessDisplayText(status, stationName)
 end
 
 local function DrawAccentBar(self, status, accent, alpha)
-    if status == "tuning" then
+    if status == rRadio.status.TUNING then
         local barWidth = self.cachedWidth * 0.3
         local tuningOffset = self.anim.tuningOffset * (self.cachedWidth - barWidth)
         local c1 = GetCachedColor(accent, alpha * ACCENT_ALPHA_DIM)
@@ -323,7 +323,7 @@ local function DrawAccentBar(self, status, accent, alpha)
 end
 
 local function DrawIndicatorBar(self, status, alpha)
-    if status ~= "playing" then
+    if status ~= rRadio.status.PLAYING then
         local color = self:GetStatusColor(status)
         local c = GetCachedColor(color, alpha)
         surface.SetDrawColor(c.r, c.g, c.b, c.a)
@@ -342,7 +342,7 @@ local function DrawTextAndEqualizer(self, status, stationName, alpha, textColor)
         TEXT_ALIGN_LEFT,
         TEXT_ALIGN_CENTER
     )
-    if status == "playing" then
+    if status == rRadio.status.PLAYING then
         self:DrawEqualizer(self.hudX, HUD_Y + HUD_HALF_HEIGHT, alpha, self:GetStatusColor(status))
     end
 end
@@ -374,9 +374,9 @@ end
 function ENT:GetStatusColor(status)
     if self:GetClass() == "rammel_boombox_gold" then
         local colors = HUD.COLORS.golden_boombox
-        if status == "playing" then
+        if status == rRadio.status.PLAYING then
             return colors.ACCENT
-        elseif status == "tuning" then
+        elseif status == rRadio.status.TUNING then
             local pulse = math.sin(CurTime() * 4) * 0.5 + 0.5
             return LerpColor(pulse, colors.INACTIVE, colors.ACCENT)
         else
@@ -386,9 +386,9 @@ function ENT:GetStatusColor(status)
     local theme = rRadio.config.UI or {}
     local accent = theme.AccentPrimary or theme.Highlight
     local inactive = theme.Disabled or theme.TextColor
-    if status == "playing" then
+    if status == rRadio.status.PLAYING then
         return accent
-    elseif status == "tuning" then
+    elseif status == rRadio.status.TUNING then
         local pulse = math.sin(CurTime() * 4) * 0.5 + 0.5
         return LerpColor(pulse, inactive, accent)
     else
@@ -438,7 +438,7 @@ function ENT:UpdateAnimations(status, dt)
     if not self.anim then
         self.anim = createAnimationState()
     end
-    local targetProgress = (status == "playing" or status == "tuning") and 1 or 0
+    local targetProgress = (status == rRadio.status.PLAYING or status == rRadio.status.TUNING) and 1 or 0
     self.anim.progress = Lerp(dt * HUD.ANIMATION.SPEED, self.anim.progress, targetProgress)
     
     if status ~= self.anim.lastStatus then
@@ -447,7 +447,7 @@ function ENT:UpdateAnimations(status, dt)
     end
     self.anim.statusTransition = math.min(1, self.anim.statusTransition + dt * HUD.ANIMATION.SPEED)
 
-    if status == "tuning" then
+    if status == rRadio.status.TUNING then
         self.anim.tuningOffset = (math.sin(CurTime() * 3) * 0.5 + 0.5)
     end
 end
