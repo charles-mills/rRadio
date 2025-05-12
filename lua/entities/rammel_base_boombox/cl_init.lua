@@ -16,6 +16,8 @@ local FADE_END_SQR = 500 * 500
 local FADE_RANGE_INV = 1 / (FADE_END_SQR - FADE_START_SQR)
 local MODEL_CULL_DISTANCE_SQR = 7500 * 7500
 
+local MAX_NAME_CHARS = 50
+
 local CurTime = CurTime
 local LocalPlayer = LocalPlayer
 local FrameTime = FrameTime
@@ -244,6 +246,23 @@ function ENT:Draw()
     self:DrawModel()
 end
 
+local function ClipTextToWidth(text, maxWidth)
+    local suffix = "..."
+    local suffixW = GetTextWidth(suffix)
+    local fullW = GetTextWidth(text)
+    if fullW <= maxWidth - suffixW then return text, fullW end
+    local len = utf8len(text)
+    local low, high, best = 1, len, 1
+    while low <= high do
+        local mid = math_floor((low + high)/2)
+        local sub = utf8sub(text, 1, mid)
+        local w = GetTextWidth(sub)
+        if w + suffixW <= maxWidth then best, low = mid, mid+1 else high = mid-1 end
+    end
+    local final = utf8sub(text, 1, best) .. suffix
+    return final, GetTextWidth(final)
+end
+
 function ENT:GetDisplayText(status, stationName)
     local text
     if status == rRadio.status.STOPPED then
@@ -262,23 +281,15 @@ function ENT:GetDisplayText(status, stationName)
     end
 
     local textWidth = GetTextWidth(text)
-    if self.cachedText == text then return self.cachedText end
+    if self.lastRawText == text then
+        return self.cachedText
+    end
+    self.lastRawText = text
     local finalText = text
     local finalWidth = textWidth
     local maxWidth = HUD_DIMS.MIN_WIDTH - HUD_DIMS.TEXT_MAX_OFFSET
     if finalWidth > maxWidth then
-        local suffix = "..."
-        local suffixWidth = GetTextWidth(suffix)
-        local clippedLen = utf8len(text)
-        local clippedWidth = finalWidth
-        while clippedLen > 0 and (clippedWidth + suffixWidth) > maxWidth do
-            local ch = utf8sub(text, clippedLen, clippedLen)
-            local w = GetTextWidth(ch)
-            clippedWidth = clippedWidth - w
-            clippedLen = clippedLen - 1
-        end
-        finalText = utf8sub(text, 1, clippedLen) .. suffix
-        finalWidth = clippedWidth + suffixWidth
+        finalText, finalWidth = ClipTextToWidth(text, maxWidth)
         TEXT_WIDTH_CACHE[finalText] = { width = finalWidth, isStatic = true }
     end
     self.cachedText = finalText
@@ -319,6 +330,9 @@ end
 
 local function DrawTextAndEqualizer(self, status, stationName, alpha, textColor)
     local text = self:GetDisplayText(status, stationName)
+    if stationName and utf8len(stationName) > MAX_NAME_CHARS then
+        stationName = utf8sub(stationName, 1, MAX_NAME_CHARS)
+    end
     draw_SimpleText(
         text,
         "rRadio.Roboto24",
