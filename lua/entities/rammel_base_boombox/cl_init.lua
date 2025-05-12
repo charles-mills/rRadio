@@ -502,8 +502,8 @@ hook.Add("PostDrawOpaqueRenderables", "rRadio_DrawAllBoomboxHUDs", function()
             if alpha > 0 then
                 local idx = ent:EntIndex()
                 local statusData = rRadio.cl.BoomboxStatuses[idx] or {}
-                local status = statusData.stationStatus or ent.nwStatus
-                local stationName = statusData.stationName or ent.nwStationName
+                local status = statusData.stationStatus ~= nil and statusData.stationStatus or ent:GetNWInt("Status", rRadio.status.STOPPED)
+                local stationName = statusData.stationName or ent:GetNWString("StationName", "")
 
                 ent:UpdateAnimations(status, dt)
 
