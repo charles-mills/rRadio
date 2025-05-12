@@ -68,7 +68,7 @@ function rRadio.sv.utils.AddActiveRadio(entity, stationName, url, volume)
     if rRadio.utils.IsBoombox(entity) then
         rRadio.DevPrint("[rRADIO] Entity " .. entIndex .. " is a boombox, updating status")
         rRadio.sv.BoomboxStatuses[entIndex] = {
-            stationStatus = "playing",
+            stationStatus = rRadio.status.PLAYING,
             stationName = stationName,
             url = url
         }

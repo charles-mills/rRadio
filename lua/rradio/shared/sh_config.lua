@@ -37,9 +37,9 @@ rRadio.config.Lang = rRadio.config.Lang or {}
 rRadio.status = rRadio.status or {}
 
 rRadio.status = {
-    STOPPED = "stopped",
-    TUNING = "tuning",
-    PLAYING = "playing"
+    STOPPED = 0,
+    TUNING = 1,
+    PLAYING = 2
 }
 
 local DEFAULT_UI = {

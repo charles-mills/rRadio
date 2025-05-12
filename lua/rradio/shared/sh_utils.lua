@@ -108,7 +108,7 @@ function rRadio.utils.setRadioStatus(entity, status, stationName, isPlaying, upd
   end
 
   if not updateNameOnly then
-    entity:SetNWString("Status", status)
+    entity:SetNWInt("Status", status)
     entity:SetNWBool("IsPlaying", isPlaying)
     statuses[entIndex].stationStatus = status
   end
@@ -120,8 +120,7 @@ function rRadio.utils.setRadioStatus(entity, status, stationName, isPlaying, upd
     net.WriteEntity(entity)
     net.WriteString(stationName)
     net.WriteBool(isPlaying)
-    local statusToSend = (updateNameOnly and statuses[entIndex].stationStatus or status)
-    net.WriteString(statusToSend or "")
+    net.WriteUInt(status or rRadio.status.STOPPED, 2)
     net.Broadcast()
   end
 end
@@ -135,7 +134,7 @@ function rRadio.utils.clearRadioStatus(entity)
     timer.Remove("UpdateBoomboxStatus_" .. entIndex)
   end
 
-  rRadio.utils.setRadioStatus(entity, "stopped", "", false)
+  rRadio.utils.setRadioStatus(entity, rRadio.status.STOPPED, "", false)
 end
 
 function rRadio.utils.IsBoombox(entity)

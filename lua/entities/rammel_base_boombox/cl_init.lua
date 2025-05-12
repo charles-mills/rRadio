@@ -201,7 +201,7 @@ end
 timer.Create("BoomboxCleanup", CLEANUP_INTERVAL, 0, CleanupInvalidBoomboxes)
 local function UpdateNetworkedValues(self)
     local oldStatus = self.nwStatus
-    self.nwStatus = self:GetNWString("Status", "stopped")
+    self.nwStatus = self:GetNWInt("Status", rRadio.status.STOPPED)
     self.nwStationName = self:GetNWString("StationName", "")
     self.nwOwner = self:GetNWEntity("Owner")
 

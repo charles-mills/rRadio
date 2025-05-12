@@ -196,10 +196,10 @@ rRadio.sv.BoomboxStatuses[entIndex] = {}
 end
 rRadio.sv.BoomboxStatuses[entIndex].url = row.station_url
 rRadio.sv.BoomboxStatuses[entIndex].stationName = row.station_name
-rRadio.sv.BoomboxStatuses[entIndex].stationStatus = "playing"
+rRadio.sv.BoomboxStatuses[entIndex].stationStatus = rRadio.status.PLAYING
 ent:SetNWString("StationName", row.station_name)
 ent:SetNWString("StationURL", row.station_url)
-ent:SetNWString("Status", "playing")
+ent:SetNWInt("Status", rRadio.status.PLAYING)
 ent:SetNWBool("IsPlaying", true)
 net.Start("rRadio.PlayStation")
 net.WriteEntity(ent)

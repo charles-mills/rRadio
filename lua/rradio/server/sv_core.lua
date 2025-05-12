@@ -31,7 +31,7 @@ timer.Create("rRadio.GlobalUpdateSweep", 0.25, 0, function()
         if now - data.timestamp >= 2 then
             local ent = Entity(entIdx)
             if IsValid(ent) then
-                rRadio.utils.setRadioStatus(ent, "playing", data.station)
+                rRadio.utils.setRadioStatus(ent, rRadio.status.PLAYING, data.station)
                 rRadio.sv.utils.BroadcastPlay(ent, data.station, data.url, data.volume)
             end
             rRadio.sv.stationUpdateQueue[entIdx] = nil
@@ -155,7 +155,7 @@ net.Receive("rRadio.PlayStation", function(len, ply)
     end
 
     if rRadio.utils.IsBoombox(ent) then
-        rRadio.utils.setRadioStatus(ent, "tuning", station)
+        rRadio.utils.setRadioStatus(ent, rRadio.status.TUNING, station)
         rRadio.sv.BoomboxStatuses[idx] = rRadio.sv.BoomboxStatuses[idx] or {}
         rRadio.sv.BoomboxStatuses[idx].stationName = station
         rRadio.sv.BoomboxStatuses[idx].url = stationURL
@@ -205,14 +205,14 @@ net.Receive("rRadio.StopStation", function(len, ply)
         return
     end
 
-    rRadio.utils.setRadioStatus(entity, "stopped")
+    rRadio.utils.setRadioStatus(entity, rRadio.status.STOPPED)
     rRadio.sv.utils.RemoveActiveRadio(entity)
     rRadio.sv.utils.BroadcastStop(entity)
     net.Start("rRadio.UpdateRadioStatus")
     net.WriteEntity(entity)
     net.WriteString("")
     net.WriteBool(false)
-    net.WriteString("stopped")
+    net.WriteInt(rRadio.status.STOPPED, 2)
     net.Broadcast()
     local entIndex = entity:EntIndex()
     rRadio.sv.stationUpdateQueue[entIndex] = nil

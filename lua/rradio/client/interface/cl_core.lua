@@ -1079,13 +1079,14 @@ net.Receive(
         local entity = net.ReadEntity()
         local stationName = net.ReadString()
         local isPlaying = net.ReadBool()
-        local status = net.ReadString()
+        local statusCode = net.ReadUInt(2)
+        local status = rRadio.status.Name[statusCode] and statusCode or rRadio.status.STOPPED
         if IsValid(entity) then
             rRadio.cl.BoomboxStatuses[entity:EntIndex()] = {
                 stationStatus = status,
                 stationName = stationName
             }
-            entity:SetNWString("Status", status)
+            entity:SetNWInt("Status", statusCode)
             entity:SetNWString("StationName", stationName)
             entity:SetNWBool("IsPlaying", isPlaying)
             if status == rRadio.status.PLAYING then
