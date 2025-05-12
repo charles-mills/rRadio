@@ -22,11 +22,14 @@ local FrameTime = FrameTime
 local draw_RoundedBox = draw.RoundedBox
 local draw_SimpleText = draw.SimpleText
 local math_min = math.min
+local math_max = math.max
 local string_rep = string.rep
 
 local STATIC_TEXTS = nil
 
 local TEXT_WIDTH_CACHE = {}
+local MAX_DYNAMIC_TEXT_ENTRIES = 100
+local dynamicTextOrder = {}
 
 local HUD_OFFSET_FORWARD = 4.6
 local HUD_OFFSET_UP      = 14.5
@@ -36,11 +39,6 @@ local ACCENT_ALPHA_BRIGHT = 0.8
 local ACCENT_ALPHA_DIM = 0.2
 
 local ActiveBoomboxes = ActiveBoomboxes or {}
-local CLEANUP_INTERVAL = 5
-
-local MAX_DYNAMIC_TEXT_ENTRIES = 100
-local dynamicTextOrder = {}
-
 local entityVolumes = entityVolumes or {}
 local entityColorSchemes = setmetatable({}, {__mode = "k"})
 
@@ -104,7 +102,7 @@ local HUD_DIMS = {
 
 local surface_SetFont, surface_GetTextSize = surface.SetFont, surface.GetTextSize
 local math_sin, math_abs, math_floor, math_Clamp = math.sin, math.abs, math.floor, math.Clamp
-local Lerp, LerpColor = Lerp, LerpColor
+local Lerp = Lerp
 local cam_Start3D2D, cam_End3D2D = cam.Start3D2D, cam.End3D2D
 local vector_origin = vector_origin
 
@@ -192,11 +190,6 @@ local AnimMT = {
    end
 }
 
-local function GetLocalPlayerEyePos()
-    local lp = LocalPlayer()
-    return IsValid(lp) and lp:EyePos() or vector_origin
-end
-
 local function UpdateNetworkedValues(self)
     local oldStatus = self.nwStatus
     self.nwStatus = self:GetNWInt("Status", rRadio.status.STOPPED)
@@ -280,7 +273,7 @@ function ENT:GetDisplayText(status, stationName)
         finalWidth = GetTextWidth(finalText)
     end
     self.cachedText = finalText
-    local newWidth = math.max(finalWidth + HUD_PADDING * 3 + ICON_SIZE, HUD_DIMS.MIN_WIDTH)
+    local newWidth = math_max(finalWidth + HUD_PADDING * 3 + ICON_SIZE, HUD_DIMS.MIN_WIDTH)
     if newWidth ~= self.cachedWidth then
         self.cachedWidth = newWidth
         self.halfWidth = newWidth * 0.5
@@ -386,30 +379,12 @@ function ENT:DrawEqualizer(x, y, alpha, color)
     local spacing = 4
     local maxHeight = HUD.DIMENSIONS.HEIGHT * 0.7
     local volume = entityVolumes[self:EntIndex()] or 1
-
-    if rRadio.cl.mutedBoomboxes and rRadio.cl.mutedBoomboxes[self] then
-        volume = 0
-    end
-    
-    local ft = FrameTime()
-    local ct = CurTime()
-    self:UpdateEqualizerHeights(volume, ft * 2)
+    self:UpdateEqualizerHeights(volume, FrameTime() * 2)
     
     local c = GetCachedColor(color, alpha)
-    local by = y
-
-    for i = 1, HUD.EQUALIZER.BARS do
-        local offset = HUD.EQUALIZER.OFFSETS[i]
-        local freq   = HUD.EQUALIZER.FREQUENCIES[i]
-        local wave1  = math_sin((ct + offset) * freq)
-        local wave2  = math_sin((ct + offset) * freq * 1.5)
-        local combinedWave = (wave1 + wave2) * 0.5
-
-        local targetHeight = HUD.EQUALIZER.MIN_HEIGHT + (math_abs(combinedWave) * HUD.EQUALIZER.MAX_HEIGHT * volume)
-        self.anim.equalizerHeights[i] = Lerp(ft * 4, self.anim.equalizerHeights[i], targetHeight)
-
+    for i = 1, #self.anim.equalizerHeights do
         local height = maxHeight * self.anim.equalizerHeights[i]
-        draw_RoundedBox(1, x + (i - 1) * (barWidth + spacing), by - height * 0.5, barWidth, height, c)
+        draw_RoundedBox(1, x + (i - 1) * (barWidth + spacing), y - height * 0.5, barWidth, height, c)
     end
 end
 
