@@ -23,7 +23,8 @@ local draw_RoundedBox = draw.RoundedBox
 local draw_SimpleText = draw.SimpleText
 
 local STATIC_TEXTS = nil
-local STATIC_TEXT_WIDTHS = nil
+
+local TEXT_WIDTH_CACHE = {}
 
 local HUD_OFFSET_FORWARD = 4.6
 local HUD_OFFSET_UP      = 14.5
@@ -38,8 +39,6 @@ local CLEANUP_INTERVAL = 5
 
 local MAX_DYNAMIC_TEXT_ENTRIES = 100
 local dynamicTextOrder = {}
-local DYNAMIC_TEXT_WIDTHS = {}
-local CLIPPED_TEXT_CACHE = {}
 
 local entityVolumes = entityVolumes or {}
 local entityColorSchemes = setmetatable({}, {__mode = "k"})
@@ -118,14 +117,18 @@ local function LerpColor(t, c1, c2)
     )
 end
 
-local function AddDynamicTextEntry(text, width)
-    DYNAMIC_TEXT_WIDTHS[text] = width
+local function GetTextWidth(text)
+    local entry = TEXT_WIDTH_CACHE[text]
+    if entry then return entry.width end
+    surface.SetFont("rRadio.Roboto24")
+    local w = surface.GetTextSize(text)
+    TEXT_WIDTH_CACHE[text] = { width = w, isStatic = false }
     table.insert(dynamicTextOrder, text)
     if #dynamicTextOrder > MAX_DYNAMIC_TEXT_ENTRIES then
         local oldest = table.remove(dynamicTextOrder, 1)
-        DYNAMIC_TEXT_WIDTHS[oldest] = nil
-        CLIPPED_TEXT_CACHE[oldest] = nil
+        TEXT_WIDTH_CACHE[oldest] = nil
     end
+    return w
 end
 
 local function initializeStaticTexts()
@@ -138,11 +141,10 @@ end
 
 local function initializeStaticTextWidths()
     surface.SetFont("rRadio.Roboto24")
-    STATIC_TEXT_WIDTHS = {
-        [STATIC_TEXTS.interact] = surface.GetTextSize(STATIC_TEXTS.interact),
-        [STATIC_TEXTS.paused]   = surface.GetTextSize(STATIC_TEXTS.paused),
-        [STATIC_TEXTS.tuning]   = surface.GetTextSize(STATIC_TEXTS.tuning),
-    }
+    for _, txt in pairs(STATIC_TEXTS) do
+        local w = surface.GetTextSize(txt)
+        TEXT_WIDTH_CACHE[txt] = { width = w, isStatic = true }
+    end
 end
 
 initializeStaticTexts()
@@ -242,58 +244,32 @@ end
 function ENT:GetDisplayText(status, stationName)
     if status == rRadio.status.STOPPED then
         if rRadio.utils.canInteractWithBoombox(LocalPlayer(), self) then
-            return STATIC_TEXTS.interact, STATIC_TEXT_WIDTHS[STATIC_TEXTS.interact]
+            return STATIC_TEXTS.interact
         end
         
-        return STATIC_TEXTS.paused, STATIC_TEXT_WIDTHS[STATIC_TEXTS.paused]
+        return STATIC_TEXTS.paused
     elseif status == rRadio.status.TUNING then
-        local base = STATIC_TEXTS.tuning
-        local dots = cached_dots[math.floor(CurTime() * 2) % #cached_dots]
-        local text = base .. dots
-        local w = DYNAMIC_TEXT_WIDTHS[text]
-        if not w then
-            surface.SetFont("rRadio.Roboto24")
-            w = surface.GetTextSize(text)
-            AddDynamicTextEntry(text, w)
-        end
-        return text, w
+        return STATIC_TEXTS.tuning .. cached_dots[math.floor(CurTime() * 2) % #cached_dots]
     elseif stationName ~= "" then
-        local text = stationName
-        local w = DYNAMIC_TEXT_WIDTHS[text]
-        if not w then
-            surface.SetFont("rRadio.Roboto24")
-            w = surface.GetTextSize(text)
-            AddDynamicTextEntry(text, w)
-        end
-        return text, w
+        return stationName
     end
-    local text = "Radio"
-    local w = STATIC_TEXT_WIDTHS[text] or DYNAMIC_TEXT_WIDTHS[text] or 50
-    return text, w
+    return "Radio"
 end
 
 function ENT:ProcessDisplayText(status, stationName)
-    local text, textWidth = self:GetDisplayText(status, stationName)
+    local text = self:GetDisplayText(status, stationName)
+    local textWidth = GetTextWidth(text)
     if self.cachedText == text then return self.cachedText end
     local finalText = text
     local finalWidth = textWidth
     local maxWidth = HUD_DIMS.MIN_WIDTH - HUD_DIMS.TEXT_MAX_OFFSET
     if finalWidth > maxWidth then
-        local cachedTxt = CLIPPED_TEXT_CACHE[text]
-        if cachedTxt then
-            finalText = cachedTxt
-            finalWidth = DYNAMIC_TEXT_WIDTHS[cachedTxt] or surface.GetTextSize(cachedTxt)
-        else
-            local clipped = text
-            surface.SetFont("rRadio.Roboto24")
-            while finalWidth > maxWidth and #clipped > 0 do
-                clipped = string.sub(clipped, 1, #clipped - 1)
-                finalWidth = surface.GetTextSize(clipped .. "...")
-            end
-            finalText = clipped .. "..."
-            CLIPPED_TEXT_CACHE[text] = finalText
-            AddDynamicTextEntry(finalText, finalWidth)
+        local clipped = text
+        while GetTextWidth(clipped .. "...") > maxWidth and #clipped > 0 do
+            clipped = string.sub(clipped, 1, #clipped - 1)
         end
+        finalText = clipped .. "..."
+        finalWidth = GetTextWidth(finalText)
     end
     self.cachedText = finalText
     local newWidth = math.max(finalWidth + HUD_PADDING * 3 + ICON_SIZE, HUD_DIMS.MIN_WIDTH)
