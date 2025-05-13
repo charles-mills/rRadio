@@ -23,6 +23,10 @@ function rRadio.sv.utils.GetVehicleEntity(entity)
     return entity
 end
 
+local function printMessage(msg)
+    if IsValid(ply) then ply:PrintMessage(HUD_PRINTCONSOLE, msg) else print(msg) end
+end
+
 function rRadio.sv.utils.CountPlayerRadios(ply)
     local tbl = rRadio.sv.PlayerRadios[ply]
     local cnt = 0
@@ -337,18 +341,18 @@ concommand.Add(CMD_PREFIX .. "reload_config", function(ply, _cmd)
 end, nil, "Reloads all rRadio configuration values")
 
 concommand.Add(CMD_PREFIX .. "help", function(ply)
-    if IsValid(ply) and not ply:IsSuperAdmin() then
-        ply:ChatPrint("[rRADIO] You need superadmin privileges to use this command!")
-        return
-    end
-    local function printMessage(msg)
-        if IsValid(ply) then ply:PrintMessage(HUD_PRINTCONSOLE, msg) else print(msg) end
-    end
-    printMessage("\n=== rRadio Configuration Commands ===\n")
-    printMessage("General Commands:")
-    printMessage("  " .. CMD_PREFIX .. "help               - Shows this help message")
+
+    printMessage("\n=== General Commands===\n")
+    printMessage("  " .. CMD_PREFIX .. "help              - Shows this help message")
     printMessage("  " .. CMD_PREFIX .. "reload_config     - Reloads all configuration values")
-    printMessage("\nConfiguration Commands:")
+
+    printMessage("\n=== Custom Station Commands===\n")
+    printMessage("  " .. rRadio.config.CommandAddStation .. " <name> <url>               - Adds a custom station (Use Chat)")
+    printMessage("  " .. rRadio.config.CommandRemoveStation .. " <name> or <url>            - Removes a custom station (Use Chat)")
+    printMessage("  " .. "rammel_rradio_list_custom             - Lists all custom stations")
+
+    printMessage("\n=== Global Configuration Commands ===\n")
+
     for _, cmdName in ipairs(commandOrder) do
         local info = radioCommands[cmdName]
         printMessage(string.format("  %-30s - %s", CMD_PREFIX .. cmdName .. " <value>", info.desc))
