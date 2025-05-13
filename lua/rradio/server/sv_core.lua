@@ -32,7 +32,6 @@ timer.Create("rRadio.GlobalUpdateSweep", 0.25, 0, function()
             local ent = Entity(entIdx)
             if IsValid(ent) then
                 rRadio.utils.setRadioStatus(ent, rRadio.status.PLAYING, data.station)
-                rRadio.sv.utils.BroadcastPlay(ent, data.station, data.url, data.volume)
             end
             rRadio.sv.stationUpdateQueue[entIdx] = nil
         end

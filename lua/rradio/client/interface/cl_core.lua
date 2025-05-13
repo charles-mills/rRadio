@@ -13,6 +13,7 @@ local StationData = {}
 
 local MAX_CLIENT_STATIONS = 10
 local currentFrame = nil
+local settingsFrame = nil
 local settingsMenuOpen = false
 local openRadioMenu
 local lastKeyPress = 0
@@ -24,8 +25,6 @@ local radioMenuOpen = false
 local lastStationSelectTime = 0
 local stationDataLoaded = false
 local isSearching = false
-
-local MAX_NAME_CHARS = 40
 
 local Scale = rRadio.utils.Scale
 local IsValid, pairs, ipairs = IsValid, pairs, ipairs
@@ -128,7 +127,7 @@ local function SharedStationClick(self)
     net.Start("rRadio.PlayStation")
     net.WriteEntity(entity)
 
-    local stationName = rRadio.interface.TruncateChars(entry.station.name, MAX_NAME_CHARS)
+    local stationName = rRadio.interface.TruncateChars(entry.station.name, rRadio.config.MAX_NAME_CHARS)
 
     net.WriteString(stationName)
     net.WriteString(entry.station.url)
@@ -987,9 +986,7 @@ openRadioMenu = function(openSettings, opts)
             return
         end
 
-        if rRadio.utils.IsBoombox(entity) then
-            entity = entity
-        else
+        if not rRadio.utils.IsBoombox(entity) then
             entity = rRadio.utils.GetVehicle(entity)
         end
 

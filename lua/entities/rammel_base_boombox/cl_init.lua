@@ -16,8 +16,6 @@ local FADE_END_SQR = 500 * 500
 local FADE_RANGE_INV = 1 / (FADE_END_SQR - FADE_START_SQR)
 local MODEL_CULL_DISTANCE_SQR = 7500 * 7500
 
-local MAX_NAME_CHARS = 50
-
 local CurTime = CurTime
 local LocalPlayer = LocalPlayer
 local FrameTime = FrameTime
@@ -330,8 +328,8 @@ end
 
 local function DrawTextAndEqualizer(self, status, stationName, alpha, textColor)
     local text = self:GetDisplayText(status, stationName)
-    if stationName and utf8len(stationName) > MAX_NAME_CHARS then
-        stationName = utf8sub(stationName, 1, MAX_NAME_CHARS)
+    if stationName and utf8len(stationName) > rRadio.config.MAX_NAME_CHARS then
+        stationName = utf8sub(stationName, 1, rRadio.config.MAX_NAME_CHARS)
     end
     draw_SimpleText(
         text,
