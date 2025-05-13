@@ -21,7 +21,7 @@ function ENT:Initialize()
     end
     self:SetNWString("StationName", "")
     self:SetNWString("StationURL", "")
-    self:SetNWString("Status", "stopped")
+    self:SetNWInt("Status", rRadio.status.STOPPED)
     self:SetNWBool("IsPlaying", false)
     self:SetNWBool("IsPermanent", false)
     if self.Config and self.Config.Volume then
