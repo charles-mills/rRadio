@@ -2,15 +2,21 @@ if rRadio.clCoreLoaded or SERVER then return end
 
 rRadio.cl = rRadio.cl or {}
 
-rRadio.cl.radioSources = rRadio.cl.radioSources or {}
+rRadio.cl.radioSources = {}
 rRadio.cl.BoomboxStatuses = rRadio.cl.BoomboxStatuses or {}
+rRadio.cl.connectedStations = rRadio.cl.connectedStations or {}
+rRadio.cl.requestedStations = rRadio.cl.requestedStations or {}
+rRadio.cl.playbackNonce = rRadio.cl.playbackNonce or {}
+
+local entityVolumes = {}
+local currentlyPlayingStations = {}
 
 local allowedURLSet = {}
 local StationData = {}
 
-local entityVolumes = entityVolumes or {}
 local MAX_CLIENT_STATIONS = 10
 local currentFrame = nil
+local settingsFrame = nil
 local settingsMenuOpen = false
 local openRadioMenu
 local lastKeyPress = 0
@@ -20,25 +26,36 @@ local activeStationCount = 0
 local selectedCountry = nil
 local radioMenuOpen = false
 local lastStationSelectTime = 0
-local currentlyPlayingStations = {}
 local stationDataLoaded = false
 local isSearching = false
 
 local Scale = rRadio.utils.Scale
+local IsValid, pairs, ipairs = IsValid, pairs, ipairs
+local LocalPlayer, ents = LocalPlayer, ents
 
-local VOLUME_ICONS = {
+local playerVeh = nil
+
+local icons = icons or {}
+
+icons.volume = {
     MUTE = Material("hud/vol_mute.png", "smooth"),
     LOW = Material("hud/vol_down.png", "smooth"),
     HIGH = Material("hud/vol_up.png", "smooth")
 }
 
-local STAR_FULL  = Material("hud/star_full.png", "smooth")
-local STAR_EMPTY = Material("hud/star.png",      "smooth")
+icons.star = {
+    FULL = Material("hud/star_full.png", "smooth"),
+    EMPTY = Material("hud/star.png", "smooth")
+}
 
 local VOLUME_DEBOUNCE_TIMER = "rRadio.VolumeDebounce"
 local pendingVolume, pendingEntity
+local volumeDebounceActive = false
 
-local function isFav(tbl, key, subKey)
+local UIRegistry = { stars = {}, stations = {} }
+local starIdCounter, stationIdCounter = 0, 0
+
+local function getFavoriteStatus(tbl, key, subKey)
     if subKey then
         return tbl[key] and tbl[key][subKey]
     else
@@ -46,71 +63,100 @@ local function isFav(tbl, key, subKey)
     end
 end
 
+local function SharedStarPaint(self, w, h)
+    local entry = UIRegistry.stars[self.UIKey]
+    if not entry then return end
+    local mat = getFavoriteStatus(entry.catTable, entry.key, entry.subKey) and icons.star.FULL or icons.star.EMPTY
+    surface.SetMaterial(mat)
+    surface.SetDrawColor(rRadio.config.UI.TextColor)
+    surface.DrawTexturedRect(0, 0, w, h)
+end
+
+local function SharedStarClick(self)
+    local entry = UIRegistry.stars[self.UIKey]
+    if not entry then return end
+    if entry.subKey then
+        rRadio.interface.toggleFavorite(entry.catTable, entry.key, entry.subKey)
+    else
+        rRadio.interface.toggleFavorite(entry.catTable, entry.key)
+    end
+    if entry.updateList then entry.updateList() end
+end
+
+local function SharedStationPaint(self, w, h)
+    local entry = UIRegistry.stations[self.UIKey]
+    if not entry then return end
+    local entity = LocalPlayer().currentRadioEntity
+    local isPlaying = IsValid(entity) and currentlyPlayingStations[entity] and currentlyPlayingStations[entity].name == entry.station.name
+    draw.RoundedBox(8, 0, 0, w, h, isPlaying and rRadio.config.UI.PlayingButtonColor or rRadio.config.UI.ButtonColor)
+    if not isPlaying and self:IsHovered() then
+        draw.RoundedBox(8, 0, 0, w, h, rRadio.config.UI.ButtonHoverColor)
+    end
+    local text = entry.displayText
+    surface.SetFont("rRadio.Roboto5")
+    local regionLeft = Scale(8 + 24 + 8)
+    local rightMargin = Scale(8)
+    local availWidth = w - regionLeft - rightMargin
+    local outputText = rRadio.interface.TruncateText(text, "rRadio.Roboto5", availWidth)
+    local textWidth = surface.GetTextSize(outputText)
+    local x = w * 0.5
+    if x - textWidth * 0.5 < regionLeft then x = regionLeft + textWidth * 0.5
+    elseif x + textWidth * 0.5 > w - rightMargin then x = w - rightMargin - textWidth * 0.5 end
+    draw.SimpleText(outputText, "rRadio.Roboto5", x, h/2, rRadio.config.UI.TextColor, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+end
+
+local function SharedStationClick(self)
+    local entry = UIRegistry.stations[self.UIKey]
+    if not entry then return end
+    local currentTime = CurTime()
+    if currentTime - lastStationSelectTime < 2 then return end
+    surface.PlaySound("buttons/button17.wav")
+    local entity = LocalPlayer().currentRadioEntity
+    if not IsValid(entity) then return end
+    if currentlyPlayingStations[entity] then
+        net.Start("rRadio.StopStation") net.WriteEntity(entity) net.SendToServer()
+    end
+    local entityConfig = rRadio.interface.getEntityConfig(entity)
+    local volume = entityVolumes[entity] or (entityConfig and entityConfig.Volume()) or 0.5
+    if not IsValid(entity) then return end
+    net.Start("rRadio.PlayStation")
+    net.WriteEntity(entity)
+
+    local stationName = rRadio.interface.TruncateChars(entry.station.name, rRadio.config.MAX_NAME_CHARS)
+
+    net.WriteString(stationName)
+    net.WriteString(entry.station.url)
+    net.WriteFloat(volume)
+    net.SendToServer()
+
+    rRadio.cl.requestedStations[entity] = true
+    currentlyPlayingStations[entity] = entry.station
+    lastStationSelectTime = currentTime
+    if entry.updateList then entry.updateList() end
+end
+
 local function makeStarIcon(parent, catTable, key, subKey, updateList)
+    starIdCounter = starIdCounter + 1
+    local id = "star" .. starIdCounter
+    UIRegistry.stars[id] = { catTable = catTable, key = key, subKey = subKey, updateList = updateList }
     local icon = vgui.Create("DImageButton", parent)
     icon:SetSize(Scale(24), Scale(24))
     icon:SetPos(Scale(8), (Scale(40) - Scale(24)) / 2)
-    icon.Paint = function(self, w, h)
-        surface.SetMaterial(isFav(catTable, key, subKey) and STAR_FULL or STAR_EMPTY)
-        surface.SetDrawColor(rRadio.config.UI.TextColor)
-        surface.DrawTexturedRect(0, 0, w, h)
-    end
-    icon.DoClick = function()
-        if subKey then
-            rRadio.interface.toggleFavorite(catTable, key, subKey)
-        else
-            rRadio.interface.toggleFavorite(catTable, key)
-        end
-        if updateList then updateList() end
-    end
+    icon.UIKey = id
+    icon.Paint = SharedStarPaint
+    icon.DoClick = SharedStarClick
     return icon
 end
 
 local function MakePlayableStationButton(parent, station, displayText, updateList, backButton, searchBox, resetSearch)
+    stationIdCounter = stationIdCounter + 1
+    local id = "station" .. stationIdCounter
+    UIRegistry.stations[id] = { station = station, displayText = displayText, updateList = updateList }
     local btn = rRadio.interface.MakeStationButton(parent)
-    btn.Paint = function(self, w, h)
-        local entity = LocalPlayer().currentRadioEntity
-        local isPlaying = IsValid(entity) and currentlyPlayingStations[entity] and currentlyPlayingStations[entity].name == station.name
-        draw.RoundedBox(8, 0, 0, w, h, isPlaying and rRadio.config.UI.PlayingButtonColor or rRadio.config.UI.ButtonColor)
-        if not isPlaying and self:IsHovered() then
-            draw.RoundedBox(8, 0, 0, w, h, rRadio.config.UI.ButtonHoverColor)
-        end
-        local text = displayText
-        surface.SetFont("rRadio.Roboto5")
-        local regionLeft = Scale(8 + 24 + 8)
-        local rightMargin = Scale(8)
-        local availWidth = w - regionLeft - rightMargin
-        local outputText = rRadio.interface.TruncateText(text, "rRadio.Roboto5", availWidth)
-        local textWidth = surface.GetTextSize(outputText)
-        local x = w * 0.5
-        if x - textWidth * 0.5 < regionLeft then x = regionLeft + textWidth * 0.5
-        elseif x + textWidth * 0.5 > w - rightMargin then x = w - rightMargin - textWidth * 0.5 end
-        draw.SimpleText(outputText, "rRadio.Roboto5", x, h/2, rRadio.config.UI.TextColor, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
-    end
+    btn.UIKey = id
+    btn.Paint = SharedStationPaint
     makeStarIcon(btn, rRadio.interface.favoriteStations, station.country, station.name, updateList)
-    btn.DoClick = function()
-        local currentTime = CurTime()
-        if currentTime - lastStationSelectTime < 2 then return end
-        surface.PlaySound("buttons/button17.wav")
-        local entity = LocalPlayer().currentRadioEntity
-        if not IsValid(entity) then return end
-        if currentlyPlayingStations[entity] then
-            net.Start("rRadio.StopStation") net.WriteEntity(entity) net.SendToServer()
-        end
-        local entityConfig = rRadio.interface.getEntityConfig(entity)
-        local volume = entityVolumes[entity] or (entityConfig and entityConfig.Volume()) or 0.5
-
-        if not IsValid(entity) then return end
-        net.Start("rRadio.PlayStation")
-        net.WriteEntity(entity)
-        net.WriteString(station.name)
-        net.WriteString(station.url)
-        net.WriteFloat(volume)
-        net.SendToServer()
-        currentlyPlayingStations[entity] = station
-        lastStationSelectTime = currentTime
-        updateList()
-    end
+    btn.DoClick = SharedStationClick
     return btn
 end
 
@@ -121,9 +167,9 @@ local function LoadStationData()
 
     StationData = {}
     
-    local files = file.Find("rradio/client/stations/*.lua", "LUA")
+    local files = file.Find("rradio/client/data/stationpacks/*.lua", "LUA")
     for _, f in ipairs(files) do
-        local data = include("rradio/client/stations/" .. f)
+        local data = include("rradio/client/data/stationpacks/" .. f)
         if data then
             for country, stations in pairs(data) do
                 local baseCountry = country:gsub("_(%d+)$", "")
@@ -142,6 +188,19 @@ local function LoadStationData()
     stationDataLoaded = true
 end
 LoadStationData()
+
+net.Receive("rRadio.CustomStationsUpdate", function()
+    local list = net.ReadTable()
+    local cat = rRadio.config.CustomStationCategory or "Custom"
+    StationData[cat] = {}
+    for _, st in ipairs(list) do
+        if type(st)=="table" and st.name and st.url then
+            table.insert(StationData[cat], { name = st.name, url = st.url })
+            allowedURLSet[st.url] = true
+        end
+    end
+    if radioMenuOpen then openRadioMenu() end
+end)
 
 local function IsUrlAllowed(urlToCheck)
     return allowedURLSet[urlToCheck] == true
@@ -176,7 +235,7 @@ local function populateFavorites(panel, updateList)
         favBtn.Paint = function(self,w,h)
             local bg = self:IsHovered() and rRadio.config.UI.ButtonHoverColor or rRadio.config.UI.ButtonColor
             draw.RoundedBox(8,0,0,w,h,bg)
-            surface.SetMaterial(Material("hud/star_full.png"))
+            surface.SetMaterial(icons.star.FULL)
             surface.SetDrawColor(rRadio.config.UI.TextColor)
             surface.DrawTexturedRect(Scale(10), h/2-Scale(12), Scale(24),Scale(24))
         end
@@ -203,15 +262,38 @@ end
 local function populateCountries(panel, filterText, updateList)
     local items = {}
     local raw = {}
+    local customKey = rRadio.config.CustomStationCategory or "Custom"
     for country,_ in pairs(StationData) do
-        local formatted = country:gsub("_"," "):gsub("(%a)([%w_']*)", function(f,r) return f:upper()..r:lower() end)
-        local trans = rRadio.LanguageManager:GetCountryTranslation(formatted) or formatted
-        raw[#raw+1] = { original=country, translated=trans, isPrioritized=rRadio.interface.favoriteCountries[country] }
+        if not (country == customKey and (#StationData[country] == 0)) then
+            local formatted = country:gsub("_"," "):gsub("(%a)([%w_']*)", function(f,r) return f:upper()..r:lower() end)
+            local trans = rRadio.LanguageManager:GetCountryTranslation(formatted) or formatted
+            raw[#raw+1] = { original=country, translated=trans, isPrioritized=rRadio.interface.favoriteCountries[country] }
+        end
     end
     local countries = rRadio.interface.fuzzyFilter(filterText, raw,
         function(c) return c.translated end, 0,
         function(c) return c.isPrioritized and 0.1 or 0 end
     )
+
+    if rRadio.config.PrioritiseCustom then
+        for i, c in ipairs(countries) do
+            if c.original == customKey then
+
+                local customEntry = table.remove(countries, i)
+
+                local insertAt = 1
+                for j, d in ipairs(countries) do
+                    if not d.isPrioritized then
+                        insertAt = j
+                        break
+                    end
+                    insertAt = j + 1
+                end
+                table.insert(countries, insertAt, customEntry)
+                break
+            end
+        end
+    end
     for _, c in ipairs(countries) do
         local btn = rRadio.interface.MakeStationButton(panel)
         btn.Paint = function(self,w,h)
@@ -568,7 +650,7 @@ local function openSettingsMenu(parentFrame, backButton)
                 "rRadio.SendPersistentConfirmation",
                 function()
                     local message = net.ReadString()
-                    chat.AddText(Color(0, 255, 0), "[Boombox] ", Color(255, 255, 255), message)
+                    chat.AddText(Color(0, 255, 0), "[rRadio] ", Color(255, 255, 255), message)
                     if string.find(message, "marked as permanent") then
                         permanentCheckbox:SetChecked(true)
                     elseif string.find(message, "permanence has been removed") then
@@ -787,14 +869,8 @@ openRadioMenu = function(openSettings, opts)
             end
             searchBox:SetVisible(true)
             stationListPanel:SetVisible(true)
-            stationDataLoaded = false
-            LoadStationData()
-            timer.Simple(0, function()
-                populateList(stationListPanel, backButton, searchBox, true)
-            end)
-            backButton:SetVisible(selectedCountry ~= nil or favoritesMenuOpen)
-            backButton:SetEnabled(selectedCountry ~= nil or favoritesMenuOpen)
-        elseif selectedCountry or favoritesMenuOpen then
+            populateList(stationListPanel, backButton, searchBox, true)
+        else
             selectedCountry = nil
             favoritesMenuOpen = false
             backButton:SetVisible(false)
@@ -841,7 +917,7 @@ openRadioMenu = function(openSettings, opts)
     local volumeIcon = vgui.Create("DImage", volumePanel)
     volumeIcon:SetPos(Scale(10), (volumePanel:GetTall() - volumeIconSize) / 2)
     volumeIcon:SetSize(volumeIconSize, volumeIconSize)
-    volumeIcon:SetMaterial(VOLUME_ICONS.HIGH)
+    volumeIcon:SetMaterial(icons.volume.HIGH)
     local function updateVolumeIcon(volumeIcon, value)
         if not IsValid(volumeIcon) then
             return
@@ -853,11 +929,11 @@ openRadioMenu = function(openSettings, opts)
         local maxVol = (rRadio.config.MaxVolume and rRadio.config.MaxVolume() or 1.0)
         value = math.min(value, maxVol)
         if value < 0.01 then
-            iconMat = VOLUME_ICONS.MUTE
+            iconMat = icons.volume.MUTE
         elseif value <= 0.65 then
-            iconMat = VOLUME_ICONS.LOW
+            iconMat = icons.volume.LOW
         else
-            iconMat = VOLUME_ICONS.HIGH
+            iconMat = icons.volume.HIGH
         end
         if iconMat then
             volumeIcon:SetMaterial(iconMat)
@@ -907,9 +983,7 @@ openRadioMenu = function(openSettings, opts)
             return
         end
 
-        if rRadio.utils.IsBoombox(entity) then
-            entity = entity
-        else
+        if not rRadio.utils.IsBoombox(entity) then
             entity = rRadio.utils.GetVehicle(entity)
         end
 
@@ -923,14 +997,25 @@ openRadioMenu = function(openSettings, opts)
 
         pendingVolume = value
         pendingEntity = entity
-        timer.Remove(VOLUME_DEBOUNCE_TIMER)
-        timer.Create(VOLUME_DEBOUNCE_TIMER, 0.1, 1, function()
-            if not IsValid(pendingEntity) then return end
-            net.Start("rRadio.SetRadioVolume")
-            net.WriteEntity(pendingEntity)
-            net.WriteFloat(pendingVolume)
-            net.SendToServer()
-        end)
+        if not volumeDebounceActive then
+            volumeDebounceActive = true
+            timer.Create(VOLUME_DEBOUNCE_TIMER, 0.1, 1, function()
+                SendPendingVolume()
+                volumeDebounceActive = false
+            end)
+        end
+    end
+    do
+        local knob = volumeSlider.Slider
+        local origRelease = knob.OnMouseReleased
+        knob.OnMouseReleased = function(self, mcode)
+            if origRelease then origRelease(self, mcode) end
+            if timer.Exists(VOLUME_DEBOUNCE_TIMER) then
+                timer.Remove(VOLUME_DEBOUNCE_TIMER)
+                SendPendingVolume()
+                volumeDebounceActive = false
+            end
+        end
     end
     if not settingsMenuOpen then
         populateList(stationListPanel, backButton, searchBox, true)
@@ -946,8 +1031,9 @@ hook.Add(
     "Think",
     "rRadio.OpenCarRadioMenu",
     function()
-        local openKey = GetConVar("rammel_rradio_menu_key"):GetInt()
         local ply = LocalPlayer()
+        local openKey = GetConVar("rammel_rradio_menu_key"):GetInt()
+
         local currentTime = CurTime()
 
         if not (input.IsKeyDown(openKey) and not ply:IsTyping() and currentTime - lastKeyPress > keyPressDelay) then
@@ -993,18 +1079,37 @@ net.Receive(
         local entity = net.ReadEntity()
         local stationName = net.ReadString()
         local isPlaying = net.ReadBool()
-        local status = net.ReadString()
+        local statusCode = net.ReadUInt(2)
+
+        if statusCode == rRadio.status.TUNING and rRadio.cl.connectedStations[entity] then return end
+
+        local status
+        if statusCode == rRadio.status.STOPPED
+           or statusCode == rRadio.status.TUNING
+           or statusCode == rRadio.status.PLAYING then
+            status = statusCode
+        else
+            status = rRadio.status.STOPPED
+        end
+        local displayStatus = status
+        if status == rRadio.status.PLAYING and not rRadio.cl.connectedStations[entity] then
+            displayStatus = rRadio.status.TUNING
+        end
+        if status == rRadio.status.STOPPED then
+            rRadio.cl.connectedStations[entity] = nil
+            rRadio.cl.requestedStations[entity] = nil
+        end
         if IsValid(entity) then
             rRadio.cl.BoomboxStatuses[entity:EntIndex()] = {
-                stationStatus = status,
+                stationStatus = displayStatus,
                 stationName = stationName
             }
-            entity:SetNWString("Status", status)
+            entity:SetNWInt("Status", statusCode)
             entity:SetNWString("StationName", stationName)
             entity:SetNWBool("IsPlaying", isPlaying)
-            if status == "playing" then
+            if displayStatus == rRadio.status.PLAYING then
                 currentlyPlayingStations[entity] = {name = stationName}
-            elseif status == "stopped" then
+            else
                 currentlyPlayingStations[entity] = nil
             end
         end
@@ -1019,12 +1124,29 @@ net.Receive(
 
         local entity = net.ReadEntity()
         entity = rRadio.interface.GetVehicleEntity(entity)
+
+        if rRadio.cl.radioSources[entity] and IsValid(rRadio.cl.radioSources[entity]) then
+            rRadio.cl.radioSources[entity]:Stop()
+            rRadio.cl.radioSources[entity] = nil
+            entityVolumes[entity] = nil
+            activeStationCount = rRadio.interface.updateStationCount()
+        end
+
+        if IsValid(entity) and rRadio.utils.IsBoombox(entity) then
+            rRadio.utils.clearRadioStatus(entity)
+        end
+
         local stationName = net.ReadString()
         local url = net.ReadString()
         local volume = net.ReadFloat()
 
+        local nonce = (rRadio.cl.playbackNonce[entity] or 0) + 1
+        rRadio.cl.playbackNonce[entity] = nonce
+
+        rRadio.utils.setRadioStatus(entity, rRadio.status.TUNING, stationName)
+
         if rRadio.config.SecureStationLoad then
-            if not IsUrlAllowed(url) then
+            if not (IsUrlAllowed(url) or (IsValid(entity) and entity:GetNWBool("IsPermanent"))) then
                 return
             end
         end
@@ -1033,15 +1155,15 @@ net.Receive(
         if not rRadio.cl.radioSources[entity] and currentCount >= MAX_CLIENT_STATIONS then
             return
         end
-        if rRadio.cl.radioSources[entity] and IsValid(rRadio.cl.radioSources[entity]) then
-            rRadio.cl.radioSources[entity]:Stop()
-            rRadio.cl.radioSources[entity] = nil
-            activeStationCount = rRadio.interface.updateStationCount()
-        end
+
         sound.PlayURL(
             url,
-            "3d mono",
+            "3d",
             function(station, errorID, errorName)
+                if rRadio.cl.playbackNonce[entity] ~= nonce then
+                    if IsValid(station) then station:Stop() end
+                    return
+                end
                 if IsValid(station) and IsValid(entity) then
                     station:SetPos(entity:GetPos())
                     station:SetVolume(volume)
@@ -1053,10 +1175,20 @@ net.Receive(
                     if cfg then
                         station:Set3DFadeDistance(cfg.MinVolumeDistance(), cfg.MaxHearingDistance())
                     end
+                    rRadio.cl.connectedStations[entity] = true
+                    rRadio.utils.setRadioStatus(entity, rRadio.status.PLAYING, stationName)
+                    rRadio.cl.requestedStations[entity] = nil
+                else
+                    rRadio.cl.connectedStations[entity] = nil
+                    rRadio.utils.clearRadioStatus(entity)
+                    if rRadio.cl.requestedStations[entity] then
+                        LocalPlayer():ChatPrint("[rRadio] Station is inactive.")
+                    end
+                    rRadio.cl.requestedStations[entity] = nil
                 end
             end
         )
-    end
+end
 )
 
 net.Receive(
@@ -1081,44 +1213,26 @@ net.Receive(
     end
 )
 
-hook.Add(
-    "Think",
-    "rRadio.UpdateAllStations",
-    function()
-        for ent, station in pairs(rRadio.cl.radioSources) do
-            if not IsValid(ent) or not IsValid(station) then
-                if IsValid(station) then
-                    station:Stop()
-                end
-                rRadio.cl.radioSources[ent] = nil
-                activeStationCount = rRadio.interface.updateStationCount()
-            else
-                local actual = ent
-                if ent:IsVehicle() then
-                    local parent = ent:GetParent()
-                    if IsValid(parent) then actual = parent end
-                end
-                station:SetPos(actual:GetPos())
-                local plyPos = LocalPlayer():GetPos()
-                local entPos = actual:GetPos()
-                local distSqr = plyPos:DistToSqr(entPos)
-                local inCar = false
-                if actual:IsVehicle() then
-                    if LocalPlayer():GetVehicle() == ent then
-                        inCar = true
-                    else
-                        for _, pod in ipairs(ents.FindByClass("prop_vehicle_prisoner_pod")) do
-                            if IsValid(pod) and pod:GetParent() == actual and pod:GetDriver() == LocalPlayer() then
-                                inCar = true; break
-                            end
-                        end
-                    end
-                end
-                rRadio.interface.updateRadioVolume(station, distSqr, inCar, actual)
-            end
+local function UpdateAllStations()
+    local ply = LocalPlayer()
+    local plyPos = ply:GetPos()
+    playerVeh = rRadio.utils.GetVehicle(ply:GetVehicle())
+    for ent, station in pairs(rRadio.cl.radioSources) do
+        if not IsValid(ent) or not IsValid(station) then
+            rRadio.cl.radioSources[ent] = nil
+            activeStationCount = rRadio.interface.updateStationCount()
+        else
+            local actual = rRadio.interface.GetVehicleEntity(ent)
+            station:SetPos(actual:GetPos())
+            local distSqr = plyPos:DistToSqr(actual:GetPos())
+            local inCar = (playerVeh == actual)
+            rRadio.interface.updateRadioVolume(station, distSqr, inCar, actual)
         end
     end
-)
+end
+
+timer.Create("rRadio.UpdateStationsTimer", 0.2, 0, UpdateAllStations)
+
 net.Receive(
     "rRadio.OpenMenu",
     function()
@@ -1135,6 +1249,28 @@ net.Receive(
         end
     end
 )
+
+net.Receive("rRadio.ListCustomStations", function()
+    local count = net.ReadUInt(16)
+    if count == 0 then
+        MsgC(Color(255,255,255), "[rRadio] No custom stations found.\n")
+        return
+    end
+
+    MsgC(Color(255,0,0),   "[rRadio] Custom stations:\n")
+    for i = 1, count do
+        local name = net.ReadString()
+        local url  = net.ReadString()
+        MsgC(Color(255,0,0), "["..i.."] ",
+             Color(255,255,255), name..": "..url.."\n")
+    end
+
+    MsgC(Color(255,0,0), "\n!! ",
+         Color(255,255,255), "Remove a Station: !radiorem <Name> or <URL>\n")
+    MsgC(Color(255,0,0), "!! ",
+         Color(255,255,255), "Add a Station: !radioadd <Name> <URL>\n")
+end)
+
 net.Receive(
     "rRadio.PlayVehicleAnimation",
     function()
@@ -1201,6 +1337,8 @@ hook.Add(
     function(ent)
         if IsValid(ent) and rRadio.utils.IsBoombox(ent) then
             rRadio.cl.BoomboxStatuses[ent:EntIndex()] = nil
+            rRadio.cl.connectedStations[ent] = nil
+            rRadio.cl.requestedStations[ent] = nil
         end
     end
 )

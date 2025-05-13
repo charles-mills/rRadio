@@ -25,12 +25,15 @@ function rRadio.utils.GetVehicle(ent)
   ent = IsValid(parent) and parent or ent
   if rRadio.utils.SitAnywhereSeats[ent:GetClass()] then return end
 
-  if rRadio.utils.VehicleClasses[ent:GetClass()] or ent:IsVehicle() or
-    string.StartWith(ent:GetClass(), "lvs_") or
-    string.StartWith(ent:GetClass(), "ses_") or
-    string.StartWith(ent:GetClass(), "sw_") or
-    string.StartWith(ent:GetClass(), "drs_")
-  then return ent end
+  local class = ent:GetClass()
+  if rRadio.utils.VehicleClasses[class] or ent:IsVehicle() then
+    return ent
+  end
+  for _, prefix in ipairs(rRadio.config.VehicleClassOverides or {}) do
+    if string.StartWith(class, prefix) then
+      return ent
+    end
+  end
 end
 
 function rRadio.utils.isSitAnywhereSeat(vehicle)
@@ -48,24 +51,28 @@ function rRadio.utils.isSitAnywhereSeat(vehicle)
   return false
 end
 
+function rRadio.utils.getOwner(ent)
+  if not IsValid(ent) then return nil end
+  return ent:GetNWEntity("Owner")
+end
+
 function rRadio.utils.canInteractWithBoombox(ply, boombox)
-  rRadio.DevPrint("Checking if player can interact with boombox")
+  -- rRadio.DevPrint("Checking if player can interact with boombox")
 
   if not IsValid(ply) or not IsValid(boombox) then return false end
-  local owner = rRadio.sv.utils.getOwner(boombox)
+  local owner = rRadio.utils.getOwner(boombox)
 
-  rRadio.DevPrint("Owner is valid, checking if player is owner")
+  -- rRadio.DevPrint("Owner is valid, checking if player is owner")
 
   if owner == ply then
-    rRadio.DevPrint("Player is owner - granting permission")
+    -- rRadio.DevPrint("Player is owner - granting permission")
     return true
   end
 
-  rRadio.DevPrint("Player is valid, checking CAMI")
-
+  -- rRadio.DevPrint("Player is valid, checking CAMI")
   if CAMI.PlayerHasAccess(ply, "rradio.UseAll") then
-     rRadio.DevPrint("Player has rradio.UseAll")
-     return true
+    -- rRadio.DevPrint("Player has rradio.UseAll")
+    return true
   end
 
   return false
@@ -95,7 +102,7 @@ function rRadio.utils.setRadioStatus(entity, status, stationName, isPlaying, upd
 
   stationName = stationName or ""
   if isPlaying == nil then
-    isPlaying = (status == "playing" or status == "tuning")
+    isPlaying = (status == rRadio.status.PLAYING or status == rRadio.status.TUNING)
   end
 
   local statuses = SERVER and rRadio.sv.BoomboxStatuses or rRadio.cl.BoomboxStatuses or {}
@@ -104,7 +111,7 @@ function rRadio.utils.setRadioStatus(entity, status, stationName, isPlaying, upd
   end
 
   if not updateNameOnly then
-    entity:SetNWString("Status", status)
+    entity:SetNWInt("Status", status)
     entity:SetNWBool("IsPlaying", isPlaying)
     statuses[entIndex].stationStatus = status
   end
@@ -116,8 +123,7 @@ function rRadio.utils.setRadioStatus(entity, status, stationName, isPlaying, upd
     net.WriteEntity(entity)
     net.WriteString(stationName)
     net.WriteBool(isPlaying)
-    local statusToSend = (updateNameOnly and statuses[entIndex].stationStatus or status)
-    net.WriteString(statusToSend or "")
+    net.WriteUInt(status or rRadio.status.STOPPED, 2)
     net.Broadcast()
   end
 end
@@ -131,7 +137,7 @@ function rRadio.utils.clearRadioStatus(entity)
     timer.Remove("UpdateBoomboxStatus_" .. entIndex)
   end
 
-  rRadio.utils.setRadioStatus(entity, "stopped", "", false)
+  rRadio.utils.setRadioStatus(entity, rRadio.status.STOPPED, "", false)
 end
 
 function rRadio.utils.IsBoombox(entity)

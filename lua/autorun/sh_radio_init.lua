@@ -14,6 +14,14 @@ Steam: https://steamcommunity.com/id/rammel/
 
 ]]
 
+--[[
+
+Remaining bugs:
+
+- (Some) Language packs not loading for an extremely mysterious reason unknown to all
+
+]]
+
 local cl_count = 0
 local cl_load_count = 0
 
@@ -21,7 +29,7 @@ local dev_id = "3465709662"
 local pub_id = "3318060741"
 
 rRadio = rRadio or {}
-rRadio.DEV = false
+rRadio.DEV = true
 
 function rRadio.DevPrint(text)
     if not rRadio.DEV then return end
@@ -117,12 +125,13 @@ local function addCSLuaFiles()
         "rradio/client",
         "rradio/client/interface",
         "rradio/client/lang",
-        "rradio/client/lang/data",
-        "rradio/client/stations",
+        "rradio/client/data/langpacks",
+        "rradio/client/data/stationpacks",
         "entities/rammel_base_boombox",
         "entities/rammel_boombox",
         "entities/rammel_boombox_gold"
     }
+    
     for _, dir in ipairs(dirs) do
         for _, f in ipairs(file.Find(dir .. "/*.lua", "LUA")) do
             addCSLua(dir .. "/" .. f)
@@ -133,7 +142,7 @@ end
 local function addClProperties()
     properties.Add("radio_mute", {
         MenuLabel = "Mute",
-        Order     = 1000,
+        Order     = 1501,
         MenuIcon  = "icon16/SOUND_MUTE.png",
         Filter    = function(self, ent, ply)
             return rRadio.utils.canUseRadio(ent) and not rRadio.cl.mutedBoomboxes[ent]
@@ -145,7 +154,7 @@ local function addClProperties()
 
     properties.Add("radio_unmute", {
         MenuLabel = "Unmute",
-        Order     = 1001,
+        Order     = 1502,
         MenuIcon  = "icon16/SOUND.png",
         Filter    = function(self, ent, ply)
             return rRadio.utils.canUseRadio(ent) and rRadio.cl.mutedBoomboxes[ent]
@@ -160,7 +169,13 @@ local function addPrivileges()
     local privs = {
         {
             Name = "rradio.UseAll",
-            Description = "Allows a player (typically an admin) to use all boomboxes",
+            Description = "Allows a usergroup to use all boomboxes regardless of owner",
+            MinAccess = "superadmin"
+        },
+
+        {
+            Name = "rradio.AddCustomStation",
+            Description = "Allows a usergroup to add custom stations to the client station list",
             MinAccess = "superadmin"
         }
     }
@@ -181,6 +196,8 @@ local function registerNetStrings()
     util.AddNetworkString("rRadio.RemovePersistent")
     util.AddNetworkString("rRadio.SendPersistentConfirmation")
     util.AddNetworkString("rRadio.SetConfigUpdate")
+    util.AddNetworkString("rRadio.CustomStationsUpdate")
+    util.AddNetworkString("rRadio.ListCustomStations")
 end
 
 if SERVER then
@@ -207,10 +224,11 @@ if SERVER then
     rRadio.FormattedOutput("Finished server-side initialization")
 elseif CLIENT then
     createFonts()
-
+    addPrivileges()
     addClientFile("shared/sh_utils.lua")
     addClientFile("client/interface/cl_themes.lua")
     addClientFile("client/lang/cl_language_manager.lua")
+    addClientFile("client/lang/cl_localisation_strings.lua")
     addClientFile("shared/sh_config.lua")
 
     rRadio.cl = rRadio.cl or {}
@@ -230,14 +248,12 @@ elseif CLIENT then
     addClientFile("client/interface/cl_interface_utils.lua")
     addClientFile("client/interface/cl_core.lua")
 
-    addClientFile("client/lang/cl_localisation_strings.lua")
+    addClientFile("client/data/langpacks/data_1.lua")
+    addClientFile("client/data/langpacks/data_2.lua")
+    addClientFile("client/data/langpacks/data_3.lua")
 
-    addClientFile("client/lang/data/data_1.lua")
-    addClientFile("client/lang/data/data_2.lua")
-    addClientFile("client/lang/data/data_3.lua")
-
-    for _, f in ipairs(file.Find("rradio/client/stations/*.lua", "LUA")) do
-        addClientFile("client/stations/" .. f)
+    for _, f in ipairs(file.Find("rradio/client/data/stationpacks/*.lua", "LUA")) do
+        addClientFile("client/data/stationpacks/" .. f)
     end
 
     rRadio.FormattedOutput("Loaded " .. cl_count .. "/38 client-side files")

@@ -100,15 +100,38 @@ end
 
 function rRadio.interface.TruncateText(text, font, maxWidth)
     surface.SetFont(font)
-    if surface.GetTextSize(text) <= maxWidth then
+    local textW = surface.GetTextSize(text)
+    if textW <= maxWidth then
         return text
     end
     local ellipsis = "..."
-    local len = #text
-    while len > 0 and surface.GetTextSize(text:sub(1, len) .. ellipsis) > maxWidth do
-        len = len - 1
+    local suffixW = surface.GetTextSize(ellipsis)
+
+    local utf8len = string.utf8len or function(s) return #s end
+    local utf8sub = string.utf8sub or function(s, i, j) return string.sub(s, i, j) end
+    local len = utf8len(text)
+    local low, high, best = 1, len, 0
+    while low <= high do
+        local mid = math.floor((low + high) / 2)
+        local substr = utf8sub(text, 1, mid)
+        local w = surface.GetTextSize(substr)
+        if w + suffixW <= maxWidth then
+            best = mid
+            low = mid + 1
+        else
+            high = mid - 1
+        end
     end
-    return text:sub(1, len) .. ellipsis
+    return utf8sub(text, 1, best) .. ellipsis
+end
+
+function rRadio.interface.TruncateChars(text, maxChars)
+    local utf8len = string.utf8len or function(s) return #s end
+    local utf8sub = string.utf8sub or function(s, i, j) return string.sub(s, i, j) end
+    if utf8len(text) <= maxChars then
+        return text
+    end
+    return utf8sub(text, 1, maxChars)
 end
 
 function rRadio.interface.StyleVBar(vbar)
