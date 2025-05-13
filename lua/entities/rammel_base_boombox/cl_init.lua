@@ -467,6 +467,11 @@ hook.Add("PostDrawOpaqueRenderables", "rRadio_DrawAllBoomboxHUDs", function()
                 local status = statusData.stationStatus ~= nil and statusData.stationStatus or ent:GetNWInt("Status", rRadio.status.STOPPED)
                 local stationName = statusData.stationName or ent:GetNWString("StationName", "")
 
+                -- Gate PLAYING display until stream actually connected
+                if status == rRadio.status.PLAYING and not rRadio.cl.connectedStations[ent] then
+                    status = rRadio.status.TUNING
+                end
+                
                 ent:UpdateAnimations(status, dt)
 
                 local pos = ent:GetPos()

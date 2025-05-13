@@ -153,12 +153,8 @@ net.Receive("rRadio.PlayStation", function(len, ply)
         return
     end
 
-    if rRadio.utils.IsBoombox(ent) then
-        rRadio.utils.setRadioStatus(ent, rRadio.status.TUNING, station)
-        rRadio.sv.BoomboxStatuses[idx] = rRadio.sv.BoomboxStatuses[idx] or {}
-        rRadio.sv.BoomboxStatuses[idx].stationName = station
-        rRadio.sv.BoomboxStatuses[idx].url = stationURL
-    end
+    -- Server: broadcast tuning status for all radio entities
+    rRadio.utils.setRadioStatus(ent, rRadio.status.TUNING, station)
 
     if rRadio.sv.ActiveRadios[idx] then
         rRadio.sv.utils.BroadcastStop(ent)
