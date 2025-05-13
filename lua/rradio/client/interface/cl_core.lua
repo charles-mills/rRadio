@@ -55,6 +55,14 @@ local volumeDebounceActive = false
 local UIRegistry = { stars = {}, stations = {} }
 local starIdCounter, stationIdCounter = 0, 0
 
+local function SendPendingVolume()
+    if not IsValid(pendingEntity) then return end
+    net.Start("rRadio.SetRadioVolume")
+    net.WriteEntity(pendingEntity)
+    net.WriteFloat(pendingVolume)
+    net.SendToServer()
+end
+
 local function getFavoriteStatus(tbl, key, subKey)
     if subKey then
         return tbl[key] and tbl[key][subKey]
@@ -1215,6 +1223,7 @@ net.Receive(
 
 local function UpdateAllStations()
     local ply = LocalPlayer()
+    if not IsValid(ply) then return end
     local plyPos = ply:GetPos()
     playerVeh = rRadio.utils.GetVehicle(ply:GetVehicle())
     for ent, station in pairs(rRadio.cl.radioSources) do
