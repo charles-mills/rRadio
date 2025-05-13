@@ -1275,9 +1275,9 @@ net.Receive("rRadio.ListCustomStations", function()
     end
 
     MsgC(Color(255,0,0), "\n!! ",
-         Color(255,255,255), "Remove a Station: !radiorem <Name> or <URL>\n")
+         Color(255,255,255), "Remove a Station: "..rRadio.config.CommandRemoveStation.." <Name> or <URL>\n")
     MsgC(Color(255,0,0), "!! ",
-         Color(255,255,255), "Add a Station: !radioadd <Name> <URL>\n")
+         Color(255,255,255), "Add a Station: "..rRadio.config.CommandAddStation.." <Name> <URL>\n")
 end)
 
 net.Receive(
