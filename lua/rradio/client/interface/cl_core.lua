@@ -25,6 +25,8 @@ local lastStationSelectTime = 0
 local stationDataLoaded = false
 local isSearching = false
 
+local MAX_NAME_CHARS = 40
+
 local Scale = rRadio.utils.Scale
 local IsValid, pairs, ipairs = IsValid, pairs, ipairs
 local LocalPlayer, ents = LocalPlayer, ents
@@ -125,7 +127,10 @@ local function SharedStationClick(self)
     if not IsValid(entity) then return end
     net.Start("rRadio.PlayStation")
     net.WriteEntity(entity)
-    net.WriteString(entry.station.name)
+
+    local stationName = rRadio.interface.TruncateChars(entry.station.name, MAX_NAME_CHARS)
+
+    net.WriteString(stationName)
     net.WriteString(entry.station.url)
     net.WriteFloat(volume)
     net.SendToServer()
