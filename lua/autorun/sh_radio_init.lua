@@ -14,14 +14,6 @@ Steam: https://steamcommunity.com/id/rammel/
 
 ]]
 
---[[
-
-Remaining bugs:
-
-- (Some) Language packs not loading for an extremely mysterious reason unknown to all
-
-]]
-
 local cl_count = 0
 local cl_load_count = 0
 
