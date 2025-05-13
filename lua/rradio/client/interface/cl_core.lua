@@ -5,6 +5,8 @@ rRadio.cl = rRadio.cl or {}
 rRadio.cl.radioSources = {}
 rRadio.cl.BoomboxStatuses = rRadio.cl.BoomboxStatuses or {}
 rRadio.cl.connectedStations = rRadio.cl.connectedStations or {}
+rRadio.cl.requestedStations = rRadio.cl.requestedStations or {}
+rRadio.cl.playbackNonce = rRadio.cl.playbackNonce or {}
 
 local entityVolumes = {}
 local currentlyPlayingStations = {}
@@ -126,6 +128,8 @@ local function SharedStationClick(self)
     net.WriteString(entry.station.url)
     net.WriteFloat(volume)
     net.SendToServer()
+
+    rRadio.cl.requestedStations[entity] = true
     currentlyPlayingStations[entity] = entry.station
     lastStationSelectTime = currentTime
     if entry.updateList then entry.updateList() end
@@ -1076,7 +1080,7 @@ net.Receive(
         local stationName = net.ReadString()
         local isPlaying = net.ReadBool()
         local statusCode = net.ReadUInt(2)
-        -- Skip stale TUNING if already connected
+
         if statusCode == rRadio.status.TUNING and rRadio.cl.connectedStations[entity] then return end
 
         local status
@@ -1093,6 +1097,7 @@ net.Receive(
         end
         if status == rRadio.status.STOPPED then
             rRadio.cl.connectedStations[entity] = nil
+            rRadio.cl.requestedStations[entity] = nil
         end
         if IsValid(entity) then
             rRadio.cl.BoomboxStatuses[entity:EntIndex()] = {
@@ -1119,16 +1124,26 @@ net.Receive(
 
         local entity = net.ReadEntity()
         entity = rRadio.interface.GetVehicleEntity(entity)
+
+        if rRadio.cl.radioSources[entity] and IsValid(rRadio.cl.radioSources[entity]) then
+            rRadio.cl.radioSources[entity]:Stop()
+            rRadio.cl.radioSources[entity] = nil
+            entityVolumes[entity] = nil
+            activeStationCount = rRadio.interface.updateStationCount()
+        end
+
+        if IsValid(entity) and rRadio.utils.IsBoombox(entity) then
+            rRadio.utils.clearRadioStatus(entity)
+        end
+
         local stationName = net.ReadString()
         local url = net.ReadString()
         local volume = net.ReadFloat()
 
-        -- delay TUNING to avoid flicker on very quick stream loads
-        timer.Simple(0.15, function()
-            if IsValid(entity) and not rRadio.cl.connectedStations[entity] then
-                rRadio.utils.setRadioStatus(entity, rRadio.status.TUNING, stationName)
-            end
-        end)
+        local nonce = (rRadio.cl.playbackNonce[entity] or 0) + 1
+        rRadio.cl.playbackNonce[entity] = nonce
+
+        rRadio.utils.setRadioStatus(entity, rRadio.status.TUNING, stationName)
 
         if rRadio.config.SecureStationLoad then
             if not (IsUrlAllowed(url) or (IsValid(entity) and entity:GetNWBool("IsPermanent"))) then
@@ -1140,15 +1155,15 @@ net.Receive(
         if not rRadio.cl.radioSources[entity] and currentCount >= MAX_CLIENT_STATIONS then
             return
         end
-        if rRadio.cl.radioSources[entity] and IsValid(rRadio.cl.radioSources[entity]) then
-            rRadio.cl.radioSources[entity]:Stop()
-            rRadio.cl.radioSources[entity] = nil
-            activeStationCount = rRadio.interface.updateStationCount()
-        end
+
         sound.PlayURL(
             url,
             "3d",
             function(station, errorID, errorName)
+                if rRadio.cl.playbackNonce[entity] ~= nonce then
+                    if IsValid(station) then station:Stop() end
+                    return
+                end
                 if IsValid(station) and IsValid(entity) then
                     station:SetPos(entity:GetPos())
                     station:SetVolume(volume)
@@ -1161,16 +1176,19 @@ net.Receive(
                         station:Set3DFadeDistance(cfg.MinVolumeDistance(), cfg.MaxHearingDistance())
                     end
                     rRadio.cl.connectedStations[entity] = true
-                    -- immediately update UI to PLAYING on successful connection
                     rRadio.utils.setRadioStatus(entity, rRadio.status.PLAYING, stationName)
+                    rRadio.cl.requestedStations[entity] = nil
                 else
                     rRadio.cl.connectedStations[entity] = nil
                     rRadio.utils.clearRadioStatus(entity)
-                    LocalPlayer():ChatPrint("[rRadio] Station is inactive.")
+                    if rRadio.cl.requestedStations[entity] then
+                        LocalPlayer():ChatPrint("[rRadio] Station is inactive.")
+                    end
+                    rRadio.cl.requestedStations[entity] = nil
                 end
             end
         )
-    end
+end
 )
 
 net.Receive(
@@ -1320,6 +1338,7 @@ hook.Add(
         if IsValid(ent) and rRadio.utils.IsBoombox(ent) then
             rRadio.cl.BoomboxStatuses[ent:EntIndex()] = nil
             rRadio.cl.connectedStations[ent] = nil
+            rRadio.cl.requestedStations[ent] = nil
         end
     end
 )
