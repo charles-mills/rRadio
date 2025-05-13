@@ -267,131 +267,100 @@ function rRadio.sv.utils.CountActiveRadios()
     return rRadio.sv.ActiveRadiosCount or 0
 end
 
-local function AddRadioCommand(name, helpText)
-    concommand.Add("radio_set_" .. name, function(ply, cmd, args)
-        if IsValid(ply) and not ply:IsSuperAdmin() then return end
-        local value = tonumber(args[1])
-        if not value then
-            if IsValid(ply) then
-                ply:ChatPrint("[rRADIO] Invalid value provided!")
-            else
-                print("[rRADIO] Invalid value provided!")
-            end
-            return
-        end
-        local cvar = GetConVar("radio_" .. name)
-        if cvar then
-            cvar:SetFloat(value)
-            local message = string.format("[rRADIO] %s set to %.2f", name:gsub("_", " "), value)
-            if IsValid(ply) then
-                ply:ChatPrint(message)
-            else
-                print(message)
-            end
-        end
-    end)
-end
-
-local commands = {
-    "max_volume_limit",
-    "message_cooldown",
-    "boombox_volume",
-    "boombox_max_distance",
-    "boombox_min_distance",
-    "golden_boombox_volume",
-    "golden_boombox_max_distance",
-    "golden_boombox_min_distance",
-    "vehicle_volume",
-    "vehicle_max_distance",
-    "vehicle_min_distance"
-}
-
-for cmd, _ in pairs(commands) do
-    AddRadioCommand(cmd)
-end
+local CMD_PREFIX = "rammel_rradio_"
+local SV_CVAR_PREFIX = "rammel_rradio_sv_"
 
 local radioCommands = {
-    max_volume_limit = {
-        desc = "Sets the maximum volume limit for all radio entities (0.0-1.0)",
-        example = "0.8"
-    },
-    message_cooldown = {
-        desc = "Sets the cooldown time in seconds for radio messages (the animation when entering a vehicle)",
-        example = "2"
-    },
-    boombox_volume = {
-        desc = "Sets the default volume for regular boomboxes",
-        example = "0.7"
-    },
-    boombox_max_distance = {
-        desc = "Sets the maximum hearing distance for boomboxes",
-        example = "1000"
-    },
-    boombox_min_distance = {
-        desc = "Sets the distance at which boombox volume starts to drop off",
-        example = "500"
-    },
-    golden_boombox_volume = {
-        desc = "Sets the default volume for golden boomboxes",
-        example = "1.0"
-    },
-    golden_boombox_max_distance = {
-        desc = "Sets the maximum hearing distance for golden boomboxes",
-        example = "350000"
-    },
-    golden_boombox_min_distance = {
-        desc = "Sets the distance at which golden boombox volume starts to drop off",
-        example = "250000"
-    },
-    vehicle_volume = {
-        desc = "Sets the default volume for vehicle radios",
-        example = "0.8"
-    },
-    vehicle_max_distance = {
-        desc = "Sets the maximum hearing distance for vehicle radios",
-        example = "800"
-    },
-    vehicle_min_distance = {
-        desc = "Sets the distance at which vehicle radio volume starts to drop off",
-        example = "500"
-    }
+    max_volume_limit = { cvar_suffix = "vehicle_volume_limit", desc = "Sets the maximum volume limit for all radio entities (0.0-1.0)", example = "0.8", min = 0.0, max = 1.0 },
+    message_cooldown = { cvar_suffix = "animation_cooldown", desc = "Sets the cooldown time in seconds for radio messages (the animation when entering a vehicle)", example = "2", min = 0, max = 60 },
+    boombox_volume = { cvar_suffix = "boombox_default_volume", desc = "Sets the default volume for regular boomboxes", example = "0.7", min = 0.0, max = 1.0 },
+    boombox_max_distance = { cvar_suffix = "boombox_max_distance", desc = "Sets the maximum hearing distance for boomboxes", example = "1000", min = 0 },
+    boombox_min_distance = { cvar_suffix = "boombox_min_distance", desc = "Sets the distance at which boombox volume starts to drop off", example = "500", min = 0 },
+    golden_boombox_volume = { cvar_suffix = "gold_default_volume", desc = "Sets the default volume for golden boomboxes", example = "1.0", min = 0.0, max = 1.0 },
+    golden_boombox_max_distance = { cvar_suffix = "gold_max_distance", desc = "Sets the maximum hearing distance for golden boomboxes", example = "350000", min = 0 },
+    golden_boombox_min_distance = { cvar_suffix = "gold_min_distance", desc = "Sets the distance at which golden boombox volume starts to drop off", example = "250000", min = 0 },
+    vehicle_volume = { cvar_suffix = "vehicle_default_volume", desc = "Sets the default volume for vehicle radios", example = "0.8", min = 0.0, max = 1.0 },
+    vehicle_max_distance = { cvar_suffix = "vehicle_max_distance", desc = "Sets the maximum hearing distance for vehicle radios", example = "800", min = 0 },
+    vehicle_min_distance = { cvar_suffix = "vehicle_min_distance", desc = "Sets the distance at which vehicle radio volume starts to drop off", example = "500", min = 0 }
 }
+local commandOrder = { "max_volume_limit", "message_cooldown", "boombox_volume", "boombox_max_distance", "boombox_min_distance", "golden_boombox_volume", "golden_boombox_max_distance", "golden_boombox_min_distance", "vehicle_volume", "vehicle_max_distance", "vehicle_min_distance" }
 
-concommand.Add("radio_help", function(ply)
+for _, cmdName in ipairs(commandOrder) do
+    local meta = radioCommands[cmdName]
+    meta.cvarObj = GetConVar(SV_CVAR_PREFIX .. meta.cvar_suffix)
+    if not meta.cvarObj then rRadio.DevPrint("[rRADIO] WARNING: ConVar " .. SV_CVAR_PREFIX .. meta.cvar_suffix .. " not found") end
+end
+
+local function AddRadioCommand(cmdName, cmdData)
+    local cmd = CMD_PREFIX .. cmdName
+    local cvarName = SV_CVAR_PREFIX .. cmdData.cvar_suffix
+    concommand.Add(cmd, function(ply, _cmd, args)
+        if IsValid(ply) and not ply:IsSuperAdmin() then
+            ply:ChatPrint("[rRADIO] You need superadmin privileges to use this command!")
+            return
+        end
+        local value = tonumber(args[1])
+        if not value then
+            local usage = string.format("Usage: %s <number>", cmd)
+            if IsValid(ply) then ply:ChatPrint("[rRADIO] Invalid value! " .. usage) else print("[rRADIO] Invalid value! " .. usage) end
+            return
+        end
+
+        if cmdData.min then value = math.max(cmdData.min, value) end
+        if cmdData.max then value = math.min(cmdData.max, value) end
+        local cvar = cmdData.cvarObj or GetConVar(cvarName)
+        if cvar then
+            cvar:SetFloat(value)
+            local msg = string.format("[rRADIO] %s set to %.2f", cmdName:gsub("_", " "), value)
+            if IsValid(ply) then ply:ChatPrint(msg) else print(msg) end
+        else
+            local err = string.format("[rRADIO] ERROR: ConVar %s not found", cvarName)
+            if IsValid(ply) then ply:ChatPrint(err) else print(err) end
+        end
+    end, nil, cmdData.desc)
+end
+
+for _, cmdName in ipairs(commandOrder) do
+    AddRadioCommand(cmdName, radioCommands[cmdName])
+end
+concommand.Add(CMD_PREFIX .. "reload_config", function(ply, _cmd)
     if IsValid(ply) and not ply:IsSuperAdmin() then
-        ply:ChatPrint("[rRADIO] You need to be a superadmin to use radio commands!")
+        ply:ChatPrint("[rRADIO] You need superadmin privileges to use this command!")
         return
     end
+    game.ReloadConVars()
+    rRadio.config.ReloadConVars()
+    net.Start("rRadio.SetConfigUpdate")
+    net.Broadcast()
+    local msg = "[rRADIO] Configuration reloaded!"
+    if IsValid(ply) then ply:ChatPrint(msg) else print(msg) end
+end, nil, "Reloads all rRadio configuration values")
 
+concommand.Add(CMD_PREFIX .. "help", function(ply)
+    if IsValid(ply) and not ply:IsSuperAdmin() then
+        ply:ChatPrint("[rRADIO] You need superadmin privileges to use this command!")
+        return
+    end
     local function printMessage(msg)
-        if IsValid(ply) then
-            ply:PrintMessage(HUD_PRINTCONSOLE, msg)
-        else
-            print(msg)
-        end
+        if IsValid(ply) then ply:PrintMessage(HUD_PRINTCONSOLE, msg) else print(msg) end
     end
-
-    printMessage("\n=== Radio Configuration Commands ===\n")
+    printMessage("\n=== rRadio Configuration Commands ===\n")
     printMessage("General Commands:")
-    printMessage("  radio_help - Shows this help message")
-    printMessage("  radio_reload_config - Reloads all radio configuration values")
+    printMessage("  " .. CMD_PREFIX .. "help               - Shows this help message")
+    printMessage("  " .. CMD_PREFIX .. "reload_config     - Reloads all configuration values")
     printMessage("\nConfiguration Commands:")
-    for cmd, info in pairs(radioCommands) do
-        printMessage(string.format("  radio_set_%s <value>", cmd))
-        printMessage(string.format("    Description: %s", info.desc))
-        printMessage(string.format("    Example: radio_set_%s %s\n", cmd, info.example))
+    for _, cmdName in ipairs(commandOrder) do
+        local info = radioCommands[cmdName]
+        printMessage(string.format("  %-30s - %s", CMD_PREFIX .. cmdName .. " <value>", info.desc))
+        printMessage(string.format("    Example: " .. CMD_PREFIX .. cmdName .. " " .. info.example .. "\n"))
     end
-
     printMessage("Current Values:")
-    for cmd, _ in pairs(radioCommands) do
-        local cvar = GetConVar("radio_" .. cmd)
+    for _, cmdName in ipairs(commandOrder) do
+        local suffix = radioCommands[cmdName].cvar_suffix
+        local cvar = GetConVar(SV_CVAR_PREFIX .. suffix)
         if cvar then
-            printMessage(string.format("  %s: %.2f", cmd, cvar:GetFloat()))
+            printMessage(string.format("  %-30s : %.2f", cmdName, cvar:GetFloat()))
         end
     end
-
     printMessage("\nNote: All commands require superadmin privileges.")
-    if IsValid(ply) then
-        ply:ChatPrint("[rRADIO] Help information printed to console!")
-    end
-end)
+end, nil, "Shows help for rRadio configuration commands")
