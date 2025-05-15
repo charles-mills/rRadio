@@ -1,6 +1,6 @@
 # rRadio - Internet Radio for Garry's Mod
 
-![Downloads](https://img.shields.io/steam/downloads/3318060741?style=for-the-badge&color=00adb5) ![Views](https://img.shields.io/steam/views/3318060741?style=for-the-badge&color=ff5719) ![Size](https://img.shields.io/steam/size/3318060741?style=for-the-badge&color=2ea043) ![Update Date](https://img.shields.io/steam/update-date/3318060741?style=for-the-badge&color=515de9)
+![Downloads](https://img.shields.io/steam/downloads/3318060741?style=for-the-badge&color=00adb5) ![Size](https://img.shields.io/steam/size/3318060741?style=for-the-badge&color=2ea043) ![Update Date](https://img.shields.io/steam/update-date/3318060741?style=for-the-badge&color=515de9)
 
 rRadio is an internet radio addon for Garry's Mod that allows players to listen to thousands of live stations through in-game boomboxes, and in their vehicles. The addon is intended for use by public servers, with a major focus on server-side optimisation, security, and multi-client synchronisation, though remains fully compatible with singleplayer.
 
