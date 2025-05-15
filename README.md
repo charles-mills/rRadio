@@ -2,7 +2,7 @@
 
 rRadio is an internet-radio add-on for Garry's Mod. Stream thousands of live stations straight to in-game boomboxes or in your vehicle. Built for playing alone, with friends, or large public servers.
 
-![Steam](https://img.shields.io/badge/steam-%23000000.svg?style=for-the-badge&logo=steam&logoColor=white) ![Lua](https://img.shields.io/badge/lua-%232C2D72.svg?style=for-the-badge&logo=lua&logoColor=white) ![Downloads](https://img.shields.io/steam/downloads/3318060741?style=for-the-badge&color=00adb5) ![Size](https://img.shields.io/steam/size/3318060741?style=for-the-badge&color=2ea043) ![Update Date](https://img.shields.io/steam/update-date/3318060741?style=for-the-badge&color=515de9)
+[![Steam](https://img.shields.io/badge/steam-%23000000.svg?style=for-the-badge&logo=steam&logoColor=white)](https://steamcommunity.com/sharedfiles/filedetails/?id=3318060741) [![Lua](https://img.shields.io/badge/lua-%232C2D72.svg?style=for-the-badge&logo=lua&logoColor=white)](https://steamcommunity.com/sharedfiles/filedetails/?id=3318060741) [![Downloads](https://img.shields.io/steam/downloads/3318060741?style=for-the-badge&color=00adb5)](https://steamcommunity.com/sharedfiles/filedetails/?id=3318060741) [![Size](https://img.shields.io/steam/size/3318060741?style=for-the-badge&color=2ea043)](https://steamcommunity.com/sharedfiles/filedetails/?id=3318060741) [![Update Date](https://img.shields.io/steam/update-date/3318060741?style=for-the-badge&color=515de9)](https://steamcommunity.com/sharedfiles/filedetails/?id=3318060741)
 
 ## Key Features
 
