@@ -365,7 +365,7 @@ end
 
 function rRadio.interface.ClampVolume(volume)
     local serverMax = rRadio.config.MaxVolume()
-    local clientMax = GetConVar("rammel_rradio_max_volume"):GetFloat()
+    local clientMax = rRadio.config.MaxVolume()
     local limit = math.min(serverMax, clientMax)
     return math.Clamp(volume, 0, limit)
 end
@@ -570,3 +570,27 @@ function rRadio.interface.calculateFontSizeForStopButton(text, buttonWidth, butt
     stopFontCache[key] = fontName
     return fontName
 end
+
+local gmodLang = GetConVar("gmod_language")
+
+local function loadLanguage()
+    local raw = (gmodLang and gmodLang:GetString()) or "en"
+    local code = raw:lower()
+    code = code:gsub("%s+", "_"):gsub("-", "_"):gsub("[()]", "")
+    local langMap = {
+    english = "en", german = "de", spanish = "es_es", español = "es_es",
+    french = "fr", français = "fr", italian = "it", italiano = "it",
+    japanese = "ja", korean = "ko", portuguese = "pt_br", pt_br = "pt_br",
+    russian = "ru", chinese = "zh_cn", simplified_chinese = "zh_cn",
+    turkish = "tr", pirate_english = "en_pt", en_pt = "en_pt"
+    }
+    code = langMap[code] or code
+    rRadio.LanguageManager.currentLanguage = code
+    rRadio.config.Lang = rRadio.LanguageManager.translations[rRadio.LanguageManager.currentLanguage] or {}
+    hook.Run("LanguageUpdated")
+end
+
+loadLanguage()
+cvars.AddChangeCallback("gmod_language", function(_, _, _)
+    loadLanguage()
+end)
