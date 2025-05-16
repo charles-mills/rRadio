@@ -50,6 +50,7 @@ function rRadio.addClConVars()
     CreateClientConVar("rammel_rradio_menu_key", "21", true, false, "Select the key to open the car radio menu.")
     CreateClientConVar("rammel_rradio_menu_theme", "dark", true, false, "Set the theme for the radio.")
     CreateClientConVar("rammel_rradio_enabled", "1", true, false, "Enable or disable rRadio.")
+    CreateClientConVar("rammel_rradio_max_volume", "1.0", true, false, "Maximum global radio volume (0.0-1.0)")
 
     return true
 end

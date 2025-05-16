@@ -364,8 +364,10 @@ function rRadio.interface.LerpColor(t, col1, col2)
 end
 
 function rRadio.interface.ClampVolume(volume)
-    local maxVolume = rRadio.config.MaxVolume()
-    return math.Clamp(volume, 0, maxVolume)
+    local serverMax = rRadio.config.MaxVolume()
+    local clientMax = GetConVar("rammel_rradio_max_volume"):GetFloat()
+    local limit = math.min(serverMax, clientMax)
+    return math.Clamp(volume, 0, limit)
 end
 
 function rRadio.interface.loadFavorites()
@@ -544,6 +546,8 @@ function rRadio.interface.updateRadioVolume(station, distanceSqr, isPlayerInCar,
     local maxDist = entityConfig.MaxHearingDistance()
     station:Set3DFadeDistance(minDist, maxDist)
     local finalVolume = rRadio.interface.CalculateVolume(entity, LocalPlayer(), distanceSqr)
+
+    finalVolume = rRadio.interface.ClampVolume(finalVolume)
     station:SetVolume(finalVolume)
 end
 
