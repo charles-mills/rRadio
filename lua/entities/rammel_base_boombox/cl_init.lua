@@ -10,6 +10,7 @@ end
 
 local cvHud     = GetConVar("rammel_rradio_boombox_hud")
 local cvEnabled = GetConVar("rammel_rradio_enabled")
+local cvMaxVolume = GetConVar("rammel_rradio_max_volume")
 
 local FADE_START_SQR = 400 * 400
 local FADE_END_SQR = 500 * 500
@@ -442,6 +443,8 @@ hook.Add("Think", "rRadio.StepBoomboxAnimation", function()
         local defaultVol = rawVol or 1
         local isMuted = rRadio.cl.mutedBoomboxes and rRadio.cl.mutedBoomboxes[ent]
         local vol = isMuted and 0 or defaultVol
+        vol = vol * cvMaxVolume:GetFloat()
+        vol = math_Clamp(vol, 0, 1)
         ent:UpdateEqualizerHeights(vol, eqDt)
     end
 end)
