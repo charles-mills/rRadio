@@ -259,11 +259,11 @@ function rRadio.sv.utils.GetDefaultVolume(entity)
     if not IsValid(entity) then return 0.5 end
     local class = entity:GetClass()
     if class == "rammel_boombox_gold" then
-        return GetConVar("rammel_rradio_sv_gold_default_volume"):GetFloat()
+        return rRadio.config.GoldenBoombox.Volume()
     elseif class == "rammel_boombox" then
-        return GetConVar("rammel_rradio_sv_boombox_default_volume"):GetFloat()
+        return rRadio.config.Boombox.Volume()
     else
-        return GetConVar("rammel_rradio_sv_vehicle_default_volume"):GetFloat()
+        return rRadio.config.VehicleRadio.Volume()
     end
 end
 
