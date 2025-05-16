@@ -365,7 +365,7 @@ end
 
 function rRadio.interface.ClampVolume(volume)
     local serverMax = rRadio.config.MaxVolume()
-    local clientMax = rRadio.config.MaxVolume()
+    local clientMax = GetConVar("rammel_rradio_max_volume"):GetFloat()
     local limit = math.min(serverMax, clientMax)
     return math.Clamp(volume, 0, limit)
 end
