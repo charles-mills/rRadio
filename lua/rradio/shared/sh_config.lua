@@ -19,13 +19,6 @@ rRadio.config.CustomStationCategory = "Custom"
 rRadio.config.CommandAddStation = "!rradioadd"
 rRadio.config.CommandRemoveStation = "!rradiorem"
 
-rRadio.config.VehicleClassOverides = {
-    "lvs_",
-    "ses_",
-    "sw_",
-    "drs_"
-}
-
 -----------------------------------------------------------------------
 
 if rRadio.DEV then
@@ -42,7 +35,16 @@ end
 -- Additional settings (do not modify, unless you really want to)
 -----------------------------------------------------------------------
 
+rRadio.config.VehicleClassOverides = {
+    "lvs_",
+    "ses_",
+    "sw_",
+    "drs_"
+}
+
 rRadio.config.MAX_NAME_CHARS = 40 -- Truncate station names sent to the server to this length
+
+-----------------------------------------------------------------------
 
 rRadio.config.RadioStations = rRadio.config.RadioStations or {}
 rRadio.config.Lang = rRadio.config.Lang or {}
