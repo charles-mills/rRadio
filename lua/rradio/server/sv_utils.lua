@@ -271,7 +271,7 @@ function rRadio.sv.utils.CountActiveRadios()
     return rRadio.sv.ActiveRadiosCount or 0
 end
 
-local CMD_PREFIX = "rammel_rradio_"
+local CMD_PREFIX = "rammel_rradio_sv_"
 local SV_CVAR_PREFIX = "rammel_rradio_sv_"
 
 local radioCommands = {
