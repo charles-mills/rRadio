@@ -599,30 +599,45 @@ local function openSettingsMenu(parentFrame, backButton)
     )
 
     addHeader(rRadio.config.Lang["KeyBinds"] or "Key Binds")
-    local keyChoices = {}
-    if rRadio.keyCodeMapping then
-        for keyCode, keyName in pairs(rRadio.keyCodeMapping) do
-            table.insert(keyChoices, {name = keyName, data = keyCode})
+
+    do
+        local container = vgui.Create("DPanel", scrollPanel)
+        container:Dock(TOP)
+        container:SetTall(Scale(50))
+        container:DockMargin(0, 0, 0, Scale(5))
+        container.Paint = function(self, w, h)
+            draw.RoundedBox(8, 0, 0, w, h, rRadio.config.UI.ButtonColor)
         end
-        table.sort(
-            keyChoices,
-            function(a, b)
-                return a.name < b.name
-            end
-        )
-    else
-        table.insert(keyChoices, {name = "K", data = KEY_K})
+
+        local label = vgui.Create("DLabel", container)
+        label:Dock(LEFT)
+        label:DockMargin(Scale(10), 0, 0, 0)
+        label:SetFont("rRadio.Roboto5")
+        label:SetTextColor(rRadio.config.UI.TextColor)
+        label:SetText(rRadio.config.Lang["SelectKey"] or "Select Key")
+        label:SizeToContents()
+        label:SetContentAlignment(4)
+
+        local binder = vgui.Create("DBinder", container)
+        binder:Dock(RIGHT)
+        binder:DockMargin(0, Scale(5), Scale(10), Scale(5))
+        binder:SetWide(Scale(150))
+        binder:SetConVar("rammel_rradio_menu_key")
+        local curKey = GetConVar("rammel_rradio_menu_key"):GetInt()
+        binder:SetValue(curKey)
+        binder:SetText(rRadio.GetKeyName(curKey))
+        binder:SetTextColor(rRadio.config.UI.TextColor)
+        binder:SetFont("rRadio.Roboto5")
+        binder.Paint = function(self, w, h)
+            draw.RoundedBox(6, 0, 0, w, h, rRadio.config.UI.SearchBoxColor)
+            draw.SimpleText(self:GetText(), "rRadio.Roboto5", w/2, h/2, rRadio.config.UI.TextColor, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+        end
+        function binder:OnChange(code)
+            DBinder.OnChange(self, code)
+            RunConsoleCommand("rammel_rradio_menu_key", code)
+            self:SetText(rRadio.GetKeyName(code))
+        end
     end
-    local currentKey = GetConVar("rammel_rradio_menu_key"):GetInt()
-    local currentKeyName = (rRadio.keyCodeMapping and rRadio.keyCodeMapping[currentKey]) or "K"
-    addDropdown(
-        rRadio.config.Lang["SelectKey"] or "Select Key",
-        keyChoices,
-        currentKeyName,
-        function(_, _, _, data)
-            RunConsoleCommand("rammel_rradio_menu_key", data)
-        end
-    )
     addHeader(rRadio.config.Lang["GeneralOptions"] or "General Options")
     addCheckbox(rRadio.config.Lang["ShowCarMessages"] or "Show Car Radio Animation",
                 "rammel_rradio_vehicle_animation",

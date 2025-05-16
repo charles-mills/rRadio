@@ -453,6 +453,10 @@ hook.Add("LanguageUpdated", "rRadio.ClearBoomboxTextCache", function()
     for ent in pairs(entityColorSchemes) do entityColorSchemes[ent] = nil end
 end)
 
+hook.Add("ThemeChanged", "rRadio.ClearBoomboxColorCache", function()
+    for ent in pairs(entityColorSchemes) do entityColorSchemes[ent] = nil end
+end)
+
 hook.Add("PostDrawOpaqueRenderables", "rRadio_DrawAllBoomboxHUDs", function()
     local plyEye = LocalPlayer():EyePos()
     local dt = FrameTime()

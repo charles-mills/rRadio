@@ -239,6 +239,7 @@ elseif CLIENT then
     
     addClientFile("client/interface/cl_interface_utils.lua")
     addClientFile("client/interface/cl_core.lua")
+    addClientFile("client/interface/cl_tool_menu.lua")
 
     addClientFile("client/data/langpacks/data_1.lua")
     addClientFile("client/data/langpacks/data_2.lua")
@@ -248,6 +249,6 @@ elseif CLIENT then
         addClientFile("client/data/stationpacks/" .. f)
     end
 
-    rRadio.FormattedOutput("Loaded " .. cl_count .. "/38 client-side files")
+    rRadio.FormattedOutput("Loaded " .. cl_count .. "/39 client-side files")
     rRadio.FormattedOutput("Finished client-side initialization")
 end
