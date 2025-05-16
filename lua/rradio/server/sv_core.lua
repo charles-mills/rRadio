@@ -416,17 +416,6 @@ hook.Add("PlayerDisconnected", "rRadio.CleanupPlayerDisconnected", function(ply)
     rRadio.DevPrint("Entity data cleaned up for player: " .. ply:Nick())
 end)
 
-concommand.Add("radio_reload_config", function(ply)
-    if IsValid(ply) and not ply:IsSuperAdmin() then return end
-    rRadio.config.ReloadConVars()
-    if IsValid(ply) then
-        ply:ChatPrint("[rRADIO] Configuration reloaded!")
-    else
-        print("[rRADIO] Configuration reloaded!")
-    end
-end)
-
-
 concommand.Add(
     "rammel_rradio_list_custom",
     function(ply, cmd, args)
