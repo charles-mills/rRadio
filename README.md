@@ -55,21 +55,24 @@ rammel_rradio_menu_key <integer>       -- The key used to open the menu. Modify 
 rammel_rradio_menu_theme <string>      -- The theme applied to the rRadio UI. Modify this via the Settings menu.
 ```
 
-### Serverside Settings
+### Global (Serverside) Settings
 
-Serverside settings are configurable via the server console. This includes:
+Global settings must be locally configured in [sh_config.lua](lua/rradio/shared/sh_config.lua).
 
 ```lua
-rammel_rradio_max_volume_limit <float>  -- Maximum volume for all radio entities (0.0-1.0)
-rammel_rradio_boombox_min_distance <integer>  -- Distance at which volume begins to fall off for boomboxes (source units)
-rammel_rradio_boombox_max_distance <integer>  -- Maximum hearing distance for boomboxes (source units)
+rRadio.config.SecureStationLoad = false  -- block playing stations not in the client's list
+rRadio.config.DriverPlayOnly = false     -- only allow driver to control radio
+rRadio.config.AnimationDefaultOn = true  -- enable animations by default
+rRadio.config.ClientHardDisable = false  -- disables file loading when client's rradio_enabled convar is set to 0
+rRadio.config.DisablePushDamage = true  -- disable push damage
+rRadio.config.PrioritiseCustom  = true -- the custom / server added station category will appear at the top of the menu
+rRadio.config.AllowCreatePermanentBoombox = true -- allow new permanent boomboxes to be created by superadmins
 ```
-
-For a full list of configuration options, use `rammel_rradio_help` in your server console.
-
-### Local Configuration
-
-Additional configuration exists in `lua/rradio/shared/sh_config.lua`. A local installation is required for modification.
+```lua
+rRadio.config.CustomStationCategory = "Custom"
+rRadio.config.CommandAddStation = "!rradioadd"
+rRadio.config.CommandRemoveStation = "!rradiorem"
+```
 
 ## Screenshots
 
