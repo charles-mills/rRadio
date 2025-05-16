@@ -76,8 +76,8 @@ rRadio.config.CommandRemoveStation = "!rradiorem"
 
 ## Screenshots
 
-![image](https://github.com/user-attachments/assets/5e778328-6266-4b31-a1c5-8af45d2107f3)
-![image](https://github.com/user-attachments/assets/5b4bbe6e-3ac4-4c31-b76f-1d9ee929a86d)
+![The rRadio boombox next to a vehicle](https://github.com/user-attachments/assets/6461ae96-7deb-4da8-8c82-398e0adff39a)
+![The rRadio main interface, listing available countries](https://github.com/user-attachments/assets/371abaf1-a5ee-4863-b3e2-bf46d510f848)
 
 ## Support
 
