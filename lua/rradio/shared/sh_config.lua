@@ -75,8 +75,14 @@ rRadio.config.RegisteredConVars = rRadio.config.RegisteredConVars or {
 
 local function CreateSharedConVar(name, default, helpText)
     rRadio.config.RegisteredConVars.server[name] = default
-    local flags = SERVER and {FCVAR_ARCHIVE, FCVAR_REPLICATED, FCVAR_NOTIFY} or {FCVAR_ARCHIVE}
-    return CreateConVar(name, default, flags, helpText)
+
+    if SERVER then
+        local flags = bit.bor(FCVAR_ARCHIVE, FCVAR_REPLICATED, FCVAR_NOTIFY)
+        return CreateConVar(name, default, flags, helpText)
+    else
+        local cvar = CreateConVar(name, default, {FCVAR_REPLICATED, FCVAR_ARCHIVE}, helpText)
+        return cvar
+    end
 end
 
 CreateSharedConVar("rammel_rradio_sv_vehicle_volume_limit", "1.0", "Maximum volume limit for all radio entities (0.0-1.0)")
@@ -96,37 +102,36 @@ CreateSharedConVar("rammel_rradio_sv_volume_update_debounce", "0.1", "Debounce t
 CreateSharedConVar("rammel_rradio_sv_station_update_debounce", "10", "Debounce time for station update saves (seconds).")
 
 function rRadio.config.ReloadConVars()
-    for name, defaultValue in pairs(rRadio.config.RegisteredConVars.server) do
+    for name, _ in pairs(rRadio.config.RegisteredConVars.server) do
         local cvar = GetConVar(name)
         if cvar then
-            local value = cvar:GetFloat()
-
+            local getter = function() return cvar:GetFloat() end
             if name == "rammel_rradio_sv_boombox_default_volume" then
-                rRadio.config.Boombox.Volume = function() return value end
+                rRadio.config.Boombox.Volume = getter
             elseif name == "rammel_rradio_sv_boombox_max_distance" then
-                rRadio.config.Boombox.MaxHearingDistance = function() return value end
+                rRadio.config.Boombox.MaxHearingDistance = getter
             elseif name == "rammel_rradio_sv_boombox_min_distance" then
-                rRadio.config.Boombox.MinVolumeDistance = function() return value end
+                rRadio.config.Boombox.MinVolumeDistance = getter
             elseif name == "rammel_rradio_sv_gold_default_volume" then
-                rRadio.config.GoldenBoombox.Volume = function() return value end
+                rRadio.config.GoldenBoombox.Volume = getter
             elseif name == "rammel_rradio_sv_gold_max_distance" then
-                rRadio.config.GoldenBoombox.MaxHearingDistance = function() return value end
+                rRadio.config.GoldenBoombox.MaxHearingDistance = getter
             elseif name == "rammel_rradio_sv_gold_min_distance" then
-                rRadio.config.GoldenBoombox.MinVolumeDistance = function() return value end
+                rRadio.config.GoldenBoombox.MinVolumeDistance = getter
             elseif name == "rammel_rradio_sv_vehicle_default_volume" then
-                rRadio.config.VehicleRadio.Volume = function() return value end
+                rRadio.config.VehicleRadio.Volume = getter
             elseif name == "rammel_rradio_sv_vehicle_max_distance" then
-                rRadio.config.VehicleRadio.MaxHearingDistance = function() return value end
+                rRadio.config.VehicleRadio.MaxHearingDistance = getter
             elseif name == "rammel_rradio_sv_vehicle_min_distance" then
-                rRadio.config.VehicleRadio.MinVolumeDistance = function() return value end
+                rRadio.config.VehicleRadio.MinVolumeDistance = getter
             elseif name == "rammel_rradio_sv_vehicle_volume_limit" then
-                rRadio.config.MaxVolume = function() return value end
+                rRadio.config.MaxVolume = getter
             elseif name == "rammel_rradio_sv_animation_cooldown" then
-                rRadio.config.MessageCooldown = function() return value end
+                rRadio.config.MessageCooldown = getter
             elseif name == "rammel_rradio_sv_volume_update_debounce" then
-                rRadio.config.VolumeUpdateDebounce = function() return value end
+                rRadio.config.VolumeUpdateDebounce = getter
             elseif name == "rammel_rradio_sv_station_update_debounce" then
-                rRadio.config.StationUpdateDebounce = function() return value end
+                rRadio.config.StationUpdateDebounce = getter
             end
         end
     end
@@ -227,26 +232,85 @@ if CLIENT then
     end
 
     net.Receive("rRadio.SetConfigUpdate", function()
+        for name, default in pairs(rRadio.config.RegisteredConVars.server) do
+            local cvar = GetConVar(name)
+            if not cvar then
+                cvar = CreateConVar(name, tostring(default), {FCVAR_REPLICATED, FCVAR_ARCHIVE}, "")
+            end
+
+            if cvar then
+                local serverValue = net.ReadString()
+                if serverValue then
+                    RunConsoleCommand(name, serverValue)
+                end
+            end
+        end
+
         rRadio.config.ReloadConVars()
     end)
+
+    rRadio.config.ReloadConVars()
+
+    timer.Simple(1, function()
+        net.Start("rRadio.RequestConfigSync")
+        net.SendToServer()
+    end)
 else
-    net.Start("rRadio.SetConfigUpdate")
-    net.Broadcast()
+    util.AddNetworkString("rRadio.RequestConfigSync")
+    util.AddNetworkString("rRadio.SetConfigUpdate")
+    
+    net.Receive("rRadio.RequestConfigSync", function(len, ply)
+        if not IsValid(ply) then return end
+        
+        rRadio.config.ReloadConVars()
+
+        net.Start("rRadio.SetConfigUpdate")
+        net.Send(ply)
+
+    end)
+
+    timer.Simple(1, function()
+        net.Start("rRadio.SetConfigUpdate")
+        net.Broadcast()
+    end)
+
+    hook.Add("PlayerInitialSpawn", "rRadio.SyncConfig", function(ply)
+        timer.Simple(1, function()
+            if IsValid(ply) then
+                net.Start("rRadio.SetConfigUpdate")
+                net.Send(ply)
+            end
+        end)
+    end)
 
     concommand.Add("radio_reload_config", function(ply)
         if IsValid(ply) and not ply:IsAdmin() then return end
         rRadio.config.ReloadConVars()
+        net.Start("rRadio.SetConfigUpdate")
+        if IsValid(ply) then net.Send(ply) else net.Broadcast() end
     end)
 
     local function AddConVarCallback(name)
-        cvars.AddChangeCallback(name, function(_, _, _)
+        cvars.AddChangeCallback(name, function(_, old, new)
             rRadio.config.ReloadConVars()
-        end)
+            net.Start("rRadio.SetConfigUpdate")
+            net.Broadcast()
+        end, "rRadio.ConVarSync_" .. name)
     end
 
     for cvarName, _ in pairs(rRadio.config.RegisteredConVars.server) do
         AddConVarCallback(cvarName)
     end
+
+    hook.Add("ConVarChanged", "rRadio.ConfigSync", function(name, oldValue, newValue)
+        if rRadio.config.RegisteredConVars.server[name] then
+            rRadio.config.ReloadConVars()
+            net.Start("rRadio.SetConfigUpdate")
+            net.WriteString(name)
+            net.WriteString(tostring(newValue))
+            net.Broadcast()
+        end
+    end)
 end
 
 hook.Run("RadioConfig_Updated")

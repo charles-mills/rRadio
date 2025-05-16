@@ -418,7 +418,7 @@ end)
 
 concommand.Add("radio_reload_config", function(ply)
     if IsValid(ply) and not ply:IsSuperAdmin() then return end
-    game.ReloadConVars()
+    rRadio.config.ReloadConVars()
     if IsValid(ply) then
         ply:ChatPrint("[rRADIO] Configuration reloaded!")
     else

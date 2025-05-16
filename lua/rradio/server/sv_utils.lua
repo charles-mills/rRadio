@@ -332,7 +332,7 @@ concommand.Add(CMD_PREFIX .. "reload_config", function(ply, _cmd)
         ply:ChatPrint("[rRADIO] You need superadmin privileges to use this command!")
         return
     end
-    game.ReloadConVars()
+
     rRadio.config.ReloadConVars()
     net.Start("rRadio.SetConfigUpdate")
     net.Broadcast()
