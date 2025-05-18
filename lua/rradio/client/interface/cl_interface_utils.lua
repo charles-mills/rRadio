@@ -643,6 +643,18 @@ function rRadio.interface.calculateFontSizeForStopButton(text, buttonWidth, butt
     return fontName
 end
 
+function rRadio.interface.GetVolumeIcon(vol)
+    local maxVol = (rRadio.config.MaxVolume and rRadio.config.MaxVolume() or 1.0)
+    vol = math.min(vol, maxVol)
+    if vol < 0.01 then
+        return Material("hud/vol_mute.png", "smooth")
+    elseif vol <= 0.65 then
+        return Material("hud/vol_down.png", "smooth")
+    else
+        return Material("hud/vol_up.png", "smooth")
+    end
+end
+
 local gmodLang = GetConVar("gmod_language")
 
 local function loadLanguage()

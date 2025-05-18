@@ -949,27 +949,11 @@ openRadioMenu = function(openSettings, opts)
     local volumeIcon = vgui.Create("DImage", volumePanel)
     volumeIcon:SetPos(Scale(10), (volumePanel:GetTall() - volumeIconSize) / 2)
     volumeIcon:SetSize(volumeIconSize, volumeIconSize)
-    volumeIcon:SetMaterial(icons.volume.HIGH)
+    volumeIcon:SetMaterial(rRadio.interface.GetVolumeIcon(1.0))
     local function updateVolumeIcon(volumeIcon, value)
-        if not IsValid(volumeIcon) then
-            return
-        end
-        local iconMat
-        if type(value) == "function" then
-            value = value()
-        end
-        local maxVol = (rRadio.config.MaxVolume and rRadio.config.MaxVolume() or 1.0)
-        value = math.min(value, maxVol)
-        if value < 0.01 then
-            iconMat = icons.volume.MUTE
-        elseif value <= 0.65 then
-            iconMat = icons.volume.LOW
-        else
-            iconMat = icons.volume.HIGH
-        end
-        if iconMat then
-            volumeIcon:SetMaterial(iconMat)
-        end
+        if not IsValid(volumeIcon) then return end
+        local v = (type(value) == "function") and value() or value
+        volumeIcon:SetMaterial(rRadio.interface.GetVolumeIcon(v))
     end
     volumeIcon.Paint = function(self, w, h)
         surface.SetDrawColor(rRadio.config.UI.TextColor)
