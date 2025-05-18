@@ -150,7 +150,7 @@ local function LoadStationData()
                     StationData[baseCountry] = {}
                 end
                 for _, station in ipairs(stations) do
-                    table.insert(StationData[baseCountry], {name = station.n, url = station.u})
+                    table.insert(StationData[baseCountry], {name = station.n, url = station.u, country = baseCountry})
                     allowedURLSet[station.u] = true
                 end
             end
@@ -168,7 +168,7 @@ net.Receive("rRadio.CustomStationsUpdate", function()
     StationData[cat] = {}
     for _, st in ipairs(list) do
         if type(st)=="table" and st.name and st.url then
-            table.insert(StationData[cat], { name = st.name, url = st.url })
+            table.insert(StationData[cat], { name = st.name, url = st.url, country = cat })
             allowedURLSet[st.url] = true
         end
     end
@@ -208,9 +208,17 @@ local function populateFavorites(panel, updateList)
         favBtn.Paint = function(self,w,h)
             local bg = self:IsHovered() and rRadio.config.UI.ButtonHoverColor or rRadio.config.UI.ButtonColor
             draw.RoundedBox(8,0,0,w,h,bg)
+        end
+        local headerIcon = vgui.Create("rRadioStar", favBtn)
+        headerIcon:SetPos(Scale(10), (Scale(40) - Scale(24)) / 2)
+        headerIcon:SetUpdateFunc(updateList)
+        function headerIcon:Paint(w,h)
             surface.SetMaterial(icons.star.FULL)
             surface.SetDrawColor(rRadio.config.UI.TextColor)
-            surface.DrawTexturedRect(Scale(10), h/2-Scale(12), Scale(24),Scale(24))
+            surface.DrawTexturedRect(0,0,w,h)
+        end
+        function headerIcon:DoClick()
+            favBtn:DoClick()
         end
         favBtn.DoClick = function()
             surface.PlaySound("buttons/button3.wav")
@@ -317,10 +325,6 @@ local function populateStations(panel, country, filterText, updateList, backButt
             local f = favList[i]
             local btn = MakePlayableStationButton(panel, f.station,
                 f.countryName.." - "..f.station.name, updateList, backButton, searchBox, false)
-            local icon = vgui.Create("rRadioStar", btn)
-            icon:SetPos(Scale(8), (Scale(40) - Scale(24)) / 2)
-            icon:Bind(rRadio.interface.favoriteStations, f.country, f.station.name)
-            icon:SetUpdateFunc(updateList)
             table.insert(items, btn)
         end
     else
@@ -339,10 +343,6 @@ local function populateStations(panel, country, filterText, updateList, backButt
             local d = sorted[i]
             local btn = MakePlayableStationButton(panel, d.station,
                 d.station.name, updateList, backButton, searchBox, false)
-            local icon = vgui.Create("rRadioStar", btn)
-            icon:SetPos(Scale(8), (Scale(40) - Scale(24)) / 2)
-            icon:Bind(rRadio.interface.favoriteStations, country, d.station.name)
-            icon:SetUpdateFunc(updateList)
             table.insert(items, btn)
         end
     end
