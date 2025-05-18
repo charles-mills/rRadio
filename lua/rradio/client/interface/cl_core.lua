@@ -53,9 +53,6 @@ icons.star = {
     EMPTY = Material("hud/star.png", "smooth")
 }
 
-local UIRegistry = { stations = {} }
-local stationIdCounter = 0
-
 local pendingVolume, pendingEntity
 
 local function SendPendingVolume()
@@ -67,12 +64,7 @@ local function SendPendingVolume()
 end
 
 local function MakePlayableStationButton(parent, station, displayText, updateList)
-    stationIdCounter = stationIdCounter + 1
-    local id = "station" .. stationIdCounter
-    UIRegistry.stations[id] = { station = station, updateList = updateList }
-
     local btn = vgui.Create("rRadioButton", parent)
-    btn.UIKey = id
     btn:SetTextLabel(displayText)
 
     local star = vgui.Create("rRadioStar", btn)
@@ -1111,18 +1103,6 @@ net.Receive("rRadio.UpdateRadioStatus", function()
             currentlyPlayingStations[entity] = nil
         end
     end
-end)
-net.Receive("rRadio.CustomStationsUpdate", function()
-    local list = net.ReadTable()
-    local cat = rRadio.config.CustomStationCategory or "Custom"
-    StationData[cat] = {}
-    for _, st in ipairs(list) do
-        if type(st)=="table" and st.name and st.url then
-            table.insert(StationData[cat], { name = st.name, url = st.url, country = cat })
-            allowedURLSet[st.url] = true
-        end
-    end
-    if radioMenuOpen then openRadioMenu() end
 end)
 
 net.Receive("rRadio.PlayStation", function()
