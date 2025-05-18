@@ -18,6 +18,9 @@ hook.Add("LanguageUpdated", "rRadio.ClearStopFontCache", function()
     stopFontCache = {}
 end)
 
+local _lastVolumes = {}
+local _volThreshold = 0.01
+
 function rRadio.interface.fuzzyMatch(needle, haystack)
     needle = string.lower(needle or "")
     haystack = string.lower(haystack or "")
@@ -518,12 +521,20 @@ function rRadio.interface.CalculateVolume(entity, player, distanceSqr)
 
 function rRadio.interface.updateRadioVolume(station, distanceSqr, isPlayerInCar, entity)
     if not GetConVar("rammel_rradio_enabled"):GetBool() then
-        station:SetVolume(0)
+        local prev = _lastVolumes[entity] or -1
+        if prev ~= 0 then
+            station:SetVolume(0)
+            _lastVolumes[entity] = 0
+        end
         return
     end
 
     if rRadio.cl.mutedBoomboxes and rRadio.cl.mutedBoomboxes[entity] then
-        station:SetVolume(0)
+        local prev = _lastVolumes[entity] or -1
+        if prev ~= 0 then
+            station:SetVolume(0)
+            _lastVolumes[entity] = 0
+        end
         return
     end
 
@@ -533,12 +544,20 @@ function rRadio.interface.updateRadioVolume(station, distanceSqr, isPlayerInCar,
     end
     local userVolume = rRadio.interface.ClampVolume(entity:GetNWFloat("Volume", entityConfig.Volume()))
     if userVolume <= 0.02 then
-        station:SetVolume(0)
+        local prev = _lastVolumes[entity] or -1
+        if prev ~= 0 then
+            station:SetVolume(0)
+            _lastVolumes[entity] = 0
+        end
         return
     end
     if isPlayerInCar then
         station:Set3DEnabled(false)
-        station:SetVolume(userVolume)
+        local prev = _lastVolumes[entity] or -1
+        if math.abs(userVolume - prev) >= _volThreshold then
+            station:SetVolume(userVolume)
+            _lastVolumes[entity] = userVolume
+        end
         return
     end
     station:Set3DEnabled(true)
@@ -548,7 +567,11 @@ function rRadio.interface.updateRadioVolume(station, distanceSqr, isPlayerInCar,
     local finalVolume = rRadio.interface.CalculateVolume(entity, LocalPlayer(), distanceSqr)
 
     finalVolume = rRadio.interface.ClampVolume(finalVolume)
-    station:SetVolume(finalVolume)
+    local prev = _lastVolumes[entity] or -1
+    if math.abs(finalVolume - prev) >= _volThreshold then
+        station:SetVolume(finalVolume)
+        _lastVolumes[entity] = finalVolume
+    end
 end
 
 function rRadio.interface.calculateFontSizeForStopButton(text, buttonWidth, buttonHeight)
