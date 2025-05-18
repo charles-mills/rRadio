@@ -53,6 +53,7 @@ local LANG = LANG or {
   LANG.de["TuningIn"]            = "Einstellen"
   LANG.de["KeyBinds"]            = "Tastenbelegungen"
   LANG.de["ToOpenRadio"]         = "um das Radio zu öffnen"
+  LANG.de["Global"]              = "GLOBAL"
 
   -- Polish
   LANG.pl["SelectCountry"]        = "Wybierz kraj"
@@ -81,7 +82,7 @@ local LANG = LANG or {
   LANG.pl["TuningIn"]            = "Strojenie"
   LANG.pl["KeyBinds"]            = "Przypisania klawiszy"
   LANG.pl["ToOpenRadio"]         = "aby otworzyć radio"
-
+  LANG.pl["Global"]              = "GLOBAL"
   
   -- English
   LANG.en["SelectCountry"]        = "Select a Country"
@@ -110,6 +111,7 @@ local LANG = LANG or {
   LANG.en["TuningIn"]            = "Tuning in"
   LANG.en["KeyBinds"]            = "Key Binds"
   LANG.en["ToOpenRadio"]         = "to open radio"
+  LANG.en["Global"]              = "GLOBAL"
   
   -- Pirate English
   LANG.en_pt["SelectCountry"]        = "Be Choosin’ a Land"
@@ -138,7 +140,8 @@ local LANG = LANG or {
   LANG.en_pt["TuningIn"]            = "Tunin’ the Sails"
   LANG.en_pt["KeyBinds"]            = "Key Binds"
   LANG.en_pt["ToOpenRadio"]         = "to set sail"
-  
+  LANG.en_pt["Global"]              = "GLOBAL"
+
   -- Spanish
   LANG.es_es["SelectCountry"]        = "Seleccionar país"
   LANG.es_es["StopRadio"]           = "PARAR"
@@ -166,6 +169,7 @@ local LANG = LANG or {
   LANG.es_es["TuningIn"]            = "Sintonizando"
   LANG.es_es["KeyBinds"]            = "Asignación de teclas"
   LANG.es_es["ToOpenRadio"]         = "para abrir la radio"
+  LANG.es_es["Global"]              = "GLOBAL"
   
   -- French
   LANG.fr["SelectCountry"]        = "Sélectionnez un pays"
@@ -194,6 +198,7 @@ local LANG = LANG or {
   LANG.fr["TuningIn"]            = "Sintonisation"
   LANG.fr["KeyBinds"]            = "Raccourcis clavier"
   LANG.fr["ToOpenRadio"]         = "pour ouvrir la radio"
+  LANG.fr["Global"]              = "GLOBAL"
   
   -- Italian
   LANG.it["SelectCountry"]        = "Seleziona paese"
@@ -222,7 +227,8 @@ local LANG = LANG or {
   LANG.it["TuningIn"]            = "Sintonizzazione"
   LANG.it["KeyBinds"]            = "Assegnazione tasti"
   LANG.it["ToOpenRadio"]         = "per aprire la radio"
-  
+  LANG.it["Global"]              = "GLOBAL"
+
   -- Japanese
   LANG.ja["SelectCountry"]        = "国を選択"
   LANG.ja["StopRadio"]           = "停止"
@@ -250,6 +256,7 @@ local LANG = LANG or {
   LANG.ja["TuningIn"]            = "調整中"
   LANG.ja["KeyBinds"]            = "キー割り当て"
   LANG.ja["ToOpenRadio"]         = "ラジオを開くには"
+  LANG.ja["Global"]              = "GLOBAL"
   
   -- Korean
   LANG.ko["SelectCountry"]        = "국가 선택"
@@ -278,6 +285,7 @@ local LANG = LANG or {
   LANG.ko["TuningIn"]            = "조정 중"
   LANG.ko["KeyBinds"]            = "키 바인딩"
   LANG.ko["ToOpenRadio"]         = "라디오 메뉴를 열려면"
+  LANG.ko["Global"]              = "GLOBAL"
   
   -- Brazilian Portuguese
   LANG.pt_br["SelectCountry"]        = "Selecionar país"
@@ -306,6 +314,7 @@ local LANG = LANG or {
   LANG.pt_br["TuningIn"]            = "Sintonização"
   LANG.pt_br["KeyBinds"]            = "Atribuições de teclas"
   LANG.pt_br["ToOpenRadio"]         = "para abrir o rádio"
+  LANG.pt_br["Global"]              = "GLOBAL"
   
   -- Russian
   LANG.ru["SelectCountry"]        = "Выберите страну"
@@ -334,7 +343,8 @@ local LANG = LANG or {
   LANG.ru["TuningIn"]            = "Настройка"
   LANG.ru["KeyBinds"]            = "Назначение клавиш"
   LANG.ru["ToOpenRadio"]         = "чтобы открыть радио"
-  
+  LANG.ru["Global"]              = "GLOBAL"
+
   -- Turkish
   LANG.tr["SelectCountry"]        = "Ülke seç"
   LANG.tr["StopRadio"]           = "DURDUR"
@@ -362,7 +372,8 @@ local LANG = LANG or {
   LANG.tr["TuningIn"]            = "Ayarlıyor"
   LANG.tr["KeyBinds"]            = "Tuş Atamaları"
   LANG.tr["ToOpenRadio"]         = "radyo menüsünü açmak için"
-  
+  LANG.tr["Global"]              = "GLOBAL"
+
   -- Chinese (Simplified)
   LANG.zh_cn["SelectCountry"]        = "选择国家"
   LANG.zh_cn["StopRadio"]           = "停止"
@@ -390,7 +401,8 @@ local LANG = LANG or {
   LANG.zh_cn["TuningIn"]            = "调谐中"
   LANG.zh_cn["KeyBinds"]            = "按键绑定"
   LANG.zh_cn["ToOpenRadio"]         = "按键以打开收音机"
-  
+  LANG.zh_cn["Global"]              = "全局"
+
   -- Bulgarian
   LANG.bg["SelectCountry"]        = "Изберете държава"
   LANG.bg["StopRadio"]           = "СТОП"
@@ -418,7 +430,8 @@ local LANG = LANG or {
   LANG.bg["TuningIn"]            = "Настройване"
   LANG.bg["KeyBinds"]            = "Насрочване на клавиши"
   LANG.bg["ToOpenRadio"]         = "за да отворите радиото"
-  
+  LANG.bg["Global"]              = "Глобално"
+
   -- Greek
   LANG.el["SelectCountry"]        = "Επιλέξτε χώρα"
   LANG.el["StopRadio"]           = "ΣΤΟΠ"
@@ -446,7 +459,8 @@ local LANG = LANG or {
   LANG.el["TuningIn"]            = "Συντονισμός"
   LANG.el["KeyBinds"]            = "Πλήκτρα σύνδεσης"
   LANG.el["ToOpenRadio"]         = "για να ανοίξετε το ραδιόφωνο"
-  
+  LANG.el["Global"]              = "ΚΟΙΝΗ"
+
   -- Croatian
   LANG.hr["SelectCountry"]        = "Odaberite državu"
   LANG.hr["StopRadio"]           = "STOP"
@@ -474,7 +488,8 @@ local LANG = LANG or {
   LANG.hr["TuningIn"]            = "Usklađivanje"
   LANG.hr["KeyBinds"]            = "Dodjela tipki"
   LANG.hr["ToOpenRadio"]         = "za otvaranje radija"
-  
+  LANG.hr["Global"]              = "Globalno"
+
   -- Slovak
   LANG.sk["SelectCountry"]        = "Vyberte krajinu"
   LANG.sk["StopRadio"]           = "STOP"
@@ -502,7 +517,8 @@ local LANG = LANG or {
   LANG.sk["TuningIn"]            = "Ladenie"
   LANG.sk["KeyBinds"]            = "Klávesové väzby"
   LANG.sk["ToOpenRadio"]         = "na otvorenie rádia"
-  
+  LANG.sk["Global"]              = "Globálne"
+
   -- Polish
   LANG.pl["SelectCountry"]        = "Wybierz kraj"
   LANG.pl["StopRadio"]           = "STOP"
@@ -530,7 +546,8 @@ local LANG = LANG or {
   LANG.pl["TuningIn"]            = "Strojenie"
   LANG.pl["KeyBinds"]            = "Przypisanie klawiszy"
   LANG.pl["ToOpenRadio"]         = "aby otworzyć radio"
-  
+  LANG.pl["Global"]              = "Globalne"
+
   -- Danish
   LANG.da["SelectCountry"]        = "Vælg et land"
   LANG.da["StopRadio"]           = "STOP"
@@ -558,7 +575,8 @@ local LANG = LANG or {
   LANG.da["TuningIn"]            = "Tuner ind"
   LANG.da["KeyBinds"]            = "Tastbindinger"
   LANG.da["ToOpenRadio"]         = "for at åbne radioen"
-  
+  LANG.da["Global"]              = "Global"
+
   -- Dutch
   LANG.nl["SelectCountry"]        = "Selecteer een land"
   LANG.nl["StopRadio"]           = "STOP"
@@ -586,7 +604,8 @@ local LANG = LANG or {
   LANG.nl["TuningIn"]            = "Afstemmen"
   LANG.nl["KeyBinds"]            = "Toetsbindingen"
   LANG.nl["ToOpenRadio"]         = "om de radio te openen"
-  
+  LANG.nl["Global"]              = "Globaal"
+
   -- Thai
   LANG.th["SelectCountry"]        = "เลือกประเทศ"
   LANG.th["StopRadio"]           = "หยุด"
@@ -614,7 +633,8 @@ local LANG = LANG or {
   LANG.th["TuningIn"]            = "กำลังปรับจูน"
   LANG.th["KeyBinds"]            = "การผูกปุ่ม"
   LANG.th["ToOpenRadio"]         = "เพื่อเปิดวิทยุ"
-  
+  LANG.th["Global"]              = "ทั่วโลก"
+
   -- Vietnamese
   LANG.vi["SelectCountry"]        = "Chọn quốc gia"
   LANG.vi["StopRadio"]           = "DỪNG"
@@ -642,7 +662,8 @@ local LANG = LANG or {
   LANG.vi["TuningIn"]            = "Đang dò sóng"
   LANG.vi["KeyBinds"]            = "Phím tắt"
   LANG.vi["ToOpenRadio"]         = "để mở radio"
-  
+  LANG.vi["Global"]              = "Toàn cầu"
+
   -- Hungarian
   LANG.hu["SelectCountry"]        = "Válassz országot"
   LANG.hu["StopRadio"]           = "MEGÁLLÍTÁS"
@@ -670,7 +691,8 @@ local LANG = LANG or {
   LANG.hu["TuningIn"]            = "Hangolás"
   LANG.hu["KeyBinds"]            = "Billentyűkiosztás"
   LANG.hu["ToOpenRadio"]         = "a rádió megnyitásához"
-  
+  LANG.hu["Global"]              = "Globális"
+
   -- Lithuanian
   LANG.lt["SelectCountry"]        = "Pasirinkite šalį"
   LANG.lt["StopRadio"]           = "SUSTABDYTI"
@@ -698,7 +720,8 @@ local LANG = LANG or {
   LANG.lt["TuningIn"]            = "Derinimas"
   LANG.lt["KeyBinds"]            = "Raktų priskyrimai"
   LANG.lt["ToOpenRadio"]         = "radijui atidaryti"
-  
+  LANG.lt["Global"]              = "Globalus"
+
   -- Ukrainian
   LANG.uk["SelectCountry"]        = "Оберіть країну"
   LANG.uk["StopRadio"]           = "СТОП"
@@ -726,7 +749,8 @@ local LANG = LANG or {
   LANG.uk["TuningIn"]            = "Настройка"
   LANG.uk["KeyBinds"]            = "Прив’язка клавіш"
   LANG.uk["ToOpenRadio"]         = "щоб відкрити радіо"
-  
+  LANG.uk["Global"]              = "Глобальний"
+
   local themes = {
     "dark","sleek","cyberpunk","sunset","emerald",
     "synthwave","forest","ocean","volcanic"

@@ -122,7 +122,7 @@ local function fuzzyFilterCore(needle, items, keyFn, minScore, boostFn)
 
     if #matches == 0 then
         for _, item in ipairs(items) do
-            matches[#matches+1] = { item = item, score = 0 }
+            matches[#matches + 1] = { item = item, score = 0 }
         end
     end
 
@@ -130,11 +130,15 @@ local function fuzzyFilterCore(needle, items, keyFn, minScore, boostFn)
         if a.score ~= b.score then return a.score > b.score end
         return (keyFn(a.item) or "") < (keyFn(b.item) or "")
     end)
-
-    local results = {}
+    local results, seen = {}, {}
     for _, v in ipairs(matches) do
-        results[#results + 1] = v.item
+        local name = string.lower(keyFn(v.item) or "")
+        if not seen[name] then
+            seen[name] = true
+            results[#results + 1] = v.item
+        end
     end
+
     return results
 end
 

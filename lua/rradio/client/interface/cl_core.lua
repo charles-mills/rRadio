@@ -29,6 +29,8 @@ local lastStationSelectTime = 0
 local stationDataLoaded = false
 local isSearching = false
 local MAX_SEARCH_RESULTS = 150
+local globalView = false
+local lastView = nil
 
 local Scale = rRadio.utils.Scale
 local IsValid, pairs, ipairs = IsValid, pairs, ipairs
@@ -211,6 +213,8 @@ local function populateFavorites(panel, updateList)
         end
         favBtn.DoClick = function()
             surface.PlaySound("buttons/button3.wav")
+            globalView = false
+            lastView = nil
             selectedCountry = "favorites"
             favoritesMenuOpen = true
             updateList()
@@ -274,6 +278,8 @@ local function populateCountries(panel, filterText, updateList)
         btn:SetLeftChild(star)
         btn.DoClick = function()
             surface.PlaySound("buttons/button3.wav")
+            globalView = false
+            lastView = nil
             selectedCountry = c.original
             updateList()
         end
@@ -350,6 +356,57 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
     local function updateClear() populateList(stationListPanel, backButton, searchBox, true) end
 
     local items = {}
+    if globalView then
+        stationListPanel:Clear()
+        if resetSearch then searchBox:SetText("") end
+
+        local filter = searchBox:GetText():lower()
+        local rawList = {}
+        for countryKey, stations in pairs(StationData) do
+            for _, st in ipairs(stations) do
+                rawList[#rawList+1] = {
+                    station    = st,
+                    countryKey = countryKey,
+                    displayKey = st.name
+                }
+            end
+        end
+
+        local filtered
+        if filter == "" then
+            local limit = MAX_SEARCH_RESULTS
+            filtered = {}
+            for i = 1, math.min(limit, #rawList) do
+                table.insert(filtered, rawList[i])
+            end
+        else
+            filtered = rRadio.interface.fuzzyFilter(
+                filter,
+                rawList,
+                function(item) return item.station.name end,
+                0
+            )
+        end
+
+        local limit = (isSearching and MAX_SEARCH_RESULTS) or #filtered
+        for i = 1, math.min(limit, #filtered) do
+            local e = filtered[i]
+            e.station.countryKey = e.countryKey
+            local btn = MakePlayableStationButton(
+                stationListPanel,
+                e.station,
+                e.displayKey,
+                function() populateList(stationListPanel, backButton, searchBox, false) end
+            )
+            stationListPanel:Add(btn)
+        end
+
+        if backButton then
+            backButton:SetVisible(true)
+            backButton:SetEnabled(true)
+        end
+        return
+    end
     if not selectedCountry then
         append(items, populateFavorites(stationListPanel, updateClear))
         append(items, populateCountries(stationListPanel, filterText, updateClear))
@@ -686,6 +743,8 @@ local function ToggleCarRadioMenu()
         selectedCountry = nil
         settingsMenuOpen = false
         favoritesMenuOpen = false
+        globalView = false
+        lastView = nil
         return
     end
     local vehicle = ply:GetVehicle()
@@ -708,6 +767,8 @@ openRadioMenu = function(openSettings, opts)
     settingsMenuOpen = openSettings == true
     favoritesMenuOpen = false
     selectedCountry = nil
+    globalView = false
+    lastView = nil
     if opts.delay and IsValid(LocalPlayer()) and LocalPlayer().currentRadioEntity then
         timer.Simple(
             0.1,
@@ -740,6 +801,7 @@ openRadioMenu = function(openSettings, opts)
     
     radioMenuOpen = true
     local backButton
+    local stationListPanel
     local frame = vgui.Create("DFrame")
     currentFrame = frame
     frame:SetTitle("")
@@ -766,6 +828,8 @@ openRadioMenu = function(openSettings, opts)
         settingsMenuOpen = false
         favoritesMenuOpen = false
         selectedCountry = nil
+        globalView = false
+        lastView = nil
         if IsValid(settingsFrame) then
             settingsFrame:Remove()
             settingsFrame = nil
@@ -804,13 +868,38 @@ openRadioMenu = function(openSettings, opts)
             TEXT_ALIGN_CENTER
         )
     end
+    stationListPanel = vgui.Create("DScrollPanel", frame)
+    stationListPanel:SetPos(Scale(5), Scale(90))
+    stationListPanel:SetSize(
+        Scale(rRadio.config.UI.FrameSize.width) - Scale(20),
+        Scale(rRadio.config.UI.FrameSize.height) - Scale(200)
+    )
+    stationListPanel:SetVisible(not settingsMenuOpen)
+    rRadio.interface.StyleVBar(stationListPanel:GetVBar())
+    local margin   = Scale(5)
+    local btnWidth = Scale(80)
+    local fullWidth = Scale(rRadio.config.UI.FrameSize.width) - Scale(20)
+
     local searchBox = vgui.Create("DTextEntry", frame)
     searchBox:SetPos(Scale(10), Scale(50))
-    searchBox:SetSize(Scale(rRadio.config.UI.FrameSize.width) - Scale(20), Scale(30))
+    searchBox:SetSize(fullWidth - btnWidth - margin, Scale(30))
     searchBox:SetFont("rRadio.Roboto5")
-    searchBox:SetPlaceholderText(rRadio.config.Lang and rRadio.config.Lang["SearchPlaceholder"] or "Search")
-    searchBox:SetTextColor(rRadio.config.UI.TextColor)
+    searchBox:SetPlaceholderText(rRadio.config.Lang["SearchPlaceholder"] or "Search")
     searchBox:SetDrawBackground(false)
+    searchBox:SetTextColor(rRadio.config.UI.TextColor)
+    searchBox.Paint = function(self, w, h)
+        draw.RoundedBox(6, 0, 0, w, h, rRadio.config.UI.SearchBoxColor)
+        self:DrawTextEntryText(rRadio.config.UI.TextColor, Color(120, 120, 120), rRadio.config.UI.TextColor)
+        if self:GetText()=="" then
+            draw.SimpleText(self:GetPlaceholderText(), self:GetFont(), Scale(5), h/2, rRadio.config.UI.TextColor, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+        end
+    end
+    searchBox.OnGetFocus = function()
+        isSearching = true
+    end
+    searchBox.OnLoseFocus = function()
+        isSearching = false
+    end
     searchBox.OnValueChanged = function(self, txt)
         timer.Remove("rRadio.SearchDebounce")
         timer.Create("rRadio.SearchDebounce", 0.5, 1, function()
@@ -819,36 +908,42 @@ openRadioMenu = function(openSettings, opts)
             populateList(stationListPanel, backButton, searchBox, false)
         end)
     end
-    searchBox.Paint = function(self, w, h)
-        draw.RoundedBox(8, 0, 0, w, h, rRadio.config.UI.SearchBoxColor)
-        self:DrawTextEntryText(rRadio.config.UI.TextColor, Color(120, 120, 120), rRadio.config.UI.TextColor)
-        if self:GetText() == "" then
-            draw.SimpleText(
-                self:GetPlaceholderText(),
-                self:GetFont(),
-                Scale(5),
-                h / 2,
-                rRadio.config.UI.TextColor,
-                TEXT_ALIGN_LEFT,
-                TEXT_ALIGN_CENTER
-            )
+
+    local globalBtn = vgui.Create("DButton", frame)
+    globalBtn:SetText(rRadio.config.Lang["Global"] or "GLOBAL")
+    globalBtn:SetFont("rRadio.Roboto5")
+    globalBtn:SetTextColor(rRadio.config.UI.TextColor)
+    globalBtn:SetPos(searchBox:GetX() + searchBox:GetWide() + margin, searchBox:GetY())
+    globalBtn:SetSize(btnWidth, Scale(30))
+    globalBtn.Paint = function(self, w, h)
+        local isActive = globalView
+        local bg = (isActive and rRadio.config.UI.ButtonHoverColor)
+               or (self:IsHovered() and rRadio.config.UI.ButtonHoverColor)
+               or rRadio.config.UI.ButtonColor
+        draw.RoundedBox(6, 0, 0, w, h, bg)
+    end
+    globalBtn.DoClick = function()
+        surface.PlaySound("buttons/button3.wav")
+        if not globalView then
+            lastView = { selectedCountry = selectedCountry, favoritesMenuOpen = favoritesMenuOpen, searchText = searchBox:GetText() }
+            globalView = true
+            selectedCountry = rRadio.config.Lang["Global"] or "global"
+            favoritesMenuOpen = false
+            settingsMenuOpen = false
+            searchBox:SetText("")
+        else
+            if lastView then
+                selectedCountry = lastView.selectedCountry
+                favoritesMenuOpen = lastView.favoritesMenuOpen
+                searchBox:SetText(lastView.searchText or "")
+            end
+            globalView = false
+            lastView = nil
         end
+        populateList(stationListPanel, backButton, searchBox, true)
     end
+
     searchBox:SetVisible(not settingsMenuOpen)
-    searchBox.OnGetFocus = function()
-        isSearching = true
-    end
-    searchBox.OnLoseFocus = function()
-        isSearching = false
-    end
-    local stationListPanel = vgui.Create("DScrollPanel", frame)
-    stationListPanel:SetPos(Scale(5), Scale(90))
-    stationListPanel:SetSize(
-        Scale(rRadio.config.UI.FrameSize.width) - Scale(20),
-        Scale(rRadio.config.UI.FrameSize.height) - Scale(200)
-    )
-    stationListPanel:SetVisible(not settingsMenuOpen)
-    rRadio.interface.StyleVBar(stationListPanel:GetVBar())
     local stopButtonHeight = Scale(rRadio.config.UI.FrameSize.width) / 8
     local stopButtonWidth = Scale(rRadio.config.UI.FrameSize.width) / 4
     local stopButtonText = rRadio.config.Lang["StopRadio"] or "STOP"
@@ -885,8 +980,10 @@ openRadioMenu = function(openSettings, opts)
         surface.PlaySound("buttons/lightswitch2.wav")
         settingsMenuOpen = true
         openSettingsMenu(currentFrame, backButton)
-        backButton:SetVisible(true)
-        backButton:SetEnabled(true)
+        if backButton then
+            backButton:SetVisible(true)
+            backButton:SetEnabled(true)
+        end
         searchBox:SetVisible(false)
         stationListPanel:SetVisible(false)
     end)
@@ -896,6 +993,8 @@ openRadioMenu = function(openSettings, opts)
     backButton:SetIcon("hud/return.png")
     backButton:SetCallback(function()
         surface.PlaySound("buttons/lightswitch2.wav")
+        globalView = false
+        lastView = nil
         if settingsMenuOpen then
             settingsMenuOpen = false
             if IsValid(settingsFrame) then settingsFrame:Remove() settingsFrame = nil end
@@ -905,13 +1004,17 @@ openRadioMenu = function(openSettings, opts)
         else
             selectedCountry = nil
             favoritesMenuOpen = false
-            backButton:SetVisible(false)
-            backButton:SetEnabled(false)
+            if backButton then
+                backButton:SetVisible(false)
+                backButton:SetEnabled(false)
+            end
             populateList(stationListPanel, backButton, searchBox, true)
         end
     end)
-    backButton:SetVisible((selectedCountry ~= nil and selectedCountry ~= "") or settingsMenuOpen)
-    backButton:SetEnabled((selectedCountry ~= nil and selectedCountry ~= "") or settingsMenuOpen)
+    if backButton then
+        backButton:SetVisible((selectedCountry ~= nil and selectedCountry ~= "") or settingsMenuOpen)
+        backButton:SetEnabled((selectedCountry ~= nil and selectedCountry ~= "") or settingsMenuOpen)
+    end
     local stopButton = createAnimatedButton(
         frame,
         Scale(10),
