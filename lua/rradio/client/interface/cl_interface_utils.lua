@@ -1,5 +1,51 @@
 rRadio.interface = rRadio.interface or {}
 
+local function buildCharMap(s)
+  local map = {}
+  if not s then return map end
+  s = string.lower(s)
+  for i = 1, #s do
+    local c = s:sub(i,i)
+    map[c] = map[c] or {}
+    map[c][#map[c] + 1] = i
+  end
+  return map
+end
+
+local function local_binarySearch(arr, last)
+  local lo, hi = 1, #arr
+  local result
+  while lo <= hi do
+    local mid = math.floor((lo + hi) / 2)
+    if arr[mid] > last then
+      result, hi = arr[mid], mid - 1
+    else
+      lo = mid + 1
+    end
+  end
+  return result
+end
+
+local function subsequenceTest(needle, haystackMap)
+  if #needle == 0 then return true end
+  local lastPos = 0
+  for i = 1, #needle do
+    local c = needle:sub(i,i)
+    local positions = haystackMap[c]
+    if not positions then
+      return false
+    end
+    lastPos = local_binarySearch(positions, lastPos)
+    if not lastPos then
+      return false
+    end
+  end
+  return true
+end
+
+rRadio.interface.buildCharMap     = buildCharMap
+rRadio.interface.subsequenceTest = subsequenceTest
+
 rRadio.interface.favoriteCountries = rRadio.interface.favoriteCountries or {}
 rRadio.interface.favoriteStations = rRadio.interface.favoriteStations or {}
 local dataDir = "rradio"
@@ -49,23 +95,55 @@ function rRadio.interface.fuzzyMatch(needle, haystack)
     return scoreSum / nLen
 end
 
-function rRadio.interface.fuzzyFilter(needle, items, keyFn, minScore, boostFn)
+local function fuzzyFilterCore(needle, items, keyFn, minScore, boostFn)
+    local lowerNeedle = string.lower(needle or "")
+    local candidates = {}
+
+    if #lowerNeedle > 0 then
+        for _, item in ipairs(items) do
+            local map = item.charMap or buildCharMap(keyFn(item) or "")
+            if map and rRadio.interface.subsequenceTest(lowerNeedle, map) then
+                candidates[#candidates + 1] = item
+            end
+        end
+    else
+        candidates = items
+    end
+
     local matches = {}
-    for _, item in ipairs(items) do
-        local text = keyFn(item) or ""
-        local score = rRadio.interface.fuzzyMatch(needle, text)
+    for _, item in ipairs(candidates) do
+        local text  = keyFn(item) or ""
+        local score = rRadio.interface.fuzzyMatch(lowerNeedle, text)
         if boostFn then score = score + (boostFn(item) or 0) end
         if score >= (minScore or 0) then
-            table.insert(matches, {item=item, score=score})
+            matches[#matches + 1] = { item = item, score = score }
         end
     end
+
+    if #matches == 0 then
+        for _, item in ipairs(items) do
+            matches[#matches+1] = { item = item, score = 0 }
+        end
+    end
+
     table.sort(matches, function(a, b)
         if a.score ~= b.score then return a.score > b.score end
         return (keyFn(a.item) or "") < (keyFn(b.item) or "")
     end)
+
     local results = {}
-    for _, v in ipairs(matches) do results[#results + 1] = v.item end
+    for _, v in ipairs(matches) do
+        results[#results + 1] = v.item
+    end
     return results
+end
+
+rRadio.interface.fuzzyFilter = function(needle, items, keyFn, minScore, boostFn)
+    local out = fuzzyFilterCore(needle, items, keyFn, minScore, boostFn)
+    if needle and needle ~= "" and #out == 0 then
+        return fuzzyFilterCore("", items, keyFn, minScore, boostFn)
+    end
+    return out
 end
 
 function rRadio.interface.MakeIconButton(parent, materialPath, url, xOffset)

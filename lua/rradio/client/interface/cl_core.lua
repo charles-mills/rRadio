@@ -114,6 +114,8 @@ local function MakePlayableStationButton(parent, station, displayText, updateLis
     return btn
 end
 
+local buildCharMap = rRadio.interface.buildCharMap
+
 local function LoadStationData()
     if stationDataLoaded then
         return
@@ -131,7 +133,13 @@ local function LoadStationData()
                     StationData[baseCountry] = {}
                 end
                 for _, station in ipairs(stations) do
-                    table.insert(StationData[baseCountry], {name = station.n, url = station.u, country = baseCountry})
+                    local entry = {
+                      name    = station.n,
+                      url     = station.u,
+                      country = baseCountry,
+                      charMap = buildCharMap(station.n)
+                    }
+                    table.insert(StationData[baseCountry], entry)
                     allowedURLSet[station.u] = true
                 end
             end
