@@ -4,7 +4,7 @@ rRadio.config = rRadio.config or {}
 -- Server settings
 -----------------------------------------------------------------------
 
-
+rRadio.config.UsePlayerBindHook = false -- Set to true in multiplayer - do not enable in singleplayer.
 rRadio.config.EnableLogging = true  -- enable bLogs integration
 rRadio.config.SecureStationLoad = false  -- block playing stations not in the client's list
 rRadio.config.DriverPlayOnly = false     -- only allow driver to control radio
@@ -12,7 +12,6 @@ rRadio.config.AnimationDefaultOn = true  -- enable animations by default
 rRadio.config.ClientHardDisable = false  -- disables file loading when client's rradio_enabled convar is set to 0 (relog required to re-enable) (does not include config and its dependencies)
 rRadio.config.DisablePushDamage = true  -- disable push damage
 rRadio.config.PrioritiseCustom  = true -- the custom / server added station category will appear at the top of the menu (instead of alphabetical)
-
 rRadio.config.AllowCreatePermanentBoombox = true -- allow new permanent boomboxes to be created by superadmins
 
 -- name of the category for all custom stations, e.g. "Our Favourite Stations!"

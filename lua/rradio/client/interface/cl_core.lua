@@ -1046,94 +1046,94 @@ openRadioMenu = function(openSettings, opts)
     end
 end
 
-hook.Add(
-    "Think",
-    "rRadio.OpenCarRadioMenu",
-    function()
-        local ply = LocalPlayer()
-        local openKey = GetConVar("rammel_rradio_menu_key"):GetInt()
-
-        local currentTime = CurTime()
-
-        if not (input.IsKeyDown(openKey) and not ply:IsTyping() and currentTime - lastKeyPress > keyPressDelay) then
-            return
-        end
-
-        lastKeyPress = currentTime
-
-        if radioMenuOpen and not isSearching then
-            surface.PlaySound("buttons/lightswitch2.wav")
-            currentFrame:Close()
-            radioMenuOpen = false
-            selectedCountry = nil
-            settingsMenuOpen = false
-            favoritesMenuOpen = false
-            return
-        end
-
-        local vehicle = ply:GetVehicle()
-        if IsValid(vehicle) then
-            local mainVehicle = rRadio.utils.GetVehicle(vehicle)
-            if IsValid(mainVehicle) then
-                if hook.Run("rRadio.CanOpenMenu", ply, mainVehicle) == false then return end
-                if rRadio.config.DriverPlayOnly then
-                    local isPlayerDriving = (mainVehicle:GetDriver() == ply)
-                    if not isPlayerDriving then
-                        return
-                    end
-                end
-
-                if not rRadio.utils.isSitAnywhereSeat(mainVehicle) then
-                    ply.currentRadioEntity = mainVehicle
-                    openRadioMenu()
-                end
-            end
-        end
+local function ToggleCarRadioMenu()
+    local ply = LocalPlayer()
+    if radioMenuOpen and not isSearching then
+        surface.PlaySound("buttons/lightswitch2.wav")
+        currentFrame:Close()
+        radioMenuOpen = false
+        selectedCountry = nil
+        settingsMenuOpen = false
+        favoritesMenuOpen = false
+        return
     end
-)
+    local vehicle = ply:GetVehicle()
+    if not IsValid(vehicle) then return end
+    local mainVehicle = rRadio.utils.GetVehicle(vehicle)
+    if not IsValid(mainVehicle) then return end
+    if hook.Run("rRadio.CanOpenMenu", ply, mainVehicle) == false then return end
+    if rRadio.config.DriverPlayOnly then
+        local isPlayerDriving = (mainVehicle:GetDriver() == ply)
+        if not isPlayerDriving then return end
+    end
+    if not rRadio.utils.isSitAnywhereSeat(mainVehicle) then
+        ply.currentRadioEntity = mainVehicle
+        openRadioMenu()
+    end
+end
 
-net.Receive(
-    "rRadio.UpdateRadioStatus",
-    function()
-        local entity = net.ReadEntity()
-        local stationName = net.ReadString()
-        local isPlaying = net.ReadBool()
-        local statusCode = net.ReadUInt(2)
+if not rRadio.config.UsePlayerBindHook then
+    hook.Add("Think", "rRadio.OpenCarRadioMenu", function()
+        local ply, key, now = LocalPlayer(), GetConVar("rammel_rradio_menu_key"):GetInt(), CurTime()
+        if input.IsKeyDown(key) and not ply:IsTyping() and now - lastKeyPress > keyPressDelay then
+            lastKeyPress = now
+            ToggleCarRadioMenu()
+        end
+    end)
+end
 
-        if statusCode == rRadio.status.TUNING and rRadio.cl.connectedStations[entity] then return end
+if rRadio.config.UsePlayerBindHook then
+    hook.Add("PlayerButtonDown", "rRadio.OpenCarRadioBind", function(ply, button)
+        if CLIENT
+            and ply == LocalPlayer()
+            and button == GetConVar("rammel_rradio_menu_key"):GetInt()
+            and not ply:IsTyping()
+            and IsFirstTimePredicted()
+        then
+            ToggleCarRadioMenu()
+        end
+    end)
+end
 
-        local status
-        if statusCode == rRadio.status.STOPPED
-           or statusCode == rRadio.status.TUNING
-           or statusCode == rRadio.status.PLAYING then
-            status = statusCode
+net.Receive("rRadio.UpdateRadioStatus", function()
+    local entity = net.ReadEntity()
+    local stationName = net.ReadString()
+    local isPlaying = net.ReadBool()
+    local statusCode = net.ReadUInt(2)
+
+    if statusCode == rRadio.status.TUNING and rRadio.cl.connectedStations[entity] then return end
+
+    local status
+    if statusCode == rRadio.status.STOPPED
+       or statusCode == rRadio.status.TUNING
+       or statusCode == rRadio.status.PLAYING then
+        status = statusCode
+    else
+        status = rRadio.status.STOPPED
+    end
+    local displayStatus = status
+    if status == rRadio.status.PLAYING and not rRadio.cl.connectedStations[entity] then
+        displayStatus = rRadio.status.TUNING
+    end
+    if status == rRadio.status.STOPPED then
+        rRadio.cl.connectedStations[entity] = nil
+        rRadio.cl.requestedStations[entity] = nil
+    end
+    if IsValid(entity) then
+        rRadio.cl.BoomboxStatuses[entity:EntIndex()] = {
+            stationStatus = displayStatus,
+            stationName = stationName
+        }
+        entity:SetNWInt("Status", statusCode)
+        entity:SetNWString("StationName", stationName)
+        entity:SetNWBool("IsPlaying", isPlaying)
+        if displayStatus == rRadio.status.PLAYING then
+            currentlyPlayingStations[entity] = {name = stationName}
         else
-            status = rRadio.status.STOPPED
-        end
-        local displayStatus = status
-        if status == rRadio.status.PLAYING and not rRadio.cl.connectedStations[entity] then
-            displayStatus = rRadio.status.TUNING
-        end
-        if status == rRadio.status.STOPPED then
-            rRadio.cl.connectedStations[entity] = nil
-            rRadio.cl.requestedStations[entity] = nil
-        end
-        if IsValid(entity) then
-            rRadio.cl.BoomboxStatuses[entity:EntIndex()] = {
-                stationStatus = displayStatus,
-                stationName = stationName
-            }
-            entity:SetNWInt("Status", statusCode)
-            entity:SetNWString("StationName", stationName)
-            entity:SetNWBool("IsPlaying", isPlaying)
-            if displayStatus == rRadio.status.PLAYING then
-                currentlyPlayingStations[entity] = {name = stationName}
-            else
-                currentlyPlayingStations[entity] = nil
-            end
+            currentlyPlayingStations[entity] = nil
         end
     end
-)
+end)
 net.Receive(
     "rRadio.PlayStation",
     function()
