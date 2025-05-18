@@ -153,7 +153,6 @@ net.Receive("rRadio.PlayStation", function(len, ply)
         return
     end
 
-    -- Server: broadcast tuning status for all radio entities
     rRadio.utils.setRadioStatus(ent, rRadio.status.TUNING, station)
 
     if rRadio.sv.ActiveRadios[idx] then

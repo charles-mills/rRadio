@@ -40,6 +40,7 @@ local _lastPlyPos     = Vector(0,0,0)
 local _lastStationCt  = 0
 local _lastEnabled    = GetConVar("rammel_rradio_enabled"):GetBool()
 local _lastMaxVol     = GetConVar("rammel_rradio_max_volume"):GetFloat()
+local _volumeChanged = false
 
 local playerVeh = nil
 
@@ -57,6 +58,15 @@ icons.star = {
 }
 
 local pendingVolume, pendingEntity
+
+net.Receive("rRadio.SetRadioVolume", function()
+    local ent = net.ReadEntity()
+    local vol = net.ReadFloat()
+    if IsValid(ent) then
+        entityVolumes[ent] = vol
+        _volumeChanged = true
+    end
+end)
 
 local function SendPendingVolume()
     if not IsValid(pendingEntity) then return end
@@ -643,17 +653,29 @@ local function openSettingsMenu(parentFrame, backButton)
         binder:SetConVar("rammel_rradio_menu_key")
         local curKey = GetConVar("rammel_rradio_menu_key"):GetInt()
         binder:SetValue(curKey)
-        binder:SetText(rRadio.GetKeyName(curKey))
-        binder:SetTextColor(rRadio.config.UI.TextColor)
+        binder:SetText("")
         binder:SetFont("rRadio.Roboto5")
+        binder._waiting = false
+
+        local _oldOnMousePressed = binder.OnMousePressed
+        function binder:OnMousePressed(code)
+            _oldOnMousePressed(self, code)
+            self._waiting = true
+        end
+
         binder.Paint = function(self, w, h)
             draw.RoundedBox(6, 0, 0, w, h, rRadio.config.UI.SearchBoxColor)
-            draw.SimpleText(self:GetText(), "rRadio.Roboto5", w/2, h/2, rRadio.config.UI.TextColor, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+            if not self._waiting then
+                draw.SimpleText(rRadio.GetKeyName(self:GetValue()), "rRadio.Roboto5", Scale(10), h/2, rRadio.config.UI.TextColor, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+            end
         end
+
+        local _oldOnChange = binder.OnChange
         function binder:OnChange(code)
-            DBinder.OnChange(self, code)
+            _oldOnChange(self, code)
+            self._waiting = false
             RunConsoleCommand("rammel_rradio_menu_key", code)
-            self:SetText(rRadio.GetKeyName(code))
+            self:SetText("")
         end
     end
     addHeader(rRadio.config.Lang["GeneralOptions"] or "General Options")
@@ -1310,7 +1332,7 @@ local function UpdateAllStations()
     local currCt = rRadio.interface.updateStationCount()
     local enabled = GetConVar("rammel_rradio_enabled"):GetBool()
     local currMax = GetConVar("rammel_rradio_max_volume"):GetFloat()
-    if plyPos == _lastPlyPos and currCt == _lastStationCt and enabled == _lastEnabled and currMax == _lastMaxVol then
+    if plyPos == _lastPlyPos and currCt == _lastStationCt and enabled == _lastEnabled and currMax == _lastMaxVol and not _volumeChanged then
         return
     end
     _lastPlyPos = plyPos
@@ -1332,6 +1354,7 @@ local function UpdateAllStations()
             rRadio.interface.refreshVolume(actual)
         end
     end
+    _volumeChanged = false
 end
 
 timer.Create("rRadio.UpdateStationsTimer", 0.2, 0, UpdateAllStations)
