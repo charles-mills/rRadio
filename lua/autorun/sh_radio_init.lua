@@ -212,6 +212,7 @@ if SERVER then
     include("rradio/server/sv_utils.lua")
     include("rradio/server/sv_core.lua")
     include("rradio/server/sv_permanent.lua")
+    include("rradio/server/sv_blogs.lua")
     addPrivileges()
     
     rRadio.FormattedOutput("Finished server-side initialization")
