@@ -117,6 +117,7 @@ local function addCSLuaFiles()
         "rradio/shared",
         "rradio/client",
         "rradio/client/interface",
+        "rradio/client/interface/components",
         "rradio/client/lang",
         "rradio/client/data/langpacks",
         "rradio/client/data/stationpacks",
@@ -243,8 +244,10 @@ elseif CLIENT then
 
     rRadio.FormattedOutput("Starting client-side initialization")
     
+    addClientFile("client/interface/components/star.lua")
     addClientFile("client/interface/cl_interface_utils.lua")
     addClientFile("client/interface/cl_core.lua")
+
     addClientFile("client/interface/cl_tool_menu.lua")
 
     addClientFile("client/data/langpacks/data_1.lua")
@@ -255,6 +258,6 @@ elseif CLIENT then
         addClientFile("client/data/stationpacks/" .. f)
     end
 
-    rRadio.FormattedOutput("Loaded " .. cl_count .. "/39 client-side files")
+    rRadio.FormattedOutput("Loaded " .. cl_count .. "/40 client-side files")
     rRadio.FormattedOutput("Finished client-side initialization")
 end
