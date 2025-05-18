@@ -1188,16 +1188,20 @@ net.Receive(
                 end
                 if IsValid(station) and IsValid(entity) then
                     timer.Simple(0, function()
-                        station:SetPos(entity:GetPos())
-                        station:SetVolume(volume)
-                        station:Play()
-                        rRadio.cl.radioSources[entity] = station
-                        activeStationCount = rRadio.interface.updateStationCount()
-
                         local cfg = rRadio.interface.getEntityConfig(entity)
                         if cfg then
                             station:Set3DFadeDistance(cfg.MinVolumeDistance(), cfg.MaxHearingDistance())
                         end
+                        station:SetPos(entity:GetPos())
+
+                        local ply = LocalPlayer()
+                        local inCar = (rRadio.utils.GetVehicle(ply:GetVehicle()) == entity)
+                        local distSqr = ply:GetPos():DistToSqr(entity:GetPos())
+                        rRadio.interface.updateRadioVolume(station, distSqr, inCar, entity)
+                        station:Play()
+                        rRadio.cl.radioSources[entity] = station
+                        activeStationCount = rRadio.interface.updateStationCount()
+
                         rRadio.cl.connectedStations[entity] = true
                         rRadio.utils.setRadioStatus(entity, rRadio.status.PLAYING, stationName)
                         rRadio.cl.requestedStations[entity] = nil
