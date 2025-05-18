@@ -1187,19 +1187,21 @@ net.Receive(
                     return
                 end
                 if IsValid(station) and IsValid(entity) then
-                    station:SetPos(entity:GetPos())
-                    station:SetVolume(volume)
-                    station:Play()
-                    rRadio.cl.radioSources[entity] = station
-                    activeStationCount = rRadio.interface.updateStationCount()
+                    timer.Simple(0, function()
+                        station:SetPos(entity:GetPos())
+                        station:SetVolume(volume)
+                        station:Play()
+                        rRadio.cl.radioSources[entity] = station
+                        activeStationCount = rRadio.interface.updateStationCount()
 
-                    local cfg = rRadio.interface.getEntityConfig(entity)
-                    if cfg then
-                        station:Set3DFadeDistance(cfg.MinVolumeDistance(), cfg.MaxHearingDistance())
-                    end
-                    rRadio.cl.connectedStations[entity] = true
-                    rRadio.utils.setRadioStatus(entity, rRadio.status.PLAYING, stationName)
-                    rRadio.cl.requestedStations[entity] = nil
+                        local cfg = rRadio.interface.getEntityConfig(entity)
+                        if cfg then
+                            station:Set3DFadeDistance(cfg.MinVolumeDistance(), cfg.MaxHearingDistance())
+                        end
+                        rRadio.cl.connectedStations[entity] = true
+                        rRadio.utils.setRadioStatus(entity, rRadio.status.PLAYING, stationName)
+                        rRadio.cl.requestedStations[entity] = nil
+                    end)
                 else
                     rRadio.cl.connectedStations[entity] = nil
                     rRadio.utils.clearRadioStatus(entity)

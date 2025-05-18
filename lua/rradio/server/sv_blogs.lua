@@ -2,16 +2,20 @@ if SERVER and GAS then
     CreateConVar("rammel_rradio_logging", "0", FCVAR_ARCHIVE, "Enable bLogs integration for rRadio")
 end
 
-local MODULE = GAS.Logging:MODULE()
+if not GAS then return end
 
-MODULE.Category = "rRadio"
-MODULE.Name = "Plays"
-MODULE.Colour = Color(255, 153, 0)
+local loggingEnabled = GetConVar("rammel_rradio_logging"):GetBool()
 
-MODULE:Setup(function()
+local MODULE_PLAYS = GAS.Logging:MODULE()
+
+MODULE_PLAYS.Category = "rRadio"
+MODULE_PLAYS.Name = "Plays"
+MODULE_PLAYS.Colour = Color(255, 153, 0)
+
+MODULE_PLAYS:Setup(function()
     local function StationPlayed(ply, ent, station, stationURL)
-        if not GetConVar("rammel_rradio_logging"):GetBool() then return end
-        MODULE:LogPhrase("Station Played by " .. (ply and GAS.Logging:FormatPlayer(ply) or "Unknown"), {
+        if not loggingEnabled then return end
+        MODULE_PLAYS:LogPhrase("Station Played by " .. (ply and GAS.Logging:FormatPlayer(ply) or "Unknown"), {
             { "Player", GAS.Logging:FormatPlayer(ply) },
             { "Entity", GAS.Logging:FormatEntity(ent) },
             { "Station", GAS.Logging:Escape(station) },
@@ -22,18 +26,18 @@ MODULE:Setup(function()
     hook.Add("rRadio.PostPlayStation", "StationPlayed", StationPlayed)
 end)
 
-GAS.Logging:AddModule(MODULE)
+if loggingEnabled then GAS.Logging:AddModule(MODULE_PLAYS) end
 
-local MODULE = GAS.Logging:MODULE()
+local MODULE_STOPS = GAS.Logging:MODULE()
 
-MODULE.Category = "rRadio"
-MODULE.Name = "Stops"
-MODULE.Colour = Color(255, 153, 0)
+MODULE_STOPS.Category = "rRadio"
+MODULE_STOPS.Name = "Stops"
+MODULE_STOPS.Colour = Color(255, 153, 0)
 
-MODULE:Setup(function()
+MODULE_STOPS:Setup(function()
     local function StationStopped(ply, ent)
-        if not GetConVar("rammel_rradio_logging"):GetBool() then return end
-        MODULE:LogPhrase("Station Stopped by " .. (ply and GAS.Logging:FormatPlayer(ply) or "Unknown"), {
+        if not loggingEnabled then return end
+        MODULE_STOPS:LogPhrase("Station Stopped by " .. (ply and GAS.Logging:FormatPlayer(ply) or "Unknown"), {
             { "Player", GAS.Logging:FormatPlayer(ply) },
             { "Entity", GAS.Logging:FormatEntity(ent) },
         })
@@ -42,4 +46,14 @@ MODULE:Setup(function()
     hook.Add("rRadio.PostStopStation", "StationStopped", StationStopped)
 end)
 
-GAS.Logging:AddModule(MODULE)
+if loggingEnabled then GAS.Logging:AddModule(MODULE_STOPS) end
+
+cvars.AddChangeCallback("rammel_rradio_logging", function(convar_name, old_value, new_value)
+    if tobool(new_value) then
+        GAS.Logging:AddModule(MODULE_PLAYS)
+        GAS.Logging:AddModule(MODULE_STOPS)
+        print("Enabled rRadio logging.")
+    else
+        print("Disabled rRadio logging.")
+    end
+end, "rRadio_LoggingCallback")
