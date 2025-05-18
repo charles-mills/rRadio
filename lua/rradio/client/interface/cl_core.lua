@@ -1049,7 +1049,7 @@ end
 if not rRadio.config.UsePlayerBindHook then
     hook.Add("Think", "rRadio.OpenCarRadioMenu", function()
         local ply, key, now = LocalPlayer(), GetConVar("rammel_rradio_menu_key"):GetInt(), CurTime()
-        if input.IsKeyDown(key) and not ply:IsTyping() and now - lastKeyPress > keyPressDelay then
+        if input.IsKeyDown(key) and not ply:IsTyping() and now - lastKeyPress > keyPressDelay and not isSearching then
             lastKeyPress = now
             ToggleCarRadioMenu()
         end
@@ -1059,7 +1059,7 @@ end
 if rRadio.config.UsePlayerBindHook then
     hook.Add("PlayerButtonDown", "rRadio.OpenCarRadioBind", function(ply, button)
         local key, now = GetConVar("rammel_rradio_menu_key"):GetInt(), CurTime()
-        if button == key and now - lastKeyPress > keyPressDelay and IsFirstTimePredicted() then
+        if button == key and now - lastKeyPress > keyPressDelay and not isSearching and IsFirstTimePredicted() then
             lastKeyPress = now
             ToggleCarRadioMenu()
         end
