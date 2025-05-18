@@ -722,6 +722,32 @@ local function openSettingsMenu(parentFrame, backButton)
     rRadio.interface.MakeIconButton(footer, "hud/discord.png", "https://discordapp.com/users/1265373956685299836", Scale(90))
 end
 
+local function ToggleCarRadioMenu()
+    local ply = LocalPlayer()
+    if radioMenuOpen then
+        surface.PlaySound("buttons/lightswitch2.wav")
+        currentFrame:Close()
+        radioMenuOpen = false
+        selectedCountry = nil
+        settingsMenuOpen = false
+        favoritesMenuOpen = false
+        return
+    end
+    local vehicle = ply:GetVehicle()
+    if not IsValid(vehicle) then return end
+    local mainVehicle = rRadio.utils.GetVehicle(vehicle)
+    if not IsValid(mainVehicle) then return end
+    if hook.Run("rRadio.CanOpenMenu", ply, mainVehicle) == false then return end
+    if rRadio.config.DriverPlayOnly then
+        local isPlayerDriving = (mainVehicle:GetDriver() == ply)
+        if not isPlayerDriving then return end
+    end
+    if not rRadio.utils.isSitAnywhereSeat(mainVehicle) then
+        ply.currentRadioEntity = mainVehicle
+        openRadioMenu()
+    end
+end
+
 openRadioMenu = function(openSettings, opts)
     opts = opts or {}
     settingsMenuOpen = openSettings == true
@@ -767,6 +793,19 @@ openRadioMenu = function(openSettings, opts)
     frame:SetDraggable(false)
     frame:ShowCloseButton(false)
     frame:MakePopup()
+
+    do
+        local oldKeyPress = frame.OnKeyCodePressed
+        function frame:OnKeyCodePressed(code)
+            local menuKey = GetConVar("rammel_rradio_menu_key"):GetInt()
+            if code == menuKey then
+                ToggleCarRadioMenu()
+                lastKeyPress = CurTime()
+                return
+            end
+            if oldKeyPress then oldKeyPress(self, code) end
+        end
+    end
     frame.OnClose = function()
         radioMenuOpen = false
         settingsMenuOpen = false
@@ -1052,32 +1091,6 @@ openRadioMenu = function(openSettings, opts)
     end
 end
 
-local function ToggleCarRadioMenu()
-    local ply = LocalPlayer()
-    if radioMenuOpen then
-        surface.PlaySound("buttons/lightswitch2.wav")
-        currentFrame:Close()
-        radioMenuOpen = false
-        selectedCountry = nil
-        settingsMenuOpen = false
-        favoritesMenuOpen = false
-        return
-    end
-    local vehicle = ply:GetVehicle()
-    if not IsValid(vehicle) then return end
-    local mainVehicle = rRadio.utils.GetVehicle(vehicle)
-    if not IsValid(mainVehicle) then return end
-    if hook.Run("rRadio.CanOpenMenu", ply, mainVehicle) == false then return end
-    if rRadio.config.DriverPlayOnly then
-        local isPlayerDriving = (mainVehicle:GetDriver() == ply)
-        if not isPlayerDriving then return end
-    end
-    if not rRadio.utils.isSitAnywhereSeat(mainVehicle) then
-        ply.currentRadioEntity = mainVehicle
-        openRadioMenu()
-    end
-end
-
 if not rRadio.config.UsePlayerBindHook then
     hook.Add("Think", "rRadio.OpenCarRadioMenu", function()
         local ply, key, now = LocalPlayer(), GetConVar("rammel_rradio_menu_key"):GetInt(), CurTime()
@@ -1090,8 +1103,8 @@ end
 
 if rRadio.config.UsePlayerBindHook then
     hook.Add("PlayerButtonDown", "rRadio.OpenCarRadioBind", function(ply, button)
-        local ply, key, now = LocalPlayer(), GetConVar("rammel_rradio_menu_key"):GetInt(), CurTime()
-        if input.IsKeyDown(key) and not ply:IsTyping() and now - lastKeyPress > keyPressDelay and IsFirstTimePredicted() then
+        local key, now = GetConVar("rammel_rradio_menu_key"):GetInt(), CurTime()
+        if button == key and now - lastKeyPress > keyPressDelay and IsFirstTimePredicted() then
             lastKeyPress = now
             ToggleCarRadioMenu()
         end

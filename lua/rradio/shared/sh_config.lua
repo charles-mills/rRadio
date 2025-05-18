@@ -96,6 +96,6 @@ local DEFAULT_UI = {
 }
 
 rRadio.config.UI = rRadio.config.UI or DEFAULT_UI
-rRadio.config.RadioVersion = "1.2.3"
+rRadio.config.RadioVersion = "1.2.4"
 
 return rRadio.config
