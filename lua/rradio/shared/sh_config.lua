@@ -26,6 +26,8 @@ rRadio.config.VehicleRadio = {
     RetryDelay = 2
 }
 
+rRadio.config.MAX_CLIENT_STATIONS = 10
+
 rRadio.config.MessageCooldown = function() return 5 end
 rRadio.config.MaxVolume = function() return 1 end
 rRadio.config.InactiveTimeout = function() return 3600 end

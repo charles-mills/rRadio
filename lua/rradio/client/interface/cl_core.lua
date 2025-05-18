@@ -14,7 +14,6 @@ local currentlyPlayingStations = {}
 local allowedURLSet = {}
 local StationData = {}
 
-local MAX_CLIENT_STATIONS = 10
 local currentFrame = nil
 local settingsFrame = nil
 local settingsMenuOpen = false
@@ -1175,7 +1174,7 @@ net.Receive(
         end
 
         local currentCount = rRadio.interface.updateStationCount()
-        if not rRadio.cl.radioSources[entity] and currentCount >= MAX_CLIENT_STATIONS then
+        if not rRadio.cl.radioSources[entity] and currentCount >= rRadio.config.MAX_CLIENT_STATIONS then
             return
         end
 
