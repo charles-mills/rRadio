@@ -267,8 +267,11 @@ elseif CLIENT then
 
     rRadio.FormattedOutput("Starting client-side initialization")
     
-    addClientFile("client/interface/components/star.lua")
     addClientFile("client/interface/cl_interface_utils.lua")
+
+    addClientFile("client/interface/components/star.lua")
+    addClientFile("client/interface/components/button.lua")
+    addClientFile("client/interface/components/nav_button.lua")
     addClientFile("client/interface/cl_core.lua")
 
     addClientFile("client/interface/cl_tool_menu.lua")

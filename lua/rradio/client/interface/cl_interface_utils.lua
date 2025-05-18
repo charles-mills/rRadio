@@ -74,33 +74,6 @@ function rRadio.interface.MakeIconButton(parent, materialPath, url, xOffset)
     return icon
 end
 
-function rRadio.interface.MakeNavButton(parent, x, y, size, iconMaterial, onClick)
-    local button = vgui.Create("DButton", parent)
-    button:SetPos(x, y)
-    button:SetSize(size, size)
-    button:SetText("")
-    button:SetTextColor(rRadio.config.UI.TextColor)
-    button.lerp = 0
-    button.bgColor = Color(0, 0, 0, 0)
-    button.hoverColor = rRadio.config.UI.ButtonHoverColor
-    button.Paint = function(self, w, h)
-        local bg = rRadio.interface.LerpColor(self.lerp, self.bgColor, self.hoverColor)
-        draw.RoundedBox(8, 0, 0, w, h, bg)
-        surface.SetMaterial(Material(iconMaterial))
-        surface.SetDrawColor(ColorAlpha(rRadio.config.UI.TextColor, 255 * (0.5 + 0.5 * self.lerp)))
-        surface.DrawTexturedRect(0, 0, w, h)
-    end
-    button.Think = function(self)
-        if self:IsHovered() then
-            self.lerp = math.Approach(self.lerp, 1, FrameTime() * 5)
-        else
-            self.lerp = math.Approach(self.lerp, 0, FrameTime() * 5)
-        end
-    end
-    button.DoClick = onClick
-    return button
-end
-
 function rRadio.interface.TruncateText(text, font, maxWidth)
     surface.SetFont(font)
     local textW = surface.GetTextSize(text)
@@ -149,18 +122,6 @@ function rRadio.interface.StyleVBar(vbar)
     end
     vbar.btnUp.Paint = function(self, w, h) end
     vbar.btnDown.Paint = function(self, w, h) end
-end
-
-function rRadio.interface.MakeStationButton(parent, onClick)
-    local btn = vgui.Create("DButton", parent)
-    btn:Dock(TOP)
-    btn:DockMargin(Scale(5), Scale(5), Scale(5), 0)
-    btn:SetTall(Scale(40))
-    btn:SetText("")
-    btn:SetFont("rRadio.Roboto5")
-    btn:SetTextColor(rRadio.config.UI.TextColor)
-    btn.DoClick = onClick
-    return btn
 end
 
 function rRadio.interface.DisplayVehicleEnterAnimation(argVehicle, isDriverOverride)
