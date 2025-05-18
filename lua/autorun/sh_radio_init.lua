@@ -166,6 +166,7 @@ local function addClProperties()
         end,
         Action    = function(self, ent)
             rRadio.cl.mutedBoomboxes[ent] = true
+            rRadio.interface.refreshVolume(ent)
         end
     })
 
@@ -178,6 +179,7 @@ local function addClProperties()
         end,
         Action    = function(self, ent)
             rRadio.cl.mutedBoomboxes[ent] = nil
+            rRadio.interface.refreshVolume(ent)
         end
     })
 end
@@ -250,6 +252,7 @@ elseif CLIENT then
     addClientFile("shared/sh_config.lua")
 
     rRadio.cl = rRadio.cl or {}
+    rRadio.cl.radioSources = rRadio.cl.radioSources or {}
     rRadio.cl.mutedBoomboxes = rRadio.cl.mutedBoomboxes or {}
 
     if rRadio.config.UsePlayerBindHook == nil then
@@ -257,6 +260,13 @@ elseif CLIENT then
     end
 
     rRadio.addClConVars()
+
+    cvars.AddChangeCallback("rammel_rradio_max_volume", function(cvar, old, new)
+        for ent in pairs(rRadio.cl.radioSources) do
+            rRadio.interface.refreshVolume(ent)
+        end
+    end, "rRadioMaxVolCB")
+
     addClProperties()
 
     if (rRadio.isClientLoadDisabled()) then
@@ -284,6 +294,6 @@ elseif CLIENT then
         addClientFile("client/data/stationpacks/" .. f)
     end
 
-    rRadio.FormattedOutput("Loaded " .. cl_count .. "/40 client-side files")
+    rRadio.FormattedOutput("Loaded " .. cl_count .. "/42 client-side files")
     rRadio.FormattedOutput("Finished client-side initialization")
 end

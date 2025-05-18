@@ -21,6 +21,16 @@ end)
 local _lastVolumes = {}
 local _volThreshold = 0.01
 
+function rRadio.interface.refreshVolume(ent)
+    local src = rRadio.cl.radioSources[ent]
+    if not (IsValid(ent) and IsValid(src)) then return end
+
+    local ply = LocalPlayer()
+    local dist = ply:GetPos():DistToSqr(ent:GetPos())
+    local inCar = (rRadio.utils.GetVehicle(ply:GetVehicle()) == ent)
+    rRadio.interface.updateRadioVolume(src, dist, inCar, ent)
+end
+
 function rRadio.interface.fuzzyMatch(needle, haystack)
     needle = string.lower(needle or "")
     haystack = string.lower(haystack or "")

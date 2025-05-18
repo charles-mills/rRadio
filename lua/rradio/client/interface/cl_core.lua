@@ -37,6 +37,7 @@ local LocalPlayer, ents = LocalPlayer, ents
 local _lastPlyPos     = Vector(0,0,0)
 local _lastStationCt  = 0
 local _lastEnabled    = GetConVar("rammel_rradio_enabled"):GetBool()
+local _lastMaxVol     = GetConVar("rammel_rradio_max_volume"):GetFloat()
 
 local playerVeh = nil
 
@@ -1213,12 +1214,14 @@ local function UpdateAllStations()
     playerVeh = rRadio.utils.GetVehicle(ply:GetVehicle())
     local currCt = rRadio.interface.updateStationCount()
     local enabled = GetConVar("rammel_rradio_enabled"):GetBool()
-    if plyPos == _lastPlyPos and currCt == _lastStationCt and enabled == _lastEnabled then
+    local currMax = GetConVar("rammel_rradio_max_volume"):GetFloat()
+    if plyPos == _lastPlyPos and currCt == _lastStationCt and enabled == _lastEnabled and currMax == _lastMaxVol then
         return
     end
     _lastPlyPos = plyPos
     _lastStationCt = currCt
     _lastEnabled = enabled
+    _lastMaxVol = currMax
 
     for ent, station in pairs(rRadio.cl.radioSources) do
         if not IsValid(ent) or not IsValid(station) then
@@ -1231,9 +1234,7 @@ local function UpdateAllStations()
                 station:SetPos(entPos)
                 stationLastPos[ent] = entPos
             end
-            local distSqr = plyPos:DistToSqr(actual:GetPos())
-            local inCar = (playerVeh == actual)
-            rRadio.interface.updateRadioVolume(station, distSqr, inCar, actual)
+            rRadio.interface.refreshVolume(actual)
         end
     end
 end
