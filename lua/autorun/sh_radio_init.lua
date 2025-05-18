@@ -21,7 +21,7 @@ local dev_id = "3465709662"
 local pub_id = "3318060741"
 
 rRadio = rRadio or {}
-rRadio.DEV = false
+rRadio.DEV = true
 
 function rRadio.DevPrint(text)
     if not rRadio.DEV then return end
@@ -227,6 +227,10 @@ elseif CLIENT then
 
     rRadio.cl = rRadio.cl or {}
     rRadio.cl.mutedBoomboxes = rRadio.cl.mutedBoomboxes or {}
+
+    if rRadio.config.UsePlayerBindHook == nil then
+        rRadio.config.UsePlayerBindHook = not game.SinglePlayer()
+    end
 
     rRadio.addClConVars()
     addClProperties()

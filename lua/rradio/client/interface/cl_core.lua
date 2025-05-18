@@ -27,6 +27,7 @@ local radioMenuOpen = false
 local lastStationSelectTime = 0
 local stationDataLoaded = false
 local isSearching = false
+local MAX_SEARCH_RESULTS = 150
 
 local Scale = rRadio.utils.Scale
 local IsValid, pairs, ipairs = IsValid, pairs, ipairs
@@ -343,7 +344,9 @@ local function populateStations(panel, country, filterText, updateList, backButt
         local favList = rRadio.interface.fuzzyFilter(filterText, rawFav,
             function(f) return f.countryName.." - "..f.station.name end, 0
         )
-        for _, f in ipairs(favList) do
+        local favLimit = isSearching and MAX_SEARCH_RESULTS or #favList
+        for i = 1, math.min(favLimit, #favList) do
+            local f = favList[i]
             local btn = MakePlayableStationButton(panel, f.station,
                 f.countryName.." - "..f.station.name, updateList, backButton, searchBox, false)
             makeStarIcon(btn, rRadio.interface.favoriteStations, f.country, f.station.name, updateList)
@@ -360,7 +363,9 @@ local function populateStations(panel, country, filterText, updateList, backButt
             function(s) return s.station.name end, 0,
             function(s) return s.favorite and 0.1 or 0 end
         )
-        for _, d in ipairs(sorted) do
+        local resultLimit = isSearching and MAX_SEARCH_RESULTS or #sorted
+        for i = 1, math.min(resultLimit, #sorted) do
+            local d = sorted[i]
             local btn = MakePlayableStationButton(panel, d.station,
                 d.station.name, updateList, backButton, searchBox, false)
             makeStarIcon(btn, rRadio.interface.favoriteStations, country, d.station.name, updateList)
@@ -814,8 +819,9 @@ openRadioMenu = function(openSettings, opts)
     searchBox:SetDrawBackground(false)
     searchBox.OnValueChanged = function(self, txt)
         timer.Remove("rRadio.SearchDebounce")
-        timer.Create("rRadio.SearchDebounce", 0.2, 1, function()
+        timer.Create("rRadio.SearchDebounce", 0.5, 1, function()
             if not IsValid(frame) then return end
+            if not isSearching then return end
             populateList(stationListPanel, backButton, searchBox, false)
         end)
     end
@@ -1048,7 +1054,7 @@ end
 
 local function ToggleCarRadioMenu()
     local ply = LocalPlayer()
-    if radioMenuOpen and not isSearching then
+    if radioMenuOpen then
         surface.PlaySound("buttons/lightswitch2.wav")
         currentFrame:Close()
         radioMenuOpen = false
@@ -1084,12 +1090,9 @@ end
 
 if rRadio.config.UsePlayerBindHook then
     hook.Add("PlayerButtonDown", "rRadio.OpenCarRadioBind", function(ply, button)
-        if CLIENT
-            and ply == LocalPlayer()
-            and button == GetConVar("rammel_rradio_menu_key"):GetInt()
-            and not ply:IsTyping()
-            and IsFirstTimePredicted()
-        then
+        local ply, key, now = LocalPlayer(), GetConVar("rammel_rradio_menu_key"):GetInt(), CurTime()
+        if input.IsKeyDown(key) and not ply:IsTyping() and now - lastKeyPress > keyPressDelay and IsFirstTimePredicted() then
+            lastKeyPress = now
             ToggleCarRadioMenu()
         end
     end)

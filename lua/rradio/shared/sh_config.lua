@@ -4,7 +4,6 @@ rRadio.config = rRadio.config or {}
 -- Server settings
 -----------------------------------------------------------------------
 
-rRadio.config.UsePlayerBindHook = false -- Set to true in multiplayer - do not enable in singleplayer.
 rRadio.config.EnableLogging = true  -- enable bLogs integration
 rRadio.config.SecureStationLoad = false  -- block playing stations not in the client's list
 rRadio.config.DriverPlayOnly = false     -- only allow driver to control radio
