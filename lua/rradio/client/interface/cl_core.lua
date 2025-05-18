@@ -237,7 +237,7 @@ local function populateCountries(panel, filterText, updateList)
         function(c) return c.isPrioritized and 0.1 or 0 end
     )
 
-    if rRadio.config.PrioritiseCustom then
+    if rRadio.config.PrioritiseCustom and filterText == "" then
         for i, c in ipairs(countries) do
             if c.original == customKey then
 
