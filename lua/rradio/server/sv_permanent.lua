@@ -201,12 +201,16 @@ ent:SetNWString("StationName", row.station_name)
 ent:SetNWString("StationURL", row.station_url)
 ent:SetNWInt("Status", rRadio.status.PLAYING)
 ent:SetNWBool("IsPlaying", true)
-net.Start("rRadio.PlayStation")
-net.WriteEntity(ent)
-net.WriteString(row.station_name or "")
-net.WriteString(row.station_url)
-net.WriteFloat(row.volume)
-net.Broadcast()
+
+timer.Simple(0.1, function()
+    net.Start("rRadio.PlayStation")
+    net.WriteEntity(ent)
+    net.WriteString(row.station_name or "")
+    net.WriteString(row.station_url)
+    net.WriteFloat(row.volume)
+    net.Broadcast()
+end)
+
 rRadio.sv.utils.AddActiveRadio(ent, row.station_name or "", row.station_url, row.volume)
 end
 spawnedBoomboxes[row.permanent_id] = true
