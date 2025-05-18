@@ -431,6 +431,10 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
 end
 
 local function openSettingsMenu(parentFrame, backButton)
+    if IsValid(settingsFrame) then
+        settingsFrame:Remove()
+    end
+
     settingsFrame = vgui.Create("DPanel", parentFrame)
     settingsFrame:SetSize(parentFrame:GetWide() - Scale(20), parentFrame:GetTall() - Scale(50) - Scale(10))
     settingsFrame:SetPos(Scale(10), Scale(50))
@@ -611,7 +615,7 @@ local function openSettingsMenu(parentFrame, backButton)
     end
     local currentTheme = GetConVar("rammel_rradio_menu_theme"):GetString()
     local currentThemeName = rRadio.config.Lang[currentTheme] or currentTheme:gsub("^%l", string.upper)
-    addDropdown(
+    local themeDropdown = addDropdown(
         rRadio.config.Lang["SelectTheme"] or "Select Theme",
         themeChoices,
         currentThemeName,
@@ -625,7 +629,9 @@ local function openSettingsMenu(parentFrame, backButton)
             end
         end
     )
-
+    themeDropdown.Paint = function(self, w, h)
+        draw.RoundedBox(6, 0, 0, w, h, rRadio.config.UI.SearchBoxColor)
+    end
     addHeader(rRadio.config.Lang["KeyBinds"] or "Key Binds")
 
     do
