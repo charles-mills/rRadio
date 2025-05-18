@@ -366,14 +366,15 @@ local function populateList(stationListPanel, backButton, searchBox, resetSearch
     stationListPanel:Clear()
     if resetSearch then searchBox:SetText("") end
     local filterText = searchBox:GetText():lower()
-    local function update() populateList(stationListPanel, backButton, searchBox, false) end
+    local function updateKeep() populateList(stationListPanel, backButton, searchBox, false) end
+    local function updateClear() populateList(stationListPanel, backButton, searchBox, true) end
 
     local items = {}
     if not selectedCountry then
-        append(items, populateFavorites(stationListPanel, update))
-        append(items, populateCountries(stationListPanel, filterText, update))
+        append(items, populateFavorites(stationListPanel, updateClear))
+        append(items, populateCountries(stationListPanel, filterText, updateClear))
     else
-        append(items, populateStations(stationListPanel, selectedCountry, filterText, update, backButton, searchBox))
+        append(items, populateStations(stationListPanel, selectedCountry, filterText, updateKeep, backButton, searchBox))
     end
     addAll(stationListPanel, items)
     if backButton then
