@@ -10,6 +10,7 @@ rRadio.cl.playbackNonce = rRadio.cl.playbackNonce or {}
 
 local entityVolumes = {}
 local currentlyPlayingStations = {}
+local stationLastPos = {}
 
 local allowedURLSet = {}
 local StationData = {}
@@ -1205,8 +1206,11 @@ net.Receive(
                         if cfg then
                             station:Set3DFadeDistance(cfg.MinVolumeDistance(), cfg.MaxHearingDistance())
                         end
-                        station:SetPos(entity:GetPos())
-
+                        local entPos = entity:GetPos()
+                        if stationLastPos[entity] ~= entPos then
+                            station:SetPos(entPos)
+                            stationLastPos[entity] = entPos
+                        end
                         local ply = LocalPlayer()
                         local inCar = (rRadio.utils.GetVehicle(ply:GetVehicle()) == entity)
                         local distSqr = ply:GetPos():DistToSqr(entity:GetPos())
@@ -1274,7 +1278,11 @@ local function UpdateAllStations()
             activeStationCount = rRadio.interface.updateStationCount()
         else
             local actual = rRadio.interface.GetVehicleEntity(ent)
-            station:SetPos(actual:GetPos())
+            local entPos = actual:GetPos()
+            if stationLastPos[ent] ~= entPos then
+                station:SetPos(entPos)
+                stationLastPos[ent] = entPos
+            end
             local distSqr = plyPos:DistToSqr(actual:GetPos())
             local inCar = (playerVeh == actual)
             rRadio.interface.updateRadioVolume(station, distSqr, inCar, actual)
