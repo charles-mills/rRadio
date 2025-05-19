@@ -36,7 +36,6 @@ local Scale = rRadio.utils.Scale
 local IsValid, pairs, ipairs = IsValid, pairs, ipairs
 local LocalPlayer, ents = LocalPlayer, ents
 
-local _lastPlyPos     = Vector(0,0,0)
 local _lastStationCt  = 0
 local _lastEnabled    = GetConVar("rammel_rradio_enabled"):GetBool()
 local _lastMaxVol     = GetConVar("rammel_rradio_max_volume"):GetFloat()
@@ -1334,15 +1333,15 @@ end)
 local function UpdateAllStations()
     local ply = LocalPlayer()
     if not IsValid(ply) then return end
-    local plyPos = ply:GetPos()
+
     playerVeh = rRadio.utils.GetVehicle(ply:GetVehicle())
     local currCt = rRadio.interface.updateStationCount()
     local enabled = GetConVar("rammel_rradio_enabled"):GetBool()
     local currMax = GetConVar("rammel_rradio_max_volume"):GetFloat()
-    if plyPos == _lastPlyPos and currCt == _lastStationCt and enabled == _lastEnabled and currMax == _lastMaxVol and not _volumeChanged then
+    if currCt == _lastStationCt and enabled == _lastEnabled and currMax == _lastMaxVol and not _volumeChanged then
         return
     end
-    _lastPlyPos = plyPos
+
     _lastStationCt = currCt
     _lastEnabled = enabled
     _lastMaxVol = currMax
@@ -1439,7 +1438,20 @@ if not timer.Exists("ValidateStationCount") then
         activeStationCount = actualCount
     end)
 end
-hook.Add("ShutDown", "rRadio.CleanupValidateTimer", function()
+
+hook.Add("ShutDown", "rRadio.CleanupAllStations", function()
+    for ent, station in pairs(rRadio.cl.radioSources) do
+        if IsValid(station) then
+            station:Stop()
+        end
+    end
+    
+    rRadio.cl.radioSources = {}
+    entityVolumes = {}
+    stationLastPos = {}
+    currentlyPlayingStations = {}
+    activeStationCount = 0
+
     if timer.Exists("ValidateStationCount") then
         timer.Remove("ValidateStationCount")
     end
