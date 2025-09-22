@@ -1,7 +1,13 @@
 rRadio.tools = rRadio.tools or {}
 
 cvars.AddChangeCallback("rammel_rradio_menu_theme", function(_, old, new)
-    rRadio.interface.applyTheme(new)
+    local theme = rRadio.themes[new] and new or "dark"
+
+    if theme ~= new then
+        RunConsoleCommand("rammel_rradio_menu_theme", theme)
+    end
+
+    rRadio.interface.applyTheme(theme)
 end, "rRadioThemeCallback")
 
 hook.Add("PopulateToolMenu", "rRadio.ToolMenu", function()
@@ -25,6 +31,8 @@ hook.Add("PopulateToolMenu", "rRadio.ToolMenu", function()
         generalForm:Help("Play an animation when you enter a vehicle.")
         generalForm:CheckBox("Boombox HUD", "rammel_rradio_boombox_hud")
         generalForm:Help("Display a HUD overlay on boomboxes when nearby.")
+        generalForm:CheckBox("Basic Boombox HUD", "rammel_rradio_basic_hud")
+        generalForm:Help("Simpler HUD without animations.")
         generalForm:NumSlider("Global Volume Cap", "rammel_rradio_max_volume", 0, 1, 2)
         generalForm:Help("Maximum global radio volume (0.0 – 1.0).")
         panel:Help("")
@@ -59,8 +67,10 @@ hook.Add("PopulateToolMenu", "rRadio.ToolMenu", function()
         menuForm:AddItem(keyRow)
 
         local theme = menuForm:ComboBox("Menu Theme", "rammel_rradio_menu_theme")
-        for name, _ in pairs(rRadio.themes) do
-            theme:AddChoice(name, name)
+        for name, data in pairs(rRadio.themes) do
+            if not data.Hidden then
+                theme:AddChoice(name, name)
+            end
         end
         
         local preview = vgui.Create("DPanel")

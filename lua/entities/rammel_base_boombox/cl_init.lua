@@ -1,499 +1,338 @@
 include("shared.lua")
 
-if (rRadio.isClientLoadDisabled() and rRadio.config.ClientHardDisable) then
-    function ENT:Draw()
-        self:DrawModel()
-    end
+local cvHud, cvBasicHud, cvEnabled, cvMaxVolume =
+      GetConVar("rammel_rradio_boombox_hud"),
+      GetConVar("rammel_rradio_basic_hud"),
+      GetConVar("rammel_rradio_enabled"),
+      GetConVar("rammel_rradio_max_volume")
 
-    return
-end
+local FADE_START_SQR, FADE_END_SQR = 400*400, 500*500
+local FADE_RANGE_INV                = 1 / (FADE_END_SQR - FADE_START_SQR)
+local MODEL_CULL_DISTANCE_SQR       = 7500*7500
 
-local cvHud     = GetConVar("rammel_rradio_boombox_hud")
-local cvEnabled = GetConVar("rammel_rradio_enabled")
-local cvMaxVolume = GetConVar("rammel_rradio_max_volume")
+local HUD_OFFSET_FORWARD, HUD_OFFSET_UP, HUD_SCALE = 4.6, 14.5, 0.06
+local ACCENT_ALPHA_BRIGHT, ACCENT_ALPHA_DIM = 0.8, 0.2
+local HUD_TICK       = 1/25
+local TUNING_SPEED   = 1.5
+local PULSE_SPEED    = 2
 
-local FADE_START_SQR = 400 * 400
-local FADE_END_SQR = 500 * 500
-local FADE_RANGE_INV = 1 / (FADE_END_SQR - FADE_START_SQR)
-local MODEL_CULL_DISTANCE_SQR = 7500 * 7500
+local CurTime, LocalPlayer = CurTime, LocalPlayer
+local math_floor, math_sin, math_abs, math_min, math_max, math_Clamp =
+      math.floor, math.sin, math.abs, math.min, math.max, math.Clamp
+local draw_SimpleText, surface_SetFont, surface_GetTextSize =
+      draw.SimpleText, surface.SetFont, surface.GetTextSize
+local cam_Start3D2D, cam_End3D2D  = cam.Start3D2D, cam.End3D2D
 
-local CurTime = CurTime
-local LocalPlayer = LocalPlayer
-local FrameTime = FrameTime
-local draw_RoundedBox = draw.RoundedBox
-local draw_SimpleText = draw.SimpleText
-local math_min = math.min
-local math_max = math.max
-local string_rep = string.rep
-local utf8len = string.utf8len or (utf8 and utf8.len) or function(s) return #s end
-local utf8sub = string.utf8sub or (utf8 and utf8.sub) or function(s,i,j) return string.sub(s,i,j) end
+local SIN_SAMPLES = 1024
+local SIN_LUT = {}; for i = 0, SIN_SAMPLES-1 do SIN_LUT[i] = math_sin(i * math.pi * 2 / SIN_SAMPLES) end
+local function fastsin(t) return SIN_LUT[math_floor(t * SIN_SAMPLES) % SIN_SAMPLES] end
 
-local STATIC_TEXTS = nil
+local MAT_RECT = CreateMaterial("rradio_rect", "UnlitGeneric", {
+    ["$basetexture"] = "color/white", ["$vertexcolor"] = "1", ["$vertexalpha"] = "1"
+})
 
-local TEXT_WIDTH_CACHE = {}
-local MAX_DYNAMIC_TEXT_ENTRIES = 100
-local dynamicTextOrder = {}
+local STATIC_TEXTS, TEXT_WIDTH_CACHE, dynamicTextOrder = nil, {}, {}
+local MAX_DYNAMIC = 100
+local UTF8_LEN = string.utf8len or (utf8 and utf8.len) or function(s) return #s end
+local UTF8_SUB = string.utf8sub or (utf8 and utf8.sub) or function(s,i,j) return string.sub(s,i,j) end
+local DOTS = {"", ".", "..", "..."}
 
-local HUD_OFFSET_FORWARD = 4.6
-local HUD_OFFSET_UP      = 14.5
-local HUD_SCALE          = 0.06
-
-local ACCENT_ALPHA_BRIGHT = 0.8
-local ACCENT_ALPHA_DIM = 0.2
-
-local ActiveBoomboxes = ActiveBoomboxes or {}
-local entityVolumes = entityVolumes or {}
-local entityColorSchemes = setmetatable({}, {__mode = "k"})
-
-local DEFAULT_UI = {
-    BackgroundColor = Color(0,0,0,255),
-    AccentPrimary   = Color(58,114,255),
-    Highlight       = Color(58,114,255),
-    TextColor       = Color(255,255,255,255),
-    Disabled        = Color(180,180,180,255)
-}
-
-local HUD = {
-    DIMENSIONS = {
-        HEIGHT = 28,
-        PADDING = 11,
-        ICON_SIZE = 14,
-        HEIGHT_MULT = 1.5
-    },
-    ANIMATION = {
-        SPEED = 4,
-        BOUNCE = 0.05,
-        EQUALIZER_SMOOTHING = 0.15
-    },
-    EQUALIZER = {
-        BARS = 3,
-        MIN_HEIGHT = 0.3,
-        MAX_HEIGHT = 0.7,
-        FREQUENCIES = {1.5, 2.0, 2.5},
-        OFFSETS    = {0,    0.33, 0.66}
-    },
-    COLORS = {
-        boombox = {
-            BACKGROUND = Color(0, 0, 0, 255),
-            ACCENT = Color(58, 114, 255),
-            TEXT = Color(240, 240, 250),
-            INACTIVE = Color(180, 180, 180)
-        },
-        golden_boombox = {
-            BACKGROUND = Color(20, 20, 20, 255),
-            ACCENT = Color(255, 215, 0),
-            TEXT = Color(255, 248, 220),
-            INACTIVE = Color(218, 165, 32)
-        }
-    }
-}
-
-local HUD_PADDING = HUD.DIMENSIONS.PADDING
-local HUD_HEIGHT = HUD.DIMENSIONS.HEIGHT * HUD.DIMENSIONS.HEIGHT_MULT
-local HUD_HALF_HEIGHT = HUD_HEIGHT * 0.5
-local HUD_Y = -HUD_HALF_HEIGHT
-local ICON_SIZE = HUD.DIMENSIONS.ICON_SIZE
-local HUD_ICON_OFFSET = HUD_PADDING * 2 + ICON_SIZE + 8
-
-HUD.COLORS.default = HUD.COLORS.boombox
-
-local HUD_DIMS = {
-    MIN_WIDTH = 380,
-    ICON_OFFSET = HUD_ICON_OFFSET,
-    TEXT_MAX_OFFSET = HUD_PADDING * 4 + ICON_SIZE + 16
-}
-
-local surface_SetFont, surface_GetTextSize = surface.SetFont, surface.GetTextSize
-local math_sin, math_abs, math_floor, math_Clamp = math.sin, math.abs, math.floor, math.Clamp
-local Lerp = Lerp
-local cam_Start3D2D, cam_End3D2D = cam.Start3D2D, cam.End3D2D
-local vector_origin = vector_origin
-
-local function LerpColor(t, c1, c2)
-    return Color(
-        math_floor(c1.r + (c2.r - c1.r) * t),
-        math_floor(c1.g + (c2.g - c1.g) * t),
-        math_floor(c1.b + (c2.b - c1.b) * t),
-        math_floor(c1.a + (c2.a - c1.a) * t)
-    )
-end
-
-local function GetTextWidth(text)
-    local entry = TEXT_WIDTH_CACHE[text]
-    if entry then return entry.width end
+local function GetTextWidth(t)
+    local e = TEXT_WIDTH_CACHE[t]; if e then return e.width end
     surface_SetFont("rRadio.Roboto24")
-    local w = surface_GetTextSize(text)
-    TEXT_WIDTH_CACHE[text] = { width = w, isStatic = false }
-    table.insert(dynamicTextOrder, text)
-    if #dynamicTextOrder > MAX_DYNAMIC_TEXT_ENTRIES then
-        local oldest = table.remove(dynamicTextOrder, 1)
-        local oe = TEXT_WIDTH_CACHE[oldest]
-        if oe and not oe.isStatic then
-            TEXT_WIDTH_CACHE[oldest] = nil
-        end
+    local w = surface_GetTextSize(t)
+    TEXT_WIDTH_CACHE[t] = {width = w, isStatic = false}
+    dynamicTextOrder[#dynamicTextOrder+1] = t
+    if #dynamicTextOrder > MAX_DYNAMIC then
+        local old = table.remove(dynamicTextOrder, 1)
+        if not TEXT_WIDTH_CACHE[old].isStatic then TEXT_WIDTH_CACHE[old] = nil end
     end
     return w
 end
 
-local function initializeStaticTexts()
+local colour_cache = {}
+local function Premul(c, a)
+    if not c then return Color(255,255,255,a) end
+    if a >= 255 then return c end
+    local k = c.r..","..c.g..","..c.b..","..a
+    local hit = colour_cache[k]; if hit then return hit end
+    local pc = Color(math_floor(c.r*a/255), math_floor(c.g*a/255),
+                     math_floor(c.b*a/255), a)
+    colour_cache[k] = pc; return pc
+end
+
+local ActiveBoomboxes = ActiveBoomboxes or {}
+local entityVolumes   = rRadio.cl and rRadio.cl.entityVolumes or {}
+local entityColorSchemes = setmetatable({}, {__mode = "k"})
+
+local HUD = {
+    DIMENSIONS = {HEIGHT = 28, PADDING = 11, ICON_SIZE = 14, HEIGHT_MULT = 1.5},
+    EQUALIZER  = {BARS = 3, MIN_H = 0.3, MAX_H = 0.7, FREQ = {1.0, 1.3, 1.6}, OFF = {0, 0.33, 0.66}}
+}
+local HUD_HEIGHT      = HUD.DIMENSIONS.HEIGHT * HUD.DIMENSIONS.HEIGHT_MULT
+local HUD_HALF_HEIGHT = HUD_HEIGHT * 0.5
+local PAD, ICON       = HUD.DIMENSIONS.PADDING, HUD.DIMENSIONS.ICON_SIZE
+local HUD_ICON_OFFSET = PAD*2 + ICON + 8
+local HUD_DIMS        = {MIN_WIDTH = 380, ICON_OFFSET = HUD_ICON_OFFSET,
+                         TEXT_MAX_OFFSET = PAD*4 + ICON + 16}
+
+local function initTexts()
     STATIC_TEXTS = {
         interact = rRadio.config.Lang["Interact"] or "Press E to Interact",
-        paused   = rRadio.config.Lang["Paused"] or "Paused",
-        tuning   = rRadio.config.Lang["TuningIn"] or "Tuning in",
+        paused   = rRadio.config.Lang["Paused"]   or "Paused",
+        tuning   = rRadio.config.Lang["TuningIn"] or "Tuning in"
     }
-end
-
-local function initializeStaticTextWidths()
     surface_SetFont("rRadio.Roboto24")
-    for _, txt in pairs(STATIC_TEXTS) do
-        local w = surface_GetTextSize(txt)
-        TEXT_WIDTH_CACHE[txt] = { width = w, isStatic = true }
+    for _, t in pairs(STATIC_TEXTS) do
+        TEXT_WIDTH_CACHE[t] = {width = surface_GetTextSize(t), isStatic = true}
     end
 end
+initTexts()
 
-initializeStaticTexts()
-initializeStaticTextWidths()
-
-local color_cache = {}
-local function GetCachedColor(baseColor, alpha)
-    if type(baseColor) ~= "table" or type(baseColor.r) ~= "number" then
-        return Color(255,255,255, math_floor(alpha or 255))
-    end
-    local a = math_floor(alpha or baseColor.a or 255)
-    if a == 255 then
-        return baseColor
-    end
-
-    local key = baseColor.r..","..baseColor.g..","..baseColor.b..","..a
-    local col = color_cache[key]
-    if not col then
-        local r = math_floor(baseColor.r * a / 255)
-        local g = math_floor(baseColor.g * a / 255)
-        local b = math_floor(baseColor.b * a / 255)
-        col = Color(r, g, b, a)
-        color_cache[key] = col
-    end
-    return col
-end
-
-local AnimMT = {
-   __index = function(self, key)
-       if key == "progress"         then rawset(self,"progress",0);         return 0 end
-       if key == "textOffset"       then rawset(self,"textOffset",0);       return 0 end
-       if key == "lastStatus"       then rawset(self,"lastStatus","" );    return "" end
-       if key == "statusTransition" then rawset(self,"statusTransition",0); return 0 end
-       if key == "equalizerHeights" then
-           local arr = {}
-           for i = 1, HUD.EQUALIZER.BARS do arr[i] = 0 end
-           rawset(self,"equalizerHeights",arr);
-           return arr
-       end
-       if key == "tuningOffset"     then rawset(self,"tuningOffset",0);    return 0 end
-       return nil
-   end
-}
-
-local function UpdateNetworkedValues(self)
-    local oldStatus = self.nwStatus
-    self.nwStatus = self:GetNWInt("Status", rRadio.status.STOPPED)
-    self.nwStationName = self:GetNWString("StationName", "")
-    self.nwOwner = self:GetNWEntity("Owner")
-
-    if oldStatus ~= self.nwStatus and self.anim then
-        self.anim.lastStatus = oldStatus
-    end
-end
-
-hook.Add("NetworkEntityCreated", "rRadio.BoomboxNetworkedValues", function(ent)
-    if not IsValid(ent) or not rRadio.utils.IsBoombox(ent) or ent.anim then return end
-    ent.anim = setmetatable({}, AnimMT)
-    ActiveBoomboxes[ent] = true
-    UpdateNetworkedValues(ent)
-end)
-
-hook.Add("EntityRemoved", "rRadio.CleanupBoomboxVolumes", function(ent)
-    entityVolumes[ent:EntIndex()] = nil
-    ActiveBoomboxes[ent] = nil
-end)
+local ENT = ENT; local NWK = "_nw"
+local AnimMT = {__index = function(s,k)
+    if k=="progress"         then s.progress=0 return 0 end
+    if k=="lastStatus"       then s.lastStatus=0 return 0 end
+    if k=="statusTransition" then s.statusTransition=0 return 0 end
+    if k=="tuningOffset"     then s.tuningOffset=0 return 0 end
+    if k=="equaliser"        then local t={0,0,0}; s.equaliser=t; return t end
+end}
 
 function ENT:Initialize()
-    local mins, maxs = self:GetModelBounds()
-    maxs.z = maxs.z + 20
-    self:SetRenderBounds(mins, maxs)
-    
-    self.anim = setmetatable({}, AnimMT)
-    self.lastVisibilityCheck = 0
-    self.lastVisibilityResult = 0
-    self.lastDistanceResult = 0
-    self.hudVisible = true
-    self.isHidden = false
+    local mn,mx = self:GetModelBounds(); mx.z = mx.z + 20; self:SetRenderBounds(mn,mx)
+    self.anim = setmetatable({}, AnimMT); self.nextAnimTick = 0
+    self.cachedWidth = HUD_DIMS.MIN_WIDTH; self.halfWidth = HUD_DIMS.MIN_WIDTH * 0.5
+    self.hudX = -self.halfWidth + PAD; self[NWK] = {}; ActiveBoomboxes[self] = true
+end
+function ENT:OnRemove() ActiveBoomboxes[self] = nil; entityVolumes[self] = nil end
 
-    self.cachedWidth = HUD_DIMS.MIN_WIDTH
-    self.halfWidth = HUD_DIMS.MIN_WIDTH * 0.5
-    self.hudX = -self.halfWidth + HUD_PADDING
+hook.Add("EntityNetworkedVarChanged","rRadio.BoomboxNWCache",function(e,n,_,v)
+    if not rRadio.utils.IsBoombox or not rRadio.utils.IsBoombox(e) then return end
+    local c = e[NWK]; if not c then return end
+    if   n == "Status"      then c.Status      = v
+    elseif n == "StationName" then c.StationName = v
+    elseif n == "Owner"       then c.Owner       = v end
+end)
 
-    UpdateNetworkedValues(self)
-    
-    ActiveBoomboxes[self] = true
+local function ClipText(t, maxW)
+    local suff, suffW = "...", GetTextWidth("...")
+    if GetTextWidth(t) <= maxW - suffW then return t end
+    local lo, hi, best = 1, UTF8_LEN(t), 1
+    while lo <= hi do
+        local mid = math_floor((lo + hi) / 2)
+        if GetTextWidth(UTF8_SUB(t,1,mid)) + suffW <= maxW then
+            best, lo = mid, mid + 1
+        else hi = mid - 1 end
+    end
+    local fin = UTF8_SUB(t,1,best)..suff
+    TEXT_WIDTH_CACHE[fin] = {width = GetTextWidth(fin), isStatic = true}
+    return fin
 end
 
-function ENT:OnRemove()
-    ActiveBoomboxes[self] = nil
+function ENT:GetDisplayText(st, station)
+    local raw
+    if     st == rRadio.status.STOPPED then
+        raw = rRadio.utils.CanInteractWithBoombox(LocalPlayer(), self) and STATIC_TEXTS.interact or STATIC_TEXTS.paused
+    elseif st == rRadio.status.TUNING  then
+        raw = STATIC_TEXTS.tuning .. DOTS[(math_floor(CurTime()*2) % 4) + 1]
+    elseif station ~= ""               then raw = station
+    else raw = "Radio" end
+    if self.lastRawText == raw then return self.cachedText end
+    self.lastRawText = raw
+    local fin = ClipText(raw, HUD_DIMS.MIN_WIDTH - HUD_DIMS.TEXT_MAX_OFFSET)
+    local w = GetTextWidth(fin)
+    local newW = math_max(w + PAD*3 + ICON, HUD_DIMS.MIN_WIDTH)
+    if newW ~= self.cachedWidth then
+        self.cachedWidth = newW; self.halfWidth = newW*0.5; self.hudX = -self.halfWidth + PAD
+    end
+    self.cachedText = fin; return fin
 end
 
-function ENT:Draw()
-    self:DrawModel()
-end
-
-local function ClipTextToWidth(text, maxWidth)
-    local suffix = "..."
-    local suffixW = GetTextWidth(suffix)
-    local fullW = GetTextWidth(text)
-    if fullW <= maxWidth - suffixW then return text, fullW end
-    local len = utf8len(text)
-    local low, high, best = 1, len, 1
-    while low <= high do
-        local mid = math_floor((low + high)/2)
-        local sub = utf8sub(text, 1, mid)
-        local w = GetTextWidth(sub)
-        if w + suffixW <= maxWidth then best, low = mid, mid+1 else high = mid-1 end
+function ENT:GetDisplayTextBasic(st, station)
+    local raw
+    if     st == rRadio.status.STOPPED then
+        raw = rRadio.utils.CanInteractWithBoombox(LocalPlayer(), self) and STATIC_TEXTS.interact or STATIC_TEXTS.paused
+    elseif st == rRadio.status.TUNING  then
+        raw = STATIC_TEXTS.tuning
+    elseif station ~= ""               then raw = station
+    else raw = "Radio" end
+    if self.lastRawText == raw then return self.cachedText end
+    self.lastRawText = raw
+    local fin = ClipText(raw, HUD_DIMS.MIN_WIDTH - HUD_DIMS.TEXT_MAX_OFFSET)
+    local w = GetTextWidth(fin)
+    local newW = math_max(w + PAD*3 + ICON, HUD_DIMS.MIN_WIDTH)
+    if newW ~= self.cachedWidth then
+        self.cachedWidth = newW
+        self.halfWidth = newW * 0.5
+        self.hudX = -self.halfWidth + PAD
     end
-    local final = utf8sub(text, 1, best) .. suffix
-    return final, GetTextWidth(final)
-end
-
-function ENT:GetDisplayText(status, stationName)
-    local text
-    if status == rRadio.status.STOPPED then
-        if rRadio.utils.canInteractWithBoombox(LocalPlayer(), self) then
-            text = STATIC_TEXTS.interact
-        else
-            text = STATIC_TEXTS.paused
-        end
-    elseif status == rRadio.status.TUNING then
-        local dotCount = math_floor(CurTime() * 2) % 4
-        text = STATIC_TEXTS.tuning .. string_rep(".", dotCount)
-    elseif stationName ~= "" then
-        text = stationName
-    else
-        text = "Radio"
-    end
-
-    local textWidth = GetTextWidth(text)
-    if self.lastRawText == text then
-        return self.cachedText
-    end
-    self.lastRawText = text
-    local finalText = text
-    local finalWidth = textWidth
-    local maxWidth = HUD_DIMS.MIN_WIDTH - HUD_DIMS.TEXT_MAX_OFFSET
-    if finalWidth > maxWidth then
-        finalText, finalWidth = ClipTextToWidth(text, maxWidth)
-        TEXT_WIDTH_CACHE[finalText] = { width = finalWidth, isStatic = true }
-    end
-    self.cachedText = finalText
-    local newWidth = math_max(finalWidth + HUD_PADDING * 3 + ICON_SIZE, HUD_DIMS.MIN_WIDTH)
-    if newWidth ~= self.cachedWidth then
-        self.cachedWidth = newWidth
-        self.halfWidth = newWidth * 0.5
-        self.hudX = -self.halfWidth + HUD_PADDING
-    end
-    return finalText
-end
-
-local function DrawAccentBar(self, status, accent, alpha)
-    if status == rRadio.status.TUNING then
-        local barWidth = self.cachedWidth * 0.3
-        local tuningOffset = self.anim.tuningOffset * (self.cachedWidth - barWidth)
-        local c1 = GetCachedColor(accent, alpha * ACCENT_ALPHA_DIM)
-        surface.SetDrawColor(c1.r, c1.g, c1.b, c1.a)
-        surface.DrawRect(-self.halfWidth, HUD_HALF_HEIGHT - 2, self.cachedWidth, 2)
-        local c2 = GetCachedColor(accent, alpha * ACCENT_ALPHA_BRIGHT)
-        surface.SetDrawColor(c2.r, c2.g, c2.b, c2.a)
-        surface.DrawRect(-self.halfWidth + tuningOffset, HUD_HALF_HEIGHT - 2, barWidth, 2)
-    else
-        local c = GetCachedColor(accent, alpha * ACCENT_ALPHA_BRIGHT)
-        surface.SetDrawColor(c.r, c.g, c.b, c.a)
-        surface.DrawRect(-self.halfWidth, HUD_HALF_HEIGHT - 2, self.cachedWidth, 2)
-    end
-end
-
-local function DrawIndicatorBar(self, status, alpha)
-    if status ~= rRadio.status.PLAYING then
-        local color = self:GetStatusColor(status)
-        local c = GetCachedColor(color, alpha)
-        surface.SetDrawColor(c.r, c.g, c.b, c.a)
-        surface.DrawRect(self.hudX, HUD_Y + HUD_HEIGHT / 3, 4, HUD_HEIGHT / 3)
-    end
-end
-
-local function DrawTextAndEqualizer(self, status, stationName, alpha, textColor)
-    local text = self:GetDisplayText(status, stationName)
-    if stationName and utf8len(stationName) > rRadio.config.MAX_NAME_CHARS then
-        stationName = utf8sub(stationName, 1, rRadio.config.MAX_NAME_CHARS)
-    end
-    draw_SimpleText(
-        text,
-        "rRadio.Roboto24",
-        self.hudX + HUD_ICON_OFFSET,
-        HUD_Y + HUD_HALF_HEIGHT,
-        GetCachedColor(textColor, alpha * self.anim.statusTransition),
-        TEXT_ALIGN_LEFT,
-        TEXT_ALIGN_CENTER
-    )
-    if status == rRadio.status.PLAYING then
-        self:DrawEqualizer(self.hudX, HUD_Y + HUD_HALF_HEIGHT, alpha, self:GetStatusColor(status))
-    end
+    self.cachedText = fin
+    return fin
 end
 
 function ENT:GetColorScheme()
-    local scheme = entityColorSchemes[self]
-    if not scheme then
-        if self:GetClass() == "rammel_boombox_gold" then
-            scheme = HUD.COLORS.golden_boombox
-        else
-            local theme = rRadio.config.UI or DEFAULT_UI
-            scheme = {
-                BACKGROUND = theme.BackgroundColor,
-                ACCENT     = theme.AccentPrimary or theme.Highlight,
-                TEXT       = theme.TextColor,
-                INACTIVE   = theme.Disabled or theme.TextColor
-            }
-        end
-        entityColorSchemes[self] = scheme
-    end
-    return scheme
-end
-
-function ENT:DrawHUD(status, stationName, alpha)
-    local bgAlpha = alpha * 1.0
-    local colors = self:GetColorScheme()
-    local background, accent, textColor, inactive = colors.BACKGROUND, colors.ACCENT, colors.TEXT, colors.INACTIVE
-    
-    do local c = GetCachedColor(background, bgAlpha) surface.SetDrawColor(c.r, c.g, c.b, c.a) end
-    surface.DrawRect(-self.halfWidth, HUD_Y, self.cachedWidth, HUD_HEIGHT)
-    
-    DrawAccentBar(self, status, accent, alpha)
-    DrawIndicatorBar(self, status, alpha)
-    DrawTextAndEqualizer(self, status, stationName, alpha, textColor)
-end
-
-function ENT:GetStatusColor(status)
-    local ct = CurTime()
-    local colors = self:GetColorScheme()
-    local accent = colors.ACCENT
-    local inactive = colors.INACTIVE
-    if status == rRadio.status.PLAYING then
-        return accent
-    elseif status == rRadio.status.TUNING then
-        local pulse = math_sin(ct * 4) * 0.5 + 0.5
-        return LerpColor(pulse, inactive, accent)
+    local s = entityColorSchemes[self]; if s then return s end
+    if self:GetClass() == "rammel_boombox_gold" then
+        s = {BG = Color(20,20,20), ACCENT = Color(255,215,0),
+             TEXT = Color(255,248,220), INACTIVE = Color(218,165,32)}
     else
-        return inactive
+        local ui = rRadio.config.UI
+        s = {BG = ui.BackgroundColor,
+             ACCENT = ui.AccentPrimary or ui.Highlight,
+             TEXT = ui.TextColor,
+             INACTIVE = ui.Disabled or ui.TextColor}
     end
+    entityColorSchemes[self] = s; return s
 end
 
-function ENT:DrawEqualizer(x, y, alpha, color)
-    local barWidth, spacing = 4, 4
-    local maxHeight = HUD.DIMENSIONS.HEIGHT * 0.7
-    local c = GetCachedColor(color, alpha)
-    for i = 1, #self.anim.equalizerHeights do
-        local height = maxHeight * self.anim.equalizerHeights[i]
-        draw_RoundedBox(1, x + (i - 1) * (barWidth + spacing), y - height * 0.5, barWidth, height, c)
-    end
-end
-
-function ENT:UpdateEqualizerHeights(volume, dt)
-    local ct = CurTime()
+function ENT:UpdateEqualiser(vol, dt)
+    local e = self.anim.equaliser; local ct = CurTime()
+    local sm = math_Clamp(dt / 0.1, 0, 1)
     for i = 1, HUD.EQUALIZER.BARS do
-        local offset = HUD.EQUALIZER.OFFSETS[i]
-        local freq   = HUD.EQUALIZER.FREQUENCIES[i]
-        local wave1  = math_sin((ct + offset) * freq)
-        local wave2  = math_sin((ct + offset) * freq * 1.5)
-        local combined = (wave1 + wave2) * 0.5
-        local target = HUD.EQUALIZER.MIN_HEIGHT + (math_abs(combined) * HUD.EQUALIZER.MAX_HEIGHT * volume)
-        self.anim.equalizerHeights[i] = Lerp(dt * 4, self.anim.equalizerHeights[i], target)
+        local wave = (fastsin((ct + HUD.EQUALIZER.OFF[i]) * HUD.EQUALIZER.FREQ[i]) +
+                      fastsin((ct + HUD.EQUALIZER.OFF[i]) * HUD.EQUALIZER.FREQ[i] * 1.5)) * 0.5
+        local tgt = HUD.EQUALIZER.MIN_H + math_abs(wave) * HUD.EQUALIZER.MAX_H * vol
+        e[i] = e[i] + (tgt - e[i]) * sm
     end
 end
 
-function ENT:UpdateAnimations(status, dt)
+function ENT:UpdateAnim(st, dt)
+    local a = self.anim
+    a.progress = Lerp(dt*4, a.progress,
+                     (st == rRadio.status.PLAYING or st == rRadio.status.TUNING) and 1 or 0)
+    if st ~= a.lastStatus then a.lastStatus = st; a.statusTransition = 0 end
+    a.statusTransition = math_min(1, a.statusTransition + dt*4)
+    if st == rRadio.status.TUNING then a.tuningOffset = fastsin(CurTime()*TUNING_SPEED)*0.5 + 0.5 end
+end
+
+local lastR, lastG, lastB, lastA = -1,-1,-1,-1
+local function fastRect(x,y,w,h,col)
+    if col.r~=lastR or col.g~=lastG or col.b~=lastB or col.a~=lastA then
+        surface.SetDrawColor(col.r,col.g,col.b,col.a)
+        lastR,lastG,lastB,lastA = col.r,col.g,col.b,col.a
+    end
+    surface.DrawTexturedRect(x,y,w,h)
+end
+
+function ENT:DrawEqualiser(x,y,a,col)
+    local c = Premul(col,a)
+    surface.SetDrawColor(c.r,c.g,c.b,c.a)
+    local barW,gap,maxH = 4,4,HUD.DIMENSIONS.HEIGHT*0.7
+    for i = 1, HUD.EQUALIZER.BARS do
+        local h = maxH * self.anim.equaliser[i]
+        surface.DrawTexturedRect(x + (i-1)*(barW+gap), y - h*0.5, barW, h)
+    end
+end
+
+function ENT:GetStatusColour(st)
+    local sch = self:GetColorScheme()
+    if st == rRadio.status.PLAYING then return sch.ACCENT end
+    if st == rRadio.status.TUNING then
+        local p = fastsin(CurTime()*PULSE_SPEED)*0.5 + 0.5
+        return Color(math_floor(sch.INACTIVE.r + (sch.ACCENT.r - sch.INACTIVE.r)*p),
+                     math_floor(sch.INACTIVE.g + (sch.ACCENT.g - sch.INACTIVE.g)*p),
+                     math_floor(sch.INACTIVE.b + (sch.ACCENT.b - sch.INACTIVE.b)*p), 255)
+    end
+    return sch.INACTIVE
+end
+
+function ENT:RenderBasicHUD(st, station, a, pos, ang, sch)
+    local bg  = Premul(sch.BG, a)
+    local txt = Premul(sch.TEXT, a)
+
+    cam_Start3D2D(pos, ang, HUD_SCALE)
+        surface.SetMaterial(MAT_RECT)
+        fastRect(-self.halfWidth, -HUD_HALF_HEIGHT, self.cachedWidth, HUD_HEIGHT, bg)
+        draw_SimpleText(self:GetDisplayTextBasic(st, station), "rRadio.Roboto24",
+                        -self.halfWidth + PAD * 2, 0, txt, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+    cam_End3D2D()
+end
+
+function ENT:RenderHUD(eyePos)
+    local distSqr = eyePos:DistToSqr(self:GetPos()); if distSqr > MODEL_CULL_DISTANCE_SQR then return end
+    local a = math_Clamp(255 * (1 - (distSqr - FADE_START_SQR) * FADE_RANGE_INV), 0, 255); if a <= 0 then return end
+
     local ct = CurTime()
-    local targetProgress = (status == rRadio.status.PLAYING or status == rRadio.status.TUNING) and 1 or 0
-    self.anim.progress = Lerp(dt * HUD.ANIMATION.SPEED, self.anim.progress, targetProgress)
-    if status ~= self.anim.lastStatus then
-        self.anim.statusTransition = 0
-        self.anim.lastStatus = status
+    local st, station
+    if ct >= self.nextAnimTick then
+        self.nextAnimTick = ct + HUD_TICK
+        local nw = self[NWK]
+        st = nw.Status or self:GetNWInt("Status", rRadio.status.STOPPED)
+        station = nw.StationName or self:GetNWString("StationName", "")
+        if st == rRadio.status.PLAYING and not rRadio.cl.connectedStations[self] then st = rRadio.status.TUNING end
+        self.lastStatusRendered, self.lastStationRendered = st, station
+
+        local live = rRadio.cl.entityVolumes or {}
+        local vol  = live[self] or live[self:EntIndex()] or 1
+        if rRadio.cl.mutedBoomboxes and rRadio.cl.mutedBoomboxes[self] then vol = 0 end
+        vol = math_Clamp(vol * cvMaxVolume:GetFloat(), 0, 1)
+
+        if not cvBasicHud:GetBool() then
+            local now = ct
+            local dtTick = now - (self.lastAnimTime or now)
+            self.lastAnimTime = now
+            self:UpdateEqualiser(vol, dtTick * 2)
+            self:UpdateAnim(st, dtTick)
+        end
+    else
+        st, station = self.lastStatusRendered, self.lastStationRendered
     end
-    self.anim.statusTransition = math_min(1, self.anim.statusTransition + dt * HUD.ANIMATION.SPEED)
-    if status == rRadio.status.TUNING then
-        self.anim.tuningOffset = (math_sin(ct * 3) * 0.5 + 0.5)
+
+    local sch = self:GetColorScheme()
+    local bg  = Premul(sch.BG, a)
+    local accBright = Premul(sch.ACCENT, a * ACCENT_ALPHA_BRIGHT)
+    local txt = Premul(sch.TEXT, a * (cvBasicHud:GetBool() and 1 or self.anim.statusTransition))
+
+    local pos = self:GetPos(); pos:Add(self:GetForward()*HUD_OFFSET_FORWARD); pos:Add(self:GetUp()*HUD_OFFSET_UP)
+    local ang = self:GetAngles(); ang:RotateAroundAxis(ang:Up(), -90); ang:RotateAroundAxis(ang:Forward(), 90)
+    ang:RotateAroundAxis(ang:Right(), 180)
+
+    if cvBasicHud:GetBool() then
+        self:RenderBasicHUD(st, station, a, pos, ang, sch)
+        return
     end
+
+    cam_Start3D2D(pos, ang, HUD_SCALE)
+        surface.SetMaterial(MAT_RECT)
+        fastRect(-self.halfWidth, -HUD_HALF_HEIGHT, self.cachedWidth, HUD_HEIGHT, bg)
+
+        if st == rRadio.status.TUNING then
+            local barW = self.cachedWidth * 0.3; local off = self.anim.tuningOffset*(self.cachedWidth - barW)
+            fastRect(-self.halfWidth,     HUD_HALF_HEIGHT-2, self.cachedWidth, 2,
+                     Premul(sch.ACCENT, a*ACCENT_ALPHA_DIM))
+            fastRect(-self.halfWidth+off, HUD_HALF_HEIGHT-2, barW, 2, accBright)
+        else
+            fastRect(-self.halfWidth, HUD_HALF_HEIGHT-2, self.cachedWidth, 2, accBright)
+        end
+
+        if st ~= rRadio.status.PLAYING then
+            fastRect(self.hudX, -HUD_HALF_HEIGHT + HUD_HEIGHT/3, 4, HUD_HEIGHT/3,
+                     Premul(self:GetStatusColour(st), a))
+        end
+
+        draw_SimpleText(self:GetDisplayText(st, station), "rRadio.Roboto24",
+                        self.hudX+HUD_ICON_OFFSET, 0, txt, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+
+        if st == rRadio.status.PLAYING then
+            self:DrawEqualiser(self.hudX, 0, a, self:GetStatusColour(st))
+        end
+    cam_End3D2D()
 end
 
-net.Receive("rRadio.SetRadioVolume", function()
-    local entity = net.ReadEntity()
-    local volume = net.ReadFloat()
-    if IsValid(entity) then entityVolumes[entity:EntIndex()] = volume end
-end)
+function ENT:Draw() self:DrawModel() end
 
-hook.Add("Think", "rRadio.StepBoomboxAnimation", function()
-    local eqDt = FrameTime() * 2
+hook.Add("PostDrawOpaqueRenderables", "rRadio.DrawAllBoomboxHUDs", function()
+    if not (cvHud:GetBool() and cvEnabled:GetBool()) then return end
+    local eye = LocalPlayer():EyePos()
     for ent in pairs(ActiveBoomboxes) do
-        local rawVol = entityVolumes[ent:EntIndex()]
-        local defaultVol = rawVol or 1
-        local isMuted = rRadio.cl.mutedBoomboxes and rRadio.cl.mutedBoomboxes[ent]
-        local vol = isMuted and 0 or defaultVol
-        vol = vol * cvMaxVolume:GetFloat()
-        vol = math_Clamp(vol, 0, 1)
-        ent:UpdateEqualizerHeights(vol, eqDt)
+        if IsValid(ent) then ent:RenderHUD(eye) end
     end
 end)
 
-hook.Add("LanguageUpdated", "rRadio.ClearBoomboxTextCache", function()
-    initializeStaticTexts()
-    initializeStaticTextWidths()
-
-    for ent in pairs(entityColorSchemes) do entityColorSchemes[ent] = nil end
-end)
-
-hook.Add("ThemeChanged", "rRadio.ClearBoomboxColorCache", function()
-    for ent in pairs(entityColorSchemes) do entityColorSchemes[ent] = nil end
-end)
-
-hook.Add("PostDrawOpaqueRenderables", "rRadio_DrawAllBoomboxHUDs", function()
-    local plyEye = LocalPlayer():EyePos()
-    local dt = FrameTime()
-
-    for ent in pairs(ActiveBoomboxes) do
-        local distSqr = plyEye:DistToSqr(ent:GetPos())
-        if distSqr <= MODEL_CULL_DISTANCE_SQR and cvHud:GetBool() and cvEnabled:GetBool() then
-            local alpha = math_Clamp(255 * (1 - (distSqr - FADE_START_SQR) * FADE_RANGE_INV), 0, 255)
-            if alpha > 0 then
-                local idx = ent:EntIndex()
-                local statusData = rRadio.cl.BoomboxStatuses[idx] or {}
-                local status = statusData.stationStatus ~= nil and statusData.stationStatus or ent:GetNWInt("Status", rRadio.status.STOPPED)
-                local stationName = statusData.stationName or ent:GetNWString("StationName", "")
-
-                -- Gate PLAYING display until stream actually connected
-                if status == rRadio.status.PLAYING and not rRadio.cl.connectedStations[ent] then
-                    status = rRadio.status.TUNING
-                end
-                
-                ent:UpdateAnimations(status, dt)
-
-                local pos = ent:GetPos()
-                pos:Add(ent:GetForward() * HUD_OFFSET_FORWARD)
-                pos:Add(ent:GetUp() * HUD_OFFSET_UP)
-
-                local ang = ent:GetAngles()
-                ang:RotateAroundAxis(ang:Up(), -90)
-                ang:RotateAroundAxis(ang:Forward(), 90)
-                ang:RotateAroundAxis(ang:Right(), 180)
-
-                cam_Start3D2D(pos, ang, HUD_SCALE)
-                    ent:DrawHUD(status, stationName, alpha)
-                cam_End3D2D()
-            end
-        end
-    end
-end)
+local function clearCaches()
+    initTexts()
+    for k in pairs(entityColorSchemes) do entityColorSchemes[k]=nil end
+    for k,v in pairs(TEXT_WIDTH_CACHE) do if not v.isStatic then TEXT_WIDTH_CACHE[k]=nil end end
+end
+hook.Add("LanguageUpdated", "rRadio.BoomboxClearCaches", clearCaches)
+hook.Add("ThemeChanged",   "rRadio.BoomboxClearCaches", clearCaches)

@@ -1,290 +1,416 @@
 rRadio.utils = rRadio.utils or {}
 
-rRadio.utils.VehicleClasses = {
-  ["prop_vehicle_prisoner_pod"] = true,
-  ["prop_vehicle_jeep"] = true,
-  ["prop_vehicle_airboat"] = true,
-  ["gmod_sent_vehicle_fphysics_base"] = true,
-  ["drs_car_r5"] = true,
+
+-- Constants
+local RADIO_STATUS = {
+    STOPPED = 0,
+    PLAYING = 1,
+    TUNING = 2
 }
 
-rRadio.utils.SitAnywhereSeats = {
-  ["Seat_Airboat"] = true,
-  ["Chair_Office2"] = true,
-  ["Chair_Plastic"] = true,
-  ["Seat_Jeep"] = true,
-  ["Chair_Office1"] = true,
-  ["Chair_Wood"] = true,
+local VEHICLE_CLASSES = {
+    ["prop_vehicle_prisoner_pod"] = true,
+    ["prop_vehicle_jeep"] = true,
+    ["prop_vehicle_airboat"] = true,
+    ["gmod_sent_vehicle_fphysics_base"] = true,
+    ["drs_car_r5"] = true
 }
 
-function rRadio.utils.Scale(val) return val * (ScrW() / 2560) end
+local SIT_ANYWHERE_SEATS = {
+    ["Seat_Airboat"] = true,
+    ["Chair_Office2"] = true,
+    ["Chair_Plastic"] = true,
+    ["Seat_Jeep"] = true,
+    ["Chair_Office1"] = true,
+    ["Chair_Wood"] = true
+}
 
-function rRadio.utils.GetVehicle(ent)
-  if not IsValid(ent) then return end
-  local parent = ent:GetParent()
-  ent = IsValid(parent) and parent or ent
-  if rRadio.utils.SitAnywhereSeats[ent:GetClass()] then return end
+local BOOMBOX_CLASS = "rammel_boombox"
+local GOLDEN_BOOMBOX_CLASS = "rammel_boombox_gold"
 
-  local class = ent:GetClass()
-  if rRadio.utils.VehicleClasses[class] or ent:IsVehicle() then
-    return ent
-  end
-  for _, prefix in ipairs(rRadio.config.VehicleClassOverides or {}) do
-    if string.StartWith(class, prefix) then
-      return ent
+-- Timer prefix for consistency
+local TIMER_PREFIX = "rRadio_UpdateStatus_"
+
+
+-- Vehicle Detection Functions
+
+function rRadio.utils.GetVehicle( entity )
+    if not IsValid( entity ) then return nil end
+    
+    local parent = entity:GetParent()
+    local targetEntity = IsValid( parent ) and parent or entity
+    
+    -- Early return for sit anywhere seats
+    if SIT_ANYWHERE_SEATS[targetEntity:GetClass()] then
+        return nil
     end
-  end
+    
+    -- Check if it's a recognized vehicle
+    if rRadio.utils.IsVehicleClass( targetEntity ) then
+        return targetEntity
+    end
+    
+    return nil
 end
 
-function rRadio.utils.isSitAnywhereSeat(vehicle)
-  if not IsValid(vehicle) then return false end
-  if rRadio.utils.SitAnywhereSeats[vehicle:GetClass()] then
-    return true
-  end
-  local nwValue = vehicle:GetNWBool("IsSitAnywhereSeat", nil)
-  if nwValue ~= nil then
-    return nwValue
-  end
-  if SERVER then
-    return vehicle.playerdynseat or false
-  end
-  return false
+
+function rRadio.utils.IsVehicleClass( entity )
+    if not IsValid( entity ) then return false end
+    
+    local class = entity:GetClass()
+    
+    -- Check standard vehicle classes
+    if VEHICLE_CLASSES[class] or entity:IsVehicle() then
+        return true
+    end
+    
+    -- Check config overrides
+    return rRadio.utils.CheckVehicleOverrides( class )
 end
 
-function rRadio.utils.getOwner(ent)
-  if not IsValid(ent) then return nil end
-  return ent:GetNWEntity("Owner")
+
+function rRadio.utils.CheckVehicleOverrides( className )
+    local overrides = rRadio.config.VehicleClassOverides or {}
+    
+    for _, prefix in ipairs( overrides ) do
+        if string.StartWith( className, prefix ) then
+            return true
+        end
+    end
+    
+    return false
 end
 
-function rRadio.utils.canInteractWithBoombox(ply, boombox)
-  -- rRadio.DevPrint("Checking if player can interact with boombox")
 
-  if not IsValid(ply) or not IsValid(boombox) then return false end
-  local owner = rRadio.utils.getOwner(boombox)
-
-  -- rRadio.DevPrint("Owner is valid, checking if player is owner")
-
-  if owner == ply then
-    -- rRadio.DevPrint("Player is owner - granting permission")
-    return true
-  end
-
-  -- rRadio.DevPrint("Player is valid, checking CAMI")
-  if CAMI.PlayerHasAccess(ply, "rradio.UseAll") then
-    -- rRadio.DevPrint("Player has rradio.UseAll")
-    return true
-  end
-
-  return false
+function rRadio.utils.IsSitAnywhereSeat( vehicle )
+    if not IsValid( vehicle ) then return false end
+    
+    -- Check class first
+    if SIT_ANYWHERE_SEATS[vehicle:GetClass()] then
+        return true
+    end
+    
+    -- Check networked value
+    local nwValue = vehicle:GetNWBool( "IsSitAnywhereSeat", nil )
+    if nwValue ~= nil then
+        return nwValue
+    end
+    
+    -- Server-side check
+    if SERVER then
+        return vehicle.playerdynseat or false
+    end
+    
+    return false
 end
 
-function rRadio.utils.GetEntityConfig(entity)
-  if not IsValid(entity) then return nil end
-  local entityClass = entity:GetClass()
-  if entityClass == "rammel_boombox_gold" then
-    return rRadio.config.GoldenBoombox
-  elseif entityClass == "rammel_boombox" then
-    return rRadio.config.Boombox
-  elseif rRadio.utils.GetVehicle(entity) then
-    return rRadio.config.VehicleRadio
-  end
-  return nil
+
+-- Configuration Functions
+
+function rRadio.utils.GetEntityConfig( entity )
+    if not IsValid( entity ) then return nil end
+    
+    local entityClass = entity:GetClass()
+    
+    if entityClass == GOLDEN_BOOMBOX_CLASS then
+        return rRadio.config.GoldenBoombox
+    elseif entityClass == BOOMBOX_CLASS then
+        return rRadio.config.Boombox
+    else
+        return rRadio.config.VehicleRadio
+    end
 end
 
-function rRadio.utils.setRadioStatus(entity, status, stationName, isPlaying, updateNameOnly)
-  if not IsValid(entity) then return end
 
-  local entIndex = entity:EntIndex()
+-- Ownership and Permission Functions
 
-  if timer.Exists("UpdateBoomboxStatus_" .. entIndex) then
-    timer.Remove("UpdateBoomboxStatus_" .. entIndex)
-  end
+function rRadio.utils.GetOwner( entity )
+    if not IsValid( entity ) then return nil end
+    return entity:GetNWEntity( "Owner" )
+end
 
-  stationName = stationName or ""
-  if isPlaying == nil then
-    isPlaying = (status == rRadio.status.PLAYING or status == rRadio.status.TUNING)
-  end
 
-  local statuses = SERVER and rRadio.sv.BoomboxStatuses or rRadio.cl.BoomboxStatuses or {}
-  if not statuses[entIndex] then
-    statuses[entIndex] = {}
-  end
+function rRadio.utils.CanInteractWithBoombox( ply, boombox )
+    if not IsValid( ply ) or not IsValid( boombox ) then return false end
+    
+    local owner = rRadio.utils.GetOwner( boombox )
+    
+    -- Owner always has permission
+    if owner == ply then
+        return true
+    end
+    
+    -- Check CAMI permissions
+    if CAMI and CAMI.PlayerHasAccess( ply, "rradio.UseAll" ) then
+        return true
+    end
+    
+    return false
+end
 
-  if not updateNameOnly then
-    entity:SetNWInt("Status", status)
-    entity:SetNWBool("IsPlaying", isPlaying)
-    statuses[entIndex].stationStatus = status
-  end
 
-  entity:SetNWString("StationName", stationName)
-  statuses[entIndex].stationName = stationName
-  if SERVER then
-    net.Start("rRadio.UpdateRadioStatus")
-    net.WriteEntity(entity)
-    net.WriteString(stationName)
-    net.WriteBool(isPlaying)
-    net.WriteUInt(status or rRadio.status.STOPPED, 2)
+-- Radio Status Management Functions
+
+function rRadio.utils.SetRadioStatus( entity, status, stationName, isPlaying, updateNameOnly )
+    if not IsValid( entity ) then return end
+    
+    local entIndex = entity:EntIndex()
+    
+    -- Clean up existing timer
+    rRadio.utils.RemoveStatusTimer( entIndex )
+    
+    -- Set defaults
+    stationName = stationName or ""
+    if isPlaying == nil then
+        isPlaying = ( status == RADIO_STATUS.PLAYING or status == RADIO_STATUS.TUNING )
+    end
+    
+    -- Update status storage
+    rRadio.utils.UpdateStatusStorage( entIndex, status, stationName, updateNameOnly )
+    
+    -- Update networked values
+    if not updateNameOnly then
+        entity:SetNWInt( "Status", status )
+        entity:SetNWBool( "IsPlaying", isPlaying )
+    end
+    
+    entity:SetNWString( "StationName", stationName )
+    
+    -- Broadcast changes on server
+    if SERVER then
+        rRadio.utils.BroadcastRadioStatus( entity, stationName, isPlaying, status )
+    end
+end
+
+
+function rRadio.utils.UpdateStatusStorage( entIndex, status, stationName, updateNameOnly )
+    local statuses = SERVER and rRadio.sv.BoomboxStatuses or rRadio.cl.BoomboxStatuses or {}
+    
+    if not statuses[entIndex] then
+        statuses[entIndex] = {}
+    end
+    
+    if not updateNameOnly then
+        statuses[entIndex].stationStatus = status
+    end
+    
+    statuses[entIndex].stationName = stationName
+end
+
+
+function rRadio.utils.BroadcastRadioStatus( entity, stationName, isPlaying, status )
+    net.Start( "rRadio.UpdateRadioStatus" )
+    net.WriteEntity( entity )
+    net.WriteString( stationName )
+    net.WriteBool( isPlaying )
+    net.WriteUInt( status or RADIO_STATUS.STOPPED, 2 )
     net.Broadcast()
-  end
 end
 
-function rRadio.utils.clearRadioStatus(entity)
-  if not IsValid(entity) then return end
 
-  local entIndex = entity:EntIndex()
-
-  if timer.Exists("UpdateBoomboxStatus_" .. entIndex) then
-    timer.Remove("UpdateBoomboxStatus_" .. entIndex)
-  end
-
-  rRadio.utils.setRadioStatus(entity, rRadio.status.STOPPED, "", false)
+function rRadio.utils.ClearRadioStatus( entity )
+    if not IsValid( entity ) then return end
+    
+    local entIndex = entity:EntIndex()
+    rRadio.utils.RemoveStatusTimer( entIndex )
+    
+    rRadio.utils.SetRadioStatus( entity, RADIO_STATUS.STOPPED, "", false )
 end
 
-function rRadio.utils.IsBoombox(entity)
-  if not IsValid(entity) then return false end
-  local class = entity:GetClass()
-  return class == "rammel_boombox" or class == "rammel_boombox_gold"
+
+function rRadio.utils.RemoveStatusTimer( entIndex )
+    local timerName = TIMER_PREFIX .. entIndex
+    
+    if timer.Exists( timerName ) then
+        timer.Remove( timerName )
+    end
 end
 
-function rRadio.utils.canUseRadio(entity)
-  if not IsValid(entity) then return false end
-  if rRadio.utils.IsBoombox(entity) then return true end
 
-  local vehicle = rRadio.utils.GetVehicle(entity)
+-- Entity Type Checking Functions
 
-  if not vehicle then return false end
-  if rRadio.utils.isSitAnywhereSeat(vehicle) then return false end
-  return true
+function rRadio.utils.IsBoombox( entity )
+    if not IsValid( entity ) then return false end
+    
+    local class = entity:GetClass()
+    return class == BOOMBOX_CLASS or class == GOLDEN_BOOMBOX_CLASS
 end
 
-function rRadio.utils.PrintVehicleClassInfo(ent)
-  if not IsValid(ent) then
-    rRadio.DevPrint("[Radio Utils] Invalid entity passed to PrintVehicleClassInfo.")
-    return
-  end
 
-  local entClass = ent:GetClass()
-  rRadio.DevPrint("[Radio Utils] Entity Class: ", entClass)
-
-  local parent = ent:GetParent()
-  if IsValid(parent) then
-    local parentClass = parent:GetClass()
-    rRadio.DevPrint("[Radio Utils] Parent Class: ", parentClass)
-  else
-    rRadio.DevPrint("[Radio Utils] Entity has no valid parent.")
-  end
+function rRadio.utils.CanUseRadio( entity )
+    if not IsValid( entity ) then return false end
+    
+    -- Boomboxes can always use radio
+    if rRadio.utils.IsBoombox( entity ) then return true end
+    
+    -- Check if it's a valid vehicle
+    local vehicle = rRadio.utils.GetVehicle( entity )
+    if not vehicle then return false end
+    
+    -- Sit anywhere seats cannot use radio
+    if rRadio.utils.IsSitAnywhereSeat( vehicle ) then return false end
+    
+    return true
 end
 
-function rRadio.utils.FormatAndTranslateCountry(rawKey)
-  local formatted = rawKey
-    :gsub("_"," ")
-    :gsub("(%a)([%w_']*)", function(f,r) return f:upper()..r:lower() end)
-  return rRadio.LanguageManager:GetCountryTranslation(formatted)
+
+-- Debug Functions
+
+function rRadio.utils.PrintVehicleClassInfo( entity )
+    if not IsValid( entity ) then
+        rRadio.DevPrint( "[Radio Utils] Invalid entity passed to PrintVehicleClassInfo." )
+        return
+    end
+    
+    local entityClass = entity:GetClass()
+    rRadio.DevPrint( "[Radio Utils] Entity Class: ", entityClass )
+    
+    local parent = entity:GetParent()
+    if IsValid( parent ) then
+        local parentClass = parent:GetClass()
+        rRadio.DevPrint( "[Radio Utils] Parent Class: ", parentClass )
+    else
+        rRadio.DevPrint( "[Radio Utils] Entity has no valid parent." )
+    end
 end
 
+
+-- Localization Functions
+
+function rRadio.utils.FormatAndTranslateCountry( rawKey )
+    -- Handle custom category
+    if rRadio.utils.IsCustomCategory( rawKey ) then
+        return rRadio.LanguageManager:GetCustomTranslation()
+    end
+    
+    -- Format the key
+    local formatted = rRadio.utils.FormatCountryKey( rawKey )
+    
+    -- Get translation or return formatted version
+    return rRadio.LanguageManager:GetCountryTranslation( formatted ) or formatted
+end
+
+
+function rRadio.utils.IsCustomCategory( rawKey )
+    return rRadio.config.CustomStationCategory == "Custom" and rawKey == "Custom"
+end
+
+
+function rRadio.utils.FormatCountryKey( rawKey )
+    return rawKey
+        :gsub( "_", " " )
+        :gsub( "(%a)([%w_']*)", function( first, rest )
+            return first:upper() .. rest:lower()
+        end )
+end
+
+
+-- Client-side Key Mapping
 if CLIENT then
-  rRadio.keyCodeMapping = {
-    [KEY_A] = "A",
-    [KEY_B] = "B",
-    [KEY_C] = "C",
-    [KEY_D] = "D",
-    [KEY_E] = "E",
-    [KEY_F] = "F",
-    [KEY_G] = "G",
-    [KEY_H] = "H",
-    [KEY_I] = "I",
-    [KEY_J] = "J",
-    [KEY_K] = "K",
-    [KEY_L] = "L",
-    [KEY_M] = "M",
-    [KEY_N] = "N",
-    [KEY_O] = "O",
-    [KEY_P] = "P",
-    [KEY_Q] = "Q",
-    [KEY_R] = "R",
-    [KEY_S] = "S",
-    [KEY_T] = "T",
-    [KEY_U] = "U",
-    [KEY_V] = "V",
-    [KEY_W] = "W",
-    [KEY_X] = "X",
-    [KEY_Y] = "Y",
-    [KEY_Z] = "Z",
-    [KEY_0] = "0",
-    [KEY_1] = "1",
-    [KEY_2] = "2",
-    [KEY_3] = "3",
-    [KEY_4] = "4",
-    [KEY_5] = "5",
-    [KEY_6] = "6",
-    [KEY_7] = "7",
-    [KEY_8] = "8",
-    [KEY_9] = "9",
-    [KEY_PAD_0] = "Numpad 0",
-    [KEY_PAD_1] = "Numpad 1",
-    [KEY_PAD_2] = "Numpad 2",
-    [KEY_PAD_3] = "Numpad 3",
-    [KEY_PAD_4] = "Numpad 4",
-    [KEY_PAD_5] = "Numpad 5",
-    [KEY_PAD_6] = "Numpad 6",
-    [KEY_PAD_7] = "Numpad 7",
-    [KEY_PAD_8] = "Numpad 8",
-    [KEY_PAD_9] = "Numpad 9",
-    [KEY_PAD_DIVIDE] = "Numpad /",
-    [KEY_PAD_MULTIPLY] = "Numpad *",
-    [KEY_PAD_MINUS] = "Numpad -",
-    [KEY_PAD_PLUS] = "Numpad +",
-    [KEY_PAD_ENTER] = "Numpad Enter",
-    [KEY_PAD_DECIMAL] = "Numpad .",
-    [KEY_LSHIFT] = "Left Shift",
-    [KEY_RSHIFT] = "Right Shift",
-    [KEY_LALT] = "Left Alt",
-    [KEY_RALT] = "Right Alt",
-    [KEY_LCONTROL] = "Left Ctrl",
-    [KEY_RCONTROL] = "Right Ctrl",
-    [KEY_SPACE] = "Space",
-    [KEY_ENTER] = "Enter",
-    [KEY_BACKSPACE] = "Backspace",
-    [KEY_TAB] = "Tab",
-    [KEY_CAPSLOCK] = "Caps Lock",
-    [KEY_ESCAPE] = "Escape",
-    [KEY_SCROLLLOCK] = "Scroll Lock",
-    [KEY_INSERT] = "Insert",
-    [KEY_DELETE] = "Delete",
-    [KEY_HOME] = "Home",
-    [KEY_END] = "End",
-    [KEY_PAGEUP] = "Page Up",
-    [KEY_PAGEDOWN] = "Page Down",
-    [KEY_BREAK] = "Break",
-    [KEY_NUMLOCK] = "Num Lock",
-    [KEY_SEMICOLON] = ";",
-    [KEY_EQUAL] = "=",
-    [KEY_MINUS] = "-",
-    [KEY_COMMA] = ",",
-    [KEY_PERIOD] = ".",
-    [KEY_SLASH] = "/",
-    [KEY_BACKSLASH] = "\\",
-    [KEY_BACKQUOTE] = "`",
-    [KEY_F1] = "F1",
-    [KEY_F2] = "F2",
-    [KEY_F3] = "F3",
-    [KEY_F4] = "F4",
-    [KEY_F5] = "F5",
-    [KEY_F6] = "F6",
-    [KEY_F7] = "F7",
-    [KEY_F8] = "F8",
-    [KEY_F9] = "F9",
-    [KEY_F10] = "F10",
-    [KEY_F11] = "F11",
-    [KEY_F12] = "F12",
-    [KEY_CAPSLOCKTOGGLE] = "Caps Lock Toggle",
-    [KEY_NUMLOCKTOGGLE] = "Num Lock Toggle",
-    [KEY_LAST] = "Last Key"
+    local KEY_CODE_MAPPING = {
+        [KEY_A] = "A",
+        [KEY_B] = "B",
+        [KEY_C] = "C",
+        [KEY_D] = "D",
+        [KEY_E] = "E",
+        [KEY_F] = "F",
+        [KEY_G] = "G",
+        [KEY_H] = "H",
+        [KEY_I] = "I",
+        [KEY_J] = "J",
+        [KEY_K] = "K",
+        [KEY_L] = "L",
+        [KEY_M] = "M",
+        [KEY_N] = "N",
+        [KEY_O] = "O",
+        [KEY_P] = "P",
+        [KEY_Q] = "Q",
+        [KEY_R] = "R",
+        [KEY_S] = "S",
+        [KEY_T] = "T",
+        [KEY_U] = "U",
+        [KEY_V] = "V",
+        [KEY_W] = "W",
+        [KEY_X] = "X",
+        [KEY_Y] = "Y",
+        [KEY_Z] = "Z",
+        [KEY_0] = "0",
+        [KEY_1] = "1",
+        [KEY_2] = "2",
+        [KEY_3] = "3",
+        [KEY_4] = "4",
+        [KEY_5] = "5",
+        [KEY_6] = "6",
+        [KEY_7] = "7",
+        [KEY_8] = "8",
+        [KEY_9] = "9",
+        [KEY_PAD_0] = "Numpad 0",
+        [KEY_PAD_1] = "Numpad 1",
+        [KEY_PAD_2] = "Numpad 2",
+        [KEY_PAD_3] = "Numpad 3",
+        [KEY_PAD_4] = "Numpad 4",
+        [KEY_PAD_5] = "Numpad 5",
+        [KEY_PAD_6] = "Numpad 6",
+        [KEY_PAD_7] = "Numpad 7",
+        [KEY_PAD_8] = "Numpad 8",
+        [KEY_PAD_9] = "Numpad 9",
+        [KEY_PAD_DIVIDE] = "Numpad /",
+        [KEY_PAD_MULTIPLY] = "Numpad *",
+        [KEY_PAD_MINUS] = "Numpad -",
+        [KEY_PAD_PLUS] = "Numpad +",
+        [KEY_PAD_ENTER] = "Numpad Enter",
+        [KEY_PAD_DECIMAL] = "Numpad .",
+        [KEY_LSHIFT] = "Left Shift",
+        [KEY_RSHIFT] = "Right Shift",
+        [KEY_LALT] = "Left Alt",
+        [KEY_RALT] = "Right Alt",
+        [KEY_LCONTROL] = "Left Ctrl",
+        [KEY_RCONTROL] = "Right Ctrl",
+        [KEY_SPACE] = "Space",
+        [KEY_ENTER] = "Enter",
+        [KEY_BACKSPACE] = "Backspace",
+        [KEY_TAB] = "Tab",
+        [KEY_CAPSLOCK] = "Caps Lock",
+        [KEY_ESCAPE] = "Escape",
+        [KEY_SCROLLLOCK] = "Scroll Lock",
+        [KEY_INSERT] = "Insert",
+        [KEY_DELETE] = "Delete",
+        [KEY_HOME] = "Home",
+        [KEY_END] = "End",
+        [KEY_PAGEUP] = "Page Up",
+        [KEY_PAGEDOWN] = "Page Down",
+        [KEY_BREAK] = "Break",
+        [KEY_NUMLOCK] = "Num Lock",
+        [KEY_SEMICOLON] = ";",
+        [KEY_EQUAL] = "=",
+        [KEY_MINUS] = "-",
+        [KEY_COMMA] = ",",
+        [KEY_PERIOD] = ".",
+        [KEY_SLASH] = "/",
+        [KEY_BACKSLASH] = "\\",
+        [KEY_BACKQUOTE] = "`",
+        [KEY_F1] = "F1",
+        [KEY_F2] = "F2",
+        [KEY_F3] = "F3",
+        [KEY_F4] = "F4",
+        [KEY_F5] = "F5",
+        [KEY_F6] = "F6",
+        [KEY_F7] = "F7",
+        [KEY_F8] = "F8",
+        [KEY_F9] = "F9",
+        [KEY_F10] = "F10",
+        [KEY_F11] = "F11",
+        [KEY_F12] = "F12",
+        [KEY_CAPSLOCKTOGGLE] = "Caps Lock Toggle",
+        [KEY_NUMLOCKTOGGLE] = "Num Lock Toggle",
+        [KEY_LAST] = "Last Key"
     }
     
-  function rRadio.GetKeyName(keyCode)
-      return rRadio.keyCodeMapping[keyCode] or "the Open Key"
-  end
+    
+    function rRadio.GetKeyName( keyCode )
+        return KEY_CODE_MAPPING[keyCode] or "the Open Key"
+    end
 end
-  
+
+
 return rRadio.utils

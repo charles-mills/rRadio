@@ -1,5 +1,28 @@
 --[[
 
+MIT License
+
+Copyright (c) 2025 Charles Mills
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+
            /$$$$$$$                  /$$ /$$          
           | $$__  $$                | $$|__/          
   /$$$$$$ | $$  \ $$  /$$$$$$   /$$$$$$$ /$$  /$$$$$$ 
@@ -16,6 +39,7 @@ Steam: https://steamcommunity.com/id/rammel/
 
 local cl_count = 0
 local cl_load_count = 0
+local cl_files_expected = 0
 
 local dev_id = "3465709662"
 local pub_id = "3318060741"
@@ -47,6 +71,7 @@ function rRadio.addClConVars()
     
     CreateClientConVar("rammel_rradio_vehicle_animation", rRadio.config.AnimationDefaultOn and "1" or "0", true, false, "Toggle the animation upon entering a vehicle.")
     CreateClientConVar("rammel_rradio_boombox_hud", "1", true, false, "Show or hide the HUD for the boombox.")
+    CreateClientConVar("rammel_rradio_basic_hud", "0", true, false, "Use the simplified boombox HUD.")
     CreateClientConVar("rammel_rradio_menu_key", "21", true, false, "Select the key to open the car radio menu.")
     CreateClientConVar("rammel_rradio_menu_theme", "dark", true, false, "Set the theme for the radio.")
     CreateClientConVar("rammel_rradio_enabled", "1", true, false, "Enable or disable rRadio.")
@@ -75,8 +100,12 @@ local function addClientFile(filename)
 end
 
 local function addCSLua(filename)
-    AddCSLuaFile(filename)
-    cl_load_count = cl_load_count + 1
+    if SERVER then
+        AddCSLuaFile(filename)
+        cl_load_count = cl_load_count + 1
+    end
+
+    cl_files_expected = cl_files_expected + 1
 end
 
 local function createFonts()
@@ -116,7 +145,9 @@ local function addCSLuaFiles()
     local dirs = {
         "rradio/shared",
         "rradio/client",
+        "rradio/client/core",
         "rradio/client/interface",
+        "rradio/client/interface/components",
         "rradio/client/lang",
         "rradio/client/data/langpacks",
         "rradio/client/data/stationpacks",
@@ -138,10 +169,11 @@ local function addClProperties()
         Order     = 1501,
         MenuIcon  = "icon16/SOUND_MUTE.png",
         Filter    = function(self, ent, ply)
-            return rRadio.utils.canUseRadio(ent) and not rRadio.cl.mutedBoomboxes[ent]
+            return rRadio.utils.CanUseRadio(ent) and not rRadio.cl.mutedBoomboxes[ent]
         end,
         Action    = function(self, ent)
             rRadio.cl.mutedBoomboxes[ent] = true
+            rRadio.interface.refreshVolume(ent)
         end
     })
 
@@ -150,10 +182,11 @@ local function addClProperties()
         Order     = 1502,
         MenuIcon  = "icon16/SOUND.png",
         Filter    = function(self, ent, ply)
-            return rRadio.utils.canUseRadio(ent) and rRadio.cl.mutedBoomboxes[ent]
+            return rRadio.utils.CanUseRadio(ent) and rRadio.cl.mutedBoomboxes[ent]
         end,
         Action    = function(self, ent)
             rRadio.cl.mutedBoomboxes[ent] = nil
+            rRadio.interface.refreshVolume(ent)
         end
     })
 end
@@ -211,11 +244,14 @@ if SERVER then
     include("rradio/shared/sh_utils.lua")
     include("rradio/server/sv_utils.lua")
     include("rradio/server/sv_core.lua")
+    include("rradio/server/sv_db.lua")
     include("rradio/server/sv_permanent.lua")
+    include("rradio/server/sv_blogs.lua")
     addPrivileges()
     
     rRadio.FormattedOutput("Finished server-side initialization")
 elseif CLIENT then
+    addCSLuaFiles()
     createFonts()
     addPrivileges()
     addClientFile("shared/sh_utils.lua")
@@ -225,9 +261,21 @@ elseif CLIENT then
     addClientFile("shared/sh_config.lua")
 
     rRadio.cl = rRadio.cl or {}
+    rRadio.cl.radioSources = rRadio.cl.radioSources or {}
     rRadio.cl.mutedBoomboxes = rRadio.cl.mutedBoomboxes or {}
 
+    if rRadio.config.UsePlayerBindHook == nil then
+        rRadio.config.UsePlayerBindHook = not game.SinglePlayer()
+    end
+
     rRadio.addClConVars()
+
+    cvars.AddChangeCallback("rammel_rradio_max_volume", function(cvar, old, new)
+        for ent in pairs(rRadio.cl.radioSources) do
+            rRadio.interface.refreshVolume(ent)
+        end
+    end, "rRadioMaxVolCB")
+
     addClProperties()
 
     if (rRadio.isClientLoadDisabled()) then
@@ -238,8 +286,28 @@ elseif CLIENT then
 
     rRadio.FormattedOutput("Starting client-side initialization")
     
-    addClientFile("client/interface/cl_interface_utils.lua")
-    addClientFile("client/interface/cl_core.lua")
+    addClientFile("client/core/cl_utils.lua")
+
+    addClientFile("client/interface/components/star.lua")
+    addClientFile("client/interface/components/button.lua")
+    addClientFile("client/interface/components/nav_button.lua")
+    addClientFile("client/interface/components/animated_button.lua")
+    addClientFile("client/interface/components/checkbox.lua")
+    addClientFile("client/interface/components/dropdown.lua")
+    addClientFile("client/interface/components/header.lua")
+    addClientFile("client/interface/components/icon_button.lua")
+    addClientFile("client/interface/components/separator.lua")
+    
+    addClientFile("client/core/cl_state.lua")
+    addClientFile("client/core/cl_station_data.lua")
+    addClientFile("client/core/cl_networking.lua")
+    addClientFile("client/core/cl_playback.lua")
+    addClientFile("client/interface/cl_ui_components.lua")
+    addClientFile("client/interface/cl_ui_settings.lua")
+    addClientFile("client/interface/cl_ui_menu.lua")
+    addClientFile("client/core/cl_hooks.lua")
+    addClientFile("client/core/cl_commands.lua")
+
     addClientFile("client/interface/cl_tool_menu.lua")
 
     addClientFile("client/data/langpacks/data_1.lua")
@@ -250,6 +318,6 @@ elseif CLIENT then
         addClientFile("client/data/stationpacks/" .. f)
     end
 
-    rRadio.FormattedOutput("Loaded " .. cl_count .. "/39 client-side files")
+    rRadio.FormattedOutput("Loaded " .. cl_count .. "/55 client-side files")
     rRadio.FormattedOutput("Finished client-side initialization")
 end
