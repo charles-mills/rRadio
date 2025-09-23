@@ -104,16 +104,33 @@ function utils.BroadcastStop(entity)
     net.Broadcast()
 end
 
-local function SendRadioToPlayer(player, entityIndex, radioData)
-    local entity = Entity(entityIndex)
-    DevPrint("[sv-permanent] Sending radio info for entity " .. entityIndex .. " to " .. player:Nick())
-    DevPrint("[sv-permanent] Radio station name: " .. radioData.stationName .. " URL: " .. radioData.url)
+local function BuildActiveRadioPayloadEntry(entityIndex, radioData)
+    local entity = radioData.entity
+    if not IsValid(entity) then
+        entity = Entity(entityIndex)
+    end
+    if not IsValid(entity) then
+        return nil
+    end
 
-    net.Start("rRadio.PlayStation")
-    net.WriteEntity(entity)
-    net.WriteString(radioData.stationName)
-    net.WriteString(radioData.url)
-    net.WriteFloat(radioData.volume)
+    return {
+        entity = entity,
+        stationName = radioData.stationName or "",
+        url = radioData.url or "",
+        volume = radioData.volume or utils.GetDefaultVolume(entity)
+    }
+end
+
+local function SendActiveRadioBatch(player, batch)
+    net.Start("rRadio.ActiveRadios")
+    net.WriteUInt(#batch, 12)
+    for i = 1, #batch do
+        local entry = batch[i]
+        net.WriteEntity(entry.entity)
+        net.WriteString(entry.stationName)
+        net.WriteString(entry.url)
+        net.WriteFloat(entry.volume)
+    end
     net.Send(player)
 end
 
@@ -157,11 +174,23 @@ function utils.SendActiveRadiosToPlayer(player)
         return
     end
 
-    DevPrint("[sv-permanent] SendActiveRadiosToPlayer: Sending " .. (utils.CountActiveRadios() or 0) .. " active radios to " .. player:Nick())
-
+    local payload = {}
     for entityIndex, radioData in pairs(activeRadios) do
-        SendRadioToPlayer(player, entityIndex, radioData)
+        local entry = BuildActiveRadioPayloadEntry(entityIndex, radioData)
+        if entry then
+            payload[#payload + 1] = entry
+        end
     end
+
+    if #payload == 0 then
+        DevPrint("[sv-permanent] SendActiveRadiosToPlayer: Active radios table contained no valid entities, retrying")
+        HandleRetryLogic(player, utils.SendActiveRadiosToPlayer)
+        return
+    end
+
+    DevPrint("[sv-permanent] SendActiveRadiosToPlayer: Sending " .. #payload .. " active radios to " .. player:Nick())
+
+    SendActiveRadioBatch(player, payload)
 
     DevPrint("[sv-permanent] SendActiveRadiosToPlayer: Completed for " .. player:Nick())
     Server.PlayerRetryAttempts[player] = nil
@@ -328,3 +357,5 @@ function utils.ClearOldestActiveRadio()
         utils.RemoveActiveRadio(oldEntity)
     end
 end
+
+

@@ -53,13 +53,20 @@ local function GetTextWidth(t)
 end
 
 local colour_cache = {}
+local WHITE_KEY_PREFIX = "nil:"
 local function Premul(c, a)
-    if not c then return Color(255,255,255,a) end
-    if a >= 255 then return c end
-    local k = c.r..","..c.g..","..c.b..","..a
+    local ai = math_floor(math_Clamp(a, 0, 255) + 0.5)
+    if not c then
+        local k = WHITE_KEY_PREFIX .. ai
+        local hit = colour_cache[k]; if hit then return hit end
+        local pc = Color(255,255,255, ai)
+        colour_cache[k] = pc; return pc
+    end
+    if ai >= 255 then return c end
+    local k = c.r..","..c.g..","..c.b..","..ai
     local hit = colour_cache[k]; if hit then return hit end
-    local pc = Color(math_floor(c.r*a/255), math_floor(c.g*a/255),
-                     math_floor(c.b*a/255), a)
+    local pc = Color(math_floor(c.r*ai/255), math_floor(c.g*ai/255),
+                     math_floor(c.b*ai/255), ai)
     colour_cache[k] = pc; return pc
 end
 
@@ -335,6 +342,8 @@ local function clearCaches()
     initTexts()
     for k in pairs(entityColorSchemes) do entityColorSchemes[k]=nil end
     for k,v in pairs(TEXT_WIDTH_CACHE) do if not v.isStatic then TEXT_WIDTH_CACHE[k]=nil end end
+    for k in pairs(colour_cache) do colour_cache[k] = nil end
 end
+
 hook.Add("LanguageUpdated", "rRadio.BoomboxClearCaches", clearCaches)
 hook.Add("ThemeChanged",   "rRadio.BoomboxClearCaches", clearCaches)

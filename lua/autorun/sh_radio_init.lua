@@ -250,6 +250,7 @@ local function registerNetStrings()
     util.AddNetworkString("rRadio.PlayVehicleAnimation")
     util.AddNetworkString("rRadio.UpdateRadioStatus")
     util.AddNetworkString("rRadio.SetRadioVolume")
+    util.AddNetworkString("rRadio.ActiveRadios")
     util.AddNetworkString("rRadio.SetPersistent")
     util.AddNetworkString("rRadio.RemovePersistent")
     util.AddNetworkString("rRadio.SendPersistentConfirmation")
@@ -353,3 +354,4 @@ elseif CLIENT then
     Radio.FormattedOutput("Loaded " .. cl_count .. "/55 client-side files")
     Radio.FormattedOutput("Finished client-side initialization")
 end
+

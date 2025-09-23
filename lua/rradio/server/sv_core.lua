@@ -250,12 +250,37 @@ hook.Add("PlayerInitialSpawn", "rRadio.SendActiveRadiosOnJoin", function(ply)
     end)
 end)
 
+local function sendCustomStations(target)
+    local all = Server.CustomStations:GetAll() or {}
+    local payload = {}
+
+    for _, station in ipairs(all) do
+        if type(station) == "table" and station.name and station.url then
+            payload[#payload + 1] = {
+                name = station.name,
+                url = station.url
+            }
+        end
+    end
+
+    net.Start("rRadio.CustomStationsUpdate")
+    net.WriteUInt(#payload, 12)
+    for i = 1, #payload do
+        local st = payload[i]
+        net.WriteString(st.name)
+        net.WriteString(st.url)
+    end
+
+    if target then
+        net.Send(target)
+    else
+        net.Broadcast()
+    end
+end
 hook.Add("PlayerInitialSpawn", "rRadio.SendCustomStations", function(ply)
     timer.Simple(1, function()
         if IsValid(ply) then
-            net.Start("rRadio.CustomStationsUpdate")
-                net.WriteTable(Server.CustomStations:GetAll())
-            net.Send(ply)
+            sendCustomStations(ply)
         end
     end)
 end)
@@ -290,9 +315,7 @@ local function AddCustomStation(ply, name, url)
     else
         print(msg)
     end
-    net.Start("rRadio.CustomStationsUpdate")
-        net.WriteTable(Server.CustomStations:GetAll())
-    net.Broadcast()
+    sendCustomStations()
 end
 
 local function RemoveCustomStation(ply, key)
@@ -317,9 +340,7 @@ local function RemoveCustomStation(ply, key)
         else
             print(msg)
         end
-        net.Start("rRadio.CustomStationsUpdate")
-            net.WriteTable(Server.CustomStations:GetAll())
-        net.Broadcast()
+        sendCustomStations()
     else
         if IsValid(ply) then
             ply:ChatPrint("[rRadio] No matching station found for " .. key)
