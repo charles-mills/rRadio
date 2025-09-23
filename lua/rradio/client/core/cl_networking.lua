@@ -39,8 +39,8 @@ Radio.cl.networkHandlers["rRadio.UpdateRadioStatus"] = function()
         return
     end
 
-    local status = (statusCode == Status.STOPPED or 
-                   statusCode == Status.TUNING or 
+    local status = (statusCode == Status.STOPPED or
+                   statusCode == Status.TUNING or
                    statusCode == Status.PLAYING) and statusCode or Status.STOPPED
 
     local displayStatus = status
@@ -124,10 +124,8 @@ Radio.cl.networkHandlers["rRadio.PlayStation"] = function()
 
     Utils.SetRadioStatus(actual, Status.TUNING, stationName)
 
-    if Config.SecureStationLoad then
-        if not (Radio.cl.isUrlAllowed(url) or (IsValid(actual) and actual:GetNWBool("IsPermanent"))) then
-            return
-        end
+    if Config.SecureStationLoad and not (Radio.cl.isUrlAllowed(url) or (IsValid(actual) and actual:GetNWBool("IsPermanent"))) then
+        return
     end
 
     local currentCount = Interface.updateStationCount()
@@ -159,7 +157,7 @@ end
 Radio.cl.networkHandlers["rRadio.StopStation"] = function()
     local entity = net.ReadEntity()
     if not IsValid(entity) then return end
-    
+
     entity = Interface.GetVehicleEntity(entity)
 
     if Radio.cl.radioSources[entity] and IsValid(Radio.cl.radioSources[entity]) then
@@ -182,7 +180,7 @@ end
 Radio.cl.networkHandlers["rRadio.OpenMenu"] = function()
     local ent = net.ReadEntity()
     if not IsValid(ent) then return end
-    
+
     local ply = LocalPlayer()
     if Utils.IsBoombox(ent) then
         ply.currentRadioEntity = ent
@@ -198,18 +196,18 @@ Radio.cl.networkHandlers["rRadio.ListCustomStations"] = function()
         MsgC(Color(255,255,255), "[rRadio] No custom stations found.\n")
         return
     end
-    
+
     MsgC(Color(255,0,0), "[rRadio] Custom stations:\n")
     for i = 1, count do
         local name = net.ReadString()
         local url = net.ReadString()
-        MsgC(Color(255,0,0), "["..i.."] ", Color(255,255,255), name..": "..url.."\n")
+        MsgC(Color(255,0,0), "[" .. i .. "] ", Color(255,255,255), name .. ": " .. url .. "\n")
     end
-    
-    MsgC(Color(255,0,0), "\n!! ", Color(255,255,255), 
-        "Remove a Station: !"..Config.CommandRemoveStation.." <Name> or <URL>\n")
-    MsgC(Color(255,0,0), "!! ", Color(255,255,255), 
-        "Add a Station: !"..Config.CommandAddStation.." <Name> <URL>\n")
+
+    MsgC(Color(255,0,0), "\n!! ", Color(255,255,255),
+        "Remove a Station: !" .. Config.CommandRemoveStation .. " <Name> or <URL>\n")
+    MsgC(Color(255,0,0), "!! ", Color(255,255,255),
+        "Add a Station: !" .. Config.CommandAddStation .. " <Name> <URL>\n")
 end
 
 Radio.cl.networkHandlers["rRadio.PlayVehicleAnimation"] = function()
@@ -235,7 +233,7 @@ end
 Radio.cl.networkHandlers["rRadio.SendPersistentConfirmation"] = function()
     local message = net.ReadString()
     chat.AddText(Color(0, 255, 0), "[rRadio] ", Color(255, 255, 255), message)
-    
+
     if Radio.cl.uiState.permanentCheckboxRef then
         if string.find(message, "marked as permanent") then
             Radio.cl.uiState.permanentCheckboxRef:SetChecked(true)
