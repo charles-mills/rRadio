@@ -1,12 +1,16 @@
+local Radio = rRadio
+local Interface = Radio.interface
+local Config = Radio.config
+
 do
     local PANEL   = {}
-    local Scale   = rRadio.interface.scale
+    local Scale   = Interface.scale
 
     function PANEL:Init()
         self.label       = ""
         self.leftChild   = nil
         self.playing     = false
-        self.hoverColour = rRadio.config.UI.ButtonHoverColor
+        self.hoverColour = Config.UI.ButtonHoverColor
         self.lerp        = 0
 
         self:SetTall(Scale(40))
@@ -27,10 +31,10 @@ do
     end
 
     function PANEL:Paint(w,h)
-        local base = self.playing and rRadio.config.UI.PlayingButtonColor
-                    or rRadio.config.UI.ButtonColor
+        local base = self.playing and Config.UI.PlayingButtonColor
+                    or Config.UI.ButtonColor
         local bg = self.playing and base
-                  or rRadio.interface.LerpColor(self.lerp, base, self.hoverColour)
+                  or Interface.LerpColor(self.lerp, base, self.hoverColour)
         draw.RoundedBox(8,0,0,w,h,bg)
 
         surface.SetFont("rRadio.Roboto5")
@@ -39,12 +43,12 @@ do
         local rightPad = Scale(8)
         local avail    = w - leftPad - rightPad
 
-        local txt = rRadio.interface.TruncateText(self.label, "rRadio.Roboto5", avail)
+        local txt = Interface.TruncateText(self.label, "rRadio.Roboto5", avail)
         local tw  = surface.GetTextSize(txt)
         local x   = math.Clamp(w*0.5, leftPad + tw*0.5, w - rightPad - tw*0.5)
 
         draw.SimpleText(txt, "rRadio.Roboto5", x, h/2,
-                        rRadio.config.UI.TextColor,
+                        Config.UI.TextColor,
                         TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
     end
 

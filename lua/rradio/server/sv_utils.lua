@@ -1,11 +1,14 @@
-rRadio.sv = rRadio.sv or {}
-local utils = {}
-rRadio.sv.utils = utils
+local Radio = rRadio
+local Status = Radio.status
+Radio.sv = Radio.sv or {}
+local Server = Radio.sv
 
-local sv = rRadio.sv
-local config = rRadio.config
-local DevPrint = rRadio.DevPrint
-local rUtils = rRadio.utils
+local utils = {}
+Server.utils = utils
+
+local Config = Radio.config
+local DevPrint = Radio.DevPrint
+local SharedUtils = Radio.utils
 
 -- Validation functions
 function utils.IsDarkRP()
@@ -15,13 +18,13 @@ end
 function utils.CanControlRadio(entity, player)
     if not IsValid(entity) or not IsValid(player) then return false end
 
-    if rUtils.IsBoombox(entity) then
-        return rUtils.CanInteractWithBoombox(player, entity)
+    if SharedUtils.IsBoombox(entity) then
+        return SharedUtils.CanInteractWithBoombox(player, entity)
     end
 
-    local vehicle = rUtils.GetVehicle(entity)
+    local vehicle = SharedUtils.GetVehicle(entity)
     if IsValid(vehicle) then
-        if not config.DriverPlayOnly or vehicle:GetDriver() == player then
+        if not Config.DriverPlayOnly or vehicle:GetDriver() == player then
             return true
         end
     end
@@ -40,7 +43,7 @@ end
 function utils.UpdateVehicleStatus(vehicle)
     if not IsValid(vehicle) then return end
     
-    local veh = rUtils.GetVehicle(vehicle)
+    local veh = SharedUtils.GetVehicle(vehicle)
     if not veh then return end
     local isSitAnywhere = vehicle.playerdynseat or false
     vehicle:SetNWBool("IsSitAnywhereSeat", isSitAnywhere)
@@ -58,7 +61,7 @@ function utils.AssignOwner(player, entity)
 end
 
 function utils.CountPlayerRadios(player)
-    local playerRadioTable = sv.PlayerRadios[player]
+    local playerRadioTable = Server.PlayerRadios[player]
     local count = 0
     if playerRadioTable then 
         for _ in pairs(playerRadioTable) do 
@@ -69,12 +72,12 @@ function utils.CountPlayerRadios(player)
 end
 
 function utils.CountActiveRadios()
-    return sv.ActiveRadiosCount or 0
+    return Server.ActiveRadiosCount or 0
 end
 
 function utils.ClampVolume(volume)
     if type(volume) ~= "number" then return 0.5 end
-    local maxVolume = config.MaxVolume
+    local maxVolume = Config.MaxVolume
     return math.Clamp(volume, 0, maxVolume)
 end
 
@@ -83,11 +86,11 @@ function utils.GetDefaultVolume(entity)
     
     local class = entity:GetClass()
     if class == "rammel_boombox_gold" then
-        return config.GoldenBoombox.Volume
+        return Config.GoldenBoombox.Volume
     elseif class == "rammel_boombox" then
-        return config.Boombox.Volume
+        return Config.Boombox.Volume
     else
-        return config.VehicleRadio.Volume
+        return Config.VehicleRadio.Volume
     end
 end
 
@@ -121,27 +124,27 @@ local function SendRadioToPlayer(player, entityIndex, radioData)
 end
 
 local function HandleRetryLogic(player, retryFunction)
-    if not sv.PlayerRetryAttempts[player] then
-        sv.PlayerRetryAttempts[player] = 1
+    if not Server.PlayerRetryAttempts[player] then
+        Server.PlayerRetryAttempts[player] = 1
         DevPrint("[sv-permanent] SendActiveRadiosToPlayer: First attempt for " .. player:Nick())
     end
 
-    local attempt = sv.PlayerRetryAttempts[player]
+    local attempt = Server.PlayerRetryAttempts[player]
     
     if attempt >= 3 then
         DevPrint("[sv-permanent] SendActiveRadiosToPlayer: Max attempts reached for " .. player:Nick())
-        sv.PlayerRetryAttempts[player] = nil
+        Server.PlayerRetryAttempts[player] = nil
         return false
     end
     
-    sv.PlayerRetryAttempts[player] = attempt + 1
+    Server.PlayerRetryAttempts[player] = attempt + 1
     timer.Simple(5, function()
         if IsValid(player) then
             DevPrint("[sv-permanent] SendActiveRadiosToPlayer: Retrying for " .. player:Nick())
             retryFunction(player)
         else
             DevPrint("[sv-permanent] SendActiveRadiosToPlayer: Player no longer valid during retry")
-            sv.PlayerRetryAttempts[player] = nil
+            Server.PlayerRetryAttempts[player] = nil
         end
     end)
     return true
@@ -153,9 +156,9 @@ function utils.SendActiveRadiosToPlayer(player)
         return
     end
 
-    local activeRadios = sv.ActiveRadios
+    local activeRadios = Server.ActiveRadios
     if next(activeRadios) == nil then
-        DevPrint("[sv-permanent] SendActiveRadiosToPlayer: No active radios found, attempt " .. (sv.PlayerRetryAttempts[player] or 1))
+        DevPrint("[sv-permanent] SendActiveRadiosToPlayer: No active radios found, attempt " .. (Server.PlayerRetryAttempts[player] or 1))
         HandleRetryLogic(player, utils.SendActiveRadiosToPlayer)
         return
     end
@@ -167,20 +170,20 @@ function utils.SendActiveRadiosToPlayer(player)
     end
 
     DevPrint("[sv-permanent] SendActiveRadiosToPlayer: Completed for " .. player:Nick())
-    sv.PlayerRetryAttempts[player] = nil
+    Server.PlayerRetryAttempts[player] = nil
 end
 
 -- Volume operations
 function utils.ProcessVolumeUpdate(entity, volume, player)
     if not IsValid(entity) or not IsValid(player) then return end
     
-    entity = rUtils.GetVehicle(entity) or entity
+    entity = SharedUtils.GetVehicle(entity) or entity
     local entityIndex = entity:EntIndex()
     
     if not utils.CanControlRadio(entity, player) then return end
     
     volume = utils.ClampVolume(volume)
-    sv.EntityVolumes[entityIndex] = volume
+    Server.EntityVolumes[entityIndex] = volume
     entity:SetNWFloat("Volume", volume)
     
     net.Start("rRadio.SetRadioVolume")
@@ -193,7 +196,7 @@ function utils.InitializeEntityVolume(entity)
     if not IsValid(entity) then return end
     
     local entityIndex = entity:EntIndex()
-    local entityVolumes = sv.EntityVolumes
+    local entityVolumes = Server.EntityVolumes
     
     if not entityVolumes[entityIndex] then
         entityVolumes[entityIndex] = utils.GetDefaultVolume(entity)
@@ -208,7 +211,7 @@ function utils.AddActiveRadio(entity, stationName, url, volume, owner)
     local entityIndex = entity:EntIndex()
     DevPrint("[sv-permanent] Adding active radio for entity " .. entityIndex .. " owner=" .. (IsValid(owner) and owner:Nick() or "nil"))
     
-    local entityVolumes = sv.EntityVolumes
+    local entityVolumes = Server.EntityVolumes
     entityVolumes[entityIndex] = entityVolumes[entityIndex] or volume or utils.GetDefaultVolume(entity)
     
     entity:SetNWString("StationName", stationName)
@@ -217,9 +220,9 @@ function utils.AddActiveRadio(entity, stationName, url, volume, owner)
     
     DevPrint("[sv-permanent] Setting volume for entity " .. entityIndex .. " to " .. tostring(entityVolumes[entityIndex]))
 
-    local player = owner or rUtils.GetOwner(entity)
+    local player = owner or SharedUtils.GetOwner(entity)
     
-    sv.ActiveRadios[entityIndex] = {
+    Server.ActiveRadios[entityIndex] = {
         entity = entity,
         stationName = stationName,
         url = url,
@@ -228,17 +231,17 @@ function utils.AddActiveRadio(entity, stationName, url, volume, owner)
         timestamp = SysTime()
     }
 
-    sv.ActiveRadiosCount = (sv.ActiveRadiosCount or 0) + 1
+    Server.ActiveRadiosCount = (Server.ActiveRadiosCount or 0) + 1
 
     if player then
-        sv.PlayerRadios[player] = sv.PlayerRadios[player] or {}
-        sv.PlayerRadios[player][entityIndex] = true
+        Server.PlayerRadios[player] = Server.PlayerRadios[player] or {}
+        Server.PlayerRadios[player][entityIndex] = true
     end
     
-    if rUtils.IsBoombox(entity) then
+    if SharedUtils.IsBoombox(entity) then
         DevPrint("[sv-permanent] Entity " .. entityIndex .. " is a boombox, updating status")
-        sv.BoomboxStatuses[entityIndex] = {
-            stationStatus = rRadio.status.PLAYING,
+        Server.BoomboxStatuses[entityIndex] = {
+            stationStatus = Status.PLAYING,
             stationName = stationName,
             url = url
         }
@@ -253,10 +256,10 @@ function utils.RemoveActiveRadio(entity)
     local entityIndex = entity:EntIndex()
     DevPrint("[sv-permanent] Removing ActiveRadio entry idx=" .. entityIndex)
     
-    local activeRadioData = sv.ActiveRadios[entityIndex]
+    local activeRadioData = Server.ActiveRadios[entityIndex]
     if activeRadioData then
         local player = activeRadioData.owner
-        local playerRadios = sv.PlayerRadios
+        local playerRadios = Server.PlayerRadios
 
         if player and playerRadios[player] then
             playerRadios[player][entityIndex] = nil
@@ -266,14 +269,14 @@ function utils.RemoveActiveRadio(entity)
             end
         end
 
-        sv.ActiveRadiosCount = math.max((sv.ActiveRadiosCount or 1) - 1, 0)
-        sv.ActiveRadios[entityIndex] = nil
+        Server.ActiveRadiosCount = math.max((Server.ActiveRadiosCount or 1) - 1, 0)
+        Server.ActiveRadios[entityIndex] = nil
     end
 end
 
 -- Cleanup functions
 function utils.CleanupEntityData(entityIndex)
-    local radioTimers = sv.RadioTimers
+    local radioTimers = Server.RadioTimers
     for timerNumber, timerPrefix in ipairs(radioTimers) do
         local timerName = timerPrefix .. entityIndex
         if timer.Exists(timerName) then
@@ -281,19 +284,19 @@ function utils.CleanupEntityData(entityIndex)
         end
     end
 
-    local radioDataTables = sv.RadioDataTables
+    local radioDataTables = Server.RadioDataTables
     for tableName in pairs(radioDataTables) do
         if _G[tableName] and _G[tableName][entityIndex] then
             _G[tableName][entityIndex] = nil
         end
     end
-    sv.EntityVolumes[entityIndex] = nil
+    Server.EntityVolumes[entityIndex] = nil
 end
 
 function utils.CleanupInactiveRadios()
     local currentTime = SysTime()
-    local activeRadios = sv.ActiveRadios
-    local inactiveTimeout = config.InactiveTimeout
+    local activeRadios = Server.ActiveRadios
+    local inactiveTimeout = Config.InactiveTimeout
     
     for entityIndex, radioData in pairs(activeRadios) do
         local entity = radioData.entity
@@ -305,7 +308,7 @@ end
 
 function utils.ClearOldestActiveRadio()
     local oldestTime, oldestIndex = math.huge, nil
-    local activeRadios = sv.ActiveRadios
+    local activeRadios = Server.ActiveRadios
     
     for entityIndex, radioData in pairs(activeRadios) do
         local entity = radioData.entity or Entity(entityIndex)

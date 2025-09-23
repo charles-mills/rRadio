@@ -1,18 +1,21 @@
 if SERVER then return end
 
-rRadio.cl = rRadio.cl or {}
+local Radio = rRadio
+local Interface = Radio.interface
 
-rRadio.cl.radioSources = rRadio.cl.radioSources or {}
-rRadio.cl.boomboxStatuses = rRadio.cl.boomboxStatuses or {}
-rRadio.cl.connectedStations = rRadio.cl.connectedStations or {}
-rRadio.cl.requestedStations = rRadio.cl.requestedStations or {}
-rRadio.cl.queuedStations = rRadio.cl.queuedStations or {}
-rRadio.cl.playbackNonce = rRadio.cl.playbackNonce or {}
-rRadio.cl.entityVolumes = rRadio.cl.entityVolumes or {}
-rRadio.cl.currentlyPlayingStations = rRadio.cl.currentlyPlayingStations or {}
-rRadio.cl.stationLastPos = rRadio.cl.stationLastPos or {}
+Radio.cl = Radio.cl or {}
 
-rRadio.cl.uiState = {
+Radio.cl.radioSources = Radio.cl.radioSources or {}
+Radio.cl.boomboxStatuses = Radio.cl.boomboxStatuses or {}
+Radio.cl.connectedStations = Radio.cl.connectedStations or {}
+Radio.cl.requestedStations = Radio.cl.requestedStations or {}
+Radio.cl.queuedStations = Radio.cl.queuedStations or {}
+Radio.cl.playbackNonce = Radio.cl.playbackNonce or {}
+Radio.cl.entityVolumes = Radio.cl.entityVolumes or {}
+Radio.cl.currentlyPlayingStations = Radio.cl.currentlyPlayingStations or {}
+Radio.cl.stationLastPos = Radio.cl.stationLastPos or {}
+
+Radio.cl.uiState = {
     currentFrame = nil,
     settingsFrame = nil,
     settingsMenuOpen = false,
@@ -26,13 +29,13 @@ rRadio.cl.uiState = {
     permanentCheckboxRef = nil
 }
 
-rRadio.cl.timing = {
+Radio.cl.timing = {
     lastKeyPress = 0,
     keyPressDelay = 0.2,
     lastStationSelectTime = 0
 }
 
-rRadio.cl.performance = {
+Radio.cl.performance = {
     lastPlayerPos = vector_origin,
     lastStationCount = 0,
     lastEnabled = nil,
@@ -42,19 +45,19 @@ rRadio.cl.performance = {
     activeStationCount = 0
 }
 
-rRadio.cl.pendingVolume = nil
-rRadio.cl.pendingEntity = nil
+Radio.cl.pendingVolume = nil
+Radio.cl.pendingEntity = nil
 
-rRadio.cl.MAX_SEARCH_RESULTS = 150
-rRadio.cl.Scale = rRadio.interface.scale
+Radio.cl.MAX_SEARCH_RESULTS = 150
+Radio.cl.Scale = Interface.scale
 
-rRadio.cl.cvars = {
+Radio.cl.cvars = {
     enabled = GetConVar("rammel_rradio_enabled"),
     maxVolume = GetConVar("rammel_rradio_max_volume"),
     menuKey = GetConVar("rammel_rradio_menu_key")
 }
 
-rRadio.cl.icons = {
+Radio.cl.icons = {
     volume = {
         MUTE = Material("hud/vol_mute.png", "smooth"),
         LOW = Material("hud/vol_down.png", "smooth"),

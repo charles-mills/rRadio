@@ -1,6 +1,10 @@
+local Radio = rRadio
+local Interface = Radio.interface
+local Config = Radio.config
+
 do
     local PANEL = {}
-    local Scale = rRadio.interface.scale
+    local Scale = Interface.scale
 
     function PANEL:Init()
         self:Dock(TOP)
@@ -10,7 +14,7 @@ do
     end
 
     function PANEL:Paint(w, h)
-        draw.RoundedBox(0, 0, 0, w, h, rRadio.config.UI.ButtonColor)
+        draw.RoundedBox(0, 0, 0, w, h, Config.UI.ButtonColor)
     end
 
     vgui.Register("rRadioSeparator", PANEL, "DPanel")

@@ -1,3 +1,8 @@
+local Radio = rRadio
+local Utils = Radio.utils
+local Status = Radio.status
+local Config = Radio.config
+
 AddCSLuaFile("cl_init.lua")
 AddCSLuaFile("shared.lua")
 
@@ -32,7 +37,7 @@ function ENT:Initialize()
 
     self:SetNWString("StationName", "")
     self:SetNWString("StationURL", "")
-    self:SetNWInt("Status", rRadio.status.STOPPED)
+    self:SetNWInt("Status", Status.STOPPED)
     self:SetNWBool("IsPlaying", false)
     self:SetNWBool("IsPermanent", false)
 
@@ -51,7 +56,7 @@ function ENT:Use(activator)
     if now < (self[NEXT_USE_KEY] or 0) then return end
     self[NEXT_USE_KEY] = now + self.InteractCooldown
 
-    if rRadio.utils.CanInteractWithBoombox(activator, self) then
+    if Utils.CanInteractWithBoombox(activator, self) then
         net.Start("rRadio.OpenMenu")
         net.WriteEntity(self)
         net.Send(activator)
@@ -102,7 +107,7 @@ function ENT:PhysgunPickup(ply)
     return canManipulate(ply, self)
 end
 
-if rRadio.config.DisablePushDamage then
+if Config.DisablePushDamage then
     function ENT:PhysicsCollide()
         return
     end

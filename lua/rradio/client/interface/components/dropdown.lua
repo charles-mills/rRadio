@@ -1,6 +1,10 @@
+local Radio = rRadio
+local Interface = Radio.interface
+local Config = Radio.config
+
 do
     local PANEL = {}
-    local Scale = rRadio.interface.scale
+    local Scale = Interface.scale
 
     function PANEL:Init()
         self:SetTall(Scale(50))
@@ -11,14 +15,14 @@ do
         self.label:Dock(LEFT)
         self.label:DockMargin(Scale(10), 0, 0, 0)
         self.label:SetFont("rRadio.Roboto5")
-        self.label:SetTextColor(rRadio.config.UI.TextColor)
+        self.label:SetTextColor(Config.UI.TextColor)
         self.label:SetContentAlignment(4)
 
         self.dropdown = vgui.Create("DComboBox", self)
         self.dropdown:Dock(RIGHT)
         self.dropdown:SetWide(Scale(150))
         self.dropdown:DockMargin(0, Scale(5), Scale(10), Scale(5))
-        self.dropdown:SetTextColor(rRadio.config.UI.TextColor)
+        self.dropdown:SetTextColor(Config.UI.TextColor)
         self.dropdown:SetFont("rRadio.Roboto5")
         self.dropdown:SetSortItems(false)
 
@@ -27,9 +31,9 @@ do
         end
 
         function self.dropdown:Paint(w, h)
-            draw.RoundedBox(6, 0, 0, w, h, rRadio.config.UI.SearchBoxColor)
+            draw.RoundedBox(6, 0, 0, w, h, Config.UI.SearchBoxColor)
 
-            surface.SetDrawColor(rRadio.config.UI.TextColor)
+            surface.SetDrawColor(Config.UI.TextColor)
             local arrowSize = Scale(8)
             local x = w - arrowSize - Scale(5)
             local y = h / 2 - arrowSize / 2
@@ -48,9 +52,9 @@ do
                 })
             end
             self:DrawTextEntryText(
-                rRadio.config.UI.TextColor,
-                rRadio.config.UI.ButtonHoverColor,
-                rRadio.config.UI.TextColor
+                Config.UI.TextColor,
+                Config.UI.ButtonHoverColor,
+                Config.UI.TextColor
             )
         end
 
@@ -65,7 +69,7 @@ do
 
             menu:SetMaxHeight(Scale(200))
             menu.Paint = function(pnl, w, h)
-                draw.RoundedBox(6, 0, 0, w, h, rRadio.config.UI.SearchBoxColor)
+                draw.RoundedBox(6, 0, 0, w, h, Config.UI.SearchBoxColor)
             end
 
             if self:GetParent().onOpen then
@@ -79,11 +83,11 @@ do
                         self:GetParent().onSelect(self, _, choice.name, choice.data)
                     end
                 end)
-                option:SetTextColor(rRadio.config.UI.TextColor)
+                option:SetTextColor(Config.UI.TextColor)
                 option:SetFont("rRadio.Roboto5")
                 option.Paint = function(pnl, pw, ph)
                     if pnl:IsHovered() then
-                        draw.RoundedBox(4, 2, 0, pw - 4, ph, rRadio.config.UI.ButtonHoverColor)
+                        draw.RoundedBox(4, 2, 0, pw - 4, ph, Config.UI.ButtonHoverColor)
                     end
                 end
                 option.OnCursorEntered = function()
@@ -104,7 +108,7 @@ do
             end
 
             if IsValid(menu.VBar) then
-                rRadio.interface.StyleVBar(menu.VBar)
+                Interface.StyleVBar(menu.VBar)
             end
         end
     end
@@ -127,7 +131,7 @@ do
     end
 
     function PANEL:Paint(w, h)
-        draw.RoundedBox(8, 0, 0, w, h, rRadio.config.UI.ButtonColor)
+        draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonColor)
     end
 
     vgui.Register("rRadioDropdown", PANEL, "DPanel")

@@ -1,51 +1,60 @@
 if SERVER then return end
 
-rRadio.cl.networkHandlers = {}
+local Radio = rRadio
+local Utils = Radio.utils
+local Interface = Radio.interface
+local Status = Radio.status
+local Config = Radio.config
+local DevPrint = Radio.DevPrint
 
-rRadio.cl.networkHandlers["rRadio.SetRadioVolume"] = function()
+Radio.cl = Radio.cl or {}
+
+Radio.cl.networkHandlers = {}
+
+Radio.cl.networkHandlers["rRadio.SetRadioVolume"] = function()
     local ent = net.ReadEntity()
     local vol = net.ReadFloat()
     if not IsValid(ent) then return end
 
-    local actual = rRadio.interface.GetVehicleEntity(ent) or ent
-    rRadio.cl.entityVolumes[ent] = vol
-    rRadio.cl.entityVolumes[actual] = vol
+    local actual = Interface.GetVehicleEntity(ent) or ent
+    Radio.cl.entityVolumes[ent] = vol
+    Radio.cl.entityVolumes[actual] = vol
 
-    local patch = rRadio.cl.radioSources[actual]
+    local patch = Radio.cl.radioSources[actual]
     if IsValid(patch) then
-        patch:SetVolume(rRadio.interface.ClampVolume(vol))
+        patch:SetVolume(Interface.ClampVolume(vol))
     end
 
-    rRadio.interface.refreshVolume(actual)
-    rRadio.cl.performance.volumeChanged = true
+    Interface.refreshVolume(actual)
+    Radio.cl.performance.volumeChanged = true
 end
 
-rRadio.cl.networkHandlers["rRadio.UpdateRadioStatus"] = function()
+Radio.cl.networkHandlers["rRadio.UpdateRadioStatus"] = function()
     local entity = net.ReadEntity()
     local stationName = net.ReadString()
     local isPlaying = net.ReadBool()
     local statusCode = net.ReadUInt(2)
 
-    if statusCode == rRadio.status.TUNING and rRadio.cl.connectedStations[entity] then
+    if statusCode == Status.TUNING and Radio.cl.connectedStations[entity] then
         return
     end
 
-    local status = (statusCode == rRadio.status.STOPPED or 
-                   statusCode == rRadio.status.TUNING or 
-                   statusCode == rRadio.status.PLAYING) and statusCode or rRadio.status.STOPPED
+    local status = (statusCode == Status.STOPPED or 
+                   statusCode == Status.TUNING or 
+                   statusCode == Status.PLAYING) and statusCode or Status.STOPPED
 
     local displayStatus = status
-    if status == rRadio.status.PLAYING and not rRadio.cl.connectedStations[entity] then
-        displayStatus = rRadio.status.TUNING
+    if status == Status.PLAYING and not Radio.cl.connectedStations[entity] then
+        displayStatus = Status.TUNING
     end
 
-    if status == rRadio.status.STOPPED then
-        rRadio.cl.connectedStations[entity] = nil
-        rRadio.cl.requestedStations[entity] = nil
+    if status == Status.STOPPED then
+        Radio.cl.connectedStations[entity] = nil
+        Radio.cl.requestedStations[entity] = nil
     end
 
     if IsValid(entity) then
-        rRadio.cl.boomboxStatuses[entity:EntIndex()] = {
+        Radio.cl.boomboxStatuses[entity:EntIndex()] = {
             stationStatus = displayStatus,
             stationName = stationName
         }
@@ -54,80 +63,80 @@ rRadio.cl.networkHandlers["rRadio.UpdateRadioStatus"] = function()
         entity:SetNWString("StationName", stationName)
         entity:SetNWBool("IsPlaying", isPlaying)
 
-        if displayStatus == rRadio.status.PLAYING then
-            local prev = rRadio.cl.currentlyPlayingStations[entity] or {}
+        if displayStatus == Status.PLAYING then
+            local prev = Radio.cl.currentlyPlayingStations[entity] or {}
             prev.name = stationName
-            rRadio.cl.currentlyPlayingStations[entity] = prev
+            Radio.cl.currentlyPlayingStations[entity] = prev
         else
-            rRadio.cl.currentlyPlayingStations[entity] = nil
+            Radio.cl.currentlyPlayingStations[entity] = nil
         end
     end
 end
 
-rRadio.cl.networkHandlers["rRadio.CustomStationsUpdate"] = function()
+Radio.cl.networkHandlers["rRadio.CustomStationsUpdate"] = function()
     local list = net.ReadTable()
-    local cat = rRadio.config.CustomStationCategory or "Custom"
+    local cat = Config.CustomStationCategory or "Custom"
 
-    for url in pairs(rRadio.cl.customUrlSet) do
-        rRadio.cl.allowedUrlSet[url] = nil
+    for url in pairs(Radio.cl.customUrlSet) do
+        Radio.cl.allowedUrlSet[url] = nil
     end
-    rRadio.cl.customUrlSet = {}
+    Radio.cl.customUrlSet = {}
 
-    rRadio.cl.stationData[cat] = {}
+    Radio.cl.stationData[cat] = {}
     for _, st in ipairs(list) do
         if type(st) == "table" and st.name and st.url then
-            table.insert(rRadio.cl.stationData[cat], {
+            table.insert(Radio.cl.stationData[cat], {
                 name = st.name,
                 url = st.url,
                 country = cat
             })
-            rRadio.cl.allowedUrlSet[st.url] = true
-            rRadio.cl.customUrlSet[st.url] = true
+            Radio.cl.allowedUrlSet[st.url] = true
+            Radio.cl.customUrlSet[st.url] = true
         end
     end
 
-    rRadio.cl.rebuildNameIndex()
-    if rRadio.cl.uiState.radioMenuOpen then rRadio.cl.openRadioMenu() end
+    Radio.cl.rebuildNameIndex()
+    if Radio.cl.uiState.radioMenuOpen then Radio.cl.openRadioMenu() end
 end
 
-rRadio.cl.networkHandlers["rRadio.PlayStation"] = function()
-    if not rRadio.cl.cvars.enabled:GetBool() then return end
+Radio.cl.networkHandlers["rRadio.PlayStation"] = function()
+    if not Radio.cl.cvars.enabled:GetBool() then return end
 
     local entity = net.ReadEntity()
-    local actual = rRadio.interface.GetVehicleEntity(entity)
+    local actual = Interface.GetVehicleEntity(entity)
 
-    if rRadio.cl.radioSources[actual] and IsValid(rRadio.cl.radioSources[actual]) then
-        rRadio.cl.radioSources[actual]:Stop()
-        rRadio.cl.radioSources[actual] = nil
-        rRadio.cl.entityVolumes[actual] = nil
+    if Radio.cl.radioSources[actual] and IsValid(Radio.cl.radioSources[actual]) then
+        Radio.cl.radioSources[actual]:Stop()
+        Radio.cl.radioSources[actual] = nil
+        Radio.cl.entityVolumes[actual] = nil
     end
 
-    if IsValid(actual) and rRadio.utils.IsBoombox(actual) then
-        rRadio.utils.ClearRadioStatus(actual)
+    if IsValid(actual) and Utils.IsBoombox(actual) then
+        Utils.ClearRadioStatus(actual)
     end
 
     local stationName = net.ReadString()
     local url = net.ReadString()
     local volume = net.ReadFloat()
 
-    local nonce = (rRadio.cl.playbackNonce[actual] or 0) + 1
-    rRadio.cl.playbackNonce[actual] = nonce
+    local nonce = (Radio.cl.playbackNonce[actual] or 0) + 1
+    Radio.cl.playbackNonce[actual] = nonce
 
-    rRadio.utils.SetRadioStatus(actual, rRadio.status.TUNING, stationName)
+    Utils.SetRadioStatus(actual, Status.TUNING, stationName)
 
-    if rRadio.config.SecureStationLoad then
-        if not (rRadio.cl.isUrlAllowed(url) or (IsValid(actual) and actual:GetNWBool("IsPermanent"))) then
+    if Config.SecureStationLoad then
+        if not (Radio.cl.isUrlAllowed(url) or (IsValid(actual) and actual:GetNWBool("IsPermanent"))) then
             return
         end
     end
 
-    local currentCount = rRadio.interface.updateStationCount()
-    if not rRadio.cl.radioSources[actual] and currentCount >= rRadio.config.MaxClientStations then
+    local currentCount = Interface.updateStationCount()
+    if not Radio.cl.radioSources[actual] and currentCount >= Config.MaxClientStations then
         return
     end
 
-    if rRadio.config.ConditionalStationLoad then
-        rRadio.cl.queuedStations[actual] = {
+    if Config.ConditionalStationLoad then
+        Radio.cl.queuedStations[actual] = {
             name = stationName,
             url = url,
             volume = volume,
@@ -136,54 +145,54 @@ rRadio.cl.networkHandlers["rRadio.PlayStation"] = function()
 
         local ply = LocalPlayer()
         if IsValid(ply) then
-            local cfg = rRadio.interface.getEntityConfig(actual)
-            if cfg and rRadio.cl.isEntityWithinLoadRange(ply:GetPos(), actual:GetPos(), cfg) then
-                rRadio.cl.startStationPlayback(actual, stationName, url, volume, nonce)
-                rRadio.cl.queuedStations[actual] = nil
+            local cfg = Interface.getEntityConfig(actual)
+            if cfg and Radio.cl.isEntityWithinLoadRange(ply:GetPos(), actual:GetPos(), cfg) then
+                Radio.cl.startStationPlayback(actual, stationName, url, volume, nonce)
+                Radio.cl.queuedStations[actual] = nil
             end
         end
     else
-        rRadio.cl.startStationPlayback(actual, stationName, url, volume, nonce)
+        Radio.cl.startStationPlayback(actual, stationName, url, volume, nonce)
     end
 end
 
-rRadio.cl.networkHandlers["rRadio.StopStation"] = function()
+Radio.cl.networkHandlers["rRadio.StopStation"] = function()
     local entity = net.ReadEntity()
     if not IsValid(entity) then return end
     
-    entity = rRadio.interface.GetVehicleEntity(entity)
+    entity = Interface.GetVehicleEntity(entity)
 
-    if rRadio.cl.radioSources[entity] and IsValid(rRadio.cl.radioSources[entity]) then
-        rRadio.cl.radioSources[entity]:Stop()
-        rRadio.cl.radioSources[entity] = nil
-        rRadio.cl.entityVolumes[entity] = nil
+    if Radio.cl.radioSources[entity] and IsValid(Radio.cl.radioSources[entity]) then
+        Radio.cl.radioSources[entity]:Stop()
+        Radio.cl.radioSources[entity] = nil
+        Radio.cl.entityVolumes[entity] = nil
     end
 
-    rRadio.cl.queuedStations[entity] = nil
-    rRadio.cl.connectedStations[entity] = nil
-    rRadio.cl.currentlyPlayingStations[entity] = nil
-    rRadio.cl.stationLastPos[entity] = nil
-    rRadio.cl.playbackNonce[entity] = nil
+    Radio.cl.queuedStations[entity] = nil
+    Radio.cl.connectedStations[entity] = nil
+    Radio.cl.currentlyPlayingStations[entity] = nil
+    Radio.cl.stationLastPos[entity] = nil
+    Radio.cl.playbackNonce[entity] = nil
 
-    if IsValid(entity) and rRadio.utils.IsBoombox(entity) then
-        rRadio.utils.ClearRadioStatus(entity)
+    if IsValid(entity) and Utils.IsBoombox(entity) then
+        Utils.ClearRadioStatus(entity)
     end
 end
 
-rRadio.cl.networkHandlers["rRadio.OpenMenu"] = function()
+Radio.cl.networkHandlers["rRadio.OpenMenu"] = function()
     local ent = net.ReadEntity()
     if not IsValid(ent) then return end
     
     local ply = LocalPlayer()
-    if rRadio.utils.IsBoombox(ent) then
+    if Utils.IsBoombox(ent) then
         ply.currentRadioEntity = ent
-        if not rRadio.cl.uiState.radioMenuOpen then
-            rRadio.cl.openRadioMenu()
+        if not Radio.cl.uiState.radioMenuOpen then
+            Radio.cl.openRadioMenu()
         end
     end
 end
 
-rRadio.cl.networkHandlers["rRadio.ListCustomStations"] = function()
+Radio.cl.networkHandlers["rRadio.ListCustomStations"] = function()
     local count = net.ReadUInt(16)
     if count == 0 then
         MsgC(Color(255,255,255), "[rRadio] No custom stations found.\n")
@@ -198,44 +207,44 @@ rRadio.cl.networkHandlers["rRadio.ListCustomStations"] = function()
     end
     
     MsgC(Color(255,0,0), "\n!! ", Color(255,255,255), 
-        "Remove a Station: !"..rRadio.config.CommandRemoveStation.." <Name> or <URL>\n")
+        "Remove a Station: !"..Config.CommandRemoveStation.." <Name> or <URL>\n")
     MsgC(Color(255,0,0), "!! ", Color(255,255,255), 
-        "Add a Station: !"..rRadio.config.CommandAddStation.." <Name> <URL>\n")
+        "Add a Station: !"..Config.CommandAddStation.." <Name> <URL>\n")
 end
 
-rRadio.cl.networkHandlers["rRadio.PlayVehicleAnimation"] = function()
-    rRadio.DevPrint("Received car radio message")
+Radio.cl.networkHandlers["rRadio.PlayVehicleAnimation"] = function()
+    DevPrint("Received car radio message")
     local veh = net.ReadEntity()
     local isDriver = net.ReadBool()
     timer.Simple(0, function()
-        rRadio.interface.DisplayVehicleEnterAnimation(veh, isDriver)
+        Interface.DisplayVehicleEnterAnimation(veh, isDriver)
     end)
 end
 
-rRadio.cl.networkHandlers["rRadio.SetConfigUpdate"] = function()
-    for entity, source in pairs(rRadio.cl.radioSources) do
+Radio.cl.networkHandlers["rRadio.SetConfigUpdate"] = function()
+    for entity, source in pairs(Radio.cl.radioSources) do
         if IsValid(entity) and IsValid(source) then
-            local fallback = rRadio.cl.entityVolumes[entity] or 0.5
-            local cfg = rRadio.interface.getEntityConfig(entity)
-            local volume = rRadio.interface.ClampVolume((cfg and cfg.Volume) or fallback)
+            local fallback = Radio.cl.entityVolumes[entity] or 0.5
+            local cfg = Interface.getEntityConfig(entity)
+            local volume = Interface.ClampVolume((cfg and cfg.Volume) or fallback)
             source:SetVolume(volume)
         end
     end
 end
 
-rRadio.cl.networkHandlers["rRadio.SendPersistentConfirmation"] = function()
+Radio.cl.networkHandlers["rRadio.SendPersistentConfirmation"] = function()
     local message = net.ReadString()
     chat.AddText(Color(0, 255, 0), "[rRadio] ", Color(255, 255, 255), message)
     
-    if rRadio.cl.uiState.permanentCheckboxRef then
+    if Radio.cl.uiState.permanentCheckboxRef then
         if string.find(message, "marked as permanent") then
-            rRadio.cl.uiState.permanentCheckboxRef:SetChecked(true)
+            Radio.cl.uiState.permanentCheckboxRef:SetChecked(true)
         elseif string.find(message, "permanence has been removed") then
-            rRadio.cl.uiState.permanentCheckboxRef:SetChecked(false)
+            Radio.cl.uiState.permanentCheckboxRef:SetChecked(false)
         end
     end
 end
 
-for name, handler in pairs(rRadio.cl.networkHandlers) do
+for name, handler in pairs(Radio.cl.networkHandlers) do
     net.Receive(name, handler)
 end

@@ -1,14 +1,16 @@
 rRadio = rRadio or {}
-rRadio.sv = rRadio.sv or {}
-rRadio.sv.db = rRadio.sv.db or {}
+local Radio = rRadio
+Radio.sv = Radio.sv or {}
+local Server = Radio.sv
+Server.db = Server.db or {}
 
-local db = rRadio.sv.db
+local Database = Server.db
 
-function db.Escape(value)
+function Database.Escape(value)
     return sql.SQLStr(value)
 end
 
-function db.Query(q)
+function Database.Query(q)
     local result = sql.Query(q)
     if result == false then
         local err = sql.LastError() or "unknown"
@@ -17,35 +19,35 @@ function db.Query(q)
     return result
 end
 
-function db.TableExists(name)
+function Database.TableExists(name)
     return sql.TableExists(name)
 end
 
-function db.EnsurePermanentTable()
-    if not db.TableExists("permanent_boomboxes") then
+function Database.EnsurePermanentTable()
+    if not Database.TableExists("permanent_boomboxes") then
         local query = [[
-CREATE TABLE permanent_boomboxes (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    map TEXT NOT NULL,
-    permanent_id TEXT,
-    model TEXT NOT NULL,
-    pos_x REAL NOT NULL,
-    pos_y REAL NOT NULL,
-    pos_z REAL NOT NULL,
-    angle_pitch REAL NOT NULL,
-    angle_yaw REAL NOT NULL,
-    angle_roll REAL NOT NULL,
-    station_name TEXT,
-    station_url TEXT,
-    volume REAL NOT NULL,
-    UNIQUE(map, permanent_id)
-);]]
-        db.Query(query)
+        CREATE TABLE permanent_boomboxes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            map TEXT NOT NULL,
+            permanent_id TEXT,
+            model TEXT NOT NULL,
+            pos_x REAL NOT NULL,
+            pos_y REAL NOT NULL,
+            pos_z REAL NOT NULL,
+            angle_pitch REAL NOT NULL,
+            angle_yaw REAL NOT NULL,
+            angle_roll REAL NOT NULL,
+            station_name TEXT,
+            station_url TEXT,
+            volume REAL NOT NULL,
+            UNIQUE(map, permanent_id)
+        );]]
+        Database.Query(query)
         return
     end
 
     local columnCheckQuery = "PRAGMA table_info(permanent_boomboxes);"
-    local columns = db.Query(columnCheckQuery) or {}
+    local columns = Database.Query(columnCheckQuery) or {}
     local mapColumnExists = false
     for _, column in ipairs(columns) do
         if column.name == "map" then
@@ -56,8 +58,8 @@ CREATE TABLE permanent_boomboxes (
 
     if not mapColumnExists then
         local alterTableQuery = "ALTER TABLE permanent_boomboxes ADD COLUMN map TEXT NOT NULL DEFAULT '';"
-        db.Query(alterTableQuery)
+        Database.Query(alterTableQuery)
     end
 end
 
-return db
+return Database

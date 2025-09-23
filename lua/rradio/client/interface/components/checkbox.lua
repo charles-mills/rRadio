@@ -1,6 +1,10 @@
+local Radio = rRadio
+local Interface = Radio.interface
+local Config = Radio.config
+
 do
     local PANEL = {}
-    local Scale = rRadio.interface.scale
+    local Scale = Interface.scale
 
     function PANEL:Init()
         self:SetTall(Scale(40))
@@ -11,16 +15,16 @@ do
         self.checkbox:SetPos(Scale(10), (self:GetTall() - Scale(20)) / 2)
         self.checkbox:SetSize(Scale(20), Scale(20))
         self.checkbox.Paint = function(_, w, h)
-            draw.RoundedBox(4, 0, 0, w, h, rRadio.config.UI.SearchBoxColor)
+            draw.RoundedBox(4, 0, 0, w, h, Config.UI.SearchBoxColor)
             if self.checkbox:GetChecked() then
-                surface.SetDrawColor(rRadio.config.UI.TextColor)
+                surface.SetDrawColor(Config.UI.TextColor)
                 surface.DrawRect(Scale(4), Scale(4), w - Scale(8), h - Scale(8))
             end
         end
 
         self.label = vgui.Create("DLabel", self)
         self.label:SetPos(Scale(40), (self:GetTall() - Scale(20)) / 2)
-        self.label:SetTextColor(rRadio.config.UI.TextColor)
+        self.label:SetTextColor(Config.UI.TextColor)
         self.label:SetFont("rRadio.Roboto5")
     end
 
@@ -57,7 +61,7 @@ do
     end
 
     function PANEL:Paint(w, h)
-        draw.RoundedBox(8, 0, 0, w, h, rRadio.config.UI.ButtonColor)
+        draw.RoundedBox(8, 0, 0, w, h, Config.UI.ButtonColor)
     end
 
     vgui.Register("rRadioCheckbox", PANEL, "DPanel")

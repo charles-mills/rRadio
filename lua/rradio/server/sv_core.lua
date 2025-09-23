@@ -1,23 +1,31 @@
 hook.Run("rRadio.PostServerLoad")
 
-rRadio.sv = rRadio.sv or {}
+local Radio = rRadio
+Radio.sv = Radio.sv or {}
+local Server = Radio.sv
+local Config = Radio.config
+local Utils = Radio.utils
+local Status = Radio.status
+local DevPrint = Radio.DevPrint
+local ServerUtils = Server.utils
+local Permanent = Server.permanent
 
-rRadio.sv.ActiveRadios        = rRadio.sv.ActiveRadios or {}
-rRadio.sv.PlayerRetryAttempts = rRadio.sv.PlayerRetryAttempts or {}
-rRadio.sv.PlayerCooldowns     = rRadio.sv.PlayerCooldowns or {}
-rRadio.sv.volumeUpdateQueue   = rRadio.sv.volumeUpdateQueue or {}
-rRadio.sv.stationUpdateQueue  = rRadio.sv.stationUpdateQueue or {}
-rRadio.sv.EntityVolumes       = rRadio.sv.EntityVolumes or {}
-rRadio.sv.BoomboxStatuses     = rRadio.sv.BoomboxStatuses or {}
-rRadio.sv.CustomStations      = rRadio.sv.CustomStations or { data = {}, urlMap = {}, nameMap = {} }
-rRadio.sv.ActiveRadiosCount   = rRadio.sv.ActiveRadiosCount or 0
-rRadio.sv.PlayerRadios        = rRadio.sv.PlayerRadios or {}
-rRadio.sv.RadioTimers = {
+Server.ActiveRadios        = Server.ActiveRadios or {}
+Server.PlayerRetryAttempts = Server.PlayerRetryAttempts or {}
+Server.PlayerCooldowns     = Server.PlayerCooldowns or {}
+Server.volumeUpdateQueue   = Server.volumeUpdateQueue or {}
+Server.stationUpdateQueue  = Server.stationUpdateQueue or {}
+Server.EntityVolumes       = Server.EntityVolumes or {}
+Server.BoomboxStatuses     = Server.BoomboxStatuses or {}
+Server.CustomStations      = Server.CustomStations or { data = {}, urlMap = {}, nameMap = {} }
+Server.ActiveRadiosCount   = Server.ActiveRadiosCount or 0
+Server.PlayerRadios        = Server.PlayerRadios or {}
+Server.RadioTimers = {
     "VolumeUpdate_",
     "StationUpdate_",
 }
 
-rRadio.sv.RadioDataTables = {
+Server.RadioDataTables = {
     volumeUpdateQueue   = true,
 }
 
@@ -27,21 +35,21 @@ local lastGlobalAction = 0
 timer.Create("rRadio.GlobalUpdateSweep", 0.25, 0, function()
     local now = SysTime()
 
-    for entIdx, data in pairs(rRadio.sv.stationUpdateQueue) do
+    for entIdx, data in pairs(Server.stationUpdateQueue) do
         if now - data.timestamp >= 2 then
             local ent = Entity(entIdx)
             if IsValid(ent) then
-                rRadio.utils.SetRadioStatus(ent, rRadio.status.PLAYING, data.station)
+                Utils.SetRadioStatus(ent, Status.PLAYING, data.station)
             end
-            rRadio.sv.stationUpdateQueue[entIdx] = nil
+            Server.stationUpdateQueue[entIdx] = nil
         end
     end
 
-    for entIdx, upd in pairs(rRadio.sv.volumeUpdateQueue) do
-        if upd.pendingVolume and now - (upd.lastUpdate or 0) >= rRadio.config.VolumeUpdateDebounce then
+    for entIdx, upd in pairs(Server.volumeUpdateQueue) do
+        if upd.pendingVolume and now - (upd.lastUpdate or 0) >= Config.VolumeUpdateDebounce then
             local ent = Entity(entIdx)
             if IsValid(ent) and IsValid(upd.pendingPlayer) then
-                rRadio.sv.utils.ProcessVolumeUpdate(ent, upd.pendingVolume, upd.pendingPlayer)
+                ServerUtils.ProcessVolumeUpdate(ent, upd.pendingVolume, upd.pendingPlayer)
             end
             upd.lastUpdate     = now
             upd.pendingVolume  = nil
@@ -50,7 +58,7 @@ timer.Create("rRadio.GlobalUpdateSweep", 0.25, 0, function()
     end
 end)
 
-function rRadio.sv.CustomStations:Load()
+function Server.CustomStations:Load()
     local contents = file.Read("rradio/customstations.json", "DATA")
     local tbl = contents and util.JSONToTable(contents) or {}
     self.data = {}
@@ -68,12 +76,12 @@ function rRadio.sv.CustomStations:Load()
     end
 end
 
-function rRadio.sv.CustomStations:Save()
+function Server.CustomStations:Save()
     file.CreateDir("rradio")
     file.Write("rradio/customstations.json", util.TableToJSON(self.data))
 end
 
-function rRadio.sv.CustomStations:Add(name, url)
+function Server.CustomStations:Add(name, url)
     if self.urlMap[url] or self.nameMap[name] then return end
     table.insert(self.data, { name = name, url = url })
     self.urlMap[url] = true
@@ -81,11 +89,11 @@ function rRadio.sv.CustomStations:Add(name, url)
     self:Save()
 end
 
-function rRadio.sv.CustomStations:GetAll()
+function Server.CustomStations:GetAll()
     return self.data
 end
 
-function rRadio.sv.CustomStations:Remove(key)
+function Server.CustomStations:Remove(key)
     local removed = false
     for i = #self.data, 1, -1 do
         local st = self.data[i]
@@ -106,10 +114,10 @@ function rRadio.sv.CustomStations:Remove(key)
     return removed
 end
 
-rRadio.sv.CustomStations:Load()
+Server.CustomStations:Load()
 
 net.Receive("rRadio.PlayStation", function(len, ply)
-    rRadio.DevPrint("[rRADIO] Server got rRadio.PlayStation from: " .. ply:Nick())
+    DevPrint("[rRADIO] Server got rRadio.PlayStation from: " .. ply:Nick())
     local now = SysTime()
     if now - lastGlobalAction < GLOBAL_COOLDOWN then
         ply:ChatPrint("The radio system is busy. Please try again in a moment.")
@@ -117,7 +125,7 @@ net.Receive("rRadio.PlayStation", function(len, ply)
     end
     lastGlobalAction = now
 
-    local ent       = rRadio.sv.utils.GetVehicleEntity(net.ReadEntity())
+    local ent       = ServerUtils.GetVehicleEntity(net.ReadEntity())
     local station   = net.ReadString()
     local stationURL= net.ReadString()
     local volume    = net.ReadFloat()
@@ -126,46 +134,46 @@ net.Receive("rRadio.PlayStation", function(len, ply)
 
     if hook.Run("rRadio.PrePlayStation", ply, ent, station, stationURL, volume) == false then return end
 
-    if not rRadio.utils.CanUseRadio(ent) then
+    if not Utils.CanUseRadio(ent) then
         ply:ChatPrint("[rRADIO] This seat cannot use the radio.")
         return
     end
 
-    if now - (rRadio.sv.PlayerCooldowns[ply] or 0) < 0.25 then
+    if now - (Server.PlayerCooldowns[ply] or 0) < 0.25 then
         ply:ChatPrint("You are changing stations too quickly.")
         return
     end
-    rRadio.sv.PlayerCooldowns[ply] = now
+    Server.PlayerCooldowns[ply] = now
 
-    if rRadio.sv.utils.CountActiveRadios() >= rRadio.config.MaxActiveRadios then
-        rRadio.sv.utils.ClearOldestActiveRadio()
+    if ServerUtils.CountActiveRadios() >= Config.MaxActiveRadios then
+        ServerUtils.ClearOldestActiveRadio()
     end
 
-    if rRadio.sv.utils.CountPlayerRadios(ply) >= rRadio.config.MaxPlayerRadios then
+    if ServerUtils.CountPlayerRadios(ply) >= Config.MaxPlayerRadios then
         ply:ChatPrint("You have reached your maximum number of active radios.")
         return
     end
 
     local idx = ent:EntIndex()
 
-    if not rRadio.sv.utils.CanControlRadio(ent, ply) then
+    if not ServerUtils.CanControlRadio(ent, ply) then
         ply:ChatPrint("You do not have permission to control this radio.")
         return
     end
 
-    rRadio.utils.SetRadioStatus(ent, rRadio.status.TUNING, station)
+    Utils.SetRadioStatus(ent, Status.TUNING, station)
 
-    if rRadio.sv.ActiveRadios[idx] then
-        rRadio.sv.utils.BroadcastStop(ent)
-        rRadio.sv.utils.RemoveActiveRadio(ent)
+    if Server.ActiveRadios[idx] then
+        ServerUtils.BroadcastStop(ent)
+        ServerUtils.RemoveActiveRadio(ent)
     end
 
-    rRadio.sv.utils.AddActiveRadio(ent, station, stationURL, volume, ply)
+    ServerUtils.AddActiveRadio(ent, station, stationURL, volume, ply)
 
-    rRadio.DevPrint("[sv_core] ActiveRadios now contains:")
+    DevPrint("[sv_core] ActiveRadios now contains:")
 
-    if rRadio.DEV then
-        for k, v in pairs(rRadio.sv.ActiveRadios) do
+    if Radio.DEV then
+        for k, v in pairs(Server.ActiveRadios) do
             print("[sv_core] ActiveRadio " .. k .. ": " .. v.entity:EntIndex())
             print("\tStation: " .. v.stationName)
             print("\tURL: " .. v.url)
@@ -175,13 +183,13 @@ net.Receive("rRadio.PlayStation", function(len, ply)
 
 
 
-    rRadio.sv.utils.BroadcastPlay(ent, station, stationURL, volume)
+    ServerUtils.BroadcastPlay(ent, station, stationURL, volume)
 
     if ent.IsPermanent then
-        rRadio.sv.permanent.SavePermanentBoombox(ent)
+        Permanent.SavePermanentBoombox(ent)
     end
 
-    rRadio.sv.stationUpdateQueue[idx] = {
+    Server.stationUpdateQueue[idx] = {
         station   = station,
         url       = stationURL,
         volume    = volume,
@@ -198,25 +206,25 @@ net.Receive("rRadio.StopStation", function(len, ply)
 
     if hook.Run("rRadio.PreStopStation", ply, entity) == false then return end
 
-    if not rRadio.sv.utils.CanControlRadio(entity, ply) then
+    if not ServerUtils.CanControlRadio(entity, ply) then
         ply:ChatPrint("You do not have permission to control this radio.")
         return
     end
 
-    rRadio.utils.SetRadioStatus(entity, rRadio.status.STOPPED)
-    rRadio.sv.utils.RemoveActiveRadio(entity)
-    rRadio.sv.utils.BroadcastStop(entity)
+    Utils.SetRadioStatus(entity, Status.STOPPED)
+    ServerUtils.RemoveActiveRadio(entity)
+    ServerUtils.BroadcastStop(entity)
     net.Start("rRadio.UpdateRadioStatus")
     net.WriteEntity(entity)
     net.WriteString("")
     net.WriteBool(false)
-    net.WriteInt(rRadio.status.STOPPED, 2)
+    net.WriteInt(Status.STOPPED, 2)
     net.Broadcast()
     local entIndex = entity:EntIndex()
-    rRadio.sv.stationUpdateQueue[entIndex] = nil
-    timer.Create("StationUpdate_" .. entIndex, rRadio.config.StationUpdateDebounce, 1, function()
+    Server.stationUpdateQueue[entIndex] = nil
+    timer.Create("StationUpdate_" .. entIndex, Config.StationUpdateDebounce, 1, function()
         if IsValid(entity) and entity.IsPermanent then
-            rRadio.sv.permanent.ClearSavedStation(entity)
+            Permanent.ClearSavedStation(entity)
         end
     end)
 
@@ -229,10 +237,10 @@ net.Receive("rRadio.SetRadioVolume", function(len, ply)
     local entIndex = IsValid(entity) and entity:EntIndex() or nil
     if not entIndex then return end
 
-    local upd = rRadio.sv.volumeUpdateQueue[entIndex]
+    local upd = Server.volumeUpdateQueue[entIndex]
     if not upd then
         upd = { lastUpdate = 0, pendingVolume = volume, pendingPlayer = ply }
-        rRadio.sv.volumeUpdateQueue[entIndex] = upd
+        Server.volumeUpdateQueue[entIndex] = upd
     else
         upd.pendingVolume = volume
         upd.pendingPlayer = ply
@@ -242,7 +250,7 @@ end)
 hook.Add("PlayerInitialSpawn", "rRadio.SendActiveRadiosOnJoin", function(ply)
     timer.Simple(1, function()
         if IsValid(ply) then
-            rRadio.sv.utils.SendActiveRadiosToPlayer(ply)
+            ServerUtils.SendActiveRadiosToPlayer(ply)
         end
     end)
 end)
@@ -251,7 +259,7 @@ hook.Add("PlayerInitialSpawn", "rRadio.SendCustomStations", function(ply)
     timer.Simple(1, function()
         if IsValid(ply) then
             net.Start("rRadio.CustomStationsUpdate")
-                net.WriteTable(rRadio.sv.CustomStations:GetAll())
+                net.WriteTable(Server.CustomStations:GetAll())
             net.Send(ply)
         end
     end)
@@ -259,7 +267,7 @@ end)
 
 local function AddCustomStation(ply, name, url)
     if not name or not url then
-        local usage = "!" .. rRadio.config.CommandAddStation .. ' "name" "url"'
+        local usage = "!" .. Config.CommandAddStation .. ' "name" "url"'
         if IsValid(ply) then
             ply:ChatPrint("[rRadio] Invalid command format. Usage: " .. usage)
         else
@@ -280,7 +288,7 @@ local function AddCustomStation(ply, name, url)
         return
     end
 
-    rRadio.sv.CustomStations:Add(name, url)
+    Server.CustomStations:Add(name, url)
     local msg = string.format("[rRadio] Added custom station '%s'.", name)
     if IsValid(ply) then
         ply:ChatPrint(msg)
@@ -288,13 +296,13 @@ local function AddCustomStation(ply, name, url)
         print(msg)
     end
     net.Start("rRadio.CustomStationsUpdate")
-        net.WriteTable(rRadio.sv.CustomStations:GetAll())
+        net.WriteTable(Server.CustomStations:GetAll())
     net.Broadcast()
 end
 
 local function RemoveCustomStation(ply, key)
     if not key then
-        local usage = "!" .. rRadio.config.CommandRemoveStation .. ' "key"'
+        local usage = "!" .. Config.CommandRemoveStation .. ' "key"'
         if IsValid(ply) then
             ply:ChatPrint("[rRadio] Invalid command format. Usage: " .. usage)
         else
@@ -306,7 +314,7 @@ local function RemoveCustomStation(ply, key)
         ply:ChatPrint("[rRadio] You don't have permission.")
         return
     end
-    local removed = rRadio.sv.CustomStations:Remove(key)
+    local removed = Server.CustomStations:Remove(key)
     if removed then
         local msg = string.format("[rRadio] Removed custom station '%s'.", key)
         if IsValid(ply) then
@@ -315,7 +323,7 @@ local function RemoveCustomStation(ply, key)
             print(msg)
         end
         net.Start("rRadio.CustomStationsUpdate")
-            net.WriteTable(rRadio.sv.CustomStations:GetAll())
+            net.WriteTable(Server.CustomStations:GetAll())
         net.Broadcast()
     else
         if IsValid(ply) then
@@ -327,20 +335,20 @@ local function RemoveCustomStation(ply, key)
 end
 
 local function HandleAddStation(ply, text)
-    local prefix = "!" .. rRadio.config.CommandAddStation
+    local prefix = "!" .. Config.CommandAddStation
     local name, url = text:match('^' .. prefix .. '%s+"([^"]+)"%s+"([^"]+)"')
     AddCustomStation(ply, name, url)
 end
 
 local function HandleRemoveStation(ply, text)
-    local prefix = "!" .. rRadio.config.CommandRemoveStation
+    local prefix = "!" .. Config.CommandRemoveStation
     local key = text:match('^' .. prefix .. '%s+"([^"]+)"')
     RemoveCustomStation(ply, key)
 end
 
 hook.Add("PlayerSay", "rRadio.HandleCommands", function(ply, text, teamChat)
-    local addCmd = "!" .. rRadio.config.CommandAddStation
-    local remCmd = "!" .. rRadio.config.CommandRemoveStation
+    local addCmd = "!" .. Config.CommandAddStation
+    local remCmd = "!" .. Config.CommandRemoveStation
     if text:sub(1, #addCmd) == addCmd then
         HandleAddStation(ply, text)
         return ""
@@ -351,18 +359,18 @@ hook.Add("PlayerSay", "rRadio.HandleCommands", function(ply, text, teamChat)
 end)
 
 hook.Add("PlayerEnteredVehicle", "rRadio.RadioVehicleHandling", function(ply, vehicle)
-    rRadio.DevPrint("Player entered a vehicle")
+    DevPrint("Player entered a vehicle")
 
     if not ply:GetInfoNum("rammel_rradio_enabled", 1) == 1 then return end
 
-    local veh = rRadio.utils.GetVehicle(vehicle)
+    local veh = Utils.GetVehicle(vehicle)
     if not veh then return end
-    rRadio.DevPrint("Vehicle is valid")
-    if rRadio.utils.IsSitAnywhereSeat(vehicle) then return end
-    rRadio.DevPrint("Vehicle is not a sit anywhere seat")
+    DevPrint("Vehicle is valid")
+    if Utils.IsSitAnywhereSeat(vehicle) then return end
+    DevPrint("Vehicle is not a sit anywhere seat")
 
-    if rRadio.config.DriverPlayOnly and veh:GetDriver() ~= ply then
-        rRadio.DevPrint("Skipping CarRadioMessage: not driver")
+    if Config.DriverPlayOnly and veh:GetDriver() ~= ply then
+        DevPrint("Skipping CarRadioMessage: not driver")
         return
     end
 
@@ -371,94 +379,94 @@ hook.Add("PlayerEnteredVehicle", "rRadio.RadioVehicleHandling", function(ply, ve
     net.WriteBool(vehicle:GetDriver() == ply)
     net.Send(ply)
 
-    rRadio.DevPrint("Queued car radio animation")
+    DevPrint("Queued car radio animation")
 end)
 
 hook.Add("CanTool", "rRadio.AllowBoomboxToolgun", function(ply, tr, tool)
     local ent = tr.Entity
-    if IsValid(ent) and rRadio.utils.IsBoombox(ent) then
-        return rRadio.utils.CanInteractWithBoombox(ply, ent)
+    if IsValid(ent) and Utils.IsBoombox(ent) then
+        return Utils.CanInteractWithBoombox(ply, ent)
     end
 end)
 
 hook.Add("PhysgunPickup", "rRadio.AllowBoomboxPhysgun", function(ply, ent)
-    if IsValid(ent) and rRadio.utils.IsBoombox(ent) then
-        return rRadio.utils.CanInteractWithBoombox(ply, ent)
+    if IsValid(ent) and Utils.IsBoombox(ent) then
+        return Utils.CanInteractWithBoombox(ply, ent)
     end
 end)
 
 hook.Add("InitPostEntity", "rRadio.initalizePostEntity", function()
     timer.Simple(1, function()
-        if rRadio.sv.utils.IsDarkRP() then
+        if ServerUtils.IsDarkRP() then
             hook.Add("playerBoughtCustomEntity", "rRadio.AssignBoomboxOwnerInDarkRP", function(ply, entTable, ent, price)
-                if IsValid(ent) and rRadio.utils.IsBoombox(ent) then
-                    rRadio.sv.utils.AssignOwner(ply, ent)
+                if IsValid(ent) and Utils.IsBoombox(ent) then
+                    ServerUtils.AssignOwner(ply, ent)
                 end
             end)
         end
     end)
 
     timer.Simple(0.5, function()
-        rRadio.sv.permanent.LoadPermanentBoomboxes()
+        Permanent.LoadPermanentBoomboxes()
     end)
 end)
 
-timer.Create("CleanupInactiveRadios", rRadio.config.CleanupInterval, 0, rRadio.sv.utils.CleanupInactiveRadios)
+timer.Create("CleanupInactiveRadios", Config.CleanupInterval, 0, ServerUtils.CleanupInactiveRadios)
 
 hook.Add("OnEntityCreated", "rRadio.InitializeRadio", function(entity)
     timer.Simple(0, function()
-        if IsValid(entity) and (rRadio.utils.IsBoombox(entity) or rRadio.utils.GetVehicle(entity)) then
-            rRadio.sv.utils.InitializeEntityVolume(entity)
+        if IsValid(entity) and (Utils.IsBoombox(entity) or Utils.GetVehicle(entity)) then
+            ServerUtils.InitializeEntityVolume(entity)
         end
     end)
 
     timer.Simple(0, function()
-        if IsValid(entity) and rRadio.utils.GetVehicle(entity) then
-            rRadio.sv.utils.UpdateVehicleStatus(entity)
+        if IsValid(entity) and Utils.GetVehicle(entity) then
+            ServerUtils.UpdateVehicleStatus(entity)
         end
     end)
 end)
 
 hook.Add("EntityRemoved", "rRadio.CleanupEntityRemoved", function(entity)
     local entIndex = entity:EntIndex()
-    rRadio.sv.volumeUpdateQueue[entIndex] = nil
-    rRadio.sv.stationUpdateQueue[entIndex] = nil
+    Server.volumeUpdateQueue[entIndex] = nil
+    Server.stationUpdateQueue[entIndex] = nil
 
     if IsValid(entity) then
-        rRadio.sv.utils.RemoveActiveRadio(entity)
-        rRadio.sv.utils.CleanupEntityData(entity:EntIndex())
+        ServerUtils.RemoveActiveRadio(entity)
+        ServerUtils.CleanupEntityData(entity:EntIndex())
     end
 
     local mainEntity = entity:GetParent() or entity
-    if rRadio.sv.ActiveRadios[mainEntity:EntIndex()] then
-        rRadio.sv.utils.RemoveActiveRadio(mainEntity)
+    if Server.ActiveRadios[mainEntity:EntIndex()] then
+        ServerUtils.RemoveActiveRadio(mainEntity)
     end
 end)
 
 hook.Add("PlayerDisconnected", "rRadio.CleanupPlayerDisconnected", function(ply)
-    rRadio.sv.PlayerRetryAttempts[ply] = nil
-    rRadio.sv.PlayerCooldowns[ply] = nil
-    rRadio.sv.PlayerRadios[ply] = nil
+    Server.PlayerRetryAttempts[ply] = nil
+    Server.PlayerCooldowns[ply] = nil
+    Server.PlayerRadios[ply] = nil
 
-    for entIndex, updateData in pairs(rRadio.sv.volumeUpdateQueue) do
+    for entIndex, updateData in pairs(Server.volumeUpdateQueue) do
         if updateData.pendingPlayer == ply then
-            rRadio.sv.utils.CleanupEntityData(entIndex)
+            ServerUtils.CleanupEntityData(entIndex)
         end
     end
 
-    rRadio.DevPrint("Volume update queue cleared for player: " .. ply:Nick())
+    DevPrint("Volume update queue cleared for player: " .. ply:Nick())
 
-    for tableName in pairs(rRadio.sv.RadioDataTables) do
+    for tableName in pairs(Server.RadioDataTables) do
         if _G[tableName] then
             for entIndex, data in pairs(_G[tableName]) do
                 if data.ply == ply or data.pendingPlayer == ply then
-                    rRadio.sv.utils.CleanupEntityData(entIndex)
+                    ServerUtils.CleanupEntityData(entIndex)
                 end
             end
         end
     end
 
-    rRadio.DevPrint("Entity data cleaned up for player: " .. ply:Nick())
+    DevPrint("Entity data cleaned up for player: " .. ply:Nick())
 end)
 
 concommand.Add(
@@ -471,7 +479,7 @@ concommand.Add(
         return
       end
 
-      local stations = rRadio.sv.CustomStations:GetAll()
+      local stations = Server.CustomStations:GetAll()
       net.Start("rRadio.ListCustomStations")
         net.WriteUInt(#stations, 16)
         for _, st in ipairs(stations) do
@@ -485,15 +493,15 @@ concommand.Add(
       FCVAR_CLIENTCMD_CAN_EXECUTE
 )
 
-concommand.Add(rRadio.config.CommandAddStation, function(ply, cmd, args, argStr)
+concommand.Add(Config.CommandAddStation, function(ply, cmd, args, argStr)
     AddCustomStation(ply, args[1], args[2])
 end, nil, "Add a custom radio station")
 
-concommand.Add(rRadio.config.CommandRemoveStation, function(ply, cmd, args, argStr)
+concommand.Add(Config.CommandRemoveStation, function(ply, cmd, args, argStr)
     RemoveCustomStation(ply, args[1])
 end, nil, "Remove a custom radio station")
 
-if rRadio.DEV then
+if Radio.DEV then
     concommand.Add("rradio_fake_volume", function(ply, cmd, args)
         if IsValid(ply) and not ply:IsSuperAdmin() then
             ply:ChatPrint("[rRadio] You do not have permission to use this command.")
@@ -514,7 +522,7 @@ if rRadio.DEV then
         end
         vol = math.Clamp(vol, 0, 1)
 
-        rRadio.sv.EntityVolumes[entID] = vol
+        Server.EntityVolumes[entID] = vol
         ent:SetNWFloat("Volume", vol)
         net.Start("rRadio.SetRadioVolume")
             net.WriteEntity(ent)

@@ -1,13 +1,17 @@
-rRadio.tools = rRadio.tools or {}
+local Radio = rRadio
+local Interface = Radio.interface
+local Config = Radio.config
+
+Radio.tools = Radio.tools or {}
 
 cvars.AddChangeCallback("rammel_rradio_menu_theme", function(_, old, new)
-    local theme = rRadio.themes[new] and new or "dark"
+    local theme = Radio.themes[new] and new or "dark"
 
     if theme ~= new then
         RunConsoleCommand("rammel_rradio_menu_theme", theme)
     end
 
-    rRadio.interface.applyTheme(theme)
+    Interface.applyTheme(theme)
 end, "rRadioThemeCallback")
 
 hook.Add("PopulateToolMenu", "rRadio.ToolMenu", function()
@@ -59,15 +63,15 @@ hook.Add("PopulateToolMenu", "rRadio.ToolMenu", function()
         keyBinder:SetWide(180)
         keyBinder:SetConVar("rammel_rradio_menu_key")
         keyBinder:SetValue(GetConVar("rammel_rradio_menu_key"):GetInt())
-        keyBinder:SetText(rRadio.GetKeyName(keyBinder:GetValue()))
+        keyBinder:SetText(Radio.cl.getKeyName(keyBinder:GetValue()))
         function keyBinder:OnChange(newCode)
             DBinder.OnChange(self, newCode)
-            self:SetText(rRadio.GetKeyName(newCode))
+            self:SetText(Radio.cl.getKeyName(newCode))
         end
         menuForm:AddItem(keyRow)
 
         local theme = menuForm:ComboBox("Menu Theme", "rammel_rradio_menu_theme")
-        for name, data in pairs(rRadio.themes) do
+        for name, data in pairs(Radio.themes) do
             if not data.Hidden then
                 theme:AddChoice(name, name)
             end
@@ -79,7 +83,7 @@ hook.Add("PopulateToolMenu", "rRadio.ToolMenu", function()
         preview:DockMargin(0, 0, 0, 10)
         menuForm:AddItem(preview)
         preview.Paint = function(self, w, h)
-            local ui = rRadio.config.UI
+            local ui = Config.UI
             surface.SetDrawColor(ui.BackgroundColor.r, ui.BackgroundColor.g, ui.BackgroundColor.b, ui.BackgroundColor.a)
             surface.DrawRect(0, 0, w, h)
             local headerColor = ui.HeaderColor or ui.BackgroundColor
@@ -95,7 +99,7 @@ hook.Add("PopulateToolMenu", "rRadio.ToolMenu", function()
         end
         theme.OnSelect = function(self, index, text, choice)
             RunConsoleCommand("rammel_rradio_menu_theme", choice)
-            rRadio.interface.applyTheme(choice)
+            Interface.applyTheme(choice)
         end
     end)
 end)
