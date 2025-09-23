@@ -1,15 +1,9 @@
 if SERVER then return end
 
-local Radio = rRadio
-local Status = Radio.status
-local DevPrint = Radio.DevPrint
+local Radio, Status, DevPrint, iface, cfgGlobal, utils = rRadio:Import("Radio", "status", "DevPrint", "!interface", "config", "utils", "!cl")
+local cl = Radio.cl
 
 local IsValid = IsValid
-
-local cl          = Radio.cl
-local iface       = Radio.interface
-local cfgGlobal   = Radio.config
-local utils       = Radio.utils
 local perf = cl.performance
 
 local UPDATE_INTERVAL = 0.2

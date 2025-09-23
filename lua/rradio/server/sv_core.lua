@@ -1,15 +1,9 @@
 hook.Run("rRadio.PostServerLoad")
 
-local Radio = rRadio
-Radio.sv = Radio.sv or {}
-local Server = Radio.sv
+local Radio, Server, Config, Utils, Status, DevPrint = rRadio:Import("Radio", "!sv", "config", "utils", "status", "DevPrint")
 Server.permanent = Server.permanent or {}
-local Config = Radio.config
-local Utils = Radio.utils
-local Status = Radio.status
-local DevPrint = Radio.DevPrint
-local ServerUtils = Server.utils
 local Permanent = Server.permanent
+local ServerUtils = Server.utils
 
 Server.ActiveRadios        = Server.ActiveRadios or {}
 Server.PlayerRetryAttempts = Server.PlayerRetryAttempts or {}

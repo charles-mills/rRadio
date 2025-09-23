@@ -1,11 +1,5 @@
-local Radio = rRadio
-Radio.utils = Radio.utils or {}
-Radio.LanguageManager = Radio.LanguageManager or {}
-local Utils = Radio.utils
-local Config = Radio.config
-local Server = Radio.sv
-local DevPrint = Radio.DevPrint
-local LanguageManager = Radio.LanguageManager
+local Radio, Utils, Config, Server, DevPrint, LanguageManager = rRadio:Import("Radio", "!utils", "config", "sv", "DevPrint", "!LanguageManager")
+
 
 if not LanguageManager.GetCountryTranslation then
     function LanguageManager:GetCountryTranslation(key)

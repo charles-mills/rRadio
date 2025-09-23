@@ -47,6 +47,36 @@ local pub_id = "3318060741"
 rRadio = rRadio or {}
 local Radio = rRadio
 Radio.DEV = false
+local unpack = unpack or table.unpack
+
+function Radio:Import(...)
+    local count = select("#", ...)
+    local results = {}
+
+    for index = 1, count do
+        local key = select(index, ...)
+        if type(key) == "string" then
+            local ensure = key:sub(1, 1) == "!"
+            if ensure then
+                key = key:sub(2)
+            end
+
+            if key == "Radio" or key == "rRadio" then
+                results[index] = self
+            else
+                if ensure then
+                    self[key] = self[key] or {}
+                end
+
+                results[index] = self[key]
+            end
+        else
+            results[index] = nil
+        end
+    end
+
+    return unpack(results, 1, count)
+end
 
 function Radio.DevPrint(text)
     if not Radio.DEV then return end
@@ -154,7 +184,6 @@ local function addCSLuaFiles()
         "rradio/client/lang",
         "rradio/client/data/langpacks",
         "rradio/client/data/stationpacks",
-        "entities/rammel_base_boombox",
         "entities/rammel_boombox",
         "entities/rammel_boombox_gold"
     }

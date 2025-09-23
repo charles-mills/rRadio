@@ -1,6 +1,4 @@
-local Radio = rRadio
-local Interface = Radio.interface
-local Config = Radio.config
+local Radio, Interface, Config = rRadio:Import("Radio", "!interface", "config")
 
 do
     local PANEL = {}

@@ -1,7 +1,5 @@
-local Radio = rRadio
+local Radio, Config = rRadio:Import("Radio", "!config")
 
-Radio.config = Radio.config or {}
-local Config = Radio.config
 Config.RadioVersion = "1.2.5"
 
 --[[ ! Server settings ! ]]

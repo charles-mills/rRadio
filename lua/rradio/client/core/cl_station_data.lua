@@ -1,9 +1,6 @@
 if SERVER then return end
 
-local Radio = rRadio
-local Interface = Radio.interface
-
-Radio.cl = Radio.cl or {}
+local Radio, Interface = rRadio:Import("Radio", "!interface", "!cl")
 
 Radio.cl.stationData = {}
 Radio.cl.allowedUrlSet = {}

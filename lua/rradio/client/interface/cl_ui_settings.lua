@@ -1,11 +1,6 @@
 if SERVER then return end
 
-local Radio = rRadio
-local Utils = Radio.utils
-local Interface = Radio.interface
-local Config = Radio.config
-
-Radio.cl = Radio.cl or {}
+local Radio, Utils, Interface, Config = rRadio:Import("Radio", "utils", "!interface", "config", "!cl")
 Radio.cl.settingsUI = {}
 
 local Scale = Radio.cl.Scale

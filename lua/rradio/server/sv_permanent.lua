@@ -1,14 +1,8 @@
-local Radio = rRadio
-local DevPrint = Radio.DevPrint
-Radio.sv = Radio.sv or {}
-local Server = Radio.sv
+local Radio, DevPrint, Server, Status, Config = rRadio:Import("Radio", "DevPrint", "!sv", "status", "config")
 Server.permanent = Server.permanent or {}
-
 local Permanent = Server.permanent
-local Database = Server.db or include("rradio/server/sv_db.lua")
-local Status = Radio.status
 local ServerUtils = Server.utils
-local Config = Radio.config
+local Database = Server.db or include("rradio/server/sv_db.lua")
 
 local initialLoadComplete        = false
 local spawnedBoomboxesByPosition = {}

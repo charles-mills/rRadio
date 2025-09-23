@@ -1,12 +1,4 @@
-local Radio = rRadio
-
-Radio.interface = Radio.interface or {}
-Radio.cl = Radio.cl or {}
-
-local Utils = Radio.utils
-local Interface = Radio.interface
-local Config = Radio.config
-local DevPrint = Radio.DevPrint
+local Radio, Interface, Utils, Config, DevPrint = rRadio:Import("Radio", "!interface", "utils", "config", "DevPrint", "!cl")
 
 local ICON_VOL_MUTE = Material("hud/vol_mute.png", "smooth")
 local ICON_VOL_DOWN = Material("hud/vol_down.png", "smooth")

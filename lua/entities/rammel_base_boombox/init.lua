@@ -1,7 +1,4 @@
-local Radio = rRadio
-local Utils = Radio.utils
-local Status = Radio.status
-local Config = Radio.config
+local Radio, Utils, Status, Config = rRadio:Import("Radio", "utils", "status", "config")
 
 AddCSLuaFile("cl_init.lua")
 AddCSLuaFile("shared.lua")

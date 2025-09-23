@@ -1,5 +1,4 @@
-local Radio = rRadio
-local Config = Radio.config
+local Radio, Config = rRadio:Import("Radio", "config")
 
 include("shared.lua")
 

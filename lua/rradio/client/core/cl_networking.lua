@@ -1,13 +1,6 @@
 if SERVER then return end
 
-local Radio = rRadio
-local Utils = Radio.utils
-local Interface = Radio.interface
-local Status = Radio.status
-local Config = Radio.config
-local DevPrint = Radio.DevPrint
-
-Radio.cl = Radio.cl or {}
+local Radio, Utils, Interface, Status, Config, DevPrint = rRadio:Import("Radio", "utils", "!interface", "status", "config", "DevPrint", "!cl")
 
 Radio.cl.networkHandlers = {}
 

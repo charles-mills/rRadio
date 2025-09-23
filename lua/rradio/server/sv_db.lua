@@ -1,9 +1,6 @@
 rRadio = rRadio or {}
-local Radio = rRadio
-Radio.sv = Radio.sv or {}
-local Server = Radio.sv
+local Radio, Server = rRadio:Import("Radio", "!sv")
 Server.db = Server.db or {}
-
 local Database = Server.db
 
 function Database.Escape(value)

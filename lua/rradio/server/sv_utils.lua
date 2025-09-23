@@ -1,14 +1,8 @@
-local Radio = rRadio
-local Status = Radio.status
-Radio.sv = Radio.sv or {}
-local Server = Radio.sv
+local Radio, Status, Server, Config, DevPrint, SharedUtils = rRadio:Import("Radio", "status", "!sv", "config", "DevPrint", "utils")
 
 local utils = {}
 Server.utils = utils
 
-local Config = Radio.config
-local DevPrint = Radio.DevPrint
-local SharedUtils = Radio.utils
 
 -- Validation functions
 function utils.IsDarkRP()

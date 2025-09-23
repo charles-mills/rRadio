@@ -1,8 +1,4 @@
-local Radio = rRadio
-local Config = Radio.config
-
-Radio.LanguageManager = Radio.LanguageManager or {}
-local LanguageManager = Radio.LanguageManager
+local Radio, Config, LanguageManager = rRadio:Import("Radio", "config", "!LanguageManager")
 
 LanguageManager.languages = {
     de     = "Deutsch",

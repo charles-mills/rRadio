@@ -1,6 +1,4 @@
-local Radio = rRadio
-local Utils = Radio.utils
-local Interface = Radio.interface
+local Radio, Utils, Interface = rRadio:Import("Radio", "utils", "!interface", "!cl")
 
 if SERVER then return end
 
