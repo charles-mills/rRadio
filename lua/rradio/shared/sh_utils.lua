@@ -1,11 +1,23 @@
 local Radio = rRadio
 Radio.utils = Radio.utils or {}
+Radio.LanguageManager = Radio.LanguageManager or {}
 local Utils = Radio.utils
 local Config = Radio.config
 local Server = Radio.sv
 local DevPrint = Radio.DevPrint
 local LanguageManager = Radio.LanguageManager
 
+if not LanguageManager.GetCountryTranslation then
+    function LanguageManager:GetCountryTranslation(key)
+        return key
+    end
+end
+
+if not LanguageManager.GetCustomTranslation then
+    function LanguageManager:GetCustomTranslation()
+        return Config and (Config.CustomStationCategory or "Custom") or "Custom"
+    end
+end
 
 -- Constants
 local RADIO_STATUS = {

@@ -3,6 +3,7 @@ hook.Run("rRadio.PostServerLoad")
 local Radio = rRadio
 Radio.sv = Radio.sv or {}
 local Server = Radio.sv
+Server.permanent = Server.permanent or {}
 local Config = Radio.config
 local Utils = Radio.utils
 local Status = Radio.status
