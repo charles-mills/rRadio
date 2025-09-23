@@ -201,9 +201,14 @@ function Interface.refreshVolume(ent)
     Interface.updateRadioVolume(src, dist, inCar, ent)
 end
 
-function Interface.fuzzyMatch(needle, haystack)
-    needle = stringLower(needle or "")
-    haystack = stringLower(haystack or "")
+function Interface.fuzzyMatch(needle, haystack, alreadyLowered)
+    if not alreadyLowered then
+        needle = stringLower(needle or "")
+        haystack = stringLower(haystack or "")
+    else
+        needle = needle or ""
+        haystack = haystack or ""
+    end
     local nLen = #needle
     if nLen == 0 then return 1 end
     local hLen = #haystack
@@ -219,51 +224,123 @@ function Interface.fuzzyMatch(needle, haystack)
     return scoreSum / nLen
 end
 
+local DEFAULT_MAX_FUZZY_RESULTS = 150
+
+local function getFuzzyResultLimit()
+    local cl = Radio.cl
+    return (cl and cl.MAX_SEARCH_RESULTS) or DEFAULT_MAX_FUZZY_RESULTS
+end
+
+local function prepareFuzzyItem(item, keyFn)
+    local text = keyFn(item) or ""
+    if type(item) == "table" then
+        if item.__fuzzyKey ~= text then
+            item.__fuzzyKey = text
+            item.__fuzzyLower = stringLower(text)
+            item.__fuzzyCharMap = nil
+        end
+        return item.__fuzzyKey, item.__fuzzyLower or ""
+    end
+
+    return text, stringLower(text)
+end
+
+local function ensureCharMap(item, text)
+    if type(item) == "table" then
+        if not item.__fuzzyCharMap then
+            item.__fuzzyCharMap = item.charMap or buildCharMap(text)
+        end
+        return item.__fuzzyCharMap
+    end
+
+    return buildCharMap(text)
+end
+
+local function pushLimitedMatch(matches, limit, entry)
+    local size = #matches
+    if size >= limit then
+        local worst = matches[size]
+        if worst.score > entry.score then return end
+        if worst.score == entry.score and worst.sortKey <= entry.sortKey then return end
+    end
+
+    matches[size + 1] = entry
+    local idx = size + 1
+    while idx > 1 do
+        local prev = matches[idx - 1]
+        if prev.score > entry.score then break end
+        if prev.score == entry.score and prev.sortKey <= entry.sortKey then break end
+        matches[idx], matches[idx - 1] = prev, entry
+        idx = idx - 1
+    end
+
+    if #matches > limit then
+        matches[#matches] = nil
+    end
+end
+
+local function fuzzySort(a, b)
+    if a.score ~= b.score then return a.score > b.score end
+    return a.sortKey < b.sortKey
+end
+
+local function buildResults(matches)
+    local results, seen = {}, {}
+    for i = 1, #matches do
+        local entry = matches[i]
+        local key = entry.sortKey or ""
+        if not seen[key] then
+            seen[key] = true
+            results[#results + 1] = entry.item
+        end
+    end
+    return results
+end
+
 local function fuzzyFilterCore(needle, items, keyFn, minScore, boostFn)
     local lowerNeedle = stringLower(needle or "")
-    local candidates = {}
+    local hasNeedle = lowerNeedle ~= ""
+    local minAccept = minScore or 0
+    local limit = hasNeedle and getFuzzyResultLimit() or nil
+    local matches = {}
 
-    if #lowerNeedle > 0 then
-        for _, item in ipairs(items) do
-            local map = item.charMap or buildCharMap(keyFn(item) or "")
+    if hasNeedle then
+        for i = 1, #items do
+            local item = items[i]
+            local text, lowered = prepareFuzzyItem(item, keyFn)
+            local map = ensureCharMap(item, text)
             if map and Interface.subsequenceTest(lowerNeedle, map) then
-                candidates[#candidates + 1] = item
+                local score = Interface.fuzzyMatch(lowerNeedle, lowered, true)
+                if boostFn then score = score + (boostFn(item) or 0) end
+                if score >= minAccept then
+                    local entry = { item = item, score = score, sortKey = lowered or "" }
+                    if limit then
+                        pushLimitedMatch(matches, limit, entry)
+                    else
+                        matches[#matches + 1] = entry
+                    end
+                end
             end
         end
+
+        if not limit then
+            table.sort(matches, fuzzySort)
+        end
     else
-        candidates = items
-    end
-
-    local matches = {}
-    for _, item in ipairs(candidates) do
-        local text  = keyFn(item) or ""
-        local score = Interface.fuzzyMatch(lowerNeedle, text)
-        if boostFn then score = score + (boostFn(item) or 0) end
-        if score >= (minScore or 0) then
-            matches[#matches + 1] = { item = item, score = score }
+        for i = 1, #items do
+            local item = items[i]
+            local _, lowered = prepareFuzzyItem(item, keyFn)
+            local score = Interface.fuzzyMatch(lowerNeedle, lowered, true)
+            if boostFn then score = score + (boostFn(item) or 0) end
+            matches[#matches + 1] = { item = item, score = score, sortKey = lowered or "" }
         end
+
+        table.sort(matches, fuzzySort)
     end
 
-    if #matches == 0 then
-        for _, item in ipairs(items) do
-            matches[#matches + 1] = { item = item, score = 0 }
-        end
-    end
+    if #matches == 0 then return {} end
 
-    table.sort(matches, function(a, b)
-        if a.score ~= b.score then return a.score > b.score end
-        return (keyFn(a.item) or "") < (keyFn(b.item) or "")
-    end)
-    local results, seen = {}, {}
-    for _, v in ipairs(matches) do
-        local name = stringLower(keyFn(v.item) or "")
-        if not seen[name] then
-            seen[name] = true
-            results[#results + 1] = v.item
-        end
-    end
-
-    return results
+    return buildResults(matches)
 end
 
 Interface.fuzzyFilter = function(needle, items, keyFn, minScore, boostFn)
