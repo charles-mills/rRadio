@@ -1,4 +1,4 @@
-local Radio, Status, Server, Config, DevPrint, SharedUtils = rRadio:Import("Radio", "status", "!sv", "config", "DevPrint", "utils")
+local Radio, Status, Server, Config, DevPrint, SharedUtils, Net = rRadio:Import("Radio", "status", "!sv", "config", "DevPrint", "utils", "net")
 
 local utils = {}
 Server.utils = utils
@@ -90,7 +90,7 @@ end
 
 -- Broadcasting functions
 function utils.BroadcastPlay(entity, stationName, url, volume)
-    net.Start("rRadio.PlayStation") 
+    net.Start(Net.PlayStation)
     net.WriteEntity(entity)
     net.WriteString(stationName) 
     net.WriteString(url) 
@@ -99,7 +99,7 @@ function utils.BroadcastPlay(entity, stationName, url, volume)
 end
 
 function utils.BroadcastStop(entity)
-    net.Start("rRadio.StopStation")
+    net.Start(Net.StopStation)
     net.WriteEntity(entity)
     net.Broadcast()
 end
@@ -122,7 +122,7 @@ local function BuildActiveRadioPayloadEntry(entityIndex, radioData)
 end
 
 local function SendActiveRadioBatch(player, batch)
-    net.Start("rRadio.ActiveRadios")
+    net.Start(Net.ActiveRadios)
     net.WriteUInt(#batch, 12)
     for i = 1, #batch do
         local entry = batch[i]
@@ -209,7 +209,7 @@ function utils.ProcessVolumeUpdate(entity, volume, player)
     Server.EntityVolumes[entityIndex] = volume
     entity:SetNWFloat("Volume", volume)
     
-    net.Start("rRadio.SetRadioVolume")
+    net.Start(Net.SetRadioVolume)
     net.WriteEntity(entity)
     net.WriteFloat(volume)
     net.SendPAS(entity:GetPos())
@@ -357,5 +357,3 @@ function utils.ClearOldestActiveRadio()
         utils.RemoveActiveRadio(oldEntity)
     end
 end
-
-

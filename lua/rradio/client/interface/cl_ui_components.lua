@@ -1,6 +1,6 @@
 if SERVER then return end
 
-local Radio, Utils, Interface, Config = rRadio:Import("Radio", "utils", "!interface", "config", "!cl")
+local Radio, Utils, Interface, Config, Net = rRadio:Import("Radio", "utils", "!interface", "config", "net", "!cl")
 
 Radio.cl.uiComponents = {}
 
@@ -30,7 +30,7 @@ function Radio.cl.uiComponents.createPlayableStationButton(parent, station, disp
         
         local vol = Radio.cl.getEntityVolume(plyEnt)
 
-        net.Start("rRadio.PlayStation")
+        net.Start(Net.PlayStation)
             net.WriteEntity(plyEnt)
             net.WriteString(Interface.TruncateChars(station.name, Config.MaxNameChars))
             net.WriteString(station.url)

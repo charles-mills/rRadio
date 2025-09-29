@@ -1,6 +1,6 @@
 if SERVER then return end
 
-local Radio, Utils, Interface, Config = rRadio:Import("Radio", "utils", "!interface", "config", "!cl")
+local Radio, Utils, Interface, Config, Net = rRadio:Import("Radio", "utils", "!interface", "config", "net", "!cl")
 
 
 local Scale = Radio.cl.Scale
@@ -483,7 +483,7 @@ local function handleStopButton(stationListPanel, backButton, searchBox)
     local entity = LocalPlayer().currentRadioEntity
     
     if IsValid(entity) then
-        net.Start("rRadio.StopStation")
+        net.Start(Net.StopStation)
         net.WriteEntity(entity)
         net.SendToServer()
         

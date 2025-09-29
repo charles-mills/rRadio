@@ -1,4 +1,12 @@
-local Radio, Interface, Utils, Config, DevPrint = rRadio:Import("Radio", "!interface", "utils", "config", "DevPrint", "!cl")
+local Radio, Interface, Utils, Config, DevPrint, Net = rRadio:Import(
+    "Radio",
+    "!interface",
+    "utils",
+    "config",
+    "DevPrint",
+    "net",
+    "!cl"
+)
 
 local ICON_VOL_MUTE = Material("hud/vol_mute.png", "smooth")
 local ICON_VOL_DOWN = Material("hud/vol_down.png", "smooth")
@@ -36,7 +44,7 @@ end
 
 function Radio.cl.sendPendingVolume()
     if not IsValid(Radio.cl.pendingEntity) then return end
-    net.Start("rRadio.SetRadioVolume")
+    net.Start(Net.SetRadioVolume)
     net.WriteEntity(Radio.cl.pendingEntity)
     net.WriteFloat(Radio.cl.pendingVolume)
     net.SendToServer()

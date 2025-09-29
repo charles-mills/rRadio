@@ -1,8 +1,17 @@
 if SERVER then return end
 
-local Radio, Utils, Interface, Status, Config, DevPrint = rRadio:Import("Radio", "utils", "!interface", "status", "config", "DevPrint", "!cl")
+local Radio, Utils, Interface, Status, Config, DevPrint, Net = rRadio:Import(
+    "Radio",
+    "utils",
+    "!interface",
+    "status",
+    "config",
+    "DevPrint",
+    "net"
+)
 
-Radio.cl.networkHandlers = {}
+local Handlers = {}
+Radio.cl.networkHandlers = Handlers
 local function canStartPlayback(actual, slotInfo)
     if Radio.cl.radioSources[actual] then
         return true
@@ -71,7 +80,7 @@ local function processPlayStationPayload(entity, stationName, url, volume, slotI
     end
 end
 
-Radio.cl.networkHandlers["rRadio.SetRadioVolume"] = function()
+Handlers[Net.SetRadioVolume] = function()
     local ent = net.ReadEntity()
     local vol = net.ReadFloat()
     if not IsValid(ent) then return end
@@ -89,7 +98,7 @@ Radio.cl.networkHandlers["rRadio.SetRadioVolume"] = function()
     Radio.cl.performance.volumeChanged = true
 end
 
-Radio.cl.networkHandlers["rRadio.UpdateRadioStatus"] = function()
+Handlers[Net.UpdateRadioStatus] = function()
     local entity = net.ReadEntity()
     local stationName = net.ReadString()
     local isPlaying = net.ReadBool()
@@ -133,7 +142,7 @@ Radio.cl.networkHandlers["rRadio.UpdateRadioStatus"] = function()
     end
 end
 
-Radio.cl.networkHandlers["rRadio.CustomStationsUpdate"] = function()
+Handlers[Net.CustomStationsUpdate] = function()
     local count = net.ReadUInt(12)
     local cat = Config.CustomStationCategory or "Custom"
 
@@ -161,7 +170,7 @@ Radio.cl.networkHandlers["rRadio.CustomStationsUpdate"] = function()
     if Radio.cl.uiState.radioMenuOpen then Radio.cl.openRadioMenu() end
 end
 
-Radio.cl.networkHandlers["rRadio.PlayStation"] = function()
+Handlers[Net.PlayStation] = function()
     if not Radio.cl.cvars.enabled:GetBool() then return end
 
     local entity = net.ReadEntity()
@@ -173,7 +182,7 @@ Radio.cl.networkHandlers["rRadio.PlayStation"] = function()
 end
 
 
-Radio.cl.networkHandlers["rRadio.ActiveRadios"] = function()
+Handlers[Net.ActiveRadios] = function()
     local count = net.ReadUInt(12)
     if count == 0 then return end
 
@@ -192,7 +201,7 @@ Radio.cl.networkHandlers["rRadio.ActiveRadios"] = function()
     end
 end
 
-Radio.cl.networkHandlers["rRadio.StopStation"] = function()
+Handlers[Net.StopStation] = function()
     local entity = net.ReadEntity()
     if not IsValid(entity) then return end
 
@@ -215,7 +224,7 @@ Radio.cl.networkHandlers["rRadio.StopStation"] = function()
     end
 end
 
-Radio.cl.networkHandlers["rRadio.OpenMenu"] = function()
+Handlers[Net.OpenMenu] = function()
     local ent = net.ReadEntity()
     if not IsValid(ent) then return end
 
@@ -228,7 +237,7 @@ Radio.cl.networkHandlers["rRadio.OpenMenu"] = function()
     end
 end
 
-Radio.cl.networkHandlers["rRadio.ListCustomStations"] = function()
+Handlers[Net.ListCustomStations] = function()
     local count = net.ReadUInt(16)
     if count == 0 then
         MsgC(Color(255,255,255), "[rRadio] No custom stations found.\n")
@@ -248,7 +257,7 @@ Radio.cl.networkHandlers["rRadio.ListCustomStations"] = function()
         "Add a Station: !" .. Config.CommandAddStation .. " <Name> <URL>\n")
 end
 
-Radio.cl.networkHandlers["rRadio.PlayVehicleAnimation"] = function()
+Handlers[Net.PlayVehicleAnimation] = function()
     DevPrint("Received car radio message")
     local veh = net.ReadEntity()
     local isDriver = net.ReadBool()
@@ -257,7 +266,7 @@ Radio.cl.networkHandlers["rRadio.PlayVehicleAnimation"] = function()
     end)
 end
 
-Radio.cl.networkHandlers["rRadio.SetConfigUpdate"] = function()
+Handlers[Net.SetConfigUpdate] = function()
     for entity, source in pairs(Radio.cl.radioSources) do
         if IsValid(entity) and IsValid(source) then
             local fallback = Radio.cl.entityVolumes[entity] or 0.5
@@ -268,7 +277,7 @@ Radio.cl.networkHandlers["rRadio.SetConfigUpdate"] = function()
     end
 end
 
-Radio.cl.networkHandlers["rRadio.SendPersistentConfirmation"] = function()
+Handlers[Net.SendPersistentConfirm] = function()
     local message = net.ReadString()
     chat.AddText(Color(0, 255, 0), "[rRadio] ", Color(255, 255, 255), message)
 
@@ -281,10 +290,9 @@ Radio.cl.networkHandlers["rRadio.SendPersistentConfirmation"] = function()
     end
 end
 
-for name, handler in pairs(Radio.cl.networkHandlers) do
-    net.Receive(name, handler)
+for message, handler in pairs(Handlers) do
+    net.Receive(message, handler)
 end
-
 
 
 

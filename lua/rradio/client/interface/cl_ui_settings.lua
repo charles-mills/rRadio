@@ -1,6 +1,6 @@
 if SERVER then return end
 
-local Radio, Utils, Interface, Config = rRadio:Import("Radio", "utils", "!interface", "config", "!cl")
+local Radio, Utils, Interface, Config, Net = rRadio:Import("Radio", "utils", "!interface", "config", "net", "!cl")
 Radio.cl.settingsUI = {}
 
 local Scale = Radio.cl.Scale
@@ -251,11 +251,11 @@ function Radio.cl.settingsUI.addSuperadminOptions(scrollPanel, currentEntity)
             end
             
             if value then
-                net.Start("rRadio.SetPersistent")
+                net.Start(Net.SetPersistent)
                 net.WriteEntity(currentEntity)
                 net.SendToServer()
             else
-                net.Start("rRadio.RemovePersistent")
+                net.Start(Net.RemovePersistent)
                 net.WriteEntity(currentEntity)
                 net.SendToServer()
             end

@@ -47,6 +47,10 @@ local pub_id = "3318060741"
 rRadio = rRadio or {}
 local Radio = rRadio
 Radio.DEV = false
+
+include("rradio/shared/sh_core.lua")
+
+local Core = Radio.core
 local unpack = unpack or table.unpack
 
 function Radio:Import(...)
@@ -244,19 +248,7 @@ local function addPrivileges()
 end
 
 local function registerNetStrings()
-    util.AddNetworkString("rRadio.PlayStation")
-    util.AddNetworkString("rRadio.StopStation")
-    util.AddNetworkString("rRadio.OpenMenu")
-    util.AddNetworkString("rRadio.PlayVehicleAnimation")
-    util.AddNetworkString("rRadio.UpdateRadioStatus")
-    util.AddNetworkString("rRadio.SetRadioVolume")
-    util.AddNetworkString("rRadio.ActiveRadios")
-    util.AddNetworkString("rRadio.SetPersistent")
-    util.AddNetworkString("rRadio.RemovePersistent")
-    util.AddNetworkString("rRadio.SendPersistentConfirmation")
-    util.AddNetworkString("rRadio.SetConfigUpdate")
-    util.AddNetworkString("rRadio.CustomStationsUpdate")
-    util.AddNetworkString("rRadio.ListCustomStations")
+    Core.registerNetworkStrings()
 end
 
 if SERVER then
@@ -287,6 +279,7 @@ elseif CLIENT then
     addCSLuaFiles()
     createFonts()
     addPrivileges()
+    addClientFile("shared/sh_core.lua")
     addClientFile("shared/sh_config.lua")
     addClientFile("shared/sh_utils.lua")
     addClientFile("client/interface/cl_themes.lua")
@@ -354,4 +347,3 @@ elseif CLIENT then
     Radio.FormattedOutput("Loaded " .. cl_count .. "/55 client-side files")
     Radio.FormattedOutput("Finished client-side initialization")
 end
-

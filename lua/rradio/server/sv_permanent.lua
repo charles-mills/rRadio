@@ -1,4 +1,5 @@
-local Radio, DevPrint, Server, Status, Config = rRadio:Import("Radio", "DevPrint", "!sv", "status", "config")
+local Radio, DevPrint, Server, Status, Config, Net = rRadio:Import("Radio", "DevPrint", "!sv", "status", "config", "net")
+local Core = Radio.core
 Server.permanent = Server.permanent or {}
 local Permanent = Server.permanent
 local ServerUtils = Server.utils
@@ -154,7 +155,7 @@ local function spawnPermanentBoombox(row)
         ent:SetNWBool("IsPlaying", true)
 
         timer.Simple(0.1, function()
-            net.Start("rRadio.PlayStation")
+            net.Start(Net.PlayStation)
             net.WriteEntity(ent)
             net.WriteString(row.station_name or "")
             net.WriteString(row.station_url)
@@ -260,7 +261,7 @@ hook.Add("PostCleanupMap", "rRadio.LoadPermanentBoomboxes", function()
     end)
 end)
 
-net.Receive("rRadio.SetPersistent", function(len, ply)
+net.Receive(Net.SetPersistent, function(_, ply)
     if not IsValid(ply) or not ply:IsSuperAdmin() then
         ply:ChatPrint("[rRadio] You do not have permission to perform this action.")
         return false
@@ -286,12 +287,12 @@ net.Receive("rRadio.SetPersistent", function(len, ply)
     ent:SetNWBool("IsPermanent", true)
     Permanent.SavePermanentBoombox(ent)
 
-    net.Start("rRadio.SendPersistentConfirmation")
+    net.Start(Net.SendPersistentConfirm)
     net.WriteString("Boombox has been marked as permanent.")
     net.Send(ply)
 end)
 
-net.Receive("rRadio.RemovePersistent", function(len, ply)
+net.Receive(Net.RemovePersistent, function(_, ply)
     if not IsValid(ply) or not ply:IsSuperAdmin() then
         ply:ChatPrint("[rRadio] You do not have permission to perform this action.")
         return
@@ -316,7 +317,7 @@ net.Receive("rRadio.RemovePersistent", function(len, ply)
         ent:StopRadio()
     end
 
-    net.Start("rRadio.SendPersistentConfirmation")
+    net.Start(Net.SendPersistentConfirm)
     net.WriteString("Boombox permanence has been removed.")
     net.Send(ply)
 end)

@@ -1,6 +1,7 @@
 hook.Run("rRadio.PostServerLoad")
 
-local Radio, Server, Config, Utils, Status, DevPrint = rRadio:Import("Radio", "!sv", "config", "utils", "status", "DevPrint")
+local Radio, Server, Config, Utils, Status, DevPrint, Net = rRadio:Import("Radio", "!sv", "config", "utils", "status", "DevPrint", "net")
+local Core = Radio.core
 Server.permanent = Server.permanent or {}
 local Permanent = Server.permanent
 local ServerUtils = Server.utils
@@ -16,41 +17,88 @@ Server.CustomStations      = Server.CustomStations or { data = {}, urlMap = {}, 
 Server.ActiveRadiosCount   = Server.ActiveRadiosCount or 0
 Server.PlayerRadios        = Server.PlayerRadios or {}
 Server.RadioTimers = {
-    "VolumeUpdate_",
-    "StationUpdate_",
+    Core.TimerPrefix.VolumeUpdate,
+    Core.TimerPrefix.StationUpdate,
 }
 
 Server.RadioDataTables = {
     volumeUpdateQueue   = true,
 }
 
-local GLOBAL_COOLDOWN = 1
-local lastGlobalAction = 0
+Server.services = Server.services or {}
+local Services = Server.services
 
-timer.Create("rRadio.GlobalUpdateSweep", 0.25, 0, function()
-    local now = SysTime()
+local RadioManager = Services.RadioManager or {
+    cooldownSeconds = 1,
+    lastGlobalAction = Services.RadioManager and Services.RadioManager.lastGlobalAction or 0
+}
+Services.RadioManager = RadioManager
 
-    for entIdx, data in pairs(Server.stationUpdateQueue) do
-        if now - data.timestamp >= 2 then
+local StationQueue = Services.StationQueue or {}
+Services.StationQueue = StationQueue
+StationQueue.store = Server.stationUpdateQueue
+StationQueue.settledDelay = 2
+
+function StationQueue:schedule(entityIndex, payload)
+    payload.timestamp = SysTime()
+    self.store[entityIndex] = payload
+end
+
+function StationQueue:flush(now)
+    for entIdx, data in pairs(self.store) do
+        if now - data.timestamp >= self.settledDelay then
             local ent = Entity(entIdx)
             if IsValid(ent) then
                 Utils.SetRadioStatus(ent, Status.PLAYING, data.station)
             end
-            Server.stationUpdateQueue[entIdx] = nil
+            self.store[entIdx] = nil
         end
+    end
+end
+
+local VolumeQueue = Services.VolumeQueue or {}
+Services.VolumeQueue = VolumeQueue
+VolumeQueue.store = Server.volumeUpdateQueue
+
+function VolumeQueue:queue(entityIndex, volume, ply)
+    local rec = self.store[entityIndex]
+    if not rec then
+        rec = { lastUpdate = 0 }
+        self.store[entityIndex] = rec
     end
 
-    for entIdx, upd in pairs(Server.volumeUpdateQueue) do
-        if upd.pendingVolume and now - (upd.lastUpdate or 0) >= Config.VolumeUpdateDebounce then
+    rec.pendingVolume = volume
+    rec.pendingPlayer = ply
+end
+
+function VolumeQueue:flush(now)
+    for entIdx, rec in pairs(self.store) do
+        if rec.pendingVolume and now - (rec.lastUpdate or 0) >= Config.VolumeUpdateDebounce then
             local ent = Entity(entIdx)
-            if IsValid(ent) and IsValid(upd.pendingPlayer) then
-                ServerUtils.ProcessVolumeUpdate(ent, upd.pendingVolume, upd.pendingPlayer)
+            if IsValid(ent) and IsValid(rec.pendingPlayer) then
+                ServerUtils.ProcessVolumeUpdate(ent, rec.pendingVolume, rec.pendingPlayer)
             end
-            upd.lastUpdate     = now
-            upd.pendingVolume  = nil
-            upd.pendingPlayer  = nil
+            rec.lastUpdate    = now
+            rec.pendingVolume = nil
+            rec.pendingPlayer = nil
         end
     end
+end
+
+function RadioManager:isRateLimited(now)
+    if now - (self.lastGlobalAction or 0) < self.cooldownSeconds then
+        return true
+    end
+
+    self.lastGlobalAction = now
+    return false
+end
+
+timer.Create("rRadio.GlobalUpdateSweep", 0.25, 0, function()
+    local now = SysTime()
+
+    StationQueue:flush(now)
+    VolumeQueue:flush(now)
 end)
 
 function Server.CustomStations:Load()
@@ -111,23 +159,23 @@ end
 
 Server.CustomStations:Load()
 
-net.Receive("rRadio.PlayStation", function(len, ply)
-    DevPrint("[rRADIO] Server got rRadio.PlayStation from: " .. ply:Nick())
+local function makeStationDebugString(entity, station, url, volume)
+    if not Radio.DEV or not DevPrint then return end
+    DevPrint(string.format("[sv_core] Station debug -> ent=%s station=%s url=%s volume=%.2f", tostring(entity), station, url, volume))
+end
+
+function RadioManager:handlePlayStation(ply, data)
     local now = SysTime()
-    if now - lastGlobalAction < GLOBAL_COOLDOWN then
+
+    if self:isRateLimited(now) then
         ply:ChatPrint("The radio system is busy. Please try again in a moment.")
         return
     end
-    lastGlobalAction = now
 
-    local ent       = ServerUtils.GetVehicleEntity(net.ReadEntity())
-    local station   = net.ReadString()
-    local stationURL= net.ReadString()
-    local volume    = net.ReadFloat()
-
+    local ent = data.entity
     if not IsValid(ent) then return end
 
-    if hook.Run("rRadio.PrePlayStation", ply, ent, station, stationURL, volume) == false then return end
+    if hook.Run("rRadio.PrePlayStation", ply, ent, data.station, data.url, data.volume) == false then return end
 
     if not Utils.CanUseRadio(ent) then
         ply:ChatPrint("[rRADIO] This seat cannot use the radio.")
@@ -149,97 +197,106 @@ net.Receive("rRadio.PlayStation", function(len, ply)
         return
     end
 
-    local idx = ent:EntIndex()
-
     if not ServerUtils.CanControlRadio(ent, ply) then
         ply:ChatPrint("You do not have permission to control this radio.")
         return
     end
 
-    Utils.SetRadioStatus(ent, Status.TUNING, station)
+    local idx = ent:EntIndex()
+
+    Utils.SetRadioStatus(ent, Status.TUNING, data.station)
 
     if Server.ActiveRadios[idx] then
         ServerUtils.BroadcastStop(ent)
         ServerUtils.RemoveActiveRadio(ent)
     end
 
-    ServerUtils.AddActiveRadio(ent, station, stationURL, volume, ply)
-
-    DevPrint("[sv_core] ActiveRadios now contains:")
+    ServerUtils.AddActiveRadio(ent, data.station, data.url, data.volume, ply)
 
     if Radio.DEV then
+        DevPrint("[sv_core] ActiveRadios now contains:")
         for k, v in pairs(Server.ActiveRadios) do
-            print("[sv_core] ActiveRadio " .. k .. ": " .. v.entity:EntIndex())
-            print("\tStation: " .. v.stationName)
-            print("\tURL: " .. v.url)
-            print("\tVolume: " .. v.volume)
+            if IsValid(v.entity) then
+                print(string.format("[sv_core] ActiveRadio %s: %d", tostring(k), v.entity:EntIndex()))
+                print("\tStation: " .. v.stationName)
+                print("\tURL: " .. v.url)
+                print("\tVolume: " .. tostring(v.volume))
+            end
         end
     end
 
+    makeStationDebugString(ent, data.station, data.url, data.volume)
 
-
-    ServerUtils.BroadcastPlay(ent, station, stationURL, volume)
+    ServerUtils.BroadcastPlay(ent, data.station, data.url, data.volume)
 
     if ent.IsPermanent then
         Permanent.SavePermanentBoombox(ent)
     end
 
-    Server.stationUpdateQueue[idx] = {
-        station   = station,
-        url       = stationURL,
-        volume    = volume,
-        timestamp = SysTime()
-    }
+    StationQueue:schedule(idx, {
+        station = data.station,
+        url = data.url,
+        volume = data.volume
+    })
 
-    hook.Run("rRadio.PostPlayStation", ply, ent, station, stationURL, volume)
-end)
+    hook.Run("rRadio.PostPlayStation", ply, ent, data.station, data.url, data.volume)
+end
 
-net.Receive("rRadio.StopStation", function(len, ply)
-    local entity = net.ReadEntity()
+function RadioManager:handleStopStation(ply, ent)
+    if not IsValid(ent) then return end
 
-    if not IsValid(entity) then return end
+    if hook.Run("rRadio.PreStopStation", ply, ent) == false then return end
 
-    if hook.Run("rRadio.PreStopStation", ply, entity) == false then return end
-
-    if not ServerUtils.CanControlRadio(entity, ply) then
+    if not ServerUtils.CanControlRadio(ent, ply) then
         ply:ChatPrint("You do not have permission to control this radio.")
         return
     end
 
-    Utils.SetRadioStatus(entity, Status.STOPPED)
-    ServerUtils.RemoveActiveRadio(entity)
-    ServerUtils.BroadcastStop(entity)
-    net.Start("rRadio.UpdateRadioStatus")
-    net.WriteEntity(entity)
-    net.WriteString("")
-    net.WriteBool(false)
-    net.WriteInt(Status.STOPPED, 2)
-    net.Broadcast()
-    local entIndex = entity:EntIndex()
+    Utils.SetRadioStatus(ent, Status.STOPPED)
+    ServerUtils.RemoveActiveRadio(ent)
+    ServerUtils.BroadcastStop(ent)
+
+    local entIndex = ent:EntIndex()
     Server.stationUpdateQueue[entIndex] = nil
-    timer.Create("StationUpdate_" .. entIndex, Config.StationUpdateDebounce, 1, function()
-        if IsValid(entity) and entity.IsPermanent then
-            Permanent.ClearSavedStation(entity)
+
+    timer.Create(Core.TimerPrefix.StationUpdate .. entIndex, Config.StationUpdateDebounce, 1, function()
+        if IsValid(ent) and ent.IsPermanent then
+            Permanent.ClearSavedStation(ent)
         end
     end)
 
-    hook.Run("rRadio.PostStopStation", ply, entity)
+    hook.Run("rRadio.PostStopStation", ply, ent)
+end
+
+net.Receive(Net.PlayStation, function(_, ply)
+    DevPrint("[rRADIO] Server got rRadio.PlayStation from: " .. ply:Nick())
+
+    local seatEntity = net.ReadEntity()
+    local station    = net.ReadString()
+    local stationURL = net.ReadString()
+    local volume     = net.ReadFloat()
+
+    RadioManager:handlePlayStation(ply, {
+        seatEntity = seatEntity,
+        entity     = ServerUtils.GetVehicleEntity(seatEntity),
+        station    = station,
+        url        = stationURL,
+        volume     = volume
+    })
 end)
 
-net.Receive("rRadio.SetRadioVolume", function(len, ply)
-    local entity = net.ReadEntity()
-    local volume = net.ReadFloat()
-    local entIndex = IsValid(entity) and entity:EntIndex() or nil
-    if not entIndex then return end
+net.Receive(Net.StopStation, function(_, ply)
+    RadioManager:handleStopStation(ply, net.ReadEntity())
+end)
 
-    local upd = Server.volumeUpdateQueue[entIndex]
-    if not upd then
-        upd = { lastUpdate = 0, pendingVolume = volume, pendingPlayer = ply }
-        Server.volumeUpdateQueue[entIndex] = upd
-    else
-        upd.pendingVolume = volume
-        upd.pendingPlayer = ply
-    end
+net.Receive(Net.SetRadioVolume, function(_, ply)
+    local entity = net.ReadEntity()
+    if not IsValid(entity) then return end
+
+    local entIndex = entity:EntIndex()
+    local volume = net.ReadFloat()
+
+    VolumeQueue:queue(entIndex, volume, ply)
 end)
 
 hook.Add("PlayerInitialSpawn", "rRadio.SendActiveRadiosOnJoin", function(ply)
@@ -263,7 +320,7 @@ local function sendCustomStations(target)
         end
     end
 
-    net.Start("rRadio.CustomStationsUpdate")
+    net.Start(Net.CustomStationsUpdate)
     net.WriteUInt(#payload, 12)
     for i = 1, #payload do
         local st = payload[i]
@@ -390,7 +447,7 @@ hook.Add("PlayerEnteredVehicle", "rRadio.RadioVehicleHandling", function(ply, ve
         return
     end
 
-    net.Start("rRadio.PlayVehicleAnimation")
+    net.Start(Net.PlayVehicleAnimation)
     net.WriteEntity(vehicle)
     net.WriteBool(vehicle:GetDriver() == ply)
     net.Send(ply)
@@ -496,7 +553,7 @@ concommand.Add(
       end
 
       local stations = Server.CustomStations:GetAll()
-      net.Start("rRadio.ListCustomStations")
+      net.Start(Net.ListCustomStations)
         net.WriteUInt(#stations, 16)
         for _, st in ipairs(stations) do
           net.WriteString(st.name)
@@ -540,7 +597,7 @@ if Radio.DEV then
 
         Server.EntityVolumes[entID] = vol
         ent:SetNWFloat("Volume", vol)
-        net.Start("rRadio.SetRadioVolume")
+        net.Start(Net.SetRadioVolume)
             net.WriteEntity(ent)
             net.WriteFloat(vol)
         net.Broadcast()
