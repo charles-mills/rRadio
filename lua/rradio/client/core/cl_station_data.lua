@@ -1,15 +1,17 @@
 if SERVER then return end
 
-rRadio.cl.stationData = {}
-rRadio.cl.allowedUrlSet = {}
-rRadio.cl.customUrlSet = {}
-rRadio.cl.nameIndex = {}
-rRadio.cl.stationDataLoaded = false
+local Radio, Interface = rRadio:Import("Radio", "!interface", "!cl")
 
-function rRadio.cl.loadStationData()
-    if rRadio.cl.stationDataLoaded then return end
+Radio.cl.stationData = {}
+Radio.cl.allowedUrlSet = {}
+Radio.cl.customUrlSet = {}
+Radio.cl.nameIndex = {}
+Radio.cl.stationDataLoaded = false
+
+function Radio.cl.loadStationData()
+    if Radio.cl.stationDataLoaded then return end
     
-    rRadio.cl.stationData = {}
+    Radio.cl.stationData = {}
     local files = file.Find("rradio/client/data/stationpacks/*.lua", "LUA")
     
     for _, f in ipairs(files) do
@@ -17,17 +19,17 @@ function rRadio.cl.loadStationData()
         if data then
             for country, stations in pairs(data) do
                 local baseCountry = country:gsub("_(%d+)$", "")
-                rRadio.cl.stationData[baseCountry] = rRadio.cl.stationData[baseCountry] or {}
+                Radio.cl.stationData[baseCountry] = Radio.cl.stationData[baseCountry] or {}
                 
                 for _, station in ipairs(stations) do
                     local entry = {
                         name = station.n,
                         url = station.u,
                         country = baseCountry,
-                        charMap = rRadio.interface.buildCharMap(station.n)
+                        charMap = Interface.buildCharMap(station.n)
                     }
-                    table.insert(rRadio.cl.stationData[baseCountry], entry)
-                    rRadio.cl.allowedUrlSet[station.u] = true
+                    table.insert(Radio.cl.stationData[baseCountry], entry)
+                    Radio.cl.allowedUrlSet[station.u] = true
                 end
             end
         else
@@ -35,14 +37,14 @@ function rRadio.cl.loadStationData()
         end
     end
     
-    rRadio.cl.stationDataLoaded = true
+    Radio.cl.stationDataLoaded = true
 end
 
-function rRadio.cl.rebuildNameIndex()
-    rRadio.cl.nameIndex = {}
-    for country, list in pairs(rRadio.cl.stationData) do
+function Radio.cl.rebuildNameIndex()
+    Radio.cl.nameIndex = {}
+    for country, list in pairs(Radio.cl.stationData) do
         for _, station in ipairs(list) do
-            table.insert(rRadio.cl.nameIndex, {
+            table.insert(Radio.cl.nameIndex, {
                 key = station.name:lower(),
                 ref = station,
                 country = country
@@ -51,9 +53,9 @@ function rRadio.cl.rebuildNameIndex()
     end
 end
 
-function rRadio.cl.isUrlAllowed(url)
-    return rRadio.cl.allowedUrlSet[url] == true
+function Radio.cl.isUrlAllowed(url)
+    return Radio.cl.allowedUrlSet[url] == true
 end
 
-rRadio.cl.loadStationData()
-rRadio.cl.rebuildNameIndex()
+Radio.cl.loadStationData()
+Radio.cl.rebuildNameIndex()

@@ -1,8 +1,6 @@
+local Radio, Config, LanguageManager = rRadio:Import("Radio", "config", "!LanguageManager")
 
---- rRadio Language Manager
---  Handles localisation lookups and language selection.
-rRadio.LanguageManager = {}
-rRadio.LanguageManager.languages = {
+LanguageManager.languages = {
     de     = "Deutsch",
     en     = "English",
     es_es  = "Español",
@@ -17,26 +15,26 @@ rRadio.LanguageManager.languages = {
     en_pt  = "Pirate"
 }
 
-rRadio.LanguageManager.currentLanguage = "en"
-rRadio.LanguageManager.translations = include("rradio/client/lang/cl_localisation_strings.lua")
+LanguageManager.currentLanguage = LanguageManager.currentLanguage or "en"
+LanguageManager.translations = include("rradio/client/lang/cl_localisation_strings.lua")
 
-rRadio.LanguageManager.countryTranslationsA = include("rradio/client/data/langpacks/data_1.lua")
-rRadio.LanguageManager.countryTranslationsB = include("rradio/client/data/langpacks/data_2.lua")
-rRadio.LanguageManager.countryTranslationsC = include("rradio/client/data/langpacks/data_3.lua")
+LanguageManager.countryTranslationsA = include("rradio/client/data/langpacks/data_1.lua")
+LanguageManager.countryTranslationsB = include("rradio/client/data/langpacks/data_2.lua")
+LanguageManager.countryTranslationsC = include("rradio/client/data/langpacks/data_3.lua")
 
-rRadio.LanguageManager.countryTranslations = {}
+LanguageManager.countryTranslations = LanguageManager.countryTranslations or {}
 
 for _, pack in ipairs{
-    rRadio.LanguageManager.countryTranslationsA,
-    rRadio.LanguageManager.countryTranslationsB,
-    rRadio.LanguageManager.countryTranslationsC
+    LanguageManager.countryTranslationsA,
+    LanguageManager.countryTranslationsB,
+    LanguageManager.countryTranslationsC
 } do
-    table.Merge(rRadio.LanguageManager.countryTranslations, pack)
+    table.Merge(LanguageManager.countryTranslations, pack)
 end
 
 local gmodLang = GetConVar("gmod_language")
 
-function rRadio.LanguageManager:GetClientLanguageCode()
+function LanguageManager:GetClientLanguageCode()
     local raw = (gmodLang and gmodLang:GetString()) or "en"
     raw = raw:lower():gsub("%s+", "_"):gsub("-", "_"):gsub("[()]", "")
     local langMap = {
@@ -49,46 +47,47 @@ function rRadio.LanguageManager:GetClientLanguageCode()
     return langMap[raw] or raw
 end
 
-function rRadio.LanguageManager:UpdateCurrentLanguage()
+function LanguageManager:UpdateCurrentLanguage()
     self.currentLanguage = self:GetClientLanguageCode()
-    rRadio.config.Lang = self.translations[self.currentLanguage] or {}
+    Config.Lang = self.translations[self.currentLanguage] or {}
 end
 
-function rRadio.LanguageManager:GetCountryTranslation(country_key)
+function LanguageManager:GetCountryTranslation(country_key)
     local lang = self.currentLanguage or "en"
     local translations = self.countryTranslations[lang]
     return (translations and translations[country_key]) or country_key
 end
 
-function rRadio.LanguageManager:Translate(key)
+function LanguageManager:Translate(key)
     return self:GetTranslation(self.currentLanguage, key)
 end
 
-function rRadio.LanguageManager:GetLanguageName(code)
+function LanguageManager:GetLanguageName(code)
     return self.languages[code] or code
 end
 
-function rRadio.LanguageManager:GetAvailableLanguages()
+function LanguageManager:GetAvailableLanguages()
     return self.languages
 end
 
-function rRadio.LanguageManager:GetTranslation(lang, key)
+function LanguageManager:GetTranslation(lang, key)
     if self.translations[lang] and self.translations[lang][key] then
         return self.translations[lang][key]
     end
     return key
 end
 
-function rRadio.LanguageManager:GetCustomKey()
-    return rRadio.config.CustomStationCategory or "Custom"
+function LanguageManager:GetCustomKey()
+    return Config.CustomStationCategory or "Custom"
 end
 
-function rRadio.LanguageManager:GetCustomTranslation()
-    local lang = rRadio.Settings and rRadio.Settings.Language
+function LanguageManager:GetCustomTranslation()
+    local lang = Radio.Settings and Radio.Settings.Language
                   or self.currentLanguage or "en"
 
     local pack = self.translations[lang] or self.translations["en"] or {}
     return pack["Custom"] or "Custom Radio Stations"
 end
 
-return rRadio.LanguageManager
+return LanguageManager
+

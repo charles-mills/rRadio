@@ -1,10 +1,12 @@
+local Radio, Utils, Interface, Config = rRadio:Import("Radio", "utils", "!interface", "config", "!cl")
+
 if SERVER then return end
 
-local uiState = rRadio.cl.uiState
-local timing = rRadio.cl.timing
-local cvars = rRadio.cl.cvars
+local uiState = Radio.cl.uiState
+local timing = Radio.cl.timing
+local cvars = Radio.cl.cvars
 
-if not rRadio.config.UsePlayerBindHook then
+if not Config.UsePlayerBindHook then
     hook.Add("Think", "rRadio.OpenCarRadioMenu", function()
         local ply = LocalPlayer()
         local key = cvars.menuKey:GetInt()
@@ -15,7 +17,7 @@ if not rRadio.config.UsePlayerBindHook then
            now - timing.lastKeyPress > timing.keyPressDelay and 
            not uiState.isSearching then
             timing.lastKeyPress = now
-            rRadio.cl.toggleCarRadioMenu()
+            Radio.cl.toggleCarRadioMenu()
         end
     end)
 else
@@ -28,39 +30,39 @@ else
            not uiState.isSearching and 
            IsFirstTimePredicted() then
             timing.lastKeyPress = now
-            rRadio.cl.toggleCarRadioMenu()
+            Radio.cl.toggleCarRadioMenu()
         end
     end)
 end
 
 hook.Add("EntityRemoved", "rRadio.CleanupRadioStationCount", function(entity)
-    if rRadio.utils.CanUseRadio(entity) then
-        rRadio.cl.currentlyPlayingStations[entity] = nil
+    if Utils.CanUseRadio(entity) then
+        Radio.cl.currentlyPlayingStations[entity] = nil
     end
-    if rRadio.cl.radioSources[entity] then
-        if IsValid(rRadio.cl.radioSources[entity]) then
-            rRadio.cl.radioSources[entity]:Stop()
+    if Radio.cl.radioSources[entity] then
+        if IsValid(Radio.cl.radioSources[entity]) then
+            Radio.cl.radioSources[entity]:Stop()
         end
-        rRadio.cl.radioSources[entity] = nil
+        Radio.cl.radioSources[entity] = nil
     end
     
-    rRadio.cl.queuedStations[entity] = nil
+    Radio.cl.queuedStations[entity] = nil
 
-    if rRadio.cl.stationLastPos[entity] then
-        rRadio.cl.stationLastPos[entity] = nil
+    if Radio.cl.stationLastPos[entity] then
+        Radio.cl.stationLastPos[entity] = nil
     end
 
-    rRadio.cl.playbackNonce[entity] = nil
+    Radio.cl.playbackNonce[entity] = nil
 end)
 
 hook.Add("EntityRemoved", "rRadio.BoomboxCleanup", function(ent)
-    if IsValid(ent) and rRadio.utils.IsBoombox(ent) then
-        rRadio.cl.currentlyPlayingStations[ent] = nil
-        rRadio.cl.boomboxStatuses[ent:EntIndex()] = nil
-        rRadio.cl.connectedStations[ent] = nil
-        rRadio.cl.requestedStations[ent] = nil
-        rRadio.cl.queuedStations[ent] = nil
-        rRadio.cl.mutedBoomboxes[ent] = nil
+    if IsValid(ent) and Utils.IsBoombox(ent) then
+        Radio.cl.currentlyPlayingStations[ent] = nil
+        Radio.cl.boomboxStatuses[ent:EntIndex()] = nil
+        Radio.cl.connectedStations[ent] = nil
+        Radio.cl.requestedStations[ent] = nil
+        Radio.cl.queuedStations[ent] = nil
+        Radio.cl.mutedBoomboxes[ent] = nil
     end
 end)
 
@@ -74,28 +76,28 @@ end)
 hook.Add("EntityRemoved", "rRadio.ClearRadioEntity", function(ent)
     local ply = LocalPlayer()
     if ent == ply.currentRadioEntity then
-        rRadio.cl.currentlyPlayingStations[ent] = nil
+        Radio.cl.currentlyPlayingStations[ent] = nil
         ply.currentRadioEntity = nil
     end
 end)
 
 hook.Add("InitPostEntity", "rRadio.ApplySettingsOnJoin", function()
-    rRadio.addClConVars()
-    rRadio.interface.loadSavedSettings()
+    Radio.addClConVars()
+    Interface.loadSavedSettings()
 end)
 
 hook.Add("ShutDown", "rRadio.CleanupAllStations", function()
-    for ent, station in pairs(rRadio.cl.radioSources) do
+    for ent, station in pairs(Radio.cl.radioSources) do
         if IsValid(station) then
             station:Stop()
         end
     end
     
-    rRadio.cl.radioSources = {}
-    rRadio.cl.entityVolumes = {}
-    rRadio.cl.stationLastPos = {}
-    rRadio.cl.currentlyPlayingStations = {}
-    rRadio.cl.performance.activeStationCount = 0
+    Radio.cl.radioSources = {}
+    Radio.cl.entityVolumes = {}
+    Radio.cl.stationLastPos = {}
+    Radio.cl.currentlyPlayingStations = {}
+    Radio.cl.performance.activeStationCount = 0
     
     if timer.Exists("ValidateStationCount") then
         timer.Remove("ValidateStationCount")
@@ -105,13 +107,13 @@ end)
 if not timer.Exists("ValidateStationCount") then
     timer.Create("ValidateStationCount", 30, 0, function()
         local actualCount = 0
-        for ent, source in pairs(rRadio.cl.radioSources) do
+        for ent, source in pairs(Radio.cl.radioSources) do
             if IsValid(ent) and IsValid(source) then
                 actualCount = actualCount + 1
             else
-                rRadio.cl.radioSources[ent] = nil
+                Radio.cl.radioSources[ent] = nil
             end
         end
-        rRadio.cl.performance.activeStationCount = actualCount
+        Radio.cl.performance.activeStationCount = actualCount
     end)
 end

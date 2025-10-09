@@ -45,15 +45,52 @@ local dev_id = "3465709662"
 local pub_id = "3318060741"
 
 rRadio = rRadio or {}
-rRadio.DEV = false
+local Radio = rRadio
+Radio.DEV = false
 
-function rRadio.DevPrint(text)
-    if not rRadio.DEV then return end
+include("rradio/shared/sh_core.lua")
+
+local Core = Radio.core
+local unpack = unpack or table.unpack
+
+function Radio:Import(...)
+    local count = select("#", ...)
+    local results = {}
+
+    for index = 1, count do
+        local key = select(index, ...)
+        if type(key) == "string" then
+            local ensure = key:sub(1, 1) == "!"
+            if ensure then
+                key = key:sub(2)
+            end
+
+            if key == "Radio" or key == "rRadio" then
+                results[index] = self
+            else
+                if ensure then
+                    self[key] = self[key] or {}
+                end
+
+                results[index] = self[key]
+            end
+        else
+            results[index] = nil
+        end
+    end
+
+    return unpack(results, 1, count)
+end
+
+function Radio.DevPrint(text)
+    if not Radio.DEV then return end
 
     print("[RRADIO DEV] " .. text .. "\n")
 end
 
-function rRadio.FormattedOutput(text)
+local DevPrint = Radio.DevPrint
+
+function Radio.FormattedOutput(text)
     if SERVER then
         MsgC(Color(0,200,255), "[rRadio] ", Color(255,255,255), text .. "\n")
     elseif CLIENT then
@@ -61,15 +98,15 @@ function rRadio.FormattedOutput(text)
     end
 end
 
-function rRadio.addClConVars()
-    if not rRadio.config then 
-        rRadio.FormattedOutput("[RRADIO] rRadio.config not found, skipping client-side convars")
+function Radio.addClConVars()
+    if not Radio.config then 
+        Radio.FormattedOutput("[RRADIO] rRadio.config not found, skipping client-side convars")
         return false
     end
 
     if SERVER then return end
     
-    CreateClientConVar("rammel_rradio_vehicle_animation", rRadio.config.AnimationDefaultOn and "1" or "0", true, false, "Toggle the animation upon entering a vehicle.")
+    CreateClientConVar("rammel_rradio_vehicle_animation", Radio.config.AnimationDefaultOn and "1" or "0", true, false, "Toggle the animation upon entering a vehicle.")
     CreateClientConVar("rammel_rradio_boombox_hud", "1", true, false, "Show or hide the HUD for the boombox.")
     CreateClientConVar("rammel_rradio_basic_hud", "0", true, false, "Use the simplified boombox HUD.")
     CreateClientConVar("rammel_rradio_menu_key", "21", true, false, "Select the key to open the car radio menu.")
@@ -80,8 +117,8 @@ function rRadio.addClConVars()
     return true
 end
 
-function rRadio.isClientLoadDisabled()
-    if not rRadio.config then return false end
+function Radio.isClientLoadDisabled()
+    if not Radio.config then return false end
 
     if SERVER then return false end
 
@@ -91,7 +128,7 @@ function rRadio.isClientLoadDisabled()
         return false
     end
 
-    return rRadio.config.ClientHardDisable and not cv:GetBool()
+    return Radio.config.ClientHardDisable and not cv:GetBool()
 end
 
 local function addClientFile(filename)
@@ -151,7 +188,6 @@ local function addCSLuaFiles()
         "rradio/client/lang",
         "rradio/client/data/langpacks",
         "rradio/client/data/stationpacks",
-        "entities/rammel_base_boombox",
         "entities/rammel_boombox",
         "entities/rammel_boombox_gold"
     }
@@ -169,11 +205,11 @@ local function addClProperties()
         Order     = 1501,
         MenuIcon  = "icon16/SOUND_MUTE.png",
         Filter    = function(self, ent, ply)
-            return rRadio.utils.CanUseRadio(ent) and not rRadio.cl.mutedBoomboxes[ent]
+            return Radio.utils.CanUseRadio(ent) and not Radio.cl.mutedBoomboxes[ent]
         end,
         Action    = function(self, ent)
-            rRadio.cl.mutedBoomboxes[ent] = true
-            rRadio.interface.refreshVolume(ent)
+            Radio.cl.mutedBoomboxes[ent] = true
+            Radio.interface.refreshVolume(ent)
         end
     })
 
@@ -182,11 +218,11 @@ local function addClProperties()
         Order     = 1502,
         MenuIcon  = "icon16/SOUND.png",
         Filter    = function(self, ent, ply)
-            return rRadio.utils.CanUseRadio(ent) and rRadio.cl.mutedBoomboxes[ent]
+            return Radio.utils.CanUseRadio(ent) and Radio.cl.mutedBoomboxes[ent]
         end,
         Action    = function(self, ent)
-            rRadio.cl.mutedBoomboxes[ent] = nil
-            rRadio.interface.refreshVolume(ent)
+            Radio.cl.mutedBoomboxes[ent] = nil
+            Radio.interface.refreshVolume(ent)
         end
     })
 end
@@ -212,33 +248,22 @@ local function addPrivileges()
 end
 
 local function registerNetStrings()
-    util.AddNetworkString("rRadio.PlayStation")
-    util.AddNetworkString("rRadio.StopStation")
-    util.AddNetworkString("rRadio.OpenMenu")
-    util.AddNetworkString("rRadio.PlayVehicleAnimation")
-    util.AddNetworkString("rRadio.UpdateRadioStatus")
-    util.AddNetworkString("rRadio.SetRadioVolume")
-    util.AddNetworkString("rRadio.SetPersistent")
-    util.AddNetworkString("rRadio.RemovePersistent")
-    util.AddNetworkString("rRadio.SendPersistentConfirmation")
-    util.AddNetworkString("rRadio.SetConfigUpdate")
-    util.AddNetworkString("rRadio.CustomStationsUpdate")
-    util.AddNetworkString("rRadio.ListCustomStations")
+    Core.registerNetworkStrings()
 end
 
 if SERVER then
     local resourceStr = ""
 
-    resourceStr = rRadio.DEV and "developer" or "public"
-    resource.AddWorkshop(rRadio.DEV and dev_id or pub_id)
+    resourceStr = Radio.DEV and "developer" or "public"
+    resource.AddWorkshop(Radio.DEV and dev_id or pub_id)
 
-    rRadio.FormattedOutput("Starting server-side initialization")
+    Radio.FormattedOutput("Starting server-side initialization")
     addCSLuaFiles()
-    rRadio.FormattedOutput("Assigned " .. cl_load_count .. " client-side files")
-    rRadio.FormattedOutput("Using " .. resourceStr .. " resources")
+    Radio.FormattedOutput("Assigned " .. cl_load_count .. " client-side files")
+    Radio.FormattedOutput("Using " .. resourceStr .. " resources")
 
     registerNetStrings()
-    rRadio.FormattedOutput("Registered network strings")
+    Radio.FormattedOutput("Registered network strings")
 
     include("rradio/shared/sh_config.lua")
     include("rradio/shared/sh_utils.lua")
@@ -249,42 +274,43 @@ if SERVER then
     include("rradio/server/sv_blogs.lua")
     addPrivileges()
     
-    rRadio.FormattedOutput("Finished server-side initialization")
+    Radio.FormattedOutput("Finished server-side initialization")
 elseif CLIENT then
     addCSLuaFiles()
     createFonts()
     addPrivileges()
+    addClientFile("shared/sh_core.lua")
+    addClientFile("shared/sh_config.lua")
     addClientFile("shared/sh_utils.lua")
     addClientFile("client/interface/cl_themes.lua")
     addClientFile("client/lang/cl_language_manager.lua")
     addClientFile("client/lang/cl_localisation_strings.lua")
-    addClientFile("shared/sh_config.lua")
 
-    rRadio.cl = rRadio.cl or {}
-    rRadio.cl.radioSources = rRadio.cl.radioSources or {}
-    rRadio.cl.mutedBoomboxes = rRadio.cl.mutedBoomboxes or {}
+    Radio.cl = Radio.cl or {}
+    Radio.cl.radioSources = Radio.cl.radioSources or {}
+    Radio.cl.mutedBoomboxes = Radio.cl.mutedBoomboxes or {}
 
-    if rRadio.config.UsePlayerBindHook == nil then
-        rRadio.config.UsePlayerBindHook = not game.SinglePlayer()
+    if Radio.config.UsePlayerBindHook == nil then
+        Radio.config.UsePlayerBindHook = not game.SinglePlayer()
     end
 
-    rRadio.addClConVars()
+    Radio.addClConVars()
 
     cvars.AddChangeCallback("rammel_rradio_max_volume", function(cvar, old, new)
-        for ent in pairs(rRadio.cl.radioSources) do
-            rRadio.interface.refreshVolume(ent)
+        for ent in pairs(Radio.cl.radioSources) do
+            Radio.interface.refreshVolume(ent)
         end
     end, "rRadioMaxVolCB")
 
     addClProperties()
 
-    if (rRadio.isClientLoadDisabled()) then
-        rRadio.FormattedOutput("Client-side load disabled")
-        rRadio.FormattedOutput("Use rammel_rradio_enabled 1 to re-enable")
+    if (Radio.isClientLoadDisabled()) then
+        Radio.FormattedOutput("Client-side load disabled")
+        Radio.FormattedOutput("Use rammel_rradio_enabled 1 to re-enable")
         return
     end
 
-    rRadio.FormattedOutput("Starting client-side initialization")
+    Radio.FormattedOutput("Starting client-side initialization")
     
     addClientFile("client/core/cl_utils.lua")
 
@@ -318,6 +344,6 @@ elseif CLIENT then
         addClientFile("client/data/stationpacks/" .. f)
     end
 
-    rRadio.FormattedOutput("Loaded " .. cl_count .. "/55 client-side files")
-    rRadio.FormattedOutput("Finished client-side initialization")
+    Radio.FormattedOutput("Loaded " .. cl_count .. "/55 client-side files")
+    Radio.FormattedOutput("Finished client-side initialization")
 end

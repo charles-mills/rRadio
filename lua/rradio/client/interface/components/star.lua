@@ -1,6 +1,8 @@
+local Radio, Interface, Config = rRadio:Import("Radio", "!interface", "config")
+
 do
     local PANEL     = {}
-    local Scale     = rRadio.interface.scale
+    local Scale     = Interface.scale
     local FULL_MAT  = Material("hud/star_full.png",  "smooth")
     local EMPTY_MAT = Material("hud/star.png",       "smooth")
 
@@ -27,13 +29,13 @@ do
 
     function PANEL:Paint(w,h)
         surface.SetMaterial(isFavourite(self) and FULL_MAT or EMPTY_MAT)
-        surface.SetDrawColor(rRadio.config.UI.TextColor)
+        surface.SetDrawColor(Config.UI.TextColor)
         surface.DrawTexturedRect(0,0,w,h)
     end
 
     function PANEL:DoClick()
         if not self.catTable then return end
-        rRadio.interface.toggleFavorite(self.catTable, self.key, self.subKey)
+        Interface.toggleFavorite(self.catTable, self.key, self.subKey)
         if isfunction(self.updateFunc) then self.updateFunc() end
     end
 

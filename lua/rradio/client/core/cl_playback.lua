@@ -1,11 +1,10 @@
 if SERVER then return end
 
-local IsValid = IsValid
+local Radio, Status, DevPrint, iface, cfgGlobal, utils = rRadio:Import("Radio", "status", "DevPrint", "!interface", "config", "utils", "!cl")
+local cl = Radio.cl
 
-local cl          = rRadio.cl
-local iface       = rRadio.interface
-local cfgGlobal   = rRadio.config
-local utils       = rRadio.utils
+local IsValid = IsValid
+local perf = cl.performance
 
 local UPDATE_INTERVAL = 0.2
 
@@ -54,7 +53,7 @@ end
 function cl.markStationActive(station, entity, name, url, volume)
     cl.radioSources[entity]            = station
     cl.connectedStations[entity]       = true
-    utils.SetRadioStatus(entity, rRadio.status.PLAYING, name)
+    utils.SetRadioStatus(entity, Status.PLAYING, name)
     cl.requestedStations[entity]       = nil
     cl.currentlyPlayingStations[entity] = {name = name, url = url, volume = volume}
 end
@@ -91,12 +90,12 @@ function cl.processPendingStations(_, plyPos)
     for seatEnt, data in pairs(cl.queuedStations) do
         local entity = iface.GetVehicleEntity(seatEnt)
         if not IsValid(entity) then
-            rRadio.DevPrint("Removing invalid entity from queue: " .. tostring(seatEnt))
+            DevPrint("Removing invalid entity from queue: " .. tostring(seatEnt))
             cl.queuedStations[seatEnt] = nil
         else
             local cfg = iface.getEntityConfig(entity)
             if cfg and isWithinLoadRange(plyPos, entity:GetPos(), cfg) then
-                rRadio.DevPrint("Starting playback for queued station: " .. data.name)
+                DevPrint("Starting playback for queued station: " .. data.name)
                 cl.startStationPlayback(entity, data.name, data.url, data.volume, data.nonce)
                 cl.queuedStations[seatEnt] = nil
             end
@@ -132,7 +131,7 @@ function cl.unloadDistantStations(plyPos)
                     queuedStationsTbl[seatEnt] = {name = data.name, url = data.url, volume = vol, nonce = newNonce}
                 end
                 playingStations[entity] = nil
-                rRadio.DevPrint("Unloaded a station", entity)
+                DevPrint("Unloaded a station", entity)
                 removed = true
             end
         end
@@ -155,8 +154,6 @@ function cl.cleanAndRefreshSources()
         end
     end
 end
-
-local perf = cl.performance
 
 function cl.maybeLoadUnload(ply, plyPos)
     if cfgGlobal.ConditionalStationLoad   then cl.processPendingStations(ply, plyPos) end

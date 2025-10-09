@@ -1,4 +1,4 @@
-rRadio.themes = rRadio.themes or {}
+local Radio = rRadio:Import("Radio", "!themes")
 
 local function CreateTheme(colors)
     return {
@@ -360,5 +360,5 @@ local themeColors = {
 }
 
 for name, colors in pairs(themeColors) do
-    rRadio.themes[name] = CreateTheme(colors)
+    Radio.themes[name] = CreateTheme(colors)
 end

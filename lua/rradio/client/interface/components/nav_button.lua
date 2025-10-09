@@ -1,13 +1,15 @@
+local Radio, Interface, Config = rRadio:Import("Radio", "!interface", "config")
+
 do
     local PANEL = {}
-    local Scale = rRadio.interface.scale
+    local Scale = Interface.scale
 
     function PANEL:Init()
         self.iconMaterial = nil
         self.callback     = nil
         self.lerp         = 0
         self.baseColour   = Color(0,0,0,0)
-        self.hoverColour  = rRadio.config.UI.ButtonHoverColor
+        self.hoverColour  = Config.UI.ButtonHoverColor
         self:SetSize(Scale(25),Scale(25))
         self:SetText("")
     end
@@ -32,11 +34,11 @@ do
     end
 
     function PANEL:Paint(w,h)
-        local c = rRadio.interface.LerpColor(self.lerp,self.baseColour,self.hoverColour)
+        local c = Interface.LerpColor(self.lerp,self.baseColour,self.hoverColour)
         draw.RoundedBox(8,0,0,w,h,c)
         if self.iconMaterial then
             surface.SetMaterial(self.iconMaterial)
-            surface.SetDrawColor(ColorAlpha(rRadio.config.UI.TextColor,255*(0.5+0.5*self.lerp)))
+            surface.SetDrawColor(ColorAlpha(Config.UI.TextColor,255*(0.5+0.5*self.lerp)))
             surface.DrawTexturedRect(0,0,w,h)
         end
     end

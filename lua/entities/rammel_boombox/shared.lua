@@ -1,5 +1,5 @@
 ENT.Type = "anim"
-ENT.Base = "rammel_base_boombox"
+ENT.Base = "base_gmodentity"
 
 ENT.Category = "rRadio"
 ENT.Author = "Rammel"

@@ -1,4 +1,12 @@
-rRadio.interface = rRadio.interface or {}
+local Radio, Interface, Utils, Config, DevPrint, Net = rRadio:Import(
+    "Radio",
+    "!interface",
+    "utils",
+    "config",
+    "DevPrint",
+    "net",
+    "!cl"
+)
 
 local ICON_VOL_MUTE = Material("hud/vol_mute.png", "smooth")
 local ICON_VOL_DOWN = Material("hud/vol_down.png", "smooth")
@@ -7,6 +15,9 @@ local ICON_VOL_UP   = Material("hud/vol_up.png", "smooth")
 local stringLower = string.lower
 local stringSub   = string.sub
 local stringFind  = string.find
+local stringUpper = string.upper
+local languageGetPhrase = language.GetPhrase
+local inputGetKeyName = input.GetKeyName
 local utf8Len = string.utf8Len or function(s) return #s end
 local utf8Sub = string.utf8Sub or function(s, i, j) return stringSub(s, i, j) end
 
@@ -15,27 +26,27 @@ local IsValid = IsValid
 local BASE_WIDTH = 2560
 local scaleRatio = ScrW() / BASE_WIDTH
 
-function rRadio.cl.getEntityVolume(entity)
+function Radio.cl.getEntityVolume(entity)
     if not IsValid(entity) then return 0.5 end
     
-    local vol = rRadio.cl.entityVolumes[entity]
+    local vol = Radio.cl.entityVolumes[entity]
     if vol then return vol end
     
-    local cfg = rRadio.interface.getEntityConfig(entity)
+    local cfg = Interface.getEntityConfig(entity)
     return (cfg and cfg.Volume) or 0.5
 end
 
-function rRadio.cl.updateVolumeIcon(volumeIcon, value)
+function Radio.cl.updateVolumeIcon(volumeIcon, value)
     if not IsValid(volumeIcon) then return end
     local v = (type(value) == "function") and value() or value
-    volumeIcon:SetMaterial(rRadio.interface.GetVolumeIcon(v))
+    volumeIcon:SetMaterial(Interface.GetVolumeIcon(v))
 end
 
-function rRadio.cl.sendPendingVolume()
-    if not IsValid(rRadio.cl.pendingEntity) then return end
-    net.Start("rRadio.SetRadioVolume")
-    net.WriteEntity(rRadio.cl.pendingEntity)
-    net.WriteFloat(rRadio.cl.pendingVolume)
+function Radio.cl.sendPendingVolume()
+    if not IsValid(Radio.cl.pendingEntity) then return end
+    net.Start(Net.SetRadioVolume)
+    net.WriteEntity(Radio.cl.pendingEntity)
+    net.WriteFloat(Radio.cl.pendingVolume)
     net.SendToServer()
 end
 
@@ -82,15 +93,15 @@ local function subsequenceTest(needle, haystackMap)
   return true
 end
 
-rRadio.interface.buildCharMap     = buildCharMap
-rRadio.interface.subsequenceTest = subsequenceTest
+Interface.buildCharMap     = buildCharMap
+Interface.subsequenceTest = subsequenceTest
 
-rRadio.interface.favoriteCountries = rRadio.interface.favoriteCountries or {}
-rRadio.interface.favoriteStations = rRadio.interface.favoriteStations or {}
+Interface.favoriteCountries = Interface.favoriteCountries or {}
+Interface.favoriteStations = Interface.favoriteStations or {}
 local DATA_DIR = "rradio"
 
-rRadio.interface.favoriteCountriesFile = DATA_DIR .. "/favorite_countries.json"
-rRadio.interface.favoriteStationsFile = DATA_DIR .. "/favorite_stations.json"
+Interface.favoriteCountriesFile = DATA_DIR .. "/favorite_countries.json"
+Interface.favoriteStationsFile = DATA_DIR .. "/favorite_stations.json"
 
 local SAVE_FAVORITES_TIMER = "rRadio.SaveFavorites"
 local SAVE_FAVORITES_DELAY = 0.25
@@ -125,37 +136,79 @@ if not file.IsDir(DATA_DIR, "DATA") then
 end
 
 local scaledFontCache = {}
+local keyNameCache = {}
 hook.Add("LanguageUpdated", "rRadio.ClearScaledFontCache", function()
     scaledFontCache = {}
+    keyNameCache = {}
 end)
+
+local KEY_NAME_FALLBACK = "the Open Key"
+
+local function resolveKeyName(keyCode)
+    local token = keyCode and inputGetKeyName(keyCode) or nil
+    if token and token ~= "" then
+        local translated = languageGetPhrase(token)
+        if translated and translated ~= "" then
+            return translated
+        end
+    end
+
+    local fallback = languageGetPhrase(KEY_NAME_FALLBACK)
+    if not fallback or fallback == "" then
+        fallback = KEY_NAME_FALLBACK
+    end
+
+    return fallback
+end
+
+function Radio.cl.getKeyName(keyCode)
+    if keyCode ~= nil then
+        local cached = keyNameCache[keyCode]
+        if cached then return cached end
+    end
+
+    local resolved = resolveKeyName(keyCode)
+    local upper = stringUpper(resolved)
+
+    if keyCode ~= nil then
+        keyNameCache[keyCode] = upper
+    end
+
+    return upper
+end
 
 
 local _lastVolumes = {}
 local _volThreshold = 0.01
 
-function rRadio.interface.scale(val)
+function Interface.scale(val)
     return val * scaleRatio
 end
 
-function rRadio.interface.playSound(sound)
-    if not rRadio.config.EnableSoundEffects then return end
-    if not rRadio.config.Sounds[sound] then return end
-    surface.PlaySound(rRadio.config.Sounds[sound])
+function Interface.playSound(sound)
+    if not Config.EnableSoundEffects then return end
+    if not Config.Sounds[sound] then return end
+    surface.PlaySound(Config.Sounds[sound])
 end
 
-function rRadio.interface.refreshVolume(ent)
-    local src = rRadio.cl.radioSources[ent]
+function Interface.refreshVolume(ent)
+    local src = Radio.cl.radioSources[ent]
     if not (IsValid(ent) and IsValid(src)) then return end
 
     local ply = LocalPlayer()
     local dist = ply:GetPos():DistToSqr(ent:GetPos())
-    local inCar = (rRadio.utils.GetVehicle(ply:GetVehicle()) == ent)
-    rRadio.interface.updateRadioVolume(src, dist, inCar, ent)
+    local inCar = (Utils.GetVehicle(ply:GetVehicle()) == ent)
+    Interface.updateRadioVolume(src, dist, inCar, ent)
 end
 
-function rRadio.interface.fuzzyMatch(needle, haystack)
-    needle = stringLower(needle or "")
-    haystack = stringLower(haystack or "")
+function Interface.fuzzyMatch(needle, haystack, alreadyLowered)
+    if not alreadyLowered then
+        needle = stringLower(needle or "")
+        haystack = stringLower(haystack or "")
+    else
+        needle = needle or ""
+        haystack = haystack or ""
+    end
     local nLen = #needle
     if nLen == 0 then return 1 end
     local hLen = #haystack
@@ -171,54 +224,126 @@ function rRadio.interface.fuzzyMatch(needle, haystack)
     return scoreSum / nLen
 end
 
-local function fuzzyFilterCore(needle, items, keyFn, minScore, boostFn)
-    local lowerNeedle = stringLower(needle or "")
-    local candidates = {}
+local DEFAULT_MAX_FUZZY_RESULTS = 150
 
-    if #lowerNeedle > 0 then
-        for _, item in ipairs(items) do
-            local map = item.charMap or buildCharMap(keyFn(item) or "")
-            if map and rRadio.interface.subsequenceTest(lowerNeedle, map) then
-                candidates[#candidates + 1] = item
-            end
+local function getFuzzyResultLimit()
+    local cl = Radio.cl
+    return (cl and cl.MAX_SEARCH_RESULTS) or DEFAULT_MAX_FUZZY_RESULTS
+end
+
+local function prepareFuzzyItem(item, keyFn)
+    local text = keyFn(item) or ""
+    if type(item) == "table" then
+        if item.__fuzzyKey ~= text then
+            item.__fuzzyKey = text
+            item.__fuzzyLower = stringLower(text)
+            item.__fuzzyCharMap = nil
         end
-    else
-        candidates = items
+        return item.__fuzzyKey, item.__fuzzyLower or ""
     end
 
-    local matches = {}
-    for _, item in ipairs(candidates) do
-        local text  = keyFn(item) or ""
-        local score = rRadio.interface.fuzzyMatch(lowerNeedle, text)
-        if boostFn then score = score + (boostFn(item) or 0) end
-        if score >= (minScore or 0) then
-            matches[#matches + 1] = { item = item, score = score }
+    return text, stringLower(text)
+end
+
+local function ensureCharMap(item, text)
+    if type(item) == "table" then
+        if not item.__fuzzyCharMap then
+            item.__fuzzyCharMap = item.charMap or buildCharMap(text)
         end
+        return item.__fuzzyCharMap
     end
 
-    if #matches == 0 then
-        for _, item in ipairs(items) do
-            matches[#matches + 1] = { item = item, score = 0 }
-        end
+    return buildCharMap(text)
+end
+
+local function pushLimitedMatch(matches, limit, entry)
+    local size = #matches
+    if size >= limit then
+        local worst = matches[size]
+        if worst.score > entry.score then return end
+        if worst.score == entry.score and worst.sortKey <= entry.sortKey then return end
     end
 
-    table.sort(matches, function(a, b)
-        if a.score ~= b.score then return a.score > b.score end
-        return (keyFn(a.item) or "") < (keyFn(b.item) or "")
-    end)
+    matches[size + 1] = entry
+    local idx = size + 1
+    while idx > 1 do
+        local prev = matches[idx - 1]
+        if prev.score > entry.score then break end
+        if prev.score == entry.score and prev.sortKey <= entry.sortKey then break end
+        matches[idx], matches[idx - 1] = prev, entry
+        idx = idx - 1
+    end
+
+    if #matches > limit then
+        matches[#matches] = nil
+    end
+end
+
+local function fuzzySort(a, b)
+    if a.score ~= b.score then return a.score > b.score end
+    return a.sortKey < b.sortKey
+end
+
+local function buildResults(matches)
     local results, seen = {}, {}
-    for _, v in ipairs(matches) do
-        local name = stringLower(keyFn(v.item) or "")
-        if not seen[name] then
-            seen[name] = true
-            results[#results + 1] = v.item
+    for i = 1, #matches do
+        local entry = matches[i]
+        local key = entry.sortKey or ""
+        if not seen[key] then
+            seen[key] = true
+            results[#results + 1] = entry.item
         end
     end
-
     return results
 end
 
-rRadio.interface.fuzzyFilter = function(needle, items, keyFn, minScore, boostFn)
+local function fuzzyFilterCore(needle, items, keyFn, minScore, boostFn)
+    local lowerNeedle = stringLower(needle or "")
+    local hasNeedle = lowerNeedle ~= ""
+    local minAccept = minScore or 0
+    local limit = hasNeedle and getFuzzyResultLimit() or nil
+    local matches = {}
+
+    if hasNeedle then
+        for i = 1, #items do
+            local item = items[i]
+            local text, lowered = prepareFuzzyItem(item, keyFn)
+            local map = ensureCharMap(item, text)
+            if map and Interface.subsequenceTest(lowerNeedle, map) then
+                local score = Interface.fuzzyMatch(lowerNeedle, lowered, true)
+                if boostFn then score = score + (boostFn(item) or 0) end
+                if score >= minAccept then
+                    local entry = { item = item, score = score, sortKey = lowered or "" }
+                    if limit then
+                        pushLimitedMatch(matches, limit, entry)
+                    else
+                        matches[#matches + 1] = entry
+                    end
+                end
+            end
+        end
+
+        if not limit then
+            table.sort(matches, fuzzySort)
+        end
+    else
+        for i = 1, #items do
+            local item = items[i]
+            local _, lowered = prepareFuzzyItem(item, keyFn)
+            local score = Interface.fuzzyMatch(lowerNeedle, lowered, true)
+            if boostFn then score = score + (boostFn(item) or 0) end
+            matches[#matches + 1] = { item = item, score = score, sortKey = lowered or "" }
+        end
+
+        table.sort(matches, fuzzySort)
+    end
+
+    if #matches == 0 then return {} end
+
+    return buildResults(matches)
+end
+
+Interface.fuzzyFilter = function(needle, items, keyFn, minScore, boostFn)
     local out = fuzzyFilterCore(needle, items, keyFn, minScore, boostFn)
     if needle and needle ~= "" and #out == 0 then
         return fuzzyFilterCore("", items, keyFn, minScore, boostFn)
@@ -226,9 +351,9 @@ rRadio.interface.fuzzyFilter = function(needle, items, keyFn, minScore, boostFn)
     return out
 end
 
-function rRadio.interface.MakeIconButton(parent, materialPath, url, xOffset)
+function Interface.MakeIconButton(parent, materialPath, url, xOffset)
     local icon = vgui.Create("rRadioIconButton", parent)
-    local size = rRadio.interface.scale(32)
+    local size = Interface.scale(32)
     icon:SetSize(size, size)
     icon:SetPos(xOffset, (parent:GetTall() - size) / 2)
     icon:SetIcon(materialPath)
@@ -236,7 +361,7 @@ function rRadio.interface.MakeIconButton(parent, materialPath, url, xOffset)
     return icon
 end
 
-function rRadio.interface.TruncateText(text, font, maxWidth)
+function Interface.TruncateText(text, font, maxWidth)
     surface.SetFont(font)
     local textW = surface.GetTextSize(text)
     if textW <= maxWidth then
@@ -261,92 +386,92 @@ function rRadio.interface.TruncateText(text, font, maxWidth)
     return utf8Sub(text, 1, best) .. ellipsis
 end
 
-function rRadio.interface.TruncateChars(text, maxChars)
+function Interface.TruncateChars(text, maxChars)
     if utf8Len(text) <= maxChars then
         return text
     end
     return utf8Sub(text, 1, maxChars)
 end
 
-function rRadio.interface.StyleVBar(vbar)
+function Interface.StyleVBar(vbar)
     if not IsValid(vbar) then return end
-    vbar:SetWide(rRadio.interface.scale(8))
-    if vbar.DockMargin then vbar:DockMargin(0, rRadio.interface.scale(2), rRadio.interface.scale(2), rRadio.interface.scale(2)) end
+    vbar:SetWide(Interface.scale(8))
+    if vbar.DockMargin then vbar:DockMargin(0, Interface.scale(2), Interface.scale(2), Interface.scale(2)) end
     vbar.Paint = function(self, w, h)
-        draw.RoundedBox(8, 0, 0, w, h, rRadio.config.UI.ScrollbarColor)
+        draw.RoundedBox(8, 0, 0, w, h, Config.UI.ScrollbarColor)
     end
     vbar.btnGrip.Paint = function(self, w, h)
-        draw.RoundedBox(8, 0, 0, w, h, rRadio.config.UI.ScrollbarGripColor)
+        draw.RoundedBox(8, 0, 0, w, h, Config.UI.ScrollbarGripColor)
     end
     vbar.btnUp.Paint = function(self, w, h) end
     vbar.btnDown.Paint = function(self, w, h) end
 end
 
-function rRadio.interface.DisplayVehicleEnterAnimation(argVehicle, isDriverOverride)
-    rRadio.DevPrint("Displaying vehicle enter animation")
+function Interface.DisplayVehicleEnterAnimation(argVehicle, isDriverOverride)
+    DevPrint("Displaying vehicle enter animation")
 
     if not radioEnabled() then
-        rRadio.DevPrint("Radio disabled")
+        DevPrint("Radio disabled")
         return
     end
 
     if not GetConVar("rammel_rradio_vehicle_animation"):GetBool() then
-        rRadio.DevPrint("Vehicle animation disabled")
+        DevPrint("Vehicle animation disabled")
         return
     end
 
     local ply = LocalPlayer()
-    rRadio.DevPrint("argVehicle: " .. tostring(argVehicle) .. ", ply:GetVehicle(): " .. tostring(ply:GetVehicle()))
+    DevPrint("argVehicle: " .. tostring(argVehicle) .. ", ply:GetVehicle(): " .. tostring(ply:GetVehicle()))
     local vehicle = argVehicle or ply:GetVehicle()
-    if IsValid(vehicle) then rRadio.DevPrint("vehicle class: " .. vehicle:GetClass() .. ", entIndex: " .. vehicle:EntIndex()) else rRadio.DevPrint("vehicle is invalid") end
+    if IsValid(vehicle) then DevPrint("vehicle class: " .. vehicle:GetClass() .. ", entIndex: " .. vehicle:EntIndex()) else DevPrint("vehicle is invalid") end
     if not IsValid(vehicle) then
-        rRadio.DevPrint("Player is not in a vehicle")
+        DevPrint("Player is not in a vehicle")
         return end
-    local mainVehicle = rRadio.utils.GetVehicle(vehicle)
-    rRadio.DevPrint("mainVehicle: " .. tostring(mainVehicle) .. (IsValid(mainVehicle) and (", class: " .. mainVehicle:GetClass() .. ", entIndex: " .. mainVehicle:EntIndex()) or ""))
+    local mainVehicle = Utils.GetVehicle(vehicle)
+    DevPrint("mainVehicle: " .. tostring(mainVehicle) .. (IsValid(mainVehicle) and (", class: " .. mainVehicle:GetClass() .. ", entIndex: " .. mainVehicle:EntIndex()) or ""))
     if not IsValid(mainVehicle) then
-        rRadio.DevPrint("Vehicle is not valid")
+        DevPrint("Vehicle is not valid")
         return 
     end
 
     if hook.Run("rRadio.CanOpenMenu", ply, mainVehicle) == false then
-        rRadio.DevPrint("Hook disallowed")
+        DevPrint("Hook disallowed")
         return 
     end
 
-    if rRadio.config.DriverPlayOnly then
+    if Config.DriverPlayOnly then
         local ok = (isDriverOverride ~= nil and isDriverOverride) or (mainVehicle:GetDriver() == ply)
         if not ok then
-            rRadio.DevPrint("Player is not the driver")
+            DevPrint("Player is not the driver")
             return
         end
     end
 
-    if rRadio.utils.IsSitAnywhereSeat(mainVehicle) then
-        rRadio.DevPrint("Player is in a sit anywhere seat")
+    if Utils.IsSitAnywhereSeat(mainVehicle) then
+        DevPrint("Player is in a sit anywhere seat")
         return 
     end
 
     ply.currentRadioEntity = mainVehicle
 
-    rRadio.DevPrint("Vehicle animation conditions met")
+    DevPrint("Vehicle animation conditions met")
 
     local currentTime = CurTime()
-    local cooldownTime = rRadio.config.MessageCooldown
+    local cooldownTime = Config.MessageCooldown
 
     if isMessageAnimating or (lastMessageTime and currentTime - lastMessageTime < cooldownTime) then
-        rRadio.DevPrint("Animation is already playing or cooldown not met")
+        DevPrint("Animation is already playing or cooldown not met")
         return
     end
 
-    rRadio.DevPrint("Animation cooldown met")
+    DevPrint("Animation cooldown met")
     lastMessageTime = currentTime
     isMessageAnimating = true
     local openKey = GetConVar("rammel_rradio_menu_key"):GetInt()
-    local keyName = rRadio.GetKeyName(openKey)
+    local keyName = Radio.cl.getKeyName(openKey)
     local scrW, scrH = ScrW(), ScrH()
-    local panelWidth = rRadio.interface.scale(300)
-    local panelHeight = rRadio.interface.scale(70)
+    local panelWidth = Interface.scale(300)
+    local panelHeight = Interface.scale(70)
     local panel = vgui.Create("DButton")
     panel:SetSize(panelWidth, panelHeight)
     panel:SetPos(scrW, scrH * 0.2)
@@ -360,13 +485,13 @@ function rRadio.interface.DisplayVehicleEnterAnimation(argVehicle, isDriverOverr
     local isDismissed = false
 
     panel.DoClick = function()
-        rRadio.interface.playSound("ButtonPressMain")
+        Interface.playSound("ButtonPressMain")
         openRadioMenu()
         isDismissed = true
     end
 
     panel.Paint = function(self, w, h)
-        local bgColor = rRadio.config.UI.HeaderColor
+        local bgColor = Config.UI.HeaderColor
         local hoverBrightness = self:IsHovered() and 1.2 or 1
         bgColor =
             Color(
@@ -376,9 +501,9 @@ function rRadio.interface.DisplayVehicleEnterAnimation(argVehicle, isDriverOverr
             alpha * 255
         )
         draw.RoundedBoxEx(12, 0, 0, w, h, bgColor, true, false, true, false)
-        local keyWidth = rRadio.interface.scale(40)
-        local keyHeight = rRadio.interface.scale(30)
-        local keyX = rRadio.interface.scale(20)
+        local keyWidth = Interface.scale(40)
+        local keyHeight = Interface.scale(30)
+        local keyX = Interface.scale(20)
         local keyY = h / 2 - keyHeight / 2
         local pulseScale = 1 + math.sin(pulseValue * math.pi * 2) * 0.05
         local adjustedKeyWidth = keyWidth * pulseScale
@@ -391,26 +516,26 @@ function rRadio.interface.DisplayVehicleEnterAnimation(argVehicle, isDriverOverr
             adjustedKeyY,
             adjustedKeyWidth,
             adjustedKeyHeight,
-            ColorAlpha(rRadio.config.UI.ButtonColor, alpha * 255)
+            ColorAlpha(Config.UI.ButtonColor, alpha * 255)
         )
-        surface.SetDrawColor(ColorAlpha(rRadio.config.UI.TextColor, alpha * 50))
-        surface.DrawLine(keyX + keyWidth + rRadio.interface.scale(7), h * 0.3, keyX + keyWidth + rRadio.interface.scale(7), h * 0.7)
+        surface.SetDrawColor(ColorAlpha(Config.UI.TextColor, alpha * 50))
+        surface.DrawLine(keyX + keyWidth + Interface.scale(7), h * 0.3, keyX + keyWidth + Interface.scale(7), h * 0.7)
         draw.SimpleText(
             keyName,
             "rRadio.Roboto5",
             keyX + keyWidth / 2,
             h / 2,
-            ColorAlpha(rRadio.config.UI.TextColor, alpha * 255),
+            ColorAlpha(Config.UI.TextColor, alpha * 255),
             TEXT_ALIGN_CENTER,
             TEXT_ALIGN_CENTER
         )
-        local messageX = keyX + keyWidth + rRadio.interface.scale(15)
+        local messageX = keyX + keyWidth + Interface.scale(15)
         draw.SimpleText(
-            rRadio.config.Lang["ToOpenRadio"] or "to open radio",
+            Config.Lang["ToOpenRadio"] or "to open radio",
             "rRadio.Roboto5",
             messageX,
             h / 2,
-            ColorAlpha(rRadio.config.UI.TextColor, alpha * 255),
+            ColorAlpha(Config.UI.TextColor, alpha * 255),
             TEXT_ALIGN_LEFT,
             TEXT_ALIGN_CENTER
         )
@@ -444,31 +569,31 @@ function rRadio.interface.DisplayVehicleEnterAnimation(argVehicle, isDriverOverr
     end
 end
 
-function rRadio.interface.applyTheme(themeName)
-    if rRadio.themes[themeName] then
-        rRadio.config.UI = rRadio.themes[themeName]
+function Interface.applyTheme(themeName)
+    if Radio.themes[themeName] then
+        Config.UI = Radio.themes[themeName]
         hook.Run("ThemeChanged", themeName)
     else
-        rRadio.FormattedOutput("[rRadio] Invalid theme name: " .. themeName)
+        Radio.FormattedOutput("[rRadio] Invalid theme name: " .. themeName)
     end
 end
 
-function rRadio.interface.loadSavedSettings()
+function Interface.loadSavedSettings()
     local themeName = GetConVar("rammel_rradio_menu_theme"):GetString()
-    rRadio.interface.applyTheme(themeName)
+    Interface.applyTheme(themeName)
 end
 
-function rRadio.interface.updateStationCount()
+function Interface.updateStationCount()
     local count = 0
-    for ent, source in pairs(rRadio.cl.radioSources or {}) do
+    for ent, source in pairs(Radio.cl.radioSources or {}) do
         if IsValid(ent) and IsValid(source) then
             count = count + 1
         else
             if IsValid(source) then
                 source:Stop()
             end
-            if rRadio.cl.radioSources then
-                rRadio.cl.radioSources[ent] = nil
+            if Radio.cl.radioSources then
+                Radio.cl.radioSources[ent] = nil
             end
         end
     end
@@ -476,7 +601,7 @@ function rRadio.interface.updateStationCount()
     return count
 end
 
-function rRadio.interface.LerpColor(t, col1, col2)
+function Interface.LerpColor(t, col1, col2)
     return Color(
         Lerp(t, col1.r, col2.r),
         Lerp(t, col1.g, col2.g),
@@ -485,30 +610,30 @@ function rRadio.interface.LerpColor(t, col1, col2)
     )
 end
 
-function rRadio.interface.ClampVolume(volume)
-    local serverMax = rRadio.config.MaxVolume
+function Interface.ClampVolume(volume)
+    local serverMax = Config.MaxVolume
     local clientMax = GetConVar("rammel_rradio_max_volume"):GetFloat()
     local limit = math.min(serverMax, clientMax)
     return math.Clamp(volume, 0, limit)
 end
 
-function rRadio.interface.loadFavorites()
+function Interface.loadFavorites()
     local favoriteCountries = {}
     local favoriteStations = {}
-    local data = readJSON(rRadio.interface.favoriteCountriesFile)
+    local data = readJSON(Interface.favoriteCountriesFile)
     if data then
         for _, country in ipairs(data) do
             if type(country) == "string" then
                 favoriteCountries[country] = true
             end
         end
-    elseif file.Exists(rRadio.interface.favoriteCountriesFile, "DATA") then
+    elseif file.Exists(Interface.favoriteCountriesFile, "DATA") then
         print("[rRADIO] Error loading favorite countries, resetting file")
         favoriteCountries = {}
-        rRadio.interface.saveFavorites()
+        Interface.saveFavorites()
     end
 
-    local dataStations = readJSON(rRadio.interface.favoriteStationsFile)
+    local dataStations = readJSON(Interface.favoriteStationsFile)
     if dataStations then
         for country, stations in pairs(dataStations) do
             if type(country) == "string" and type(stations) == "table" then
@@ -523,26 +648,26 @@ function rRadio.interface.loadFavorites()
                 end
             end
         end
-    elseif file.Exists(rRadio.interface.favoriteStationsFile, "DATA") then
+    elseif file.Exists(Interface.favoriteStationsFile, "DATA") then
         print("[rRADIO] Error loading favorite stations, resetting file")
         favoriteStations = {}
-        rRadio.interface.saveFavorites()
+        Interface.saveFavorites()
     end
 
-    rRadio.interface.favoriteCountries = favoriteCountries
-    rRadio.interface.favoriteStations = favoriteStations
+    Interface.favoriteCountries = favoriteCountries
+    Interface.favoriteStations = favoriteStations
 end
 
 local function writeFavorites()
-    local favoriteCountries = rRadio.interface.favoriteCountries or {}
-    local favoriteStations = rRadio.interface.favoriteStations or {}
+    local favoriteCountries = Interface.favoriteCountries or {}
+    local favoriteStations = Interface.favoriteStations or {}
     local favCountriesList = {}
     for country, _ in pairs(favoriteCountries) do
         if type(country) == "string" then
             table.insert(favCountriesList, country)
         end
     end
-    writeJSON(rRadio.interface.favoriteCountriesFile, favCountriesList)
+    writeJSON(Interface.favoriteCountriesFile, favCountriesList)
     local favStationsTable = {}
     for country, stations in pairs(favoriteStations) do
         if type(country) == "string" and type(stations) == "table" then
@@ -557,15 +682,15 @@ local function writeFavorites()
             end
         end
     end
-    writeJSON(rRadio.interface.favoriteStationsFile, favStationsTable)
+    writeJSON(Interface.favoriteStationsFile, favStationsTable)
 end
 
-function rRadio.interface.saveFavorites()
+function Interface.saveFavorites()
     timer.Remove(SAVE_FAVORITES_TIMER)
     timer.Create(SAVE_FAVORITES_TIMER, SAVE_FAVORITES_DELAY, 1, writeFavorites)
 end
 
-function rRadio.interface.toggleFavorite(list, key, subkey)
+function Interface.toggleFavorite(list, key, subkey)
     if subkey then
         list[key] = list[key] or {}
         if list[key][subkey] then
@@ -583,10 +708,10 @@ function rRadio.interface.toggleFavorite(list, key, subkey)
             list[key] = true
         end
     end
-    rRadio.interface.saveFavorites()
+    Interface.saveFavorites()
 end
 
-function rRadio.interface.GetVehicleEntity(entity)
+function Interface.GetVehicleEntity(entity)
     if IsValid(entity) and entity:IsVehicle() then
         local parent = entity:GetParent()
         return IsValid(parent) and parent or entity
@@ -594,16 +719,16 @@ function rRadio.interface.GetVehicleEntity(entity)
     return entity
 end
 
-function rRadio.interface.getEntityConfig(entity)
-    return rRadio.utils.GetEntityConfig(entity)
+function Interface.getEntityConfig(entity)
+    return Utils.GetEntityConfig(entity)
 end
 
-function rRadio.interface.CalculateVolume(entity, player, distanceSqr)
+function Interface.CalculateVolume(entity, player, distanceSqr)
     if not IsValid(entity) or not IsValid(player) then return 0 end
-    local entityConfig = rRadio.utils.GetEntityConfig(entity)
+    local entityConfig = Utils.GetEntityConfig(entity)
     if not entityConfig then return 0 end
     local baseVolume =
-        (rRadio.cl.entityVolumes[entity] ~= nil and rRadio.cl.entityVolumes[entity])
+        (Radio.cl.entityVolumes[entity] ~= nil and Radio.cl.entityVolumes[entity])
         or entity:GetNWFloat("Volume", entityConfig.Volume)
     if player:GetVehicle() == entity or distanceSqr <= entityConfig.MinVolumeDistance ^ 2 then
         return baseVolume
@@ -616,7 +741,7 @@ function rRadio.interface.CalculateVolume(entity, player, distanceSqr)
     return baseVolume * falloff
 end
 
-function rRadio.interface.updateRadioVolume(station, distanceSqr, isPlayerInCar, entity)
+function Interface.updateRadioVolume(station, distanceSqr, isPlayerInCar, entity)
     if not radioEnabled() then
         local prev = _lastVolumes[entity] or -1
         if prev ~= 0 then
@@ -626,7 +751,7 @@ function rRadio.interface.updateRadioVolume(station, distanceSqr, isPlayerInCar,
         return
     end
 
-    if rRadio.cl.mutedBoomboxes and rRadio.cl.mutedBoomboxes[entity] then
+    if Radio.cl.mutedBoomboxes and Radio.cl.mutedBoomboxes[entity] then
         local prev = _lastVolumes[entity] or -1
         if prev ~= 0 then
             station:SetVolume(0)
@@ -635,13 +760,13 @@ function rRadio.interface.updateRadioVolume(station, distanceSqr, isPlayerInCar,
         return
     end
 
-    local entityConfig = rRadio.interface.getEntityConfig(entity)
+    local entityConfig = Interface.getEntityConfig(entity)
     if not entityConfig then
         return
     end
 
-    local userVolume = rRadio.interface.ClampVolume(
-        rRadio.cl.entityVolumes[entity]
+    local userVolume = Interface.ClampVolume(
+        Radio.cl.entityVolumes[entity]
         or entity:GetNWFloat("Volume", entityConfig.Volume)
     )
 
@@ -666,9 +791,9 @@ function rRadio.interface.updateRadioVolume(station, distanceSqr, isPlayerInCar,
     local minDist = entityConfig.MinVolumeDistance
     local maxDist = entityConfig.MaxHearingDistance
     station:Set3DFadeDistance(minDist, maxDist)
-    local finalVolume = rRadio.interface.CalculateVolume(entity, LocalPlayer(), distanceSqr)
+    local finalVolume = Interface.CalculateVolume(entity, LocalPlayer(), distanceSqr)
 
-    finalVolume = rRadio.interface.ClampVolume(finalVolume)
+    finalVolume = Interface.ClampVolume(finalVolume)
     local prev = _lastVolumes[entity] or -1
     
     if math.abs(finalVolume - prev) >= _volThreshold then
@@ -708,16 +833,16 @@ local function getScaledFont(prefix, text, buttonWidth, buttonHeight)
     return fontName
 end
 
-function rRadio.interface.calculateFontSizeForStopButton(text, buttonWidth, buttonHeight)
+function Interface.calculateFontSizeForStopButton(text, buttonWidth, buttonHeight)
     return getScaledFont("Stop", text, buttonWidth, buttonHeight)
 end
 
-function rRadio.interface.calculateFontSizeForGlobalButton(text, buttonWidth, buttonHeight)
+function Interface.calculateFontSizeForGlobalButton(text, buttonWidth, buttonHeight)
     return getScaledFont("Global", text, buttonWidth, buttonHeight)
 end
 
-function rRadio.interface.GetVolumeIcon(vol)
-    local maxVol = rRadio.config.MaxVolume or 1.0
+function Interface.GetVolumeIcon(vol)
+    local maxVol = Config.MaxVolume or 1.0
     vol = math.min(vol, maxVol)
     if vol < 0.01 then
         return ICON_VOL_MUTE
@@ -729,7 +854,7 @@ function rRadio.interface.GetVolumeIcon(vol)
 end
 
 local function loadLanguage()
-    rRadio.LanguageManager:UpdateCurrentLanguage()
+    Radio.LanguageManager:UpdateCurrentLanguage()
     hook.Run("LanguageUpdated")
 end
 

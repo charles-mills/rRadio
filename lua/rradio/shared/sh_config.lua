@@ -1,51 +1,52 @@
-rRadio.config = rRadio.config or {}
-rRadio.config.RadioVersion = "1.2.5"
+local Radio, Config = rRadio:Import("Radio", "!config")
+
+Config.RadioVersion = "1.2.5"
 
 --[[ ! Server settings ! ]]
 
-rRadio.config.EnableLogging = true  -- enable bLogs integration
-rRadio.config.SecureStationLoad = false  -- block playing stations not in the client's list
-rRadio.config.DriverPlayOnly = false     -- only allow driver to control radio
-rRadio.config.AnimationDefaultOn = true  -- enable animations by default
-rRadio.config.ClientHardDisable = false  -- disables file loading when client's rradio_enabled convar is set to 0 (relog required to re-enable) (does not include config and its dependencies)
-rRadio.config.DisablePushDamage = true  -- disable push damage
-rRadio.config.PrioritiseCustom  = true -- the custom / server added station category will appear at the top of the menu (instead of alphabetical)
-rRadio.config.AllowCreatePermanentBoombox = true -- allow new permanent boomboxes to be created by superadmins
+Config.EnableLogging = true  -- enable bLogs integration
+Config.SecureStationLoad = false  -- block playing stations not in the client's list
+Config.DriverPlayOnly = false     -- only allow driver to control radio
+Config.AnimationDefaultOn = true  -- enable animations by default
+Config.ClientHardDisable = false  -- disables file loading when client's rradio_enabled convar is set to 0 (relog required to re-enable) (does not include config and its dependencies)
+Config.DisablePushDamage = true  -- disable push damage
+Config.PrioritiseCustom  = true -- the custom / server added station category will appear at the top of the menu (instead of alphabetical)
+Config.AllowCreatePermanentBoombox = true -- allow new permanent boomboxes to be created by superadmins
 
-rRadio.config.MaxClientStations = 10
-rRadio.config.SearchDebounceSeconds = 0.1
-rRadio.config.MessageCooldown = 5
-rRadio.config.MaxVolume = 1
-rRadio.config.InactiveTimeout = 3600
-rRadio.config.CleanupInterval = 300
-rRadio.config.VolumeUpdateDebounce = 0.1
-rRadio.config.StationUpdateDebounce = 10
+Config.MaxClientStations = 10
+Config.SearchDebounceSeconds = 0.1
+Config.MessageCooldown = 5
+Config.MaxVolume = 1
+Config.InactiveTimeout = 3600
+Config.CleanupInterval = 300
+Config.VolumeUpdateDebounce = 0.1
+Config.StationUpdateDebounce = 10
 
-rRadio.config.MaxActiveRadios = 100
-rRadio.config.MaxPlayerRadios = 15
+Config.MaxActiveRadios = 100
+Config.MaxPlayerRadios = 15
 
 --[[ ! Conditional Load Settings ! ]]
 
-rRadio.config.ConditionalStationLoad = true -- only load station audio when within range
-rRadio.config.ConditionalStationUnload = true -- unload station audio when out of range
+Config.ConditionalStationLoad = true -- only load station audio when within range
+Config.ConditionalStationUnload = true -- unload station audio when out of range
 
 -- Ensure that unload is more than or equal to load to prevent stations from being unloaded before they are loaded
-rRadio.config.LoadDistanceFactor   = 2.0 -- multiplier for the distance before a station starts loading (where 1 is the max hearing distance)
-rRadio.config.UnloadDistanceFactor = 2.5 -- multiplier for the distance before a station unloads (where 1 is the max hearing distance)
+Config.LoadDistanceFactor   = 2.0 -- multiplier for the distance before a station starts loading (where 1 is the max hearing distance)
+Config.UnloadDistanceFactor = 2.5 -- multiplier for the distance before a station unloads (where 1 is the max hearing distance)
 
 --[[ ! Custom Station Settings ! ]]
 
 -- name of the category for all custom stations, e.g. "Our Favourite Stations!"
 -- the key is only localised if set to "Custom" (case sensitive)
-rRadio.config.CustomStationCategory = "Custom"
-rRadio.config.CommandAddStation = "rradioadd"
-rRadio.config.CommandRemoveStation = "rradiorem"
+Config.CustomStationCategory = "Custom"
+Config.CommandAddStation = "rradioadd"
+Config.CommandRemoveStation = "rradiorem"
 
 --[[ ! Client Sound settings ! ]]
 
-rRadio.config.EnableSoundEffects = true 
+Config.EnableSoundEffects = true 
 
-rRadio.config.Sounds = {
+Config.Sounds = {
     ButtonPressMain = "buttons/button3.wav",
     ButtonPressSecondary = "buttons/button17.wav",
     SettingsMenuSuccess = "common/bugreporter_succeeded.wav",
@@ -56,7 +57,7 @@ rRadio.config.Sounds = {
 
 --[[ !! Entity Configuration !! ]]
 
-rRadio.config.Boombox = {
+Config.Boombox = {
     Volume = 1.0,
     MaxHearingDistance = 800,
     MinVolumeDistance = 500,
@@ -64,7 +65,7 @@ rRadio.config.Boombox = {
     RetryDelay = 2
 }
 
-rRadio.config.GoldenBoombox = {
+Config.GoldenBoombox = {
     Volume = 1.0,
     MaxHearingDistance = 350000,
     MinVolumeDistance = 250000,
@@ -72,7 +73,7 @@ rRadio.config.GoldenBoombox = {
     RetryDelay = 2
 }
 
-rRadio.config.VehicleRadio = {
+Config.VehicleRadio = {
     Volume = 1.0,
     MaxHearingDistance = 800,
     MinVolumeDistance = 500,
@@ -82,9 +83,9 @@ rRadio.config.VehicleRadio = {
 
 --[[ ! Additional settings ! ]]
 
-rRadio.config.MaxNameChars = 40 -- Truncate station names sent to the server to this length
+Config.MaxNameChars = 40 -- Truncate station names sent to the server to this length
 
-rRadio.config.VehicleClassOverides = {
+Config.VehicleClassOverides = {
     "lvs_",
     "ses_",
     "sw_",
@@ -93,12 +94,12 @@ rRadio.config.VehicleClassOverides = {
 
 --[[ ! Internal settings ! ]]
 
-rRadio.config.RadioStations = rRadio.config.RadioStations or {}
-rRadio.config.Lang = rRadio.config.Lang or {}
+Config.RadioStations = Config.RadioStations or {}
+Config.Lang = Config.Lang or {}
 
-rRadio.status = rRadio.status or {}
+Radio.status = Radio.status or {}
 
-rRadio.status = {
+Radio.status = {
     STOPPED = 0,
     TUNING = 1,
     PLAYING = 2
@@ -112,14 +113,14 @@ local DEFAULT_UI = {
     Disabled        = Color(180,180,180,255)
 }
 
-rRadio.config.UI = rRadio.config.UI or DEFAULT_UI
+Config.UI = Config.UI or DEFAULT_UI
 
-if rRadio.DEV then
-    rRadio.config.SecureStationLoad = true
-    rRadio.config.DriverPlayOnly = true
-    rRadio.config.AnimationDefaultOn = false
-    rRadio.config.ClientHardDisable = true
-    rRadio.config.CustomStationCategory = "Rammel's Top Stations"
+if Radio.DEV then
+    Config.SecureStationLoad = true
+    Config.DriverPlayOnly = true
+    Config.AnimationDefaultOn = false
+    Config.ClientHardDisable = true
+    Config.CustomStationCategory = "Rammel's Top Stations"
 end
 
-return rRadio.config
+return Radio.config

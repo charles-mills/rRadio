@@ -83,6 +83,15 @@ rRadio.config.CommandRemoveStation = "!rradiorem"
 
 If you encounter any issues or have any questions, please open an issue on this GitHub repository. Alternatively, contact me on [Steam](https://steamcommunity.com/id/rammel/).
 
+## Architecture Notes
+
+- **Runtime Lifecycle:** `lua/autorun/sh_radio_init.lua` performs shared initialisation, registers net messages, and brings in the server/client stacks. All radio logic is reached via this entry point.
+- **Shared Configuration:** Values under `lua/rradio/shared/` define product-wide constants, localisation hooks, and utility helpers consumed on both server and client.
+- **Server Responsibilities:** Files in `lua/rradio/server/` manage station playback, persistence, DarkRP integrations, and admin tooling. They communicate with clients exclusively via the rRadio net messages.
+- **Client Responsibilities:** Files in `lua/rradio/client/` handle UI composition, audio playback, local persistence (favourites/settings), and interaction affordances (boombox HUD, vehicle prompts).
+- **Data Packs:** Station and language packs currently load by executing the files in `lua/rradio/client/data/`. Each pack returns a Lua table merged into runtime caches.
+- **Entities:** The boombox entities under `lua/entities/` provide the world interactions that connect players to the radio system and bridge to the shared radio state.
+
 ## General Credits
 
 - UI Icons by [Flaticon](https://www.flaticon.com/uicons/)

@@ -1,6 +1,8 @@
+local Radio, Interface, Config = rRadio:Import("Radio", "!interface", "config")
+
 do
     local PANEL = {}
-    local Scale = rRadio.interface.scale
+    local Scale = Interface.scale
 
     function PANEL:Init()
         self.iconMat = nil
@@ -25,7 +27,7 @@ do
 
     function PANEL:Paint(w, h)
         if self.iconMat then
-            surface.SetDrawColor(rRadio.config.UI.TextColor)
+            surface.SetDrawColor(Config.UI.TextColor)
             surface.SetMaterial(self.iconMat)
             surface.DrawTexturedRect(0, 0, w, h)
         end
