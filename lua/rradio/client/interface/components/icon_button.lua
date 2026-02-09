@@ -1,9 +1,6 @@
-local Radio, Interface, Config = rRadio:Import("Radio", "!interface", "config")
-
-do
+﻿do
     local PANEL = {}
-    local Scale = Interface.scale
-
+    local Scale = rRadio.interface.scale
     function PANEL:Init()
         self.iconMat = nil
         self.url = nil
@@ -20,14 +17,12 @@ do
     end
 
     function PANEL:DoClick()
-        if self.url then
-            gui.OpenURL(self.url)
-        end
+        if self.url then gui.OpenURL(self.url) end
     end
 
     function PANEL:Paint(w, h)
         if self.iconMat then
-            surface.SetDrawColor(Config.UI.TextColor)
+            surface.SetDrawColor(rRadio.config.UI.TextColor)
             surface.SetMaterial(self.iconMat)
             surface.DrawTexturedRect(0, 0, w, h)
         end

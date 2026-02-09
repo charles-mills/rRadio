@@ -1,18 +1,16 @@
-if SERVER then return end
-
-local Radio, Interface = rRadio:Import("Radio", "!interface", "!cl")
-
-Radio.cl.radioSources = Radio.cl.radioSources or {}
-Radio.cl.boomboxStatuses = Radio.cl.boomboxStatuses or {}
-Radio.cl.connectedStations = Radio.cl.connectedStations or {}
-Radio.cl.requestedStations = Radio.cl.requestedStations or {}
-Radio.cl.queuedStations = Radio.cl.queuedStations or {}
-Radio.cl.playbackNonce = Radio.cl.playbackNonce or {}
-Radio.cl.entityVolumes = Radio.cl.entityVolumes or {}
-Radio.cl.currentlyPlayingStations = Radio.cl.currentlyPlayingStations or {}
-Radio.cl.stationLastPos = Radio.cl.stationLastPos or {}
-
-Radio.cl.uiState = {
+﻿if SERVER then return end
+rRadio.cl = rRadio.cl or {}
+rRadio.cl.radioSources = rRadio.cl.radioSources or {}
+rRadio.cl.boomboxStatuses = rRadio.cl.boomboxStatuses or rRadio.cl.BoomboxStatuses or {}
+rRadio.cl.connectedStations = rRadio.cl.connectedStations or {}
+rRadio.cl.requestedStations = rRadio.cl.requestedStations or {}
+rRadio.cl.queuedStations = rRadio.cl.queuedStations or {}
+rRadio.cl.playbackNonce = rRadio.cl.playbackNonce or {}
+rRadio.cl.entityVolumes = rRadio.cl.entityVolumes or {}
+rRadio.cl.currentlyPlayingStations = rRadio.cl.currentlyPlayingStations or {}
+rRadio.cl.stationLastPos = rRadio.cl.stationLastPos or {}
+rRadio.cl.errorTimestamps = rRadio.cl.errorTimestamps or {}
+rRadio.cl.uiState = {
     currentFrame = nil,
     settingsFrame = nil,
     settingsMenuOpen = false,
@@ -26,13 +24,13 @@ Radio.cl.uiState = {
     permanentCheckboxRef = nil
 }
 
-Radio.cl.timing = {
+rRadio.cl.timing = {
     lastKeyPress = 0,
     keyPressDelay = 0.2,
     lastStationSelectTime = 0
 }
 
-Radio.cl.performance = {
+rRadio.cl.performance = {
     lastPlayerPos = vector_origin,
     lastStationCount = 0,
     lastEnabled = nil,
@@ -42,19 +40,17 @@ Radio.cl.performance = {
     activeStationCount = 0
 }
 
-Radio.cl.pendingVolume = nil
-Radio.cl.pendingEntity = nil
-
-Radio.cl.MAX_SEARCH_RESULTS = 150
-Radio.cl.Scale = Interface.scale
-
-Radio.cl.cvars = {
+rRadio.cl.pendingVolume = nil
+rRadio.cl.pendingEntity = nil
+rRadio.cl.MAX_SEARCH_RESULTS = 150
+rRadio.cl.Scale = rRadio.interface.scale
+rRadio.cl.cvars = {
     enabled = GetConVar("rammel_rradio_enabled"),
     maxVolume = GetConVar("rammel_rradio_max_volume"),
     menuKey = GetConVar("rammel_rradio_menu_key")
 }
 
-Radio.cl.icons = {
+rRadio.cl.icons = {
     volume = {
         MUTE = Material("hud/vol_mute.png", "smooth"),
         LOW = Material("hud/vol_down.png", "smooth"),

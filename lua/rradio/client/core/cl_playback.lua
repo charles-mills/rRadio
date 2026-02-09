@@ -1,15 +1,17 @@
-if SERVER then return end
-
-local Radio, Status, DevPrint, iface, cfgGlobal, utils = rRadio:Import("Radio", "status", "DevPrint", "!interface", "config", "utils", "!cl")
-local cl = Radio.cl
-
+﻿if SERVER then return end
 local IsValid = IsValid
-local perf = cl.performance
-
+local cl = rRadio.cl
+local iface = rRadio.interface
+local cfgGlobal = rRadio.config
+local utils = rRadio.utils
 local UPDATE_INTERVAL = 0.2
+local function distSq(a, b)
+    return a:DistToSqr(b)
+end
 
-local function distSq(a, b) return a:DistToSqr(b) end
-local function samePos(ent, p) return cl.stationLastPos[ent] == p end
+local function samePos(ent, p)
+    return cl.stationLastPos[ent] == p
+end
 
 local function computeRange(cfg, factorField)
     return (cfg.MaxHearingDistance or 0) * (cfgGlobal[factorField] or 1)
@@ -37,7 +39,7 @@ end
 
 function cl.applyInitialVolume(station, volume, entity)
     station:SetVolume(iface.ClampVolume(volume))
-    local ply   = LocalPlayer()
+    local ply = LocalPlayer()
     local inCar = utils.GetVehicle(ply:GetVehicle()) == entity
     iface.updateRadioVolume(station, distSq(ply:GetPos(), entity:GetPos()), inCar, entity)
 end
@@ -51,31 +53,62 @@ function cl.syncStationPosition(station, entity)
 end
 
 function cl.markStationActive(station, entity, name, url, volume)
-    cl.radioSources[entity]            = station
-    cl.connectedStations[entity]       = true
-    utils.SetRadioStatus(entity, Status.PLAYING, name)
-    cl.requestedStations[entity]       = nil
-    cl.currentlyPlayingStations[entity] = {name = name, url = url, volume = volume}
+    cl.radioSources[entity] = station
+    cl.connectedStations[entity] = true
+    utils.SetRadioStatus(entity, rRadio.status.PLAYING, name)
+    cl.requestedStations[entity] = nil
+    cl.currentlyPlayingStations[entity] = {
+        name = name,
+        url = url,
+        volume = volume
+    }
 end
 
-function cl.handleStationInactive(entity)
+function cl.handleStationInactive(entity, failedStationName)
     cl.connectedStations[entity] = nil
-    utils.ClearRadioStatus(entity)
-    if cl.requestedStations[entity] then LocalPlayer():ChatPrint("[rRadio] Station is inactive.") end
     cl.requestedStations[entity] = nil
+    cl.currentlyPlayingStations[entity] = nil
+    if not IsValid(entity) then return end
+    local entIndex = entity:EntIndex()
+    local errorText = cfgGlobal.Lang["StationFailed"] or "Station Failed"
+    cl.boomboxStatuses[entIndex] = {
+        stationStatus = rRadio.status.ERROR,
+        stationName = errorText
+    }
+
+    cl.errorTimestamps[entity] = {
+        time = CurTime(),
+        stationName = failedStationName
+    }
+
+    timer.Create("rRadio.ErrorClear_" .. entIndex, cfgGlobal.ErrorDisplayDuration or 5, 1, function()
+        if IsValid(entity) then utils.ClearRadioStatus(entity) end
+        cl.errorTimestamps[entity] = nil
+    end)
 end
 
 function cl.startStationPlayback(entity, name, url, volume, nonce)
     if not IsValid(entity) then return end
+    local entIndex = entity:EntIndex()
+    timer.Create("rRadio.TuningTimeout_" .. entIndex, 15, 1, function()
+        if not IsValid(entity) then return end
+        if cl.playbackNonce[entity] ~= nonce then return end
+        if cl.connectedStations[entity] then return end
+        cl.handleStationInactive(entity, name)
+    end)
+
     sound.PlayURL(url, "3d noplay", function(station)
+        timer.Remove("rRadio.TuningTimeout_" .. entIndex)
         if cl.playbackNonce[entity] ~= nonce then
             if IsValid(station) then station:Stop() end
             return
         end
+
         if not (IsValid(station) and IsValid(entity)) then
-            cl.handleStationInactive(entity)
+            cl.handleStationInactive(entity, name)
             return
         end
+
         timer.Simple(0, function()
             cl.configureStation3D(station, entity)
             cl.applyInitialVolume(station, volume, entity)
@@ -90,12 +123,12 @@ function cl.processPendingStations(_, plyPos)
     for seatEnt, data in pairs(cl.queuedStations) do
         local entity = iface.GetVehicleEntity(seatEnt)
         if not IsValid(entity) then
-            DevPrint("Removing invalid entity from queue: " .. tostring(seatEnt))
+            rRadio.logger.DebugScope("cl_playback", "Removing invalid entity from queue:", tostring(seatEnt))
             cl.queuedStations[seatEnt] = nil
         else
             local cfg = iface.getEntityConfig(entity)
             if cfg and isWithinLoadRange(plyPos, entity:GetPos(), cfg) then
-                DevPrint("Starting playback for queued station: " .. data.name)
+                rRadio.logger.DebugScope("cl_playback", "Starting playback for queued station:", data.name)
                 cl.startStationPlayback(entity, data.name, data.url, data.volume, data.nonce)
                 cl.queuedStations[seatEnt] = nil
             end
@@ -104,15 +137,14 @@ function cl.processPendingStations(_, plyPos)
 end
 
 function cl.unloadDistantStations(plyPos)
-    local removed                = false
-    local radioSources           = cl.radioSources
-    local connectedStations      = cl.connectedStations
-    local entityVolumes          = cl.entityVolumes
-    local stationLastPos         = cl.stationLastPos
-    local playingStations        = cl.currentlyPlayingStations
-    local playbackNonceTbl       = cl.playbackNonce
-    local queuedStationsTbl      = cl.queuedStations
-
+    local removed = false
+    local radioSources = cl.radioSources
+    local connectedStations = cl.connectedStations
+    local entityVolumes = cl.entityVolumes
+    local stationLastPos = cl.stationLastPos
+    local playingStations = cl.currentlyPlayingStations
+    local playbackNonceTbl = cl.playbackNonce
+    local queuedStationsTbl = cl.queuedStations
     for seatEnt, station in pairs(radioSources) do
         local entity = iface.GetVehicleEntity(seatEnt)
         if IsValid(entity) and IsValid(station) then
@@ -120,22 +152,29 @@ function cl.unloadDistantStations(plyPos)
             if cfg and isBeyondUnloadRange(plyPos, entity:GetPos(), cfg) then
                 local vol = cl.getEntityVolume(entity)
                 station:Stop()
-                radioSources[seatEnt]       = nil
-                connectedStations[entity]   = nil
-                entityVolumes[entity]       = nil
-                stationLastPos[entity]      = nil
+                radioSources[seatEnt] = nil
+                connectedStations[entity] = nil
+                entityVolumes[entity] = nil
+                stationLastPos[entity] = nil
                 local data = playingStations[entity]
                 if data and data.url then
-                    local newNonce             = (playbackNonceTbl[entity] or 0) + 1
-                    playbackNonceTbl[entity]   = newNonce
-                    queuedStationsTbl[seatEnt] = {name = data.name, url = data.url, volume = vol, nonce = newNonce}
+                    local newNonce = (playbackNonceTbl[entity] or 0) + 1
+                    playbackNonceTbl[entity] = newNonce
+                    queuedStationsTbl[seatEnt] = {
+                        name = data.name,
+                        url = data.url,
+                        volume = vol,
+                        nonce = newNonce
+                    }
                 end
+
                 playingStations[entity] = nil
-                DevPrint("Unloaded a station", entity)
+                rRadio.logger.DebugScope("cl_playback", "Unloaded a station", entity)
                 removed = true
             end
         end
     end
+
     if removed then iface.updateStationCount() end
 end
 
@@ -155,32 +194,27 @@ function cl.cleanAndRefreshSources()
     end
 end
 
+local perf = cl.performance
 function cl.maybeLoadUnload(ply, plyPos)
-    if cfgGlobal.ConditionalStationLoad   then cl.processPendingStations(ply, plyPos) end
-    if cfgGlobal.ConditionalStationUnload then cl.unloadDistantStations(plyPos)       end
+    if cfgGlobal.ConditionalStationLoad then cl.processPendingStations(ply, plyPos) end
+    if cfgGlobal.ConditionalStationUnload then cl.unloadDistantStations(plyPos) end
 end
 
 function cl.updateAllStations()
     local ply = LocalPlayer()
     if not IsValid(ply) then return end
-
     perf.playerVehicle = utils.GetVehicle(ply:GetVehicle())
-    local plyPos       = ply:GetPos()
-
+    local plyPos = ply:GetPos()
     cl.maybeLoadUnload(ply, plyPos)
-
     local stationCt = perf.volumeChanged and iface.updateStationCount() or perf.lastStationCount
-    local enabled   = cl.cvars.enabled:GetBool()
-    local maxVol    = cl.cvars.maxVolume:GetFloat()
-
+    local enabled = cl.cvars.enabled:GetBool()
+    local maxVol = cl.cvars.maxVolume:GetFloat()
     if stationCt == perf.lastStationCount and enabled == perf.lastEnabled and maxVol == perf.lastMaxVolume and not perf.volumeChanged and distSq(plyPos, perf.lastPlayerPos) < 1 then return end
-
-    perf.lastPlayerPos   = plyPos
+    perf.lastPlayerPos = plyPos
     perf.lastStationCount = stationCt
-    perf.lastEnabled     = enabled
-    perf.lastMaxVolume   = maxVol
-    perf.volumeChanged   = false
-
+    perf.lastEnabled = enabled
+    perf.lastMaxVolume = maxVol
+    perf.volumeChanged = false
     cl.cleanAndRefreshSources()
 end
 

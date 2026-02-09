@@ -11,68 +11,7 @@ rRadio is an internet-radio add-on for Garry's Mod. Stream thousands of live sta
 - **Modern UI with Themes:** Pick from 6+ clientside themes.
 - **Persistent Boomboxes:** Optionally make your boombox respawn after a restart.
 
-## Getting Started
-
 It is recommended to install via the [Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=3318060741) for automatic updates. 
-
-### Vehicle Radio
-1. Spawn a vehicle via the spawn menu or a third-party car dealer.
-2. Press the **Menu Open** key (default K) to bring up the menu.
-3. Browse or search for a station and click to start playback.
-4. Use the menu controls to adjust volume or stop the stream.
-
-### Boombox
-1. Spawn a boombox from the spawn menu (**rRadio** category) or via the DarkRP F4 menu.
-2. Interact with the boombox to open the radio menu.
-3. Choose a station to start listening.
-4. Adjust volume or stop playback via the menu controls.
-
-### Changing Your Theme
-1. Open the radio menu via a boombox *or* vehicle.
-2. Open **Settings** (cog icon).
-3. Select the theme drop-down.
-4. Choose a theme.
-
-### Persistent Boomboxes (Superadmins)
-1. Spawn and interact with a boombox.
-2. Open **Settings** (cog icon).
-3. Enable **Make Boombox Permanent**
-4. The boombox will now respawn after a server restart and resume the last station.
-5. Disable the setting to revert to normal behaviour, then delete the boombox as needed.
-
-## Configuration
-
-### Clientside Settings
-
-Clientside settings are configurable via the Garry's Mod console and rRadio Settings menu. Press ``` ` ``` (left of 1) to open console.
-
-```lua
-rammel_rradio_boombox_hud <boolean>    -- Toggle visibility of boombox HUDs (1 - Enabled / 0 - Disabled)
-rammel_rradio_enabled <boolean>        -- Toggle all functionality of rRadio (1 - Enabled / 0 - Disabled)
-```
-```lua
-rammel_rradio_menu_key <integer>       -- The key used to open the menu. Modify this via the Settings menu.
-rammel_rradio_menu_theme <string>      -- The theme applied to the rRadio UI. Modify this via the Settings menu.
-```
-
-### Global (Serverside) Settings
-
-Global settings must be locally configured in [sh_config.lua](lua/rradio/shared/sh_config.lua).
-
-```lua
-rRadio.config.SecureStationLoad = false  -- block playing stations not in the client's list
-rRadio.config.DriverPlayOnly = false     -- only allow driver to control radio
-rRadio.config.AnimationDefaultOn = true  -- enable animations by default
-rRadio.config.ClientHardDisable = false  -- disables file loading when client's rradio_enabled convar is set to 0
-rRadio.config.DisablePushDamage = true  -- disable push damage
-rRadio.config.PrioritiseCustom  = true -- the custom / server added station category will appear at the top of the menu
-rRadio.config.AllowCreatePermanentBoombox = true -- allow new permanent boomboxes to be created by superadmins
-```
-```lua
-rRadio.config.CustomStationCategory = "Custom"
-rRadio.config.CommandAddStation = "!rradioadd"
-rRadio.config.CommandRemoveStation = "!rradiorem"
-```
 
 ## Screenshots
 
@@ -82,15 +21,6 @@ rRadio.config.CommandRemoveStation = "!rradiorem"
 ## Support
 
 If you encounter any issues or have any questions, please open an issue on this GitHub repository. Alternatively, contact me on [Steam](https://steamcommunity.com/id/rammel/).
-
-## Architecture Notes
-
-- **Runtime Lifecycle:** `lua/autorun/sh_radio_init.lua` performs shared initialisation, registers net messages, and brings in the server/client stacks. All radio logic is reached via this entry point.
-- **Shared Configuration:** Values under `lua/rradio/shared/` define product-wide constants, localisation hooks, and utility helpers consumed on both server and client.
-- **Server Responsibilities:** Files in `lua/rradio/server/` manage station playback, persistence, DarkRP integrations, and admin tooling. They communicate with clients exclusively via the rRadio net messages.
-- **Client Responsibilities:** Files in `lua/rradio/client/` handle UI composition, audio playback, local persistence (favourites/settings), and interaction affordances (boombox HUD, vehicle prompts).
-- **Data Packs:** Station and language packs currently load by executing the files in `lua/rradio/client/data/`. Each pack returns a Lua table merged into runtime caches.
-- **Entities:** The boombox entities under `lua/entities/` provide the world interactions that connect players to the radio system and bridge to the shared radio state.
 
 ## General Credits
 

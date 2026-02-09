@@ -1,215 +1,538 @@
-local LANG = {}
-
+﻿local LANG = {}
 local LANGUAGE_INFO = {
-    en = { name = "English", rtl = false },
-    en_pt = { name = "Pirate English", rtl = false },
-    de = { name = "Deutsch", rtl = false },
-    es_es = { name = "Español", rtl = false },
-    fr = { name = "Français", rtl = false },
-    it = { name = "Italiano", rtl = false },
-    ja = { name = "日本語", rtl = false },
-    ko = { name = "한국어", rtl = false },
-    pt_br = { name = "Português (Brasil)", rtl = false },
-    ru = { name = "Русский", rtl = false },
-    tr = { name = "Türkçe", rtl = false },
-    zh_cn = { name = "简体中文", rtl = false },
-    bg = { name = "Български", rtl = false },
-    el = { name = "Ελληνικά", rtl = false },
-    hr = { name = "Hrvatski", rtl = false },
-    he = { name = "עברית", rtl = true },
-    sk = { name = "Slovenčina", rtl = false },
-    pl = { name = "Polski", rtl = false },
-    da = { name = "Dansk", rtl = false },
-    nl = { name = "Nederlands", rtl = false },
-    th = { name = "ไทย", rtl = false },
-    vi = { name = "Tiếng Việt", rtl = false },
-    hu = { name = "Magyar", rtl = false },
-    lt = { name = "Lietuvių", rtl = false },
-    uk = { name = "Українська", rtl = false }
-}
-
-local THEME_TRANSLATIONS = {
-    en = { 
-        dark = "Dark", sleek = "Sleek", cyberpunk = "Cyberpunk",
-        sunset = "Sunset", emerald = "Emerald", synthwave = "Synthwave",
-        forest = "Forest", ocean = "Ocean", volcanic = "Volcanic",
-        royale = "Royale", platinum = "Platinum", carbon = "Carbon",
-        obsidian = "Obsidian", imperial = "Imperial", gold = "Gold" 
+    en = {
+        name = "English",
+        rtl = false
     },
-    en_pt = { 
-        dark = "Blackened", sleek = "Shipshape", cyberpunk = "Future-cursed",
-        sunset = "Horizon's Fire", emerald = "Sea Jewel", synthwave = "Siren's Melody",
-        forest = "Timber Woods", ocean = "Seven Seas", volcanic = "Devil's Furnace",
-        royale = "King's Guard", platinum = "Silvered Steel", carbon = "Sootstorm",
-        obsidian = "Nightglass", imperial = "Crown's Veil", gold = "Gilded" 
+    en_pt = {
+        name = "Pirate English",
+        rtl = false
     },
-    de = { 
-        dark = "Dunkel", sleek = "Elegant", cyberpunk = "Cyberpunk",
-        sunset = "Sonnenuntergang", emerald = "Smaragd", synthwave = "Synthwave",
-        forest = "Wald", ocean = "Ozean", volcanic = "Vulkanisch",
-        royale = "Königlich", platinum = "Platin", carbon = "Karbon",
-        obsidian = "Obsidian", imperial = "Imperial", gold = "Gold" 
+    de = {
+        name = "Deutsch",
+        rtl = false
     },
-    es_es = { 
-        dark = "Oscuro", sleek = "Elegante", cyberpunk = "Cyberpunk",
-        sunset = "Atardecer", emerald = "Esmeralda", synthwave = "Synthwave",
-        forest = "Bosque", ocean = "Océano", volcanic = "Volcánico",
-        royale = "Real", platinum = "Platino", carbon = "Carbono",
-        obsidian = "Obsidiana", imperial = "Imperial", gold = "Oro" 
+    es_es = {
+        name = "Español",
+        rtl = false
     },
-    fr = { 
-        dark = "Sombre", sleek = "Élégant", cyberpunk = "Cyberpunk",
-        sunset = "Coucher de soleil", emerald = "Émeraude", synthwave = "Synthwave",
-        forest = "Forêt", ocean = "Océan", volcanic = "Volcanique",
-        royale = "Royale", platinum = "Platine", carbon = "Carbone",
-        obsidian = "Obsidienne", imperial = "Impérial", gold = "Or" 
+    fr = {
+        name = "Français",
+        rtl = false
     },
-    it = { 
-        dark = "Scuro", sleek = "Elegante", cyberpunk = "Cyberpunk",
-        sunset = "Tramonto", emerald = "Smeraldo", synthwave = "Synthwave",
-        forest = "Foresta", ocean = "Oceano", volcanic = "Vulcanico",
-        royale = "Reale", platinum = "Platino", carbon = "Carbonio",
-        obsidian = "Ossidiana", imperial = "Imperiale", gold = "Oro" 
+    it = {
+        name = "Italiano",
+        rtl = false
     },
-    ja = { 
-        dark = "ダーク", sleek = "スリーク", cyberpunk = "サイバーパンク",
-        sunset = "サンセット", emerald = "エメラルド", synthwave = "シンセウェーブ",
-        forest = "フォレスト", ocean = "オーシャン", volcanic = "ボルカニック",
-        royale = "ロイヤル", platinum = "プラチナ", carbon = "カーボン",
-        obsidian = "黒曜石", imperial = "インペリアル", gold = "ゴールド" 
+    ja = {
+        name = "日本語",
+        rtl = false
     },
-    ko = { 
-        dark = "다크", sleek = "슬릭", cyberpunk = "사이버펑크",
-        sunset = "선셋", emerald = "에메랄드", synthwave = "신스웨이브",
-        forest = "포레스트", ocean = "오션", volcanic = "볼케이닉",
-        royale = "로얄", platinum = "플래티넘", carbon = "카본",
-        obsidian = "흑요석", imperial = "제국", gold = "골드" 
+    ko = {
+        name = "한국어",
+        rtl = false
     },
-    pt_br = { 
-        dark = "Escuro", sleek = "Elegante", cyberpunk = "Cyberpunk",
-        sunset = "Pôr do sol", emerald = "Esmeralda", synthwave = "Synthwave",
-        forest = "Floresta", ocean = "Oceano", volcanic = "Vulcânico",
-        royale = "Real", platinum = "Platina", carbon = "Carbono",
-        obsidian = "Obsidiana", imperial = "Imperial", gold = "Ouro" 
+    pt_br = {
+        name = "Português (Brasil)",
+        rtl = false
     },
-    ru = { 
-        dark = "Тёмный", sleek = "Стильный", cyberpunk = "Киберпанк",
-        sunset = "Закат", emerald = "Изумруд", synthwave = "Синтвейв",
-        forest = "Лес", ocean = "Океан", volcanic = "Вулканический",
-        royale = "Королевский", platinum = "Платиновый", carbon = "Углерод",
-        obsidian = "Обсидиан", imperial = "Имперский", gold = "Золото" 
+    ru = {
+        name = "Русский",
+        rtl = false
     },
-    tr = { 
-        dark = "Koyu", sleek = "Şık", cyberpunk = "Siberpunk",
-        sunset = "Günbatımı", emerald = "Zümrüt", synthwave = "Synthwave",
-        forest = "Orman", ocean = "Okyanus", volcanic = "Volkanik",
-        royale = "Kraliyet", platinum = "Platin", carbon = "Karbon",
-        obsidian = "Obsidyen", imperial = "İmparatorluk", gold = "Altın" 
+    tr = {
+        name = "Türkçe",
+        rtl = false
     },
-    zh_cn = { 
-        dark = "暗黑", sleek = "简洁", cyberpunk = "赛博朋克",
-        sunset = "日落", emerald = "翡翠", synthwave = "合成波",
-        forest = "森林", ocean = "海洋", volcanic = "火山",
-        royale = "皇家", platinum = "铂金", carbon = "碳素",
-        obsidian = "黑曜石", imperial = "帝国", gold = "黄金" 
+    zh_cn = {
+        name = "简体中文",
+        rtl = false
     },
-    bg = { 
-        dark = "Тъмна", sleek = "Изтънчен", cyberpunk = "Киберпънк",
-        sunset = "Залез", emerald = "Изумруд", synthwave = "Синтувейв",
-        forest = "Гора", ocean = "Океан", volcanic = "Вулканичен",
-        royale = "Кралска", platinum = "Платина", carbon = "Въглерод",
-        obsidian = "Обсидиан", imperial = "Имперски", gold = "Злато" 
+    bg = {
+        name = "Български",
+        rtl = false
     },
-    el = { 
-        dark = "Σκοτεινό", sleek = "Κομψό", cyberpunk = "Σάιμπερπανκ",
-        sunset = "Ηλιοβασίλεμα", emerald = "Σμάραγδο", synthwave = "Συνθετικό κύμα",
-        forest = "Δάσος", ocean = "Ωκεανός", volcanic = "Ηφαιστειακό",
-        royale = "Βασιλικό", platinum = "Πλατινένιο", carbon = "Άνθρακας",
-        obsidian = "Οψιδιανός", imperial = "Αυτοκρατορικό", gold = "Χρυσό" 
+    el = {
+        name = "Ελληνικά",
+        rtl = false
     },
-    hr = { 
-        dark = "Tamno", sleek = "Elegantno", cyberpunk = "Cyberpunk",
-        sunset = "Zalazak sunca", emerald = "Smaragd", synthwave = "Synthwave",
-        forest = "Šuma", ocean = "Ocean", volcanic = "Vulkanski",
-        royale = "Kraljevski", platinum = "Platina", carbon = "Ugljik",
-        obsidian = "Opsidijan", imperial = "Carski", gold = "Zlato" 
+    hr = {
+        name = "Hrvatski",
+        rtl = false
     },
-    he = { 
-        dark = "כהה", sleek = "חלק", cyberpunk = "סייברפאנק",
-        sunset = "שקיעה", emerald = "אזמרגד", synthwave = "סינתוויב",
-        forest = "יער", ocean = "אוקיינוס", volcanic = "געשי",
-        royale = "מלכותי", platinum = "פלטינה", carbon = "פחמן",
-        obsidian = "אובסידיאן", imperial = "אימפריאלי", gold = "זהב" 
+    he = {
+        name = "עברית",
+        rtl = true
     },
-    sk = { 
-        dark = "Tmavá", sleek = "Elegantná", cyberpunk = "Kyberpunk",
-        sunset = "Západ slnka", emerald = "Smaragd", synthwave = "Synthwave",
-        forest = "Les", ocean = "Oceán", volcanic = "Sopečný",
-        royale = "Kráľovský", platinum = "Platina", carbon = "Uhlík",
-        obsidian = "Obsidian", imperial = "Imperiálny", gold = "Zlato" 
+    sk = {
+        name = "Slovenčina",
+        rtl = false
     },
-    pl = { 
-        dark = "Ciemny", sleek = "Elegancki", cyberpunk = "Cyberpunk",
-        sunset = "Zachód słońca", emerald = "Szmaragd", synthwave = "Synthwave",
-        forest = "Las", ocean = "Ocean", volcanic = "Wulkaniczny",
-        royale = "Królewski", platinum = "Platynowy", carbon = "Węglowy",
-        obsidian = "Obsydian", imperial = "Imperialny", gold = "Złoto" 
+    pl = {
+        name = "Polski",
+        rtl = false
     },
-    da = { 
-        dark = "Mørk", sleek = "Elegant", cyberpunk = "Cyberpunk",
-        sunset = "Solnedgang", emerald = "Smaragd", synthwave = "Synthwave",
-        forest = "Skov", ocean = "Hav", volcanic = "Vulkanisk",
-        royale = "Kongelig", platinum = "Platin", carbon = "Kulstof",
-        obsidian = "Obsidian", imperial = "Imperial", gold = "Guld" 
+    da = {
+        name = "Dansk",
+        rtl = false
     },
-    nl = { 
-        dark = "Donker", sleek = "Strak", cyberpunk = "Cyberpunk",
-        sunset = "Zonsondergang", emerald = "Smaragd", synthwave = "Synthwave",
-        forest = "Bos", ocean = "Oceaan", volcanic = "Vulkanisch",
-        royale = "Koninklijk", platinum = "Platina", carbon = "Koolstof",
-        obsidian = "Obsidiaan", imperial = "Imperiaal", gold = "Goud" 
+    nl = {
+        name = "Nederlands",
+        rtl = false
     },
-    th = { 
-        dark = "มืด", sleek = "เพรียว", cyberpunk = "ไซเบอร์พังค์",
-        sunset = "พระอาทิตย์ตก", emerald = "มรกต", synthwave = "ซินธ์เวฟ",
-        forest = "ป่า", ocean = "มหาสมุทร", volcanic = "ภูเขาไฟ",
-        royale = "รอยัล", platinum = "แพลตตินัม", carbon = "คาร์บอน",
-        obsidian = "ออบซิเดียน", imperial = "จักรวรรดิ", gold = "ทอง" 
+    th = {
+        name = "ไทย",
+        rtl = false
     },
-    vi = { 
-        dark = "Tối", sleek = "Bóng bẩy", cyberpunk = "Cyberpunk",
-        sunset = "Hoàng hôn", emerald = "Ngọc lục bảo", synthwave = "Synthwave",
-        forest = "Rừng", ocean = "Đại dương", volcanic = "Núi lửa",
-        royale = "Hoàng gia", platinum = "Bạch kim", carbon = "Cacbon",
-        obsidian = "Obsidian", imperial = "Đế chế", gold = "Vàng" 
+    vi = {
+        name = "Tiếng Việt",
+        rtl = false
     },
-    hu = { 
-        dark = "Sötét", sleek = "Elegáns", cyberpunk = "Cyberpunk",
-        sunset = "Naplemente", emerald = "Smaragd", synthwave = "Synthwave",
-        forest = "Erdő", ocean = "Óceán", volcanic = "Vulkáni",
-        royale = "Királyi", platinum = "Platina", carbon = "Szén",
-        obsidian = "Obszidián", imperial = "Császári", gold = "Arany" 
+    hu = {
+        name = "Magyar",
+        rtl = false
     },
-    lt = { 
-        dark = "Tamsus", sleek = "Elegantiškas", cyberpunk = "Cyberpunk",
-        sunset = "Saulėlydis", emerald = "Smaragdas", synthwave = "Synthwave",
-        forest = "Miškas", ocean = "Vandenynas", volcanic = "Vulkaninis",
-        royale = "Karališkas", platinum = "Platina", carbon = "Anglis",
-        obsidian = "Obsidiantas", imperial = "Imperinis", gold = "Auksas" 
+    lt = {
+        name = "Lietuvių",
+        rtl = false
     },
-    uk = { 
-        dark = "Темна", sleek = "Елегантна", cyberpunk = "Кіберпанк",
-        sunset = "Сонячний захід", emerald = "Смарагд", synthwave = "Синтвейв",
-        forest = "Ліс", ocean = "Океан", volcanic = "Вулканічний",
-        royale = "Королівський", platinum = "Платина", carbon = "Вуглець",
-        obsidian = "Обсидіан", imperial = "Імперський", gold = "Золото" 
+    uk = {
+        name = "Українська",
+        rtl = false
     }
 }
 
-for langCode, _ in pairs( LANGUAGE_INFO ) do
+local THEME_TRANSLATIONS = {
+    en = {
+        dark = "Dark",
+        sleek = "Sleek",
+        cyberpunk = "Cyberpunk",
+        sunset = "Sunset",
+        emerald = "Emerald",
+        synthwave = "Synthwave",
+        forest = "Forest",
+        ocean = "Ocean",
+        volcanic = "Volcanic",
+        royale = "Royale",
+        platinum = "Platinum",
+        carbon = "Carbon",
+        obsidian = "Obsidian",
+        imperial = "Imperial",
+        gold = "Gold"
+    },
+    en_pt = {
+        dark = "Blackened",
+        sleek = "Shipshape",
+        cyberpunk = "Future-cursed",
+        sunset = "Horizon's Fire",
+        emerald = "Sea Jewel",
+        synthwave = "Siren's Melody",
+        forest = "Timber Woods",
+        ocean = "Seven Seas",
+        volcanic = "Devil's Furnace",
+        royale = "King's Guard",
+        platinum = "Silvered Steel",
+        carbon = "Sootstorm",
+        obsidian = "Nightglass",
+        imperial = "Crown's Veil",
+        gold = "Gilded"
+    },
+    de = {
+        dark = "Dunkel",
+        sleek = "Elegant",
+        cyberpunk = "Cyberpunk",
+        sunset = "Sonnenuntergang",
+        emerald = "Smaragd",
+        synthwave = "Synthwave",
+        forest = "Wald",
+        ocean = "Ozean",
+        volcanic = "Vulkanisch",
+        royale = "Königlich",
+        platinum = "Platin",
+        carbon = "Karbon",
+        obsidian = "Obsidian",
+        imperial = "Imperial",
+        gold = "Gold"
+    },
+    es_es = {
+        dark = "Oscuro",
+        sleek = "Elegante",
+        cyberpunk = "Cyberpunk",
+        sunset = "Atardecer",
+        emerald = "Esmeralda",
+        synthwave = "Synthwave",
+        forest = "Bosque",
+        ocean = "Océano",
+        volcanic = "Volcánico",
+        royale = "Real",
+        platinum = "Platino",
+        carbon = "Carbono",
+        obsidian = "Obsidiana",
+        imperial = "Imperial",
+        gold = "Oro"
+    },
+    fr = {
+        dark = "Sombre",
+        sleek = "Élégant",
+        cyberpunk = "Cyberpunk",
+        sunset = "Coucher de soleil",
+        emerald = "Émeraude",
+        synthwave = "Synthwave",
+        forest = "Forêt",
+        ocean = "Océan",
+        volcanic = "Volcanique",
+        royale = "Royale",
+        platinum = "Platine",
+        carbon = "Carbone",
+        obsidian = "Obsidienne",
+        imperial = "Impérial",
+        gold = "Or"
+    },
+    it = {
+        dark = "Scuro",
+        sleek = "Elegante",
+        cyberpunk = "Cyberpunk",
+        sunset = "Tramonto",
+        emerald = "Smeraldo",
+        synthwave = "Synthwave",
+        forest = "Foresta",
+        ocean = "Oceano",
+        volcanic = "Vulcanico",
+        royale = "Reale",
+        platinum = "Platino",
+        carbon = "Carbonio",
+        obsidian = "Ossidiana",
+        imperial = "Imperiale",
+        gold = "Oro"
+    },
+    ja = {
+        dark = "ダーク",
+        sleek = "スリーク",
+        cyberpunk = "サイバーパンク",
+        sunset = "サンセット",
+        emerald = "エメラルド",
+        synthwave = "シンセウェーブ",
+        forest = "フォレスト",
+        ocean = "オーシャン",
+        volcanic = "ボルカニック",
+        royale = "ロイヤル",
+        platinum = "プラチナ",
+        carbon = "カーボン",
+        obsidian = "黒曜石",
+        imperial = "インペリアル",
+        gold = "ゴールド"
+    },
+    ko = {
+        dark = "다크",
+        sleek = "슬릭",
+        cyberpunk = "사이버펑크",
+        sunset = "선셋",
+        emerald = "에메랄드",
+        synthwave = "신스웨이브",
+        forest = "포레스트",
+        ocean = "오션",
+        volcanic = "볼케이닉",
+        royale = "로얄",
+        platinum = "플래티넘",
+        carbon = "카본",
+        obsidian = "흑요석",
+        imperial = "제국",
+        gold = "골드"
+    },
+    pt_br = {
+        dark = "Escuro",
+        sleek = "Elegante",
+        cyberpunk = "Cyberpunk",
+        sunset = "Pôr do sol",
+        emerald = "Esmeralda",
+        synthwave = "Synthwave",
+        forest = "Floresta",
+        ocean = "Oceano",
+        volcanic = "Vulcânico",
+        royale = "Real",
+        platinum = "Platina",
+        carbon = "Carbono",
+        obsidian = "Obsidiana",
+        imperial = "Imperial",
+        gold = "Ouro"
+    },
+    ru = {
+        dark = "Тёмный",
+        sleek = "Стильный",
+        cyberpunk = "Киберпанк",
+        sunset = "Закат",
+        emerald = "Изумруд",
+        synthwave = "Синтвейв",
+        forest = "Лес",
+        ocean = "Океан",
+        volcanic = "Вулканический",
+        royale = "Королевский",
+        platinum = "Платиновый",
+        carbon = "Углерод",
+        obsidian = "Обсидиан",
+        imperial = "Имперский",
+        gold = "Золото"
+    },
+    tr = {
+        dark = "Koyu",
+        sleek = "Şık",
+        cyberpunk = "Siberpunk",
+        sunset = "Günbatımı",
+        emerald = "Zümrüt",
+        synthwave = "Synthwave",
+        forest = "Orman",
+        ocean = "Okyanus",
+        volcanic = "Volkanik",
+        royale = "Kraliyet",
+        platinum = "Platin",
+        carbon = "Karbon",
+        obsidian = "Obsidyen",
+        imperial = "İmparatorluk",
+        gold = "Altın"
+    },
+    zh_cn = {
+        dark = "暗黑",
+        sleek = "简洁",
+        cyberpunk = "赛博朋克",
+        sunset = "日落",
+        emerald = "翡翠",
+        synthwave = "合成波",
+        forest = "森林",
+        ocean = "海洋",
+        volcanic = "火山",
+        royale = "皇家",
+        platinum = "铂金",
+        carbon = "碳素",
+        obsidian = "黑曜石",
+        imperial = "帝国",
+        gold = "黄金"
+    },
+    bg = {
+        dark = "Тъмна",
+        sleek = "Изтънчен",
+        cyberpunk = "Киберпънк",
+        sunset = "Залез",
+        emerald = "Изумруд",
+        synthwave = "Синтувейв",
+        forest = "Гора",
+        ocean = "Океан",
+        volcanic = "Вулканичен",
+        royale = "Кралска",
+        platinum = "Платина",
+        carbon = "Въглерод",
+        obsidian = "Обсидиан",
+        imperial = "Имперски",
+        gold = "Злато"
+    },
+    el = {
+        dark = "Σκοτεινό",
+        sleek = "Κομψό",
+        cyberpunk = "Σάιμπερπανκ",
+        sunset = "Ηλιοβασίλεμα",
+        emerald = "Σμάραγδο",
+        synthwave = "Συνθετικό κύμα",
+        forest = "Δάσος",
+        ocean = "Ωκεανός",
+        volcanic = "Ηφαιστειακό",
+        royale = "Βασιλικό",
+        platinum = "Πλατινένιο",
+        carbon = "Άνθρακας",
+        obsidian = "Οψιδιανός",
+        imperial = "Αυτοκρατορικό",
+        gold = "Χρυσό"
+    },
+    hr = {
+        dark = "Tamno",
+        sleek = "Elegantno",
+        cyberpunk = "Cyberpunk",
+        sunset = "Zalazak sunca",
+        emerald = "Smaragd",
+        synthwave = "Synthwave",
+        forest = "Šuma",
+        ocean = "Ocean",
+        volcanic = "Vulkanski",
+        royale = "Kraljevski",
+        platinum = "Platina",
+        carbon = "Ugljik",
+        obsidian = "Opsidijan",
+        imperial = "Carski",
+        gold = "Zlato"
+    },
+    he = {
+        dark = "כהה",
+        sleek = "חלק",
+        cyberpunk = "סייברפאנק",
+        sunset = "שקיעה",
+        emerald = "אזמרגד",
+        synthwave = "סינתוויב",
+        forest = "יער",
+        ocean = "אוקיינוס",
+        volcanic = "געשי",
+        royale = "מלכותי",
+        platinum = "פלטינה",
+        carbon = "פחמן",
+        obsidian = "אובסידיאן",
+        imperial = "אימפריאלי",
+        gold = "זהב"
+    },
+    sk = {
+        dark = "Tmavá",
+        sleek = "Elegantná",
+        cyberpunk = "Kyberpunk",
+        sunset = "Západ slnka",
+        emerald = "Smaragd",
+        synthwave = "Synthwave",
+        forest = "Les",
+        ocean = "Oceán",
+        volcanic = "Sopečný",
+        royale = "Kráľovský",
+        platinum = "Platina",
+        carbon = "Uhlík",
+        obsidian = "Obsidian",
+        imperial = "Imperiálny",
+        gold = "Zlato"
+    },
+    pl = {
+        dark = "Ciemny",
+        sleek = "Elegancki",
+        cyberpunk = "Cyberpunk",
+        sunset = "Zachód słońca",
+        emerald = "Szmaragd",
+        synthwave = "Synthwave",
+        forest = "Las",
+        ocean = "Ocean",
+        volcanic = "Wulkaniczny",
+        royale = "Królewski",
+        platinum = "Platynowy",
+        carbon = "Węglowy",
+        obsidian = "Obsydian",
+        imperial = "Imperialny",
+        gold = "Złoto"
+    },
+    da = {
+        dark = "Mørk",
+        sleek = "Elegant",
+        cyberpunk = "Cyberpunk",
+        sunset = "Solnedgang",
+        emerald = "Smaragd",
+        synthwave = "Synthwave",
+        forest = "Skov",
+        ocean = "Hav",
+        volcanic = "Vulkanisk",
+        royale = "Kongelig",
+        platinum = "Platin",
+        carbon = "Kulstof",
+        obsidian = "Obsidian",
+        imperial = "Imperial",
+        gold = "Guld"
+    },
+    nl = {
+        dark = "Donker",
+        sleek = "Strak",
+        cyberpunk = "Cyberpunk",
+        sunset = "Zonsondergang",
+        emerald = "Smaragd",
+        synthwave = "Synthwave",
+        forest = "Bos",
+        ocean = "Oceaan",
+        volcanic = "Vulkanisch",
+        royale = "Koninklijk",
+        platinum = "Platina",
+        carbon = "Koolstof",
+        obsidian = "Obsidiaan",
+        imperial = "Imperiaal",
+        gold = "Goud"
+    },
+    th = {
+        dark = "มืด",
+        sleek = "เพรียว",
+        cyberpunk = "ไซเบอร์พังค์",
+        sunset = "พระอาทิตย์ตก",
+        emerald = "มรกต",
+        synthwave = "ซินธ์เวฟ",
+        forest = "ป่า",
+        ocean = "มหาสมุทร",
+        volcanic = "ภูเขาไฟ",
+        royale = "รอยัล",
+        platinum = "แพลตตินัม",
+        carbon = "คาร์บอน",
+        obsidian = "ออบซิเดียน",
+        imperial = "จักรวรรดิ",
+        gold = "ทอง"
+    },
+    vi = {
+        dark = "Tối",
+        sleek = "Bóng bẩy",
+        cyberpunk = "Cyberpunk",
+        sunset = "Hoàng hôn",
+        emerald = "Ngọc lục bảo",
+        synthwave = "Synthwave",
+        forest = "Rừng",
+        ocean = "Đại dương",
+        volcanic = "Núi lửa",
+        royale = "Hoàng gia",
+        platinum = "Bạch kim",
+        carbon = "Cacbon",
+        obsidian = "Obsidian",
+        imperial = "Đế chế",
+        gold = "Vàng"
+    },
+    hu = {
+        dark = "Sötét",
+        sleek = "Elegáns",
+        cyberpunk = "Cyberpunk",
+        sunset = "Naplemente",
+        emerald = "Smaragd",
+        synthwave = "Synthwave",
+        forest = "Erdő",
+        ocean = "Óceán",
+        volcanic = "Vulkáni",
+        royale = "Királyi",
+        platinum = "Platina",
+        carbon = "Szén",
+        obsidian = "Obszidián",
+        imperial = "Császári",
+        gold = "Arany"
+    },
+    lt = {
+        dark = "Tamsus",
+        sleek = "Elegantiškas",
+        cyberpunk = "Cyberpunk",
+        sunset = "Saulėlydis",
+        emerald = "Smaragdas",
+        synthwave = "Synthwave",
+        forest = "Miškas",
+        ocean = "Vandenynas",
+        volcanic = "Vulkaninis",
+        royale = "Karališkas",
+        platinum = "Platina",
+        carbon = "Anglis",
+        obsidian = "Obsidiantas",
+        imperial = "Imperinis",
+        gold = "Auksas"
+    },
+    uk = {
+        dark = "Темна",
+        sleek = "Елегантна",
+        cyberpunk = "Кіберпанк",
+        sunset = "Сонячний захід",
+        emerald = "Смарагд",
+        synthwave = "Синтвейв",
+        forest = "Ліс",
+        ocean = "Океан",
+        volcanic = "Вулканічний",
+        royale = "Королівський",
+        platinum = "Платина",
+        carbon = "Вуглець",
+        obsidian = "Обсидіан",
+        imperial = "Імперський",
+        gold = "Золото"
+    }
+}
+
+for langCode, _ in pairs(LANGUAGE_INFO) do
     LANG[langCode] = {}
 end
-
 
 local function defineTranslations()
     -- English (Base language)
@@ -238,11 +561,11 @@ local function defineTranslations()
     LANG.en["Disabled"] = "Disabled"
     LANG.en["FavoriteStations"] = "Favorite Stations"
     LANG.en["TuningIn"] = "Tuning in"
+    LANG.en["StationFailed"] = "Station Failed"
     LANG.en["KeyBinds"] = "Key Binds"
     LANG.en["ToOpenRadio"] = "to open radio"
     LANG.en["Global"] = "Global"
     LANG.en["Custom"] = "Custom Radio Stations"
-    
     -- Pirate English
     LANG.en_pt["SelectCountry"] = "Be Choosin' a Land"
     LANG.en_pt["StopRadio"] = "AVAST!"
@@ -269,11 +592,11 @@ local function defineTranslations()
     LANG.en_pt["Disabled"] = "Nay, It Be Off"
     LANG.en_pt["FavoriteStations"] = "Ye Favorite Shanties"
     LANG.en_pt["TuningIn"] = "Tunin' the Sails"
+    LANG.en_pt["StationFailed"] = "Shanty be Sunk"
     LANG.en_pt["KeyBinds"] = "Key Binds"
     LANG.en_pt["ToOpenRadio"] = "to set sail"
     LANG.en_pt["Global"] = "Global"
     LANG.en_pt["Custom"] = "Me Own Toons"
-    
     -- German
     LANG.de["SelectCountry"] = "Land auswählen"
     LANG.de["StopRadio"] = "STOP"
@@ -300,11 +623,11 @@ local function defineTranslations()
     LANG.de["Disabled"] = "Deaktiviert"
     LANG.de["FavoriteStations"] = "Favorit-Stationen"
     LANG.de["TuningIn"] = "Einstellen"
+    LANG.de["StationFailed"] = "Sender fehlgeschlagen"
     LANG.de["KeyBinds"] = "Tastenbelegungen"
     LANG.de["ToOpenRadio"] = "um das Radio zu öffnen"
     LANG.de["Global"] = "Weltweit"
     LANG.de["Custom"] = "Benutzerdefinierte Radiostationen"
-    
     -- Polish
     LANG.pl["SelectCountry"] = "Wybierz kraj"
     LANG.pl["StopRadio"] = "STOP"
@@ -331,11 +654,11 @@ local function defineTranslations()
     LANG.pl["Disabled"] = "Wyłączone"
     LANG.pl["FavoriteStations"] = "Ulubione stacje"
     LANG.pl["TuningIn"] = "Strojenie"
+    LANG.pl["StationFailed"] = "Stacja niedostępna"
     LANG.pl["KeyBinds"] = "Przypisania klawiszy"
     LANG.pl["ToOpenRadio"] = "aby otworzyć radio"
     LANG.pl["Global"] = "Globalny"
     LANG.pl["Custom"] = "Stacje radiowe niestandardowe"
-    
     -- Spanish
     LANG.es_es["SelectCountry"] = "Seleccionar país"
     LANG.es_es["StopRadio"] = "PARAR"
@@ -362,11 +685,11 @@ local function defineTranslations()
     LANG.es_es["Disabled"] = "Desactivado"
     LANG.es_es["FavoriteStations"] = "Estaciones favoritas"
     LANG.es_es["TuningIn"] = "Sintonizando"
+    LANG.es_es["StationFailed"] = "Estación fallida"
     LANG.es_es["KeyBinds"] = "Asignación de teclas"
     LANG.es_es["ToOpenRadio"] = "para abrir la radio"
     LANG.es_es["Global"] = "Mundial"
     LANG.es_es["Custom"] = "Estaciones de radio personalizadas"
-    
     -- French
     LANG.fr["SelectCountry"] = "Sélectionnez un pays"
     LANG.fr["StopRadio"] = "ARRÊT"
@@ -393,11 +716,11 @@ local function defineTranslations()
     LANG.fr["Disabled"] = "Désactivé"
     LANG.fr["FavoriteStations"] = "Stations favorites"
     LANG.fr["TuningIn"] = "Syntonisation"
+    LANG.fr["StationFailed"] = "Station échouée"
     LANG.fr["KeyBinds"] = "Raccourcis clavier"
     LANG.fr["ToOpenRadio"] = "pour ouvrir la radio"
     LANG.fr["Global"] = "Mondial"
     LANG.fr["Custom"] = "Stations de radio personnalisées"
-    
     -- Italian
     LANG.it["SelectCountry"] = "Seleziona paese"
     LANG.it["StopRadio"] = "FERMARE"
@@ -424,11 +747,11 @@ local function defineTranslations()
     LANG.it["Disabled"] = "Disattivato"
     LANG.it["FavoriteStations"] = "Stazioni favorite"
     LANG.it["TuningIn"] = "Sintonizzazione"
+    LANG.it["StationFailed"] = "Stazione fallita"
     LANG.it["KeyBinds"] = "Assegnazione tasti"
     LANG.it["ToOpenRadio"] = "per aprire la radio"
     LANG.it["Global"] = "Mondiale"
     LANG.it["Custom"] = "Stazioni radio personalizzate"
-    
     -- Japanese
     LANG.ja["SelectCountry"] = "国を選択"
     LANG.ja["StopRadio"] = "停止"
@@ -455,11 +778,11 @@ local function defineTranslations()
     LANG.ja["Disabled"] = "無効"
     LANG.ja["FavoriteStations"] = "お気に入りの局"
     LANG.ja["TuningIn"] = "調整中"
+    LANG.ja["StationFailed"] = "受信失敗"
     LANG.ja["KeyBinds"] = "キー割り当て"
     LANG.ja["ToOpenRadio"] = "ラジオを開くには"
     LANG.ja["Global"] = "全世界"
     LANG.ja["Custom"] = "カスタムラジオステーション"
-    
     -- Korean
     LANG.ko["SelectCountry"] = "국가 선택"
     LANG.ko["StopRadio"] = "정지"
@@ -486,11 +809,11 @@ local function defineTranslations()
     LANG.ko["Disabled"] = "비활성화"
     LANG.ko["FavoriteStations"] = "즐겨찾기 방송국"
     LANG.ko["TuningIn"] = "조정 중"
+    LANG.ko["StationFailed"] = "수신 실패"
     LANG.ko["KeyBinds"] = "키 바인딩"
     LANG.ko["ToOpenRadio"] = "라디오를 열려면"
     LANG.ko["Global"] = "전 세계"
     LANG.ko["Custom"] = "사용자 정의 라디오 스테이션"
-    
     -- Brazilian Portuguese
     LANG.pt_br["SelectCountry"] = "Selecionar país"
     LANG.pt_br["StopRadio"] = "PARAR"
@@ -517,11 +840,11 @@ local function defineTranslations()
     LANG.pt_br["Disabled"] = "Desativado"
     LANG.pt_br["FavoriteStations"] = "Estações favoritas"
     LANG.pt_br["TuningIn"] = "Sintonização"
+    LANG.pt_br["StationFailed"] = "Estação falhou"
     LANG.pt_br["KeyBinds"] = "Atribuições de teclas"
     LANG.pt_br["ToOpenRadio"] = "para abrir o rádio"
     LANG.pt_br["Global"] = "Mundial"
     LANG.pt_br["Custom"] = "Estações de rádio personalizadas"
-    
     -- Russian
     LANG.ru["SelectCountry"] = "Выберите страну"
     LANG.ru["StopRadio"] = "СТОП"
@@ -548,11 +871,11 @@ local function defineTranslations()
     LANG.ru["Disabled"] = "Выключено"
     LANG.ru["FavoriteStations"] = "Избранные станции"
     LANG.ru["TuningIn"] = "Настройка"
+    LANG.ru["StationFailed"] = "Ошибка станции"
     LANG.ru["KeyBinds"] = "Назначение клавиш"
     LANG.ru["ToOpenRadio"] = "чтобы открыть радио"
     LANG.ru["Global"] = "Глобальный"
     LANG.ru["Custom"] = "Пользовательские радиостанции"
-    
     -- Turkish
     LANG.tr["SelectCountry"] = "Ülke seç"
     LANG.tr["StopRadio"] = "DURDUR"
@@ -579,11 +902,11 @@ local function defineTranslations()
     LANG.tr["Disabled"] = "Devre dışı"
     LANG.tr["FavoriteStations"] = "Favori radyo kanalları"
     LANG.tr["TuningIn"] = "Ayarlanıyor"
+    LANG.tr["StationFailed"] = "İstasyon başarısız"
     LANG.tr["KeyBinds"] = "Tuş atamaları"
     LANG.tr["ToOpenRadio"] = "radyo için aç"
     LANG.tr["Global"] = "Küresel"
     LANG.tr["Custom"] = "Özel radyo istasyonları"
-    
     -- Chinese (Simplified)
     LANG.zh_cn["SelectCountry"] = "选择国家"
     LANG.zh_cn["StopRadio"] = "停止"
@@ -610,11 +933,11 @@ local function defineTranslations()
     LANG.zh_cn["Disabled"] = "禁用"
     LANG.zh_cn["FavoriteStations"] = "收藏电台"
     LANG.zh_cn["TuningIn"] = "调谐中"
+    LANG.zh_cn["StationFailed"] = "电台加载失败"
     LANG.zh_cn["KeyBinds"] = "按键绑定"
     LANG.zh_cn["ToOpenRadio"] = "打开收音机"
     LANG.zh_cn["Global"] = "全球"
     LANG.zh_cn["Custom"] = "自定义电台"
-    
     -- Bulgarian
     LANG.bg["SelectCountry"] = "Изберете държава"
     LANG.bg["StopRadio"] = "СТОП"
@@ -641,11 +964,11 @@ local function defineTranslations()
     LANG.bg["Disabled"] = "Деактивирано"
     LANG.bg["FavoriteStations"] = "Любими станции"
     LANG.bg["TuningIn"] = "Настройване"
+    LANG.bg["StationFailed"] = "Станцията се провали"
     LANG.bg["KeyBinds"] = "Клавишни връзки"
     LANG.bg["ToOpenRadio"] = "за да отворите радиото"
     LANG.bg["Global"] = "Глобално"
     LANG.bg["Custom"] = "Потребителски радиостанции"
-    
     -- Greek
     LANG.el["SelectCountry"] = "Επιλέξτε χώρα"
     LANG.el["StopRadio"] = "ΣΤΟΠ"
@@ -672,11 +995,11 @@ local function defineTranslations()
     LANG.el["Disabled"] = "Απενεργό"
     LANG.el["FavoriteStations"] = "Αγαπημένοι σταθμοί"
     LANG.el["TuningIn"] = "Συντονισμός"
+    LANG.el["StationFailed"] = "Αποτυχία σταθμού"
     LANG.el["KeyBinds"] = "Πλήκτρα"
     LANG.el["ToOpenRadio"] = "για άνοιγμα ραδιοφώνου"
     LANG.el["Global"] = "Παγκόσμιο"
     LANG.el["Custom"] = "Προσαρμοσμένες ραδιοφωνικές σταθμοί"
-    
     -- Croatian
     LANG.hr["SelectCountry"] = "Odaberite državu"
     LANG.hr["StopRadio"] = "STOP"
@@ -703,11 +1026,11 @@ local function defineTranslations()
     LANG.hr["Disabled"] = "Onemogućeno"
     LANG.hr["FavoriteStations"] = "Omiljene stanice"
     LANG.hr["TuningIn"] = "Usklađivanje"
+    LANG.hr["StationFailed"] = "Postaja neuspješna"
     LANG.hr["KeyBinds"] = "Dodjela tipki"
     LANG.hr["ToOpenRadio"] = "za otvaranje"
     LANG.hr["Global"] = "Globalno"
     LANG.hr["Custom"] = "Prilagođene radio stanice"
-    
     -- Hebrew
     LANG.he["SelectCountry"] = "בחר מדינה"
     LANG.he["StopRadio"] = "עצור"
@@ -734,11 +1057,11 @@ local function defineTranslations()
     LANG.he["Disabled"] = "מושבת"
     LANG.he["FavoriteStations"] = "תחנות מועדפות"
     LANG.he["TuningIn"] = "מכוון"
+    LANG.he["StationFailed"] = "התחנה נכשלה"
     LANG.he["KeyBinds"] = "הגדרות מקשים"
     LANG.he["ToOpenRadio"] = "לפתיחת הרדיו"
     LANG.he["Global"] = "גלובלי"
     LANG.he["Custom"] = "תחנות רדיו מותאמות אישית"
-    
     -- Slovak
     LANG.sk["SelectCountry"] = "Vyberte krajinu"
     LANG.sk["StopRadio"] = "STOP"
@@ -765,11 +1088,11 @@ local function defineTranslations()
     LANG.sk["Disabled"] = "Zakázané"
     LANG.sk["FavoriteStations"] = "Obľúbené stanice"
     LANG.sk["TuningIn"] = "Ladenie"
+    LANG.sk["StationFailed"] = "Stanica zlyhala"
     LANG.sk["KeyBinds"] = "Klávesové väzby"
     LANG.sk["ToOpenRadio"] = "na otvorenie"
     LANG.sk["Global"] = "Globálne"
     LANG.sk["Custom"] = "Používateľské rádio stanice"
-    
     -- Danish
     LANG.da["SelectCountry"] = "Vælg et land"
     LANG.da["StopRadio"] = "STOP"
@@ -796,11 +1119,11 @@ local function defineTranslations()
     LANG.da["Disabled"] = "Deaktiveret"
     LANG.da["FavoriteStations"] = "Favoritstationer"
     LANG.da["TuningIn"] = "Tuner ind"
+    LANG.da["StationFailed"] = "Station fejlede"
     LANG.da["KeyBinds"] = "Tastbindinger"
     LANG.da["ToOpenRadio"] = "for at åbne"
     LANG.da["Global"] = "Globalt"
     LANG.da["Custom"] = "Tilpassede radiostationer"
-    
     -- Dutch
     LANG.nl["SelectCountry"] = "Selecteer een land"
     LANG.nl["StopRadio"] = "STOP"
@@ -827,11 +1150,11 @@ local function defineTranslations()
     LANG.nl["Disabled"] = "Uitgeschakeld"
     LANG.nl["FavoriteStations"] = "Favoriete zenders"
     LANG.nl["TuningIn"] = "Afstemmen"
+    LANG.nl["StationFailed"] = "Station mislukt"
     LANG.nl["KeyBinds"] = "Toetsbindingen"
     LANG.nl["ToOpenRadio"] = "om te openen"
     LANG.nl["Global"] = "Wereldwijd"
     LANG.nl["Custom"] = "Aangepaste radiostations"
-    
     -- Thai
     LANG.th["SelectCountry"] = "เลือกประเทศ"
     LANG.th["StopRadio"] = "หยุด"
@@ -858,11 +1181,11 @@ local function defineTranslations()
     LANG.th["Disabled"] = "ปิด"
     LANG.th["FavoriteStations"] = "สถานีโปรด"
     LANG.th["TuningIn"] = "ปรับจูน"
+    LANG.th["StationFailed"] = "สถานีล้มเหลว"
     LANG.th["KeyBinds"] = "ผูกคีย์"
     LANG.th["ToOpenRadio"] = "เพื่อเปิด"
     LANG.th["Global"] = "ทั่วโลก"
     LANG.th["Custom"] = "สถานีวิทยุแบบกำหนดเอง"
-    
     -- Vietnamese
     LANG.vi["SelectCountry"] = "Chọn quốc gia"
     LANG.vi["StopRadio"] = "DỪNG"
@@ -889,11 +1212,11 @@ local function defineTranslations()
     LANG.vi["Disabled"] = "Tắt"
     LANG.vi["FavoriteStations"] = "Đài yêu thích"
     LANG.vi["TuningIn"] = "Đang dò"
+    LANG.vi["StationFailed"] = "Đài phát thất bại"
     LANG.vi["KeyBinds"] = "Phím tắt"
     LANG.vi["ToOpenRadio"] = "để mở"
     LANG.vi["Global"] = "Toàn cầu"
     LANG.vi["Custom"] = "Trạm phát thanh tùy chỉnh"
-    
     -- Hungarian
     LANG.hu["SelectCountry"] = "Válassz országot"
     LANG.hu["StopRadio"] = "MEGÁLLÍTÁS"
@@ -920,11 +1243,11 @@ local function defineTranslations()
     LANG.hu["Disabled"] = "Letiltva"
     LANG.hu["FavoriteStations"] = "Kedvenc állomások"
     LANG.hu["TuningIn"] = "Hangolás"
+    LANG.hu["StationFailed"] = "Állomás sikertelen"
     LANG.hu["KeyBinds"] = "Billentyűkiosztás"
     LANG.hu["ToOpenRadio"] = "megnyitáshoz"
     LANG.hu["Global"] = "Globális"
     LANG.hu["Custom"] = "Egyéni rádióállomások"
-    
     -- Lithuanian
     LANG.lt["SelectCountry"] = "Pasirinkite šalį"
     LANG.lt["StopRadio"] = "SUSTABDYTI"
@@ -951,11 +1274,11 @@ local function defineTranslations()
     LANG.lt["Disabled"] = "Išjungta"
     LANG.lt["FavoriteStations"] = "Mėgstamos stotys"
     LANG.lt["TuningIn"] = "Derinimas"
+    LANG.lt["StationFailed"] = "Stotis nepavyko"
     LANG.lt["KeyBinds"] = "Raktų priskyrimai"
     LANG.lt["ToOpenRadio"] = "atidaryti"
     LANG.lt["Global"] = "Visuotinis"
     LANG.lt["Custom"] = "Savitaip pasirinktos radijo stotys"
-    
     -- Ukrainian
     LANG.uk["SelectCountry"] = "Оберіть країну"
     LANG.uk["StopRadio"] = "СТОП"
@@ -982,6 +1305,7 @@ local function defineTranslations()
     LANG.uk["Disabled"] = "Вимкнено"
     LANG.uk["FavoriteStations"] = "Улюблені станції"
     LANG.uk["TuningIn"] = "Налаштування"
+    LANG.uk["StationFailed"] = "Помилка станції"
     LANG.uk["KeyBinds"] = "Клавіші"
     LANG.uk["ToOpenRadio"] = "щоб відкрити"
     LANG.uk["Global"] = "Глобальний"
@@ -989,10 +1313,10 @@ local function defineTranslations()
 end
 
 local function applyThemeTranslations()
-    for langCode, translations in pairs( THEME_TRANSLATIONS ) do
+    for langCode, translations in pairs(THEME_TRANSLATIONS) do
         local langTable = LANG[langCode]
         if langTable then
-            for themeName, label in pairs( translations ) do
+            for themeName, label in pairs(translations) do
                 langTable[themeName] = label
             end
         end
@@ -1002,55 +1326,39 @@ end
 -- Initialize all translations
 defineTranslations()
 applyThemeTranslations()
-
 -- Utility functions for the localization system
-LANG.GetLanguageInfo = function( langCode )
-    return LANGUAGE_INFO[langCode]
-end
-
+LANG.GetLanguageInfo = function(langCode) return LANGUAGE_INFO[langCode] end
 LANG.GetAvailableLanguages = function()
     local languages = {}
-    
-    for code, info in pairs( LANGUAGE_INFO ) do
+    for code, info in pairs(LANGUAGE_INFO) do
         languages[code] = info.name
     end
-    
     return languages
 end
 
-LANG.IsRTL = function( langCode )
+LANG.IsRTL = function(langCode)
     local info = LANGUAGE_INFO[langCode]
     return info and info.rtl or false
 end
 
-LANG.GetTranslation = function( langCode, key, fallbackLang )
+LANG.GetTranslation = function(langCode, key, fallbackLang)
     fallbackLang = fallbackLang or "en"
-    
     -- Try to get translation from requested language
-    if LANG[langCode] and LANG[langCode][key] then
-        return LANG[langCode][key]
-    end
-    
+    if LANG[langCode] and LANG[langCode][key] then return LANG[langCode][key] end
     -- Fallback to English
-    if LANG[fallbackLang] and LANG[fallbackLang][key] then
-        return LANG[fallbackLang][key]
-    end
-    
+    if LANG[fallbackLang] and LANG[fallbackLang][key] then return LANG[fallbackLang][key] end
     -- Return key if no translation found
     return key
 end
 
-LANG.FormatTranslation = function( langCode, key, replacements, fallbackLang )
-    local translation = LANG.GetTranslation( langCode, key, fallbackLang )
-    
+LANG.FormatTranslation = function(langCode, key, replacements, fallbackLang)
+    local translation = LANG.GetTranslation(langCode, key, fallbackLang)
     -- Replace placeholders
     if replacements then
-        for placeholder, value in pairs( replacements ) do
-            translation = string.gsub( translation, "{" .. placeholder .. "}", tostring( value ) )
+        for placeholder, value in pairs(replacements) do
+            translation = string.gsub(translation, "{" .. placeholder .. "}", tostring(value))
         end
     end
-    
     return translation
 end
-
 return LANG

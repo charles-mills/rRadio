@@ -1,12 +1,9 @@
-local Radio, Interface, Config = rRadio:Import("Radio", "!interface", "config")
-
-do
+﻿do
     local PANEL = {}
-    local Scale = Interface.scale
-
+    local Scale = rRadio.interface.scale
     function PANEL:Init()
         self:SetFont("rRadio.Roboto5")
-        self:SetTextColor(Config.UI.TextColor)
+        self:SetTextColor(rRadio.config.UI.TextColor)
         self:SetContentAlignment(4)
         self:Dock(TOP)
         self:SetText("")

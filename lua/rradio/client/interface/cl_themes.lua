@@ -1,8 +1,10 @@
-local Radio = rRadio:Import("Radio", "!themes")
-
+﻿rRadio.themes = rRadio.themes or {}
 local function CreateTheme(colors)
     return {
-        FrameSize = { width = 600, height = 800 },
+        FrameSize = {
+            width = 600,
+            height = 800
+        },
         BackgroundColor = colors.background,
         HeaderColor = colors.header,
         TextColor = colors.text,
@@ -48,7 +50,6 @@ local themeColors = {
         border = Color(38, 38, 46),
         highlight = Color(56, 56, 66)
     },
-    
     sleek = {
         background = Color(20, 23, 31),
         header = Color(30, 34, 43),
@@ -70,7 +71,6 @@ local themeColors = {
         border = Color(46, 52, 64),
         highlight = Color(76, 86, 106)
     },
-
     cyberpunk = {
         background = Color(13, 13, 23),
         header = Color(20, 20, 35),
@@ -92,7 +92,6 @@ local themeColors = {
         border = Color(0, 255, 255, 50),
         highlight = Color(128, 0, 255, 30)
     },
-
     sunset = {
         background = Color(44, 54, 76),
         header = Color(34, 42, 59),
@@ -114,7 +113,6 @@ local themeColors = {
         border = Color(64, 78, 110),
         highlight = Color(255, 123, 84, 30)
     },
-
     emerald = {
         background = Color(0, 48, 51),
         header = Color(0, 38, 41),
@@ -136,7 +134,6 @@ local themeColors = {
         border = Color(0, 88, 91),
         highlight = Color(0, 196, 140, 30)
     },
-
     synthwave = {
         background = Color(23, 12, 45),
         header = Color(30, 15, 58),
@@ -158,7 +155,6 @@ local themeColors = {
         border = Color(68, 35, 111),
         highlight = Color(142, 45, 226, 30)
     },
-
     forest = {
         background = Color(28, 32, 26),
         header = Color(35, 40, 32),
@@ -180,7 +176,6 @@ local themeColors = {
         border = Color(62, 71, 56),
         highlight = Color(106, 153, 78, 30)
     },
-
     ocean = {
         background = Color(12, 28, 50),
         header = Color(16, 36, 64),
@@ -202,7 +197,6 @@ local themeColors = {
         border = Color(32, 72, 128),
         highlight = Color(48, 108, 156, 30)
     },
-
     volcanic = {
         background = Color(24, 18, 18),
         header = Color(34, 25, 25),
@@ -224,7 +218,6 @@ local themeColors = {
         border = Color(70, 48, 48),
         highlight = Color(232, 93, 59, 35)
     },
-
     royale = {
         background = Color(14, 18, 28),
         header = Color(20, 25, 38),
@@ -246,7 +239,6 @@ local themeColors = {
         border = Color(38, 45, 64),
         highlight = Color(212, 175, 55, 35)
     },
-
     platinum = {
         background = Color(24, 24, 30),
         header = Color(32, 32, 38),
@@ -268,7 +260,6 @@ local themeColors = {
         border = Color(48, 48, 56),
         highlight = Color(192, 190, 210, 35)
     },
-
     carbon = {
         background = Color(10, 10, 12),
         header = Color(15, 15, 18),
@@ -290,7 +281,6 @@ local themeColors = {
         border = Color(60, 60, 70),
         highlight = Color(255, 80, 80, 35)
     },
-
     obsidian = {
         background = Color(12, 14, 20),
         header = Color(18, 20, 28),
@@ -312,7 +302,6 @@ local themeColors = {
         border = Color(40, 45, 55),
         highlight = Color(0, 210, 205, 35)
     },
-
     imperial = {
         background = Color(18, 16, 26),
         header = Color(24, 22, 34),
@@ -334,7 +323,6 @@ local themeColors = {
         border = Color(48, 40, 60),
         highlight = Color(135, 91, 255, 35)
     },
-
     gold = {
         background = Color(22, 20, 17),
         header = Color(30, 28, 24),
@@ -360,5 +348,5 @@ local themeColors = {
 }
 
 for name, colors in pairs(themeColors) do
-    Radio.themes[name] = CreateTheme(colors)
+    rRadio.themes[name] = CreateTheme(colors)
 end

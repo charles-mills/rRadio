@@ -1,15 +1,12 @@
-local Radio, Interface, Config = rRadio:Import("Radio", "!interface", "config")
-
-do
+﻿do
     local PANEL = {}
-
+    local HOVER_SPEED = 10
     function PANEL:Init()
         self:SetText("")
         self:SetFont("rRadio.Roboto5")
-        self.textColor  = Config.UI.TextColor
-        self.baseColor  = Config.UI.ButtonColor
-        self.hoverColor = Config.UI.ButtonHoverColor
-        self.lerp       = 0
+        self.baseColor = rRadio.config.UI.ButtonColor
+        self.hoverColor = rRadio.config.UI.ButtonHoverColor
+        self.lerp = 0
     end
 
     function PANEL:SetColors(text, base, hover)
@@ -20,11 +17,11 @@ do
 
     function PANEL:Think()
         local tgt = self:IsHovered() and 1 or 0
-        self.lerp = math.Approach(self.lerp, tgt, FrameTime() * 10)
+        self.lerp = math.Approach(self.lerp, tgt, FrameTime() * HOVER_SPEED)
     end
 
     function PANEL:Paint(w, h)
-        local col = Interface.LerpColor(self.lerp, self.baseColor, self.hoverColor)
+        local col = rRadio.interface.LerpColor(self.lerp, self.baseColor, self.hoverColor)
         draw.RoundedBox(8, 0, 0, w, h, col)
     end
 

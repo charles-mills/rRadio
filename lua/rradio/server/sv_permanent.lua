@@ -1,18 +1,11 @@
-local Radio, DevPrint, Server, Status, Config, Net = rRadio:Import("Radio", "DevPrint", "!sv", "status", "config", "net")
-local Core = Radio.core
-Server.permanent = Server.permanent or {}
-local Permanent = Server.permanent
-local ServerUtils = Server.utils
-local Database = Server.db or include("rradio/server/sv_db.lua")
-
-local initialLoadComplete        = false
+﻿rRadio.sv.permanent = rRadio.sv.permanent or {}
+local db = rRadio.sv.db or include("rradio/server/sv_db.lua")
+local initialLoadComplete = false
 local spawnedBoomboxesByPosition = {}
-local spawnedBoomboxes           = {}
-local currentMap                 = game.GetMap()
-
-Server.BoomboxStatuses = Server.BoomboxStatuses or {}
-Database.EnsurePermanentTable()
-
+local spawnedBoomboxes = {}
+local currentMap = game.GetMap()
+rRadio.sv.BoomboxStatuses = rRadio.sv.BoomboxStatuses or {}
+db.EnsurePermanentTable()
 local function sanitize(str)
     return string.gsub(str, "'", "''")
 end
@@ -22,41 +15,29 @@ local function GeneratePermanentID()
 end
 
 local function ensurePermanentTable()
-    if Database.TableExists("permanent_boomboxes") then
-        return true
-    end
-    Database.EnsurePermanentTable()
-    return Database.TableExists("permanent_boomboxes")
+    if db.TableExists("permanent_boomboxes") then return true end
+    db.EnsurePermanentTable()
+    return db.TableExists("permanent_boomboxes")
 end
 
 local function fetchStationData(ent, entIndex)
     local stationName = ""
-    local stationURL  = ""
-    local volume      = ent:GetNWFloat("Volume", 1.0)
-
-    if Server.ActiveRadios and Server.ActiveRadios[entIndex] then
-        stationName = sanitize(Server.ActiveRadios[entIndex].stationName or "")
-        stationURL  = sanitize(Server.ActiveRadios[entIndex].url or "")
+    local stationURL = ""
+    local volume = ent:GetNWFloat("Volume", 1.0)
+    if rRadio.sv.ActiveRadios and rRadio.sv.ActiveRadios[entIndex] then
+        stationName = sanitize(rRadio.sv.ActiveRadios[entIndex].stationName or "")
+        stationURL = sanitize(rRadio.sv.ActiveRadios[entIndex].url or "")
     end
 
-    if (stationURL == "" or stationName == "") and Server.BoomboxStatuses and Server.BoomboxStatuses[entIndex] then
-        if stationURL == "" then
-            stationURL = sanitize(Server.BoomboxStatuses[entIndex].url or "")
-        end
-        if stationName == "" then
-            stationName = sanitize(Server.BoomboxStatuses[entIndex].stationName or "")
-        end
+    if (stationURL == "" or stationName == "") and rRadio.sv.BoomboxStatuses and rRadio.sv.BoomboxStatuses[entIndex] then
+        if stationURL == "" then stationURL = sanitize(rRadio.sv.BoomboxStatuses[entIndex].url or "") end
+        if stationName == "" then stationName = sanitize(rRadio.sv.BoomboxStatuses[entIndex].stationName or "") end
     end
 
     if stationURL == "" or stationName == "" then
-        if stationName == "" then
-            stationName = sanitize(ent:GetNWString("StationName", ""))
-        end
-        if stationURL == "" then
-            stationURL = sanitize(ent:GetNWString("StationURL", ""))
-        end
+        if stationName == "" then stationName = sanitize(ent:GetNWString("StationName", "")) end
+        if stationURL == "" then stationURL = sanitize(ent:GetNWString("StationURL", "")) end
     end
-
     return stationName, stationURL, volume
 end
 
@@ -65,11 +46,9 @@ local function upsertBoombox(permanentID, model, pos, ang, stationName, stationU
         SELECT id FROM permanent_boomboxes
         WHERE map = %s AND permanent_id = %s
         LIMIT 1;
-    ]], Database.Escape(currentMap), Database.Escape(permanentID))
-
-    local result = Database.Query(query)
+    ]], db.Escape(currentMap), db.Escape(permanentID))
+    local result = db.Query(query)
     if result == false then return end
-
     if result and #result > 0 then
         local id = result[1].id
         local updateQuery = string.format([[
@@ -85,13 +64,8 @@ local function upsertBoombox(permanentID, model, pos, ang, stationName, stationU
                 station_url  = %s,
                 volume       = %f
             WHERE id = %d;
-        ]],
-            Database.Escape(model), pos.x, pos.y, pos.z,
-            ang.p, ang.y, ang.r,
-            Database.Escape(stationName), Database.Escape(stationURL),
-            volume, tonumber(id)
-        )
-        Database.Query(updateQuery)
+        ]], db.Escape(model), pos.x, pos.y, pos.z, ang.p, ang.y, ang.r, db.Escape(stationName), db.Escape(stationURL), volume, tonumber(id))
+        db.Query(updateQuery)
     else
         local insertQuery = string.format([[
             INSERT INTO permanent_boomboxes
@@ -104,58 +78,41 @@ local function upsertBoombox(permanentID, model, pos, ang, stationName, stationU
                  %f, %f, %f,
                  %f, %f, %f,
                  %s, %s, %f);
-        ]],
-            Database.Escape(currentMap), Database.Escape(permanentID), Database.Escape(model),
-            pos.x, pos.y, pos.z,
-            ang.p, ang.y, ang.r,
-            Database.Escape(stationName), Database.Escape(stationURL), volume
-        )
-        Database.Query(insertQuery)
+        ]], db.Escape(currentMap), db.Escape(permanentID), db.Escape(model), pos.x, pos.y, pos.z, ang.p, ang.y, ang.r, db.Escape(stationName), db.Escape(stationURL), volume)
+        db.Query(insertQuery)
     end
 end
 
 local function spawnPermanentBoombox(row)
     if spawnedBoomboxes[row.permanent_id] then return end
-
     local posKey = string.format("%.2f,%.2f,%.2f", row.pos_x, row.pos_y, row.pos_z)
     if spawnedBoomboxesByPosition[posKey] then return end
-
     local ent = ents.Create("rammel_boombox")
     if not IsValid(ent) then return end
-
     ent:SetModel(row.model)
     ent:SetPos(Vector(row.pos_x, row.pos_y, row.pos_z))
     ent:SetAngles(Angle(row.angle_pitch, row.angle_yaw, row.angle_roll))
     ent:Spawn()
     ent:Activate()
-
     local phys = ent:GetPhysicsObject()
-    if IsValid(phys) then
-        phys:EnableMotion(false)
-    end
-
+    if IsValid(phys) then phys:EnableMotion(false) end
     ent:SetNWString("PermanentID", row.permanent_id)
     ent:SetNWString("StationName", row.station_name)
     ent:SetNWString("StationURL", row.station_url)
     ent:SetNWFloat("Volume", row.volume)
-
     ent.IsPermanent = true
     ent:SetNWBool("IsPermanent", true)
-
     if row.station_url ~= "" then
         local entIndex = ent:EntIndex()
-        Server.BoomboxStatuses[entIndex] = Server.BoomboxStatuses[entIndex] or {}
-        local status = Server.BoomboxStatuses[entIndex]
-
+        rRadio.sv.BoomboxStatuses[entIndex] = rRadio.sv.BoomboxStatuses[entIndex] or {}
+        local status = rRadio.sv.BoomboxStatuses[entIndex]
         status.url = row.station_url
         status.stationName = row.station_name
-        status.stationStatus = Status.PLAYING
-
-        ent:SetNWInt("Status", Status.PLAYING)
+        status.stationStatus = rRadio.status.PLAYING
+        ent:SetNWInt("Status", rRadio.status.PLAYING)
         ent:SetNWBool("IsPlaying", true)
-
         timer.Simple(0.1, function()
-            net.Start(Net.PlayStation)
+            net.Start("rRadio.PlayStation")
             net.WriteEntity(ent)
             net.WriteString(row.station_name or "")
             net.WriteString(row.station_url)
@@ -163,24 +120,21 @@ local function spawnPermanentBoombox(row)
             net.Broadcast()
         end)
 
-        ServerUtils.AddActiveRadio(ent, row.station_name or "", row.station_url, row.volume)
+        rRadio.sv.utils.AddActiveRadio(ent, row.station_name or "", row.station_url, row.volume)
     end
 
     spawnedBoomboxes[row.permanent_id] = true
     spawnedBoomboxesByPosition[posKey] = true
 end
 
-function Permanent.SavePermanentBoombox(ent)
+function rRadio.sv.permanent.SavePermanentBoombox(ent)
     if not IsValid(ent) then return end
     if not ensurePermanentTable() then return end
-
-    local model    = sanitize(ent:GetModel())
-    local pos      = ent:GetPos()
-    local ang      = ent:GetAngles()
+    local model = sanitize(ent:GetModel())
+    local pos = ent:GetPos()
+    local ang = ent:GetAngles()
     local entIndex = ent:EntIndex()
-
     local stationName, stationURL, volume = fetchStationData(ent, entIndex)
-
     local permanentID = ent:GetNWString("PermanentID", "")
     if permanentID == "" then
         permanentID = GeneratePermanentID()
@@ -188,60 +142,48 @@ function Permanent.SavePermanentBoombox(ent)
     end
 
     upsertBoombox(permanentID, model, pos, ang, stationName, stationURL, volume)
-    Database.Query(string.format("SELECT * FROM permanent_boomboxes WHERE permanent_id = %s", Database.Escape(permanentID)))
+    db.Query(string.format("SELECT * FROM permanent_boomboxes WHERE permanent_id = %s", db.Escape(permanentID)))
 end
 
-function Permanent.ClearSavedStation(ent)
+function rRadio.sv.permanent.ClearSavedStation(ent)
     if not IsValid(ent) then return end
-
     local permanentID = ent:GetNWString("PermanentID", "")
     if permanentID == "" then return end
-
     if not ensurePermanentTable() then
-        print("[rRadio] Permanent boombox table does not exist, cannot clear station.")
+        rRadio.logger.WarnScope("permanent", "Permanent boombox table does not exist, cannot clear station.")
         return
     end
 
-    local model  = sanitize(ent:GetModel())
-    local pos    = ent:GetPos()
-    local ang    = ent:GetAngles()
-    local volume = ent:GetNWFloat("Volume", Config.DefaultVolume or 1.0)
-
+    local model = sanitize(ent:GetModel())
+    local pos = ent:GetPos()
+    local ang = ent:GetAngles()
+    local volume = ent:GetNWFloat("Volume", rRadio.config.DefaultVolume or 1.0)
     upsertBoombox(permanentID, model, pos, ang, "", "", volume)
-
-    DevPrint("[rRadio] Cleared saved station for permanent boombox ID: " .. permanentID .. " on map " .. currentMap)
+    rRadio.logger.DebugScope("permanent", "Cleared saved station for permanent boombox ID:", permanentID, "on map", currentMap)
 end
 
 local function RemovePermanentBoombox(ent)
     if not IsValid(ent) then return end
-
     local permanentID = ent:GetNWString("PermanentID", "")
     if permanentID == "" then return end
-
     local deleteQuery = string.format([[
         DELETE FROM permanent_boomboxes
         WHERE map = %s AND permanent_id = %s;
-    ]], Database.Escape(currentMap), Database.Escape(permanentID))
-
-    Database.Query(deleteQuery)
+    ]], db.Escape(currentMap), db.Escape(permanentID))
+    db.Query(deleteQuery)
 end
 
-function Permanent.LoadPermanentBoomboxes(isReload)
+function rRadio.sv.permanent.LoadPermanentBoomboxes(isReload)
     table.Empty(spawnedBoomboxes)
     table.Empty(spawnedBoomboxesByPosition)
-
     for _, ent in ipairs(ents.FindByClass("rammel_boombox")) do
-        if ent.IsPermanent then
-            ent:Remove()
-        end
+        if ent.IsPermanent then ent:Remove() end
     end
 
-    if not Database.TableExists("permanent_boomboxes") then return end
-
-    local loadQuery = string.format("SELECT * FROM permanent_boomboxes WHERE map = %s;", Database.Escape(currentMap))
-    local result = Database.Query(loadQuery)
+    if not db.TableExists("permanent_boomboxes") then return end
+    local loadQuery = string.format("SELECT * FROM permanent_boomboxes WHERE map = %s;", db.Escape(currentMap))
+    local result = db.Query(loadQuery)
     if not result then return end
-
     for _, row in ipairs(result) do
         spawnPermanentBoombox(row)
     end
@@ -249,25 +191,20 @@ end
 
 hook.Remove("InitPostEntity", "rRadio.LoadPermanentBoomboxes")
 hook.Remove("PostCleanupMap", "rRadio.ReloadPermanentBoomboxes")
-
 hook.Add("PostCleanupMap", "rRadio.LoadPermanentBoomboxes", function()
     timer.Simple(5, function()
-        if not initialLoadComplete then
-            Permanent.LoadPermanentBoomboxes()
-            initialLoadComplete = true
-        else
-            Permanent.LoadPermanentBoomboxes()
-        end
+        rRadio.sv.permanent.LoadPermanentBoomboxes()
+        initialLoadComplete = true
     end)
 end)
 
-net.Receive(Net.SetPersistent, function(_, ply)
+net.Receive("rRadio.SetPersistent", function(len, ply)
     if not IsValid(ply) or not ply:IsSuperAdmin() then
         ply:ChatPrint("[rRadio] You do not have permission to perform this action.")
         return false
     end
 
-    if not Config.AllowCreatePermanentBoombox then
+    if not rRadio.config.AllowCreatePermanentBoombox then
         ply:ChatPrint("[rRadio] Creating permanent boomboxes is disabled by the server.")
         return false
     end
@@ -285,14 +222,13 @@ net.Receive(Net.SetPersistent, function(_, ply)
 
     ent.IsPermanent = true
     ent:SetNWBool("IsPermanent", true)
-    Permanent.SavePermanentBoombox(ent)
-
-    net.Start(Net.SendPersistentConfirm)
+    rRadio.sv.permanent.SavePermanentBoombox(ent)
+    net.Start("rRadio.SendPersistentConfirmation")
     net.WriteString("Boombox has been marked as permanent.")
     net.Send(ply)
 end)
 
-net.Receive(Net.RemovePersistent, function(_, ply)
+net.Receive("rRadio.RemovePersistent", function(len, ply)
     if not IsValid(ply) or not ply:IsSuperAdmin() then
         ply:ChatPrint("[rRadio] You do not have permission to perform this action.")
         return
@@ -312,12 +248,8 @@ net.Receive(Net.RemovePersistent, function(_, ply)
     ent.IsPermanent = false
     ent:SetNWBool("IsPermanent", false)
     RemovePermanentBoombox(ent)
-
-    if ent.StopRadio then
-        ent:StopRadio()
-    end
-
-    net.Start(Net.SendPersistentConfirm)
+    if ent.StopRadio then ent:StopRadio() end
+    net.Start("rRadio.SendPersistentConfirmation")
     net.WriteString("Boombox permanence has been removed.")
     net.Send(ply)
 end)
@@ -328,11 +260,8 @@ concommand.Add("rradio_clear_permanent_db", function(ply, cmd, args)
         return
     end
 
-    Database.Query("DELETE FROM permanent_boomboxes;")
-
-    if IsValid(ply) then
-        ply:ChatPrint("[rRadio] Permanent boombox database has been cleared for all maps.")
-    end
+    db.Query("DELETE FROM permanent_boomboxes;")
+    if IsValid(ply) then ply:ChatPrint("[rRadio] Permanent boombox database has been cleared for all maps.") end
 end)
 
 concommand.Add("rradio_reload_permanent_boomboxes", function(ply, cmd, args)
@@ -342,18 +271,11 @@ concommand.Add("rradio_reload_permanent_boomboxes", function(ply, cmd, args)
     end
 
     for _, ent in ipairs(ents.FindByClass("rammel_boombox")) do
-        if ent.IsPermanent then
-            ent:Remove()
-        end
+        if ent.IsPermanent then ent:Remove() end
     end
 
-    Permanent.LoadPermanentBoomboxes(true)
-
-    if IsValid(ply) then
-        ply:ChatPrint("[rRadio] Permanent boomboxes have been reloaded.")
-    end
+    rRadio.sv.permanent.LoadPermanentBoomboxes(true)
+    if IsValid(ply) then ply:ChatPrint("[rRadio] Permanent boomboxes have been reloaded.") end
 end)
 
-hook.Add("Initialize", "rRadio.UpdateCurrentMapForPermanentBoomboxes", function()
-    currentMap = game.GetMap()
-end)
+hook.Add("Initialize", "rRadio.UpdateCurrentMapForPermanentBoomboxes", function() currentMap = game.GetMap() end)
