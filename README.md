@@ -8,8 +8,8 @@ rRadio is an internet-radio add-on for Garry's Mod. Stream thousands of live sta
 
 - **Global Stations:** Tune in to stations from 100+ countries.
 - **Favourites:** Bookmark your go-to stations for quick access.
-- **Modern UI with Themes:** Pick from 6+ clientside themes.
-- **Persistent Boomboxes:** Optionally make your boombox respawn after a restart.
+- **Modern UI with Themes:** Pick from several client-side themes.
+- **Persistent Boomboxes:** Have your boombox persist through restarts.
 
 It is recommended to install via the [Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=3318060741) for automatic updates. 
 
