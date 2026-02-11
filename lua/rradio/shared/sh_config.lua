@@ -5,9 +5,13 @@ rRadio.config.EnableLogging = true -- enable bLogs integration
 rRadio.config.SecureStationLoad = false -- block playing stations not in the client's list
 rRadio.config.DriverPlayOnly = false -- only allow driver to control radio
 rRadio.config.AnimationDefaultOn = true -- enable animations by default
-rRadio.config.ClientHardDisable = false -- disables file loading when client's rradio_enabled convar is set to 0 (relog required to re-enable) (does not include config and its dependencies)
+-- disables file loading when client's rradio_enabled convar is set to 0
+-- (relog required to re-enable) (does not include config and its dependencies)
+rRadio.config.ClientHardDisable = false
 rRadio.config.DisablePushDamage = true -- disable push damage
-rRadio.config.PrioritiseCustom = true -- the custom / server added station category will appear at the top of the menu (instead of alphabetical)
+-- the custom / server added station category will appear at the top of the menu
+-- (instead of alphabetical)
+rRadio.config.PrioritiseCustom = true
 rRadio.config.AllowCreatePermanentBoombox = true -- allow new permanent boomboxes to be created by superadmins
 rRadio.config.MaxClientStations = 10
 rRadio.config.SearchDebounceSeconds = 0.1
@@ -24,8 +28,12 @@ rRadio.config.MaxPlayerRadios = 15
 rRadio.config.ConditionalStationLoad = true -- only load station audio when within range
 rRadio.config.ConditionalStationUnload = true -- unload station audio when out of range
 -- Ensure that unload is more than or equal to load to prevent stations from being unloaded before they are loaded
-rRadio.config.LoadDistanceFactor = 2.0 -- multiplier for the distance before a station starts loading (where 1 is the max hearing distance)
-rRadio.config.UnloadDistanceFactor = 2.5 -- multiplier for the distance before a station unloads (where 1 is the max hearing distance)
+-- multiplier for the distance before a station starts loading
+-- (where 1 is the max hearing distance)
+rRadio.config.LoadDistanceFactor = 2.0
+-- multiplier for the distance before a station unloads
+-- (where 1 is the max hearing distance)
+rRadio.config.UnloadDistanceFactor = 2.5
 --[[ ! Custom Station Settings ! ]]
 -- name of the category for all custom stations, e.g. "Our Favourite Stations!"
 -- the key is only localised if set to "Custom" (case sensitive)

@@ -24,9 +24,13 @@ rRadio.cl.networkHandlers["rRadio.UpdateRadioStatus"] = function()
         if localStatus and localStatus.stationStatus == rRadio.status.ERROR then return end
     end
 
-    local status = ( statusCode == rRadio.status.STOPPED or statusCode == rRadio.status.TUNING or statusCode == rRadio.status.PLAYING or statusCode == rRadio.status.ERROR ) and statusCode or rRadio.status.STOPPED
+    local status = ( statusCode == rRadio.status.STOPPED or statusCode == rRadio.status.TUNING
+        or statusCode == rRadio.status.PLAYING or statusCode == rRadio.status.ERROR )
+        and statusCode or rRadio.status.STOPPED
     local displayStatus = status
-    if status == rRadio.status.PLAYING and not rRadio.cl.connectedStations[entity] then displayStatus = rRadio.status.TUNING end
+    if status == rRadio.status.PLAYING and not rRadio.cl.connectedStations[entity] then
+        displayStatus = rRadio.status.TUNING
+    end
     if status == rRadio.status.STOPPED or status == rRadio.status.ERROR then
         rRadio.cl.connectedStations[entity] = nil
         rRadio.cl.requestedStations[entity] = nil
@@ -97,7 +101,11 @@ rRadio.cl.networkHandlers["rRadio.PlayStation"] = function()
     local nonce = ( rRadio.cl.playbackNonce[actual] or 0 ) + 1
     rRadio.cl.playbackNonce[actual] = nonce
     rRadio.utils.SetRadioStatus( actual, rRadio.status.TUNING, stationName )
-    if rRadio.config.SecureStationLoad then if not ( rRadio.cl.isUrlAllowed( url ) or IsValid( actual ) and actual:GetNWBool( "IsPermanent" ) ) then return end end
+    if rRadio.config.SecureStationLoad
+        and not ( rRadio.cl.isUrlAllowed( url )
+            or IsValid( actual ) and actual:GetNWBool( "IsPermanent" ) ) then
+        return
+    end
     local currentCount = rRadio.interface.updateStationCount()
     if not rRadio.cl.radioSources[actual] and currentCount >= rRadio.config.MaxClientStations then return end
     if rRadio.config.ConditionalStationLoad then
@@ -163,8 +171,14 @@ rRadio.cl.networkHandlers["rRadio.ListCustomStations"] = function()
         MsgC( Color( 255, 0, 0 ), "[" .. i .. "] ", Color( 255, 255, 255 ), name .. ": " .. url .. "\n" )
     end
 
-    MsgC( Color( 255, 0, 0 ), "\n!! ", Color( 255, 255, 255 ), "Remove a Station: !" .. rRadio.config.CommandRemoveStation .. " <Name> or <URL>\n" )
-    MsgC( Color( 255, 0, 0 ), "!! ", Color( 255, 255, 255 ), "Add a Station: !" .. rRadio.config.CommandAddStation .. " <Name> <URL>\n" )
+    MsgC(
+        Color( 255, 0, 0 ), "\n!! ", Color( 255, 255, 255 ),
+        "Remove a Station: !" .. rRadio.config.CommandRemoveStation .. " <Name> or <URL>\n"
+    )
+    MsgC(
+        Color( 255, 0, 0 ), "!! ", Color( 255, 255, 255 ),
+        "Add a Station: !" .. rRadio.config.CommandAddStation .. " <Name> <URL>\n"
+    )
 end
 
 rRadio.cl.networkHandlers["rRadio.PlayVehicleAnimation"] = function()

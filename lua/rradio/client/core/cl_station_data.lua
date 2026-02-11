@@ -62,7 +62,9 @@ function rRadio.cl.rebuildNameIndex()
         end
     end
 
-    table.sort( globalSearchIndex, function( a, b ) return ( a.searchTextLower or "" ) < ( b.searchTextLower or "" ) end )
+    table.sort( globalSearchIndex, function( a, b )
+        return ( a.searchTextLower or "" ) < ( b.searchTextLower or "" )
+    end )
     rRadio.cl.nameIndex = nameIndex
     rRadio.cl.globalSearchIndex = globalSearchIndex
 end

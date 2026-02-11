@@ -71,7 +71,9 @@ local function setButtonState( button, enabled )
 end
 
 local function syncBackButton( backButton )
-    setButtonState( backButton, uiState.settingsMenuOpen or uiState.globalView or uiState.selectedCountry ~= nil and uiState.selectedCountry ~= "" )
+    setButtonState( backButton, uiState.settingsMenuOpen
+        or uiState.globalView
+        or uiState.selectedCountry ~= nil and uiState.selectedCountry ~= "" )
 end
 
 local function addItems( panel, items )
@@ -96,7 +98,8 @@ local function getHeaderText()
 end
 
 local function getBaseFrameSize()
-    return rRadio.interface.scale( rRadio.config.UI.FrameSize.width ), rRadio.interface.scale( rRadio.config.UI.FrameSize.height )
+    return rRadio.interface.scale( rRadio.config.UI.FrameSize.width ),
+        rRadio.interface.scale( rRadio.config.UI.FrameSize.height )
 end
 
 local function getScaledFrameSize()
@@ -147,7 +150,9 @@ end
 local function addStationButtons( parent, stations, limit, updateCallback )
     for i = 1, math.min( limit, #stations ) do
         local entry = stations[i]
-        local btn = rRadio.cl.uiComponents.createPlayableStationButton( parent, entry.station, entry.displayKey, updateCallback )
+        local btn = rRadio.cl.uiComponents.createPlayableStationButton(
+            parent, entry.station, entry.displayKey, updateCallback
+        )
         parent:Add( btn )
     end
 end
@@ -176,9 +181,14 @@ function rRadio.cl.populateList( stationListPanel, backButton, searchBox, resetS
 
     if not uiState.selectedCountry then
         addItems( stationListPanel, rRadio.cl.uiComponents.populateFavorites( stationListPanel, updateClear ) )
-        addItems( stationListPanel, rRadio.cl.uiComponents.populateCountries( stationListPanel, filterText, updateClear ) )
+        addItems( stationListPanel, rRadio.cl.uiComponents.populateCountries(
+            stationListPanel, filterText, updateClear
+        ) )
     else
-        addItems( stationListPanel, rRadio.cl.uiComponents.populateStations( stationListPanel, uiState.selectedCountry, filterText, updateKeep, backButton ) )
+        addItems( stationListPanel, rRadio.cl.uiComponents.populateStations(
+            stationListPanel, uiState.selectedCountry,
+            filterText, updateKeep, backButton
+        ) )
     end
 
     syncBackButton( backButton )
@@ -188,9 +198,12 @@ function rRadio.cl.openSettingsMenu( parentFrame, backButton, selectedTheme )
     if IsValid( uiState.settingsFrame ) then uiState.settingsFrame:Remove() end
     uiState.settingsFrame = vgui.Create( "DPanel", parentFrame )
     uiState.settingsFrame:SetVisible( true )
-    uiState.settingsFrame:SetSize( parentFrame:GetWide() - Scale( 20 ), parentFrame:GetTall() - Scale( 50 ) - Scale( 10 ) )
+    uiState.settingsFrame:SetSize(
+        parentFrame:GetWide() - Scale( 20 ),
+        parentFrame:GetTall() - Scale( 50 ) - Scale( 10 )
+    )
     uiState.settingsFrame:SetPos( Scale( 10 ), Scale( 50 ) )
-    uiState.settingsFrame.Paint = function( self, w, h )
+    uiState.settingsFrame.Paint = function( _self, w, h )
         surface.SetDrawColor( rRadio.config.UI.BackgroundColor )
         surface.DrawRect( 0, 0, w, h )
     end
@@ -214,7 +227,12 @@ local function refreshScaledMenuContent( frame )
         return
     end
 
-    if IsValid( frame.stationListPanel ) then rRadio.cl.populateList( frame.stationListPanel, frame.backButton, frame.searchBox, false ) end
+    if IsValid( frame.stationListPanel ) then
+        rRadio.cl.populateList(
+            frame.stationListPanel, frame.backButton,
+            frame.searchBox, false
+        )
+    end
 end
 
 local function layoutResizeHandles( frame )
@@ -276,13 +294,23 @@ local function updateSizedButtonFonts( frame )
     if IsValid( frame.globalButton ) then
         local text = rRadio.L( "Global", "GLOBAL" )
         frame.globalButton:SetText( text )
-        frame.globalButton:SetFont( rRadio.interface.calculateFontSizeForGlobalButton( text, frame.globalButton:GetWide(), frame.globalButton:GetTall() ) )
+        frame.globalButton:SetFont(
+            rRadio.interface.calculateFontSizeForGlobalButton(
+                text, frame.globalButton:GetWide(),
+                frame.globalButton:GetTall()
+            )
+        )
     end
 
     if IsValid( frame.stopButton ) then
         local text = rRadio.L( "StopRadio", "STOP" )
         frame.stopButton:SetText( text )
-        frame.stopButton:SetFont( rRadio.interface.calculateFontSizeForStopButton( text, frame.stopButton:GetWide(), frame.stopButton:GetTall() ) )
+        frame.stopButton:SetFont(
+            rRadio.interface.calculateFontSizeForStopButton(
+                text, frame.stopButton:GetWide(),
+                frame.stopButton:GetTall()
+            )
+        )
     end
 end
 
@@ -578,9 +606,13 @@ local function createRadioFrame()
         setFramePositionForResize( self, state.resizeKey, state )
     end
 
-    frame.Paint = function( self, w, h )
+    frame.Paint = function( _self, w, h )
         draw.RoundedBox( 8, 0, 0, w, h, rRadio.config.UI.BackgroundColor )
-        draw.RoundedBoxEx( 8, 0, 0, w, Scale( 40 ), rRadio.config.UI.HeaderColor, true, true, false, false )
+        draw.RoundedBoxEx(
+            8, 0, 0, w, Scale( 40 ),
+            rRadio.config.UI.HeaderColor,
+            true, true, false, false
+        )
         local headerHeight = Scale( 40 )
         local iconSize = Scale( 25 )
         local iconOffsetX = Scale( 10 )
@@ -589,7 +621,13 @@ local function createRadioFrame()
         surface.SetMaterial( icon )
         surface.SetDrawColor( rRadio.config.UI.TextColor )
         surface.DrawTexturedRect( iconOffsetX, iconOffsetY, iconSize, iconSize )
-        draw.SimpleText( getHeaderText(), "rRadio.Roboto8", iconOffsetX + iconSize + Scale( 5 ), headerHeight / 2 + Scale( 2 ), rRadio.config.UI.TextColor, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER )
+        draw.SimpleText(
+            getHeaderText(), "rRadio.Roboto8",
+            iconOffsetX + iconSize + Scale( 5 ),
+            headerHeight / 2 + Scale( 2 ),
+            rRadio.config.UI.TextColor,
+            TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER
+        )
     end
     return frame
 end
@@ -614,7 +652,13 @@ local function createSearchBox( parent, width, onChange )
     searchBox.Paint = function( self, w, h )
         draw.RoundedBox( 6, 0, 0, w, h, rRadio.config.UI.SearchBoxColor )
         self:DrawTextEntryText( rRadio.config.UI.TextColor, Color( 120, 120, 120 ), rRadio.config.UI.TextColor )
-        if self:GetText() == "" then draw.SimpleText( self:GetPlaceholderText(), self:GetFont(), Scale( 5 ), h / 2, rRadio.config.UI.TextColor, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER ) end
+        if self:GetText() == "" then
+            draw.SimpleText(
+                self:GetPlaceholderText(), self:GetFont(),
+                Scale( 5 ), h / 2, rRadio.config.UI.TextColor,
+                TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER
+            )
+        end
     end
 
     searchBox.OnGetFocus = function() uiState.isSearching = true end
@@ -642,7 +686,10 @@ local function createGlobalButton( parent, searchBox, width )
     end
 
     btn.Paint = function( self, w, h )
-        local col = rRadio.interface.LerpColor( self.lerp, rRadio.config.UI.ButtonColor, rRadio.config.UI.ButtonHoverColor )
+        local col = rRadio.interface.LerpColor(
+            self.lerp, rRadio.config.UI.ButtonColor,
+            rRadio.config.UI.ButtonHoverColor
+        )
         draw.RoundedBox( 6, 0, 0, w, h, col )
     end
     return btn
@@ -667,7 +714,10 @@ local function createSearchControls( frame, stationListPanel )
     local btnWidth = Scale( 80 )
     local fullWidth = frame:GetWide() - Scale( 20 )
     local searchBox
-    searchBox = createSearchBox( frame, fullWidth - btnWidth - margin, function() queueSearchRefresh( stationListPanel, searchBox ) end )
+    searchBox = createSearchBox(
+        frame, fullWidth - btnWidth - margin,
+        function() queueSearchRefresh( stationListPanel, searchBox ) end
+    )
     local globalBtn = createGlobalButton( frame, searchBox, btnWidth )
     searchBox:SetVisible( not uiState.settingsMenuOpen )
     uiState.searchBox = searchBox
@@ -695,7 +745,10 @@ local function createNavigationButtons( frame, stationListPanel, searchBox )
     local topMargin = Scale( 7 )
     local buttonPadding = Scale( 5 )
     local xPos = frame:GetWide() - buttonSize - Scale( 10 )
-    buttons.close = createNavButton( frame, xPos, topMargin, "hud/close.png", withMenuCloseSound( function() frame:Close() end ) )
+    buttons.close = createNavButton(
+        frame, xPos, topMargin, "hud/close.png",
+        withMenuCloseSound( function() frame:Close() end )
+    )
     xPos = xPos - buttonSize - buttonPadding
     buttons.settings = createNavButton( frame, xPos, topMargin, "hud/settings.png", withMenuCloseSound( function()
         uiState.settingsMenuOpen = true
@@ -743,7 +796,11 @@ local function createStopButton( frame, stationListPanel, backButton, searchBox 
     btn:SetSize( width, height )
     btn:SetText( text )
     btn:SetFont( font )
-    btn:SetColors( rRadio.config.UI.TextColor, rRadio.config.UI.CloseButtonColor, rRadio.config.UI.CloseButtonHoverColor )
+    btn:SetColors(
+        rRadio.config.UI.TextColor,
+        rRadio.config.UI.CloseButtonColor,
+        rRadio.config.UI.CloseButtonHoverColor
+    )
     btn.DoClick = function()
         rRadio.interface.playSound( "ButtonPressSecondary" )
         local entity = LocalPlayer().currentRadioEntity
@@ -765,7 +822,9 @@ local function createVolumeControls( frame, stopButton )
     local panel = vgui.Create( "DPanel", frame )
     panel:SetPos( Scale( 20 ) + stopButtonWidth, frame:GetTall() - Scale( 90 ) )
     panel:SetSize( frame:GetWide() - Scale( 30 ) - stopButtonWidth, stopButtonHeight )
-    panel.Paint = function( self, w, h ) draw.RoundedBox( 8, 0, 0, w, h, rRadio.config.UI.CloseButtonColor ) end
+    panel.Paint = function( _self, w, h )
+        draw.RoundedBox( 8, 0, 0, w, h, rRadio.config.UI.CloseButtonColor )
+    end
     local iconSize = Scale( 50 )
     local icon = vgui.Create( "DImage", panel )
     icon:SetPos( Scale( 10 ), ( panel:GetTall() - iconSize ) / 2 )
@@ -812,26 +871,35 @@ local function createVolumeControls( frame, stopButton )
         local knobInset = 0
         if IsValid( self.Knob ) then knobInset = math.floor( self.Knob:GetWide() * 0.5 ) end
         local trackW = math.max( Scale( 10 ), w - knobInset * 2 )
-        draw.RoundedBox( math.floor( trackHeight / 2 ), knobInset, y, trackW, trackHeight, rRadio.config.UI.TextColor )
+        draw.RoundedBox(
+            math.floor( trackHeight / 2 ), knobInset, y,
+            trackW, trackHeight, rRadio.config.UI.TextColor
+        )
     end
 
-    slider.Slider.Knob.Paint = function( self, w, h ) draw.RoundedBox( math.floor( math.min( w, h ) / 2 ), 0, 0, w, h, rRadio.config.UI.BackgroundColor ) end
-    slider.OnValueChanged = function( self, value )
+    slider.Slider.Knob.Paint = function( _self, w, h )
+        draw.RoundedBox(
+            math.floor( math.min( w, h ) / 2 ),
+            0, 0, w, h, rRadio.config.UI.BackgroundColor
+        )
+    end
+    slider.OnValueChanged = function( _self, value )
         if not IsValid( entity ) then return end
         local ent = entity
         if not rRadio.utils.IsBoombox( ent ) then ent = rRadio.utils.GetVehicle( ent ) end
         local maxVol = rRadio.config.MaxVolume or 1.0
         value = math.min( value, maxVol )
         rRadio.cl.entityVolumes[ent] = value
-        if rRadio.cl.radioSources[ent] and IsValid( rRadio.cl.radioSources[ent] ) then rRadio.cl.radioSources[ent]:SetVolume( value ) end
+        local src = rRadio.cl.radioSources[ent]
+        if src and IsValid( src ) then src:SetVolume( value ) end
         rRadio.cl.updateVolumeIcon( icon, value )
         rRadio.cl.pendingVolume = value
         rRadio.cl.pendingEntity = ent
     end
 
     local origRelease = slider.Slider.OnMouseReleased
-    slider.Slider.OnMouseReleased = function( self, mcode )
-        if origRelease then origRelease( self, mcode ) end
+    slider.Slider.OnMouseReleased = function( _self, mcode )
+        if origRelease then origRelease( _self, mcode ) end
         rRadio.cl.sendPendingVolume()
     end
     return panel, icon, slider

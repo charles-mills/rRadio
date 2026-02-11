@@ -174,6 +174,8 @@ function rRadio.utils.IsCustomCategory( rawKey )
 end
 
 function rRadio.utils.FormatCountryKey( rawKey )
-    return rawKey:gsub( "_", " " ):gsub( "(%a)([%w_']*)", function( first, rest ) return first:upper() .. rest:lower() end )
+    return rawKey:gsub( "_", " " ):gsub( "(%a)([%w_']*)", function( first, rest )
+        return first:upper() .. rest:lower()
+    end )
 end
 return rRadio.utils

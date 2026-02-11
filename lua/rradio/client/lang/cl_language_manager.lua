@@ -5,7 +5,13 @@ rRadio.LanguageManager.countryTranslationsA = include( "rradio/client/data/langp
 rRadio.LanguageManager.countryTranslationsB = include( "rradio/client/data/langpacks/data_2.lua" )
 rRadio.LanguageManager.countryTranslationsC = include( "rradio/client/data/langpacks/data_3.lua" )
 rRadio.LanguageManager.countryTranslations = {}
-for _, pack in ipairs( { rRadio.LanguageManager.countryTranslationsA, rRadio.LanguageManager.countryTranslationsB, rRadio.LanguageManager.countryTranslationsC } ) do
+local _langPacks = {
+    rRadio.LanguageManager.countryTranslationsA,
+    rRadio.LanguageManager.countryTranslationsB,
+    rRadio.LanguageManager.countryTranslationsC
+}
+
+for _, pack in ipairs( _langPacks ) do
     table.Merge( rRadio.LanguageManager.countryTranslations, pack )
 end
 

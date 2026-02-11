@@ -7,16 +7,19 @@ if not rRadio.config.UsePlayerBindHook then
         local ply = LocalPlayer()
         local key = cvars.menuKey:GetInt()
         local now = CurTime()
-        if input.IsKeyDown( key ) and not ply:IsTyping() and now - timing.lastKeyPress > timing.keyPressDelay and not uiState.isSearching then
+        if input.IsKeyDown( key ) and not ply:IsTyping()
+            and now - timing.lastKeyPress > timing.keyPressDelay
+            and not uiState.isSearching then
             timing.lastKeyPress = now
             rRadio.cl.toggleCarRadioMenu()
         end
     end )
 else
-    hook.Add( "PlayerButtonDown", "rRadio.OpenCarRadioBind", function( ply, button )
+    hook.Add( "PlayerButtonDown", "rRadio.OpenCarRadioBind", function( _ply, button )
         local key = cvars.menuKey:GetInt()
         local now = CurTime()
-        if button == key and now - timing.lastKeyPress > timing.keyPressDelay and not uiState.isSearching and IsFirstTimePredicted() then
+        if button == key and now - timing.lastKeyPress > timing.keyPressDelay
+            and not uiState.isSearching and IsFirstTimePredicted() then
             timing.lastKeyPress = now
             rRadio.cl.toggleCarRadioMenu()
         end
@@ -48,7 +51,7 @@ hook.Add( "EntityRemoved", "rRadio.EntityCleanup", function( ent )
     if ent == ply.currentRadioEntity then ply.currentRadioEntity = nil end
 end )
 
-hook.Add( "VehicleChanged", "rRadio.ClearRadioEntity", function( ply, old, new )
+hook.Add( "VehicleChanged", "rRadio.ClearRadioEntity", function( ply, _old, new )
     if ply ~= LocalPlayer() then return end
     if not new then ply.currentRadioEntity = nil end
 end )
@@ -59,7 +62,7 @@ hook.Add( "InitPostEntity", "rRadio.ApplySettingsOnJoin", function()
 end )
 
 hook.Add( "ShutDown", "rRadio.CleanupAllStations", function()
-    for ent, station in pairs( rRadio.cl.radioSources ) do
+    for _ent, station in pairs( rRadio.cl.radioSources ) do
         if IsValid( station ) then station:Stop() end
     end
 

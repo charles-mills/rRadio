@@ -1,5 +1,8 @@
 ﻿include( "shared.lua" )
-local cvHud, cvBasicHud, cvEnabled, cvMaxVolume = GetConVar( "rammel_rradio_boombox_hud" ), GetConVar( "rammel_rradio_basic_hud" ), GetConVar( "rammel_rradio_enabled" ), GetConVar( "rammel_rradio_max_volume" )
+local cvHud = GetConVar( "rammel_rradio_boombox_hud" )
+local cvBasicHud = GetConVar( "rammel_rradio_basic_hud" )
+local cvEnabled = GetConVar( "rammel_rradio_enabled" )
+local cvMaxVolume = GetConVar( "rammel_rradio_max_volume" )
 local FADE_START_SQR, FADE_END_SQR = 400 * 400, 500 * 500
 local FADE_RANGE_INV = 1 / ( FADE_END_SQR - FADE_START_SQR )
 local MODEL_CULL_DISTANCE_SQR = 7500 * 7500
@@ -9,7 +12,8 @@ local HUD_TICK = 1 / 25
 local TUNING_SPEED = 1.5
 local PULSE_SPEED = 2
 local CurTime, LocalPlayer = CurTime, LocalPlayer
-local math_floor, math_sin, math_abs, math_min, math_max, math_Clamp = math.floor, math.sin, math.abs, math.min, math.max, math.Clamp
+local math_floor, math_sin, math_abs = math.floor, math.sin, math.abs
+local math_min, math_max, math_Clamp = math.min, math.max, math.Clamp
 local draw_SimpleText, surface_SetFont, surface_GetTextSize = draw.SimpleText, surface.SetFont, surface.GetTextSize
 local cam_Start3D2D, cam_End3D2D = cam.Start3D2D, cam.End3D2D
 local SIN_SAMPLES = 1024
@@ -204,7 +208,8 @@ end
 function ENT:GetDisplayTextForMode( st, station, basicHud )
     local raw
     if st == rRadio.status.STOPPED then
-        raw = rRadio.utils.CanInteractWithBoombox( LocalPlayer(), self ) and STATIC_TEXTS.interact or STATIC_TEXTS.paused
+        raw = rRadio.utils.CanInteractWithBoombox( LocalPlayer(), self )
+            and STATIC_TEXTS.interact or STATIC_TEXTS.paused
     elseif st == rRadio.status.ERROR then
         raw = STATIC_TEXTS.error
     elseif st == rRadio.status.TUNING then
@@ -270,7 +275,8 @@ function ENT:UpdateEqualiser( vol, dt )
     local ct = CurTime()
     local sm = math_Clamp( dt / 0.1, 0, 1 )
     for i = 1, HUD.EQUALIZER.BARS do
-        local wave = ( fastsin( ( ct + HUD.EQUALIZER.OFF[i] ) * HUD.EQUALIZER.FREQ[i] ) + fastsin( ( ct + HUD.EQUALIZER.OFF[i] ) * HUD.EQUALIZER.FREQ[i] * 1.5 ) ) * 0.5
+        local wave = ( fastsin( ( ct + HUD.EQUALIZER.OFF[i] ) * HUD.EQUALIZER.FREQ[i] )
+            + fastsin( ( ct + HUD.EQUALIZER.OFF[i] ) * HUD.EQUALIZER.FREQ[i] * 1.5 ) ) * 0.5
         local tgt = HUD.EQUALIZER.MIN_H + math_abs( wave ) * HUD.EQUALIZER.MAX_H * vol
         e[i] = e[i] + ( tgt - e[i] ) * sm
     end
@@ -331,7 +337,10 @@ function ENT:RenderBasicHUD( st, station, a, pos, ang, sch )
     cam_Start3D2D( pos, ang, HUD_SCALE )
     surface.SetMaterial( MAT_RECT )
     fastRect( -self.halfWidth, -HUD_HALF_HEIGHT, self.cachedWidth, HUD_HEIGHT, bg )
-    draw_SimpleText( self:GetDisplayTextBasic( st, station ), "rRadio.Roboto24", -self.halfWidth + PAD * 2, 0, txt, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER )
+    draw_SimpleText(
+        self:GetDisplayTextBasic( st, station ), "rRadio.Roboto24",
+        -self.halfWidth + PAD * 2, 0, txt, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER
+    )
     cam_End3D2D()
 end
 
@@ -395,15 +404,23 @@ function ENT:RenderHUD( eyePos )
     if st == rRadio.status.TUNING then
         local barW = self.cachedWidth * 0.3
         local off = self.anim.tuningOffset * ( self.cachedWidth - barW )
-        fastRect( -self.halfWidth, HUD_HALF_HEIGHT - 2, self.cachedWidth, 2, Premul( sch.ACCENT, a * ACCENT_ALPHA_DIM ) )
+        fastRect(
+            -self.halfWidth, HUD_HALF_HEIGHT - 2,
+            self.cachedWidth, 2, Premul( sch.ACCENT, a * ACCENT_ALPHA_DIM )
+        )
         fastRect( -self.halfWidth + off, HUD_HALF_HEIGHT - 2, barW, 2, accBright )
     else
         fastRect( -self.halfWidth, HUD_HALF_HEIGHT - 2, self.cachedWidth, 2, accBright )
     end
 
-    if st ~= rRadio.status.PLAYING then fastRect( self.hudX, -HUD_HALF_HEIGHT + HUD_HEIGHT / 3, 4, HUD_HEIGHT / 3, Premul( statusCol, a ) ) end
+    if st ~= rRadio.status.PLAYING then
+        fastRect( self.hudX, -HUD_HALF_HEIGHT + HUD_HEIGHT / 3, 4, HUD_HEIGHT / 3, Premul( statusCol, a ) )
+    end
     local slideY = ( 1 - self.anim.statusTransition ) * 4
-    draw_SimpleText( self:GetDisplayText( st, station ), "rRadio.Roboto24", self.hudX + HUD_ICON_OFFSET, slideY, txt, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER )
+    draw_SimpleText(
+        self:GetDisplayText( st, station ), "rRadio.Roboto24",
+        self.hudX + HUD_ICON_OFFSET, slideY, txt, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER
+    )
     if st == rRadio.status.PLAYING then self:DrawEqualiser( self.hudX, slideY, a, statusCol ) end
     cam_End3D2D()
 end

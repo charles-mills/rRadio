@@ -86,23 +86,31 @@ local function createMenuForm( panel )
     preview:Dock( TOP )
     preview:DockMargin( 0, 0, 0, 10 )
     menuForm:AddItem( preview )
-    preview.Paint = function( self, w, h )
+    preview.Paint = function( _self, w, h )
         local ui = rRadio.config.UI
         surface.SetDrawColor( ui.BackgroundColor.r, ui.BackgroundColor.g, ui.BackgroundColor.b, ui.BackgroundColor.a )
         surface.DrawRect( 0, 0, w, h )
         local headerColor = ui.HeaderColor or ui.BackgroundColor
         surface.SetDrawColor( headerColor.r, headerColor.g, headerColor.b, headerColor.a )
         surface.DrawRect( 0, 0, w, 30 )
-        draw.SimpleText( "rRadio Preview", "rRadio.Roboto24", w / 2, 15, ui.TextColor, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
+        draw.SimpleText(
+            "rRadio Preview", "rRadio.Roboto24",
+            w / 2, 15, ui.TextColor,
+            TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER
+        )
         surface.SetDrawColor( ui.ButtonColor.r, ui.ButtonColor.g, ui.ButtonColor.b, ui.ButtonColor.a )
         surface.DrawRect( 10, 40, w - 20, 25 )
-        draw.SimpleText( "Sample Button", "rRadio.Roboto24", w / 2, 52, ui.TextColor, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
+        draw.SimpleText(
+            "Sample Button", "rRadio.Roboto24",
+            w / 2, 52, ui.TextColor,
+            TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER
+        )
         surface.SetDrawColor( ui.Highlight.r, ui.Highlight.g, ui.Highlight.b, ui.Highlight.a )
         surface.DrawRect( 0, h - 6, w, 6 )
     end
 end
 
-cvars.AddChangeCallback( "rammel_rradio_menu_theme", function( _, old, new )
+cvars.AddChangeCallback( "rammel_rradio_menu_theme", function( _, _old, new )
     local theme = rRadio.themes[new] and new or "dark"
     if theme ~= new then RunConsoleCommand( "rammel_rradio_menu_theme", theme ) end
     rRadio.interface.applyTheme( theme )

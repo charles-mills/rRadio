@@ -36,7 +36,8 @@
 
     function PANEL:Paint( w, h )
         local base = self.playing and rRadio.config.UI.PlayingButtonColor or rRadio.config.UI.ButtonColor
-        local bg = self.playing and base or rRadio.interface.LerpColor( self.lerp, base, self.hoverColour )
+        local bg = self.playing and base
+            or rRadio.interface.LerpColor( self.lerp, base, self.hoverColour )
         if self.errorFlash then
             local pulse = math.sin( CurTime() * 6 ) * 0.5 + 0.5
             bg = rRadio.interface.LerpColor( pulse, bg, rRadio.config.UI.Error or Color( 248, 81, 73 ) )
@@ -50,7 +51,11 @@
         local txt = rRadio.interface.TruncateText( self.label, "rRadio.Roboto5", avail )
         local tw = surface.GetTextSize( txt )
         local x = math.Clamp( w * 0.5, leftPad + tw * 0.5, w - rightPad - tw * 0.5 )
-        draw.SimpleText( txt, "rRadio.Roboto5", x, h / 2, rRadio.config.UI.TextColor, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
+        draw.SimpleText(
+            txt, "rRadio.Roboto5", x, h / 2,
+            rRadio.config.UI.TextColor,
+            TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER
+        )
     end
 
     vgui.Register( "rRadioButton", PANEL, "DButton" )

@@ -62,12 +62,30 @@
             local pad = math.max( 1, math.floor( Scale( 2 ) ) )
             local padY = math.max( 2, math.floor( Scale( 2 ) ) )
             local radius = math.max( 2, math.floor( Scale( 4 ) ) )
-            if pnl:IsHovered() then draw.RoundedBox( radius, pad, padY, pw - pad * 2, ph - padY * 2, rRadio.config.UI.ButtonHoverColor ) end
+            if pnl:IsHovered() then
+                draw.RoundedBox(
+                    radius, pad, padY,
+                    pw - pad * 2, ph - padY * 2,
+                    rRadio.config.UI.ButtonHoverColor
+                )
+            end
+
             if index < count then
-                local dividerColor = ColorAlpha( rRadio.config.UI.Border or rRadio.config.UI.ScrollbarGripColor or rRadio.config.UI.TextColor, 190 )
-                local dividerInset = math.max( math.floor( Scale( 8 ) ), pad + 1 )
+                local dividerColor = ColorAlpha(
+                    rRadio.config.UI.Border
+                    or rRadio.config.UI.ScrollbarGripColor
+                    or rRadio.config.UI.TextColor, 190
+                )
+
+                local dividerInset = math.max(
+                    math.floor( Scale( 8 ) ), pad + 1
+                )
+
                 surface.SetDrawColor( dividerColor )
-                surface.DrawRect( dividerInset, ph - 1, math.max( 1, pw - dividerInset * 2 ), 1 )
+                surface.DrawRect(
+                    dividerInset, ph - 1,
+                    math.max( 1, pw - dividerInset * 2 ), 1
+                )
             end
         end
     end
@@ -101,11 +119,18 @@
         self.dropdown:SetTextColor( rRadio.config.UI.TextColor )
         self.dropdown:SetFont( TEXT_FONT )
         self.dropdown:SetSortItems( false )
-        if self.dropdown.DropButton then self.dropdown.DropButton.Paint = function() end end
+        if self.dropdown.DropButton then
+            self.dropdown.DropButton.Paint = function() end
+        end
+
         function self.dropdown:Paint( w, h )
             draw.RoundedBox( 6, 0, 0, w, h, rRadio.config.UI.SearchBoxColor )
             paintArrow( self, w, h )
-            self:DrawTextEntryText( rRadio.config.UI.TextColor, rRadio.config.UI.ButtonHoverColor, rRadio.config.UI.TextColor )
+            self:DrawTextEntryText(
+                rRadio.config.UI.TextColor,
+                rRadio.config.UI.ButtonHoverColor,
+                rRadio.config.UI.TextColor
+            )
         end
 
         function self.dropdown:OpenMenu()
@@ -118,25 +143,44 @@
             local menu = DermaMenu()
             self.Menu = menu
             menu:SetMaxHeight( Scale( 200 ) )
-            menu.Paint = function( _, mw, mh ) draw.RoundedBox( 6, 0, 0, mw, mh, rRadio.config.UI.SearchBoxColor ) end
+            menu.Paint = function( _, mw, mh )
+                draw.RoundedBox(
+                    6, 0, 0, mw, mh,
+                    rRadio.config.UI.SearchBoxColor
+                )
+            end
+
             if parent.onOpen then parent.onOpen() end
             local choices = parent.choices or {}
             local choiceCount = #choices
             for index, choice in ipairs( choices ) do
                 local option = menu:AddOption( choice.name, function()
                     self:ChooseOption( choice.name, choice.data )
-                    if parent.onSelect then parent.onSelect( self, nil, choice.name, choice.data ) end
+                    if parent.onSelect then
+                        parent.onSelect(
+                            self, nil, choice.name, choice.data
+                        )
+                    end
                 end )
 
                 styleOption( option, index, choiceCount )
-                option.OnCursorEntered = function() if parent.onHover then parent.onHover( choice.data ) end end
+                option.OnCursorEntered = function()
+                    if parent.onHover then
+                        parent.onHover( choice.data )
+                    end
+                end
             end
 
             local x, y = self:LocalToScreen( 0, self:GetTall() )
             menu:SetMinimumWidth( self:GetWide() )
             menu:Open( x, y, false, self )
-            menu.OnRemove = function() if parent.onClose then parent.onClose() end end
-            if IsValid( menu.VBar ) then rRadio.interface.StyleVBar( menu.VBar ) end
+            menu.OnRemove = function()
+                if parent.onClose then parent.onClose() end
+            end
+
+            if IsValid( menu.VBar ) then
+                rRadio.interface.StyleVBar( menu.VBar )
+            end
         end
 
         self:ApplyScaleLayout()

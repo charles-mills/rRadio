@@ -39,7 +39,8 @@ function ENT:Use( activator )
         return
     end
 
-    if not lastPermissionMessageTime[activator] or now - lastPermissionMessageTime[activator] >= PERMISSION_MESSAGE_COOLDOWN then
+    if not lastPermissionMessageTime[activator]
+        or now - lastPermissionMessageTime[activator] >= PERMISSION_MESSAGE_COOLDOWN then
         activator:ChatPrint( "You do not have permission to use this boombox." )
         lastPermissionMessageTime[activator] = now
     end
@@ -83,4 +84,6 @@ if rRadio.config.DisablePushDamage then
     end
 end
 
-hook.Add( "PlayerDisconnected", "CleanupBoomboxPermissionCooldowns", function( ply ) lastPermissionMessageTime[ply] = nil end )
+hook.Add( "PlayerDisconnected", "CleanupBoomboxPermissionCooldowns", function( ply )
+    lastPermissionMessageTime[ply] = nil
+end )

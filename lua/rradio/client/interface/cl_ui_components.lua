@@ -63,7 +63,10 @@ end
 function rRadio.cl.uiComponents.createPlayableStationButton( parent, station, displayText, updateList )
     local btn = vgui.Create( "rRadioButton", parent )
     btn:SetTextLabel( displayText )
-    local star = createButtonStar( btn, updateList, rRadio.interface.favoriteStations, station.countryKey, station.name )
+    local star = createButtonStar(
+        btn, updateList, rRadio.interface.favoriteStations,
+        station.countryKey, station.name
+    )
     btn:SetLeftChild( star )
     btn.DoClick = function()
         local now = CurTime()
@@ -86,10 +89,13 @@ function rRadio.cl.uiComponents.createPlayableStationButton( parent, station, di
 
     btn.Think = function( self )
         local ent = LocalPlayer().currentRadioEntity
-        local on = IsValid( ent ) and rRadio.cl.currentlyPlayingStations[ent] and rRadio.cl.currentlyPlayingStations[ent].name == station.name
+        local playing = rRadio.cl.currentlyPlayingStations[ent]
+        local on = IsValid( ent ) and playing
+            and playing.name == station.name
         if on ~= self.playing then self:SetPlaying( on ) end
         local errData = IsValid( ent ) and rRadio.cl.errorTimestamps[ent]
-        if errData and errData.stationName == station.name and CurTime() - errData.time < ( rRadio.config.ErrorDisplayDuration or 5 ) then
+        if errData and errData.stationName == station.name
+            and CurTime() - errData.time < ( rRadio.config.ErrorDisplayDuration or 5 ) then
             self.errorFlash = true
         else
             self.errorFlash = false
@@ -106,7 +112,7 @@ function rRadio.cl.uiComponents.populateFavorites( panel, updateList )
     favBtn:SetTextLabel( rRadio.L( "FavoriteStations", "Favorite Stations" ) )
     favBtn:DockMargin( Scale( 5 ), Scale( 5 ), Scale( 5 ), Scale( 5 ) )
     local headerIcon = createButtonStar( favBtn, updateList )
-    headerIcon.Paint = function( self, w, h )
+    headerIcon.Paint = function( _self, w, h )
         surface.SetMaterial( icons.star.FULL )
         surface.SetDrawColor( rRadio.config.UI.TextColor )
         surface.DrawTexturedRect( 0, 0, w, h )
@@ -130,7 +136,9 @@ function rRadio.cl.uiComponents.populateCountries( panel, filterText, updateList
     local raw = {}
     local customKey = rRadio.config.CustomStationCategory or "Custom"
     local translateCustom = customKey == "Custom"
-    local wantsHeader = rRadio.config.PrioritiseCustom and filterText == "" and rRadio.cl.stationData[customKey] and #rRadio.cl.stationData[customKey] > 0
+    local customData = rRadio.cl.stationData[customKey]
+    local wantsHeader = rRadio.config.PrioritiseCustom
+        and filterText == "" and customData and #customData > 0
     if wantsHeader then
         local label = translateCustom and rRadio.LanguageManager:GetCustomTranslation() or customKey
         local hdrBtn = vgui.Create( "rRadioButton", panel )
@@ -165,7 +173,11 @@ function rRadio.cl.uiComponents.populateCountries( panel, filterText, updateList
         end
     end
 
-    local countries = rRadio.interface.fuzzyFilter( filterText, raw, function( c ) return c.translated end, 0, function( c ) return c.isPrioritized and 0.1 or 0 end )
+    local countries = rRadio.interface.fuzzyFilter(
+        filterText, raw,
+        function( c ) return c.translated end, 0,
+        function( c ) return c.isPrioritized and 0.1 or 0 end
+    )
     if not wantsHeader and rRadio.config.PrioritiseCustom and filterText == "" then
         for i, c in ipairs( countries ) do
             if c.original == customKey then
@@ -216,15 +228,26 @@ function rRadio.cl.uiComponents.populateStations( panel, country, filterText, up
             end
         end
 
-        local favList = rRadio.interface.fuzzyFilter( filterText, rawFav, function( f ) return f.countryName .. " - " .. f.station.name end, 0 )
+        local favList = rRadio.interface.fuzzyFilter(
+            filterText, rawFav,
+            function( f ) return f.countryName .. " - " .. f.station.name end,
+            0
+        )
         local favLimit = uiState.isSearching and rRadio.cl.MAX_SEARCH_RESULTS or #favList
         for i = 1, math.min( favLimit, #favList ) do
             local f = favList[i]
-            addPlayableStation( items, panel, f.station, f.country, f.countryName .. " - " .. f.station.name, updateList )
+            local displayName = f.countryName .. " - " .. f.station.name
+            addPlayableStation(
+                items, panel, f.station, f.country,
+                displayName, updateList
+            )
         end
     else
         local rawList = getCountrySearchList( country )
-        local sorted = rRadio.interface.fuzzyFilter( filterText, rawList, function( s ) return s.searchText end, 0, function( s )
+        local sorted = rRadio.interface.fuzzyFilter(
+            filterText, rawList,
+            function( s ) return s.searchText end, 0,
+            function( s )
             local favorites = rRadio.interface.favoriteStations[country]
             return favorites and favorites[s.station.name] and 0.1 or 0
         end )

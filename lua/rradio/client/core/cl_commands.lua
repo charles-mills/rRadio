@@ -32,7 +32,11 @@ concommand.Add( "rammel_rradio_disconnect_all", function()
     end
 
     rRadio.cl.performance.activeStationCount = 0
-    MsgC( Color( 0, 255, 0 ), "[rRadio] ", Color( 255, 255, 255 ), "Disconnected " .. count .. " station" .. ( count == 1 and "" or "s" ) .. ".\n" )
+    MsgC(
+        Color( 0, 255, 0 ), "[rRadio] ",
+        Color( 255, 255, 255 ),
+        "Disconnected " .. count .. " station" .. ( count == 1 and "" or "s" ) .. ".\n"
+    )
 end, nil, "Disconnects all radio streams", FCVAR_CLIENTCMD_CAN_EXECUTE )
 
 rRadio.interface.loadFavorites()

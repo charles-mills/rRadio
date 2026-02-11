@@ -209,7 +209,9 @@ function cl.updateAllStations()
     local stationCt = perf.volumeChanged and iface.updateStationCount() or perf.lastStationCount
     local enabled = cl.cvars.enabled:GetBool()
     local maxVol = cl.cvars.maxVolume:GetFloat()
-    if stationCt == perf.lastStationCount and enabled == perf.lastEnabled and maxVol == perf.lastMaxVolume and not perf.volumeChanged and distSq( plyPos, perf.lastPlayerPos ) < 1 then return end
+    if stationCt == perf.lastStationCount and enabled == perf.lastEnabled
+        and maxVol == perf.lastMaxVolume and not perf.volumeChanged
+        and distSq( plyPos, perf.lastPlayerPos ) < 1 then return end
     perf.lastPlayerPos = plyPos
     perf.lastStationCount = stationCt
     perf.lastEnabled = enabled

@@ -22,8 +22,22 @@ end
 
 local function refreshThemeControls( parentFrame, backButton )
     if not IsValid( parentFrame ) then return end
-    if IsValid( parentFrame.stopButton ) then parentFrame.stopButton:SetColors( rRadio.config.UI.TextColor, rRadio.config.UI.CloseButtonColor, rRadio.config.UI.CloseButtonHoverColor ) end
-    if IsValid( parentFrame.menuScaleResetButton ) then parentFrame.menuScaleResetButton:SetColors( rRadio.config.UI.TextColor, rRadio.config.UI.CloseButtonColor, rRadio.config.UI.CloseButtonHoverColor ) end
+    if IsValid( parentFrame.stopButton ) then
+        parentFrame.stopButton:SetColors(
+            rRadio.config.UI.TextColor,
+            rRadio.config.UI.CloseButtonColor,
+            rRadio.config.UI.CloseButtonHoverColor
+        )
+    end
+
+    if IsValid( parentFrame.menuScaleResetButton ) then
+        parentFrame.menuScaleResetButton:SetColors(
+            rRadio.config.UI.TextColor,
+            rRadio.config.UI.CloseButtonColor,
+            rRadio.config.UI.CloseButtonHoverColor
+        )
+    end
+
     local buttons = { parentFrame.closeButton, parentFrame.settingsButton, backButton }
     for _, btn in ipairs( buttons ) do
         if IsValid( btn ) then btn.hoverColour = rRadio.config.UI.ButtonHoverColor end
@@ -36,7 +50,9 @@ local function applyThemePreview( themeKey, parentFrame, backButton, themeDropdo
     rRadio.interface.applyTheme( key )
     refreshThemeControls( parentFrame, backButton )
     updateTextColours( parentFrame )
-    if IsValid( themeDropdown.dropdown.Menu ) then updateTextColours( themeDropdown.dropdown.Menu ) end
+    if IsValid( themeDropdown.dropdown.Menu ) then
+        updateTextColours( themeDropdown.dropdown.Menu )
+    end
 end
 
 local function sendEntityMessage( messageName, entity )
@@ -61,7 +77,10 @@ local function styleScaleSlider( slider )
     local function updateKnobSize()
         if not ( IsValid( slider.Slider ) and IsValid( slider.Slider.Knob ) ) then return end
         local knobSize = math.max( Scale( 12 ), math.floor( slider:GetTall() * 0.55 ) )
-        if slider.Slider.Knob:GetWide() ~= knobSize or slider.Slider.Knob:GetTall() ~= knobSize then slider.Slider.Knob:SetSize( knobSize, knobSize ) end
+        if slider.Slider.Knob:GetWide() ~= knobSize
+            or slider.Slider.Knob:GetTall() ~= knobSize then
+            slider.Slider.Knob:SetSize( knobSize, knobSize )
+        end
     end
 
     local oldPerformLayout = slider.PerformLayout
@@ -73,12 +92,23 @@ local function styleScaleSlider( slider )
     slider.Slider.Paint = function( self, w, h )
         local trackHeight = math.max( Scale( 4 ), math.floor( h * 0.24 ) )
         local y = math.floor( ( h - trackHeight ) / 2 )
-        local knobInset = IsValid( self.Knob ) and math.floor( self.Knob:GetWide() * 0.5 ) or 0
+        local knobInset = IsValid( self.Knob )
+            and math.floor( self.Knob:GetWide() * 0.5 ) or 0
         local trackW = math.max( Scale( 10 ), w - knobInset * 2 )
-        draw.RoundedBox( math.floor( trackHeight / 2 ), knobInset, y, trackW, trackHeight, rRadio.config.UI.TextColor )
+        draw.RoundedBox(
+            math.floor( trackHeight / 2 ),
+            knobInset, y, trackW, trackHeight,
+            rRadio.config.UI.TextColor
+        )
     end
 
-    slider.Slider.Knob.Paint = function( self, w, h ) draw.RoundedBox( math.floor( math.min( w, h ) / 2 ), 0, 0, w, h, rRadio.config.UI.BackgroundColor ) end
+    slider.Slider.Knob.Paint = function( _self, w, h )
+        draw.RoundedBox(
+            math.floor( math.min( w, h ) / 2 ),
+            0, 0, w, h,
+            rRadio.config.UI.BackgroundColor
+        )
+    end
 end
 
 local function createScaleSlider( parent, titleText, minVal, maxVal, currentVal, onLive, onCommit )
@@ -86,7 +116,10 @@ local function createScaleSlider( parent, titleText, minVal, maxVal, currentVal,
     container:Dock( TOP )
     container:SetTall( Scale( 58 ) )
     container:DockMargin( 0, 0, 0, Scale( 5 ) )
-    container.Paint = function( self, w, h ) draw.RoundedBox( 8, 0, 0, w, h, rRadio.config.UI.ButtonColor ) end
+    container.Paint = function( _self, w, h )
+        draw.RoundedBox( 8, 0, 0, w, h, rRadio.config.UI.ButtonColor )
+    end
+
     local header = vgui.Create( "DPanel", container )
     header:Dock( TOP )
     header:SetTall( Scale( 22 ) )
@@ -134,7 +167,7 @@ local function createScaleSlider( parent, titleText, minVal, maxVal, currentVal,
         onCommit( value )
     end
 
-    slider.OnValueChanged = function( self, value )
+    slider.OnValueChanged = function( _self, value )
         value = math.Clamp( value, minVal, maxVal )
         updateValueLabel( value )
         if initializing then return end
@@ -181,7 +214,12 @@ local function styleMenuKeyBinder( binder )
     binder.Paint = function( self, w, h )
         draw.RoundedBox( 6, 0, 0, w, h, rRadio.config.UI.SearchBoxColor )
         if self._waiting then return end
-        draw.SimpleText( rRadio.GetKeyName( self:GetValue() ), "rRadio.Roboto5", Scale( 10 ), h / 2, rRadio.config.UI.TextColor, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER )
+        draw.SimpleText(
+            rRadio.GetKeyName( self:GetValue() ),
+            "rRadio.Roboto5", Scale( 10 ), h / 2,
+            rRadio.config.UI.TextColor,
+            TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER
+        )
     end
 
     local oldOnChange = binder.OnChange
@@ -201,7 +239,12 @@ local function styleMenuKeyBinder( binder )
 end
 
 function rRadio.cl.settingsUI.addThemeSelector( scrollPanel, parentFrame, backButton, selectedTheme )
-    createSectionHeader( scrollPanel, rRadio.L( "ThemeSelection", "Theme Selection" ), true )
+    createSectionHeader(
+        scrollPanel,
+        rRadio.L( "ThemeSelection", "Theme Selection" ),
+        true
+    )
+
     local themeChoices = {}
     if rRadio.themes then
         for themeName, data in pairs( rRadio.themes ) do
@@ -214,39 +257,72 @@ function rRadio.cl.settingsUI.addThemeSelector( scrollPanel, parentFrame, backBu
         end
     end
 
-    local currentTheme = selectedTheme or GetConVar( "rammel_rradio_menu_theme" ):GetString()
+    local currentTheme = selectedTheme
+        or GetConVar( "rammel_rradio_menu_theme" ):GetString()
     local currentThemeName = getThemeDisplayName( currentTheme )
     local previousTheme
     local selectionMade = false
     local themeDropdown = vgui.Create( "rRadioDropdown", scrollPanel )
-    themeDropdown:SetData( rRadio.L( "SelectTheme", "Select Theme" ), themeChoices, currentThemeName, function( self, _, _, themeKey )
-        local key = themeKey:lower()
-        if key == currentTheme then
-            rRadio.interface.playSound( "SettingsMenuError" )
-            return
+    themeDropdown:SetData(
+        rRadio.L( "SelectTheme", "Select Theme" ),
+        themeChoices, currentThemeName,
+        function( _self, _, _, themeKey )
+            local key = themeKey:lower()
+            if key == currentTheme then
+                rRadio.interface.playSound( "SettingsMenuError" )
+                return
+            end
+
+            if not ( rRadio.themes and rRadio.themes[key] ) then return end
+            selectionMade = true
+            RunConsoleCommand( "rammel_rradio_menu_theme", key )
+            rRadio.interface.applyTheme( key )
+            refreshThemeControls( parentFrame, backButton )
+            rRadio.cl.openSettingsMenu( parentFrame, backButton, key )
+        end,
+        function( themeKey )
+            applyThemePreview(
+                themeKey, parentFrame, backButton, themeDropdown
+            )
+        end,
+        function()
+            selectionMade = false
+            previousTheme = GetConVar(
+                "rammel_rradio_menu_theme"
+            ):GetString()
+        end,
+        function()
+            if not selectionMade and previousTheme then
+                applyThemePreview(
+                    previousTheme, parentFrame,
+                    backButton, themeDropdown
+                )
+            end
         end
+    )
 
-        if not ( rRadio.themes and rRadio.themes[key] ) then return end
-        selectionMade = true
-        RunConsoleCommand( "rammel_rradio_menu_theme", key )
-        rRadio.interface.applyTheme( key )
-        refreshThemeControls( parentFrame, backButton )
-        rRadio.cl.openSettingsMenu( parentFrame, backButton, key )
-    end, function( themeKey ) applyThemePreview( themeKey, parentFrame, backButton, themeDropdown ) end, function()
-        selectionMade = false
-        previousTheme = GetConVar( "rammel_rradio_menu_theme" ):GetString()
-    end, function() if not selectionMade and previousTheme then applyThemePreview( previousTheme, parentFrame, backButton, themeDropdown ) end end )
-
-    themeDropdown.Paint = function( self, w, h ) draw.RoundedBox( 6, 0, 0, w, h, rRadio.config.UI.ButtonColor ) end
+    themeDropdown.Paint = function( _self, w, h )
+        draw.RoundedBox(
+            6, 0, 0, w, h, rRadio.config.UI.ButtonColor
+        )
+    end
 end
 
 function rRadio.cl.settingsUI.addKeyBindSelector( scrollPanel )
-    createSectionHeader( scrollPanel, rRadio.L( "KeyBinds", "Key Binds" ), false )
+    createSectionHeader(
+        scrollPanel,
+        rRadio.L( "KeyBinds", "Key Binds" ),
+        false
+    )
+
     local container = vgui.Create( "DPanel", scrollPanel )
     container:Dock( TOP )
     container:SetTall( Scale( 50 ) )
     container:DockMargin( 0, 0, 0, Scale( 5 ) )
-    container.Paint = function( self, w, h ) draw.RoundedBox( 8, 0, 0, w, h, rRadio.config.UI.ButtonColor ) end
+    container.Paint = function( _self, w, h )
+        draw.RoundedBox( 8, 0, 0, w, h, rRadio.config.UI.ButtonColor )
+    end
+
     local label = vgui.Create( "DLabel", container )
     label:Dock( LEFT )
     label:DockMargin( Scale( 10 ), 0, 0, 0 )
@@ -269,56 +345,102 @@ function rRadio.cl.settingsUI.addKeyBindSelector( scrollPanel )
 end
 
 function rRadio.cl.settingsUI.addMenuScaleOptions( scrollPanel, parentFrame )
-    createSectionHeader( scrollPanel, rRadio.L( "MenuScale", "Menu Scale" ), false )
+    createSectionHeader(
+        scrollPanel,
+        rRadio.L( "MenuScale", "Menu Scale" ),
+        false
+    )
+
     local minScale, maxScale = rRadio.interface.GetMenuScaleRange()
-    local minWidthScale, maxWidthScale = rRadio.interface.GetMenuWidthScaleRange()
+    local minWidthScale, maxWidthScale =
+        rRadio.interface.GetMenuWidthScaleRange()
     local function relayoutMenu()
-        if isfunction( rRadio.cl.relayoutRadioMenu ) then rRadio.cl.relayoutRadioMenu( false ) end
+        if isfunction( rRadio.cl.relayoutRadioMenu ) then
+            rRadio.cl.relayoutRadioMenu( false )
+        end
     end
 
-    local scaleSlider = createScaleSlider( scrollPanel, rRadio.L( "MenuScaleSize", "Menu Size" ), minScale, maxScale, rRadio.interface.GetMenuScale(), function( value )
-        rRadio.interface.SetMenuScale( value, false )
-        relayoutMenu()
-    end, function( value )
-        rRadio.interface.SetMenuScale( value, true )
-        relayoutMenu()
-        rRadio.interface.playSound( "SettingsMenuSuccess" )
-    end )
+    local scaleSlider = createScaleSlider(
+        scrollPanel,
+        rRadio.L( "MenuScaleSize", "Menu Size" ),
+        minScale, maxScale,
+        rRadio.interface.GetMenuScale(),
+        function( value )
+            rRadio.interface.SetMenuScale( value, false )
+            relayoutMenu()
+        end,
+        function( value )
+            rRadio.interface.SetMenuScale( value, true )
+            relayoutMenu()
+            rRadio.interface.playSound( "SettingsMenuSuccess" )
+        end
+    )
 
-    local widthSlider = createScaleSlider( scrollPanel, rRadio.L( "MenuScaleWidth", "Menu Width" ), minWidthScale, maxWidthScale, rRadio.interface.GetMenuWidthScale(), function( value )
-        rRadio.interface.SetMenuWidthScale( value, false )
-        relayoutMenu()
-    end, function( value )
-        rRadio.interface.SetMenuWidthScale( value, true )
-        relayoutMenu()
-        rRadio.interface.playSound( "SettingsMenuSuccess" )
-    end )
+    local widthSlider = createScaleSlider(
+        scrollPanel,
+        rRadio.L( "MenuScaleWidth", "Menu Width" ),
+        minWidthScale, maxWidthScale,
+        rRadio.interface.GetMenuWidthScale(),
+        function( value )
+            rRadio.interface.SetMenuWidthScale( value, false )
+            relayoutMenu()
+        end,
+        function( value )
+            rRadio.interface.SetMenuWidthScale( value, true )
+            relayoutMenu()
+            rRadio.interface.playSound( "SettingsMenuSuccess" )
+        end
+    )
 
     local resetButton = vgui.Create( "rRadioAnimatedButton", scrollPanel )
     resetButton:Dock( TOP )
     resetButton:SetTall( Scale( 36 ) )
     resetButton:DockMargin( 0, 0, 0, Scale( 5 ) )
-    resetButton:SetText( rRadio.L( "MenuScaleReset", "Reset Menu Scale" ) )
+    resetButton:SetText(
+        rRadio.L( "MenuScaleReset", "Reset Menu Scale" )
+    )
     resetButton:SetFont( "rRadio.Roboto5" )
-    resetButton:SetColors( rRadio.config.UI.TextColor, rRadio.config.UI.CloseButtonColor, rRadio.config.UI.CloseButtonHoverColor )
-    if IsValid( parentFrame ) then parentFrame.menuScaleResetButton = resetButton end
+    resetButton:SetColors(
+        rRadio.config.UI.TextColor,
+        rRadio.config.UI.CloseButtonColor,
+        rRadio.config.UI.CloseButtonHoverColor
+    )
+
+    if IsValid( parentFrame ) then
+        parentFrame.menuScaleResetButton = resetButton
+    end
+
     resetButton.DoClick = function()
         local defaultScale = rRadio.interface.GetMenuScaleDefault()
-        local defaultWidthScale = rRadio.interface.GetMenuWidthScaleDefault()
+        local defaultWidthScale =
+            rRadio.interface.GetMenuWidthScaleDefault()
         rRadio.interface.SetMenuScale( defaultScale, true )
         rRadio.interface.SetMenuWidthScale( defaultWidthScale, true )
-        if IsValid( scaleSlider ) then scaleSlider:SetValue( defaultScale ) end
-        if IsValid( widthSlider ) then widthSlider:SetValue( defaultWidthScale ) end
+        if IsValid( scaleSlider ) then
+            scaleSlider:SetValue( defaultScale )
+        end
+
+        if IsValid( widthSlider ) then
+            widthSlider:SetValue( defaultWidthScale )
+        end
+
         relayoutMenu()
         rRadio.interface.playSound( "SettingsMenuSuccess" )
     end
 end
 
 function rRadio.cl.settingsUI.addGeneralOptions( scrollPanel )
-    createSectionHeader( scrollPanel, rRadio.L( "GeneralOptions", "General Options" ), false )
+    createSectionHeader(
+        scrollPanel,
+        rRadio.L( "GeneralOptions", "General Options" ),
+        false
+    )
+
     local options = {
         {
-            label = rRadio.L( "ShowCarMessages", "Show Car Radio Animation" ),
+            label = rRadio.L(
+                "ShowCarMessages", "Show Car Radio Animation"
+            ),
             convar = "rammel_rradio_vehicle_animation"
         },
         {
@@ -334,26 +456,47 @@ function rRadio.cl.settingsUI.addGeneralOptions( scrollPanel )
     for _, opt in ipairs( options ) do
         local cvar = GetConVar( opt.convar )
         local checkbox = vgui.Create( "rRadioCheckbox", scrollPanel )
-        checkbox:Setup( opt.label, opt.convar, cvar:GetBool(), function() rRadio.interface.playSound( "SettingsMenuSuccess" ) end )
+        checkbox:Setup(
+            opt.label, opt.convar, cvar:GetBool(),
+            function()
+                rRadio.interface.playSound( "SettingsMenuSuccess" )
+            end
+        )
     end
 end
 
 function rRadio.cl.settingsUI.addSuperadminOptions( scrollPanel, currentEntity )
-    if not ( LocalPlayer():IsSuperAdmin() and rRadio.utils.IsBoombox( currentEntity ) ) then return end
-    createSectionHeader( scrollPanel, rRadio.L( "SuperadminSettings", "Superadmin Settings" ), false )
-    local permanentCheckbox = vgui.Create( "rRadioCheckbox", scrollPanel )
-    permanentCheckbox:Setup( rRadio.L( "MakeBoomboxPermanent", "Make Boombox Permanent" ), nil, currentEntity:GetNWBool( "IsPermanent", false ), function( self, value )
-        if not IsValid( currentEntity ) then
-            self:SetChecked( false )
-            return
-        end
+    if not ( LocalPlayer():IsSuperAdmin()
+        and rRadio.utils.IsBoombox( currentEntity ) ) then
+        return
+    end
 
-        if value then
-            sendEntityMessage( "rRadio.SetPersistent", currentEntity )
-        else
-            sendEntityMessage( "rRadio.RemovePersistent", currentEntity )
+    createSectionHeader(
+        scrollPanel,
+        rRadio.L( "SuperadminSettings", "Superadmin Settings" ),
+        false
+    )
+
+    local permanentCheckbox = vgui.Create( "rRadioCheckbox", scrollPanel )
+    permanentCheckbox:Setup(
+        rRadio.L( "MakeBoomboxPermanent", "Make Boombox Permanent" ),
+        nil,
+        currentEntity:GetNWBool( "IsPermanent", false ),
+        function( self, value )
+            if not IsValid( currentEntity ) then
+                self:SetChecked( false )
+                return
+            end
+
+            if value then
+                sendEntityMessage( "rRadio.SetPersistent", currentEntity )
+            else
+                sendEntityMessage(
+                    "rRadio.RemovePersistent", currentEntity
+                )
+            end
         end
-    end )
+    )
 
     uiState.permanentCheckboxRef = permanentCheckbox
 end
@@ -369,17 +512,35 @@ function rRadio.cl.settingsUI.buildFooter( settingsFrame )
         if IsValid( self.footer.steamButton ) then
             local iconSize = rRadio.interface.scaleMenu( 32 )
             self.footer.steamButton:SetSize( iconSize, iconSize )
-            self.footer.steamButton:SetPos( Scale( 10 ), ( footerHeight - iconSize ) / 2 )
+            self.footer.steamButton:SetPos(
+                Scale( 10 ), ( footerHeight - iconSize ) / 2
+            )
         end
     end
 
-    footer.Paint = function( self, w, h )
+    footer.Paint = function( _self, w, h )
         draw.RoundedBox( 8, 0, 0, w, h, rRadio.config.UI.ButtonColor )
         local gap = Scale( 8 )
-        draw.SimpleText( "rRadio by Rammel", "Default", w - Scale( 10 ), h / 2 - gap, rRadio.config.UI.TextColor, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER )
-        draw.SimpleText( "v" .. rRadio.config.RadioVersion, "Default", w - Scale( 10 ), h / 2 + gap, rRadio.config.UI.TextColor, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER )
+        draw.SimpleText(
+            "rRadio by Rammel", "Default",
+            w - Scale( 10 ), h / 2 - gap,
+            rRadio.config.UI.TextColor,
+            TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER
+        )
+
+        draw.SimpleText(
+            "v" .. rRadio.config.RadioVersion, "Default",
+            w - Scale( 10 ), h / 2 + gap,
+            rRadio.config.UI.TextColor,
+            TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER
+        )
     end
 
-    footer.steamButton = rRadio.interface.MakeIconButton( footer, "hud/steam.png", "https://steamcommunity.com/id/rammel", Scale( 10 ) )
+    footer.steamButton = rRadio.interface.MakeIconButton(
+        footer, "hud/steam.png",
+        "https://steamcommunity.com/id/rammel",
+        Scale( 10 )
+    )
+
     settingsFrame:LayoutFooter()
 end

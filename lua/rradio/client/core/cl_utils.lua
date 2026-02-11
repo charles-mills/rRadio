@@ -1,4 +1,4 @@
-﻿rRadio.interface = rRadio.interface or {}
+rRadio.interface = rRadio.interface or {}
 local ICON_VOL_MUTE = Material( "hud/vol_mute.png", "smooth" )
 local ICON_VOL_DOWN = Material( "hud/vol_down.png", "smooth" )
 local ICON_VOL_UP = Material( "hud/vol_up.png", "smooth" )
@@ -204,7 +204,11 @@ function rRadio.interface.ClampMenuWidthScale( scale )
 end
 
 function rRadio.interface.GetMenuWidthScale()
-    if rRadio.cl and rRadio.cl.menuWidthScale then return rRadio.interface.ClampMenuWidthScale( rRadio.cl.menuWidthScale ) end
+    if rRadio.cl and rRadio.cl.menuWidthScale then
+        return rRadio.interface.ClampMenuWidthScale(
+            rRadio.cl.menuWidthScale
+        )
+    end
     local cvar = GetConVar( MENU_WIDTH_SCALE_CVAR )
     if not cvar then return 1 end
     return rRadio.interface.ClampMenuWidthScale( cvar:GetFloat() )
@@ -332,7 +336,12 @@ local function fuzzyFilterCore( needle, items, keyFn, minScore, boostFn )
     return results
 end
 
-rRadio.interface.fuzzyFilter = function( needle, items, keyFn, minScore, boostFn ) return fuzzyFilterCore( needle, items, keyFn, minScore, boostFn ) end
+rRadio.interface.fuzzyFilter = function(
+    needle, items, keyFn, minScore, boostFn
+)
+    return fuzzyFilterCore( needle, items, keyFn, minScore, boostFn )
+end
+
 function rRadio.interface.MakeIconButton( parent, materialPath, url, xOffset )
     local icon = vgui.Create( "rRadioIconButton", parent )
     local size = rRadio.interface.scaleMenu( 32 )
@@ -373,12 +382,25 @@ end
 function rRadio.interface.StyleVBar( vbar )
     if not IsValid( vbar ) then return end
     vbar:SetWide( rRadio.interface.scaleMenu( 8 ) )
-    if vbar.DockMargin then vbar:DockMargin( 0, rRadio.interface.scaleMenu( 2 ), rRadio.interface.scaleMenu( 2 ), rRadio.interface.scaleMenu( 2 ) ) end
-    vbar.Paint = function( self, w, h ) draw.RoundedBox( 8, 0, 0, w, h, rRadio.config.UI.ScrollbarColor ) end
+    if vbar.DockMargin then
+        vbar:DockMargin(
+            0,
+            rRadio.interface.scaleMenu( 2 ),
+            rRadio.interface.scaleMenu( 2 ),
+            rRadio.interface.scaleMenu( 2 )
+        )
+    end
+    vbar.Paint = function( _self, w, h )
+        draw.RoundedBox( 8, 0, 0, w, h, rRadio.config.UI.ScrollbarColor )
+    end
     if IsValid( vbar.btnGrip ) then vbar.btnGrip:SetCursor( "sizens" ) end
-    vbar.btnGrip.Paint = function( self, w, h ) draw.RoundedBox( 8, 0, 0, w, h, rRadio.config.UI.ScrollbarGripColor ) end
-    vbar.btnUp.Paint = function( self, w, h ) end
-    vbar.btnDown.Paint = function( self, w, h ) end
+    vbar.btnGrip.Paint = function( _self, w, h )
+        draw.RoundedBox(
+            8, 0, 0, w, h, rRadio.config.UI.ScrollbarGripColor
+        )
+    end
+    vbar.btnUp.Paint = function( _self, _w, _h ) end
+    vbar.btnDown.Paint = function( _self, _w, _h ) end
 end
 
 function rRadio.interface.DisplayVehicleEnterAnimation( argVehicle, isDriverOverride )
@@ -394,10 +416,16 @@ function rRadio.interface.DisplayVehicleEnterAnimation( argVehicle, isDriverOver
     end
 
     local ply = LocalPlayer()
-    rRadio.logger.DebugScope( "cl_utils", "argVehicle:", tostring( argVehicle ), "ply:GetVehicle():", tostring( ply:GetVehicle() ) )
+    rRadio.logger.DebugScope(
+        "cl_utils", "argVehicle:", tostring( argVehicle ),
+        "ply:GetVehicle():", tostring( ply:GetVehicle() )
+    )
     local vehicle = argVehicle or ply:GetVehicle()
     if IsValid( vehicle ) then
-        rRadio.logger.DebugScope( "cl_utils", "vehicle class:", vehicle:GetClass(), "entIndex:", vehicle:EntIndex() )
+        rRadio.logger.DebugScope(
+            "cl_utils", "vehicle class:",
+            vehicle:GetClass(), "entIndex:", vehicle:EntIndex()
+        )
     else
         rRadio.logger.DebugScope( "cl_utils", "vehicle is invalid" )
     end
@@ -408,7 +436,13 @@ function rRadio.interface.DisplayVehicleEnterAnimation( argVehicle, isDriverOver
     end
 
     local mainVehicle = rRadio.utils.GetVehicle( vehicle )
-    rRadio.logger.DebugScope( "cl_utils", "mainVehicle:", tostring( mainVehicle ), IsValid( mainVehicle ) and "class: " .. mainVehicle:GetClass() .. ", entIndex: " .. mainVehicle:EntIndex() or "" )
+    rRadio.logger.DebugScope(
+        "cl_utils", "mainVehicle:", tostring( mainVehicle ),
+        IsValid( mainVehicle )
+            and "class: " .. mainVehicle:GetClass()
+                .. ", entIndex: " .. mainVehicle:EntIndex()
+            or ""
+    )
     if not IsValid( mainVehicle ) then
         rRadio.logger.DebugScope( "cl_utils", "Vehicle is not valid" )
         return
@@ -469,7 +503,12 @@ function rRadio.interface.DisplayVehicleEnterAnimation( argVehicle, isDriverOver
     panel.Paint = function( self, w, h )
         local bgColor = rRadio.config.UI.HeaderColor
         local hoverBrightness = self:IsHovered() and 1.2 or 1
-        bgColor = Color( math.min( bgColor.r * hoverBrightness, 255 ), math.min( bgColor.g * hoverBrightness, 255 ), math.min( bgColor.b * hoverBrightness, 255 ), alpha * 255 )
+        bgColor = Color(
+            math.min( bgColor.r * hoverBrightness, 255 ),
+            math.min( bgColor.g * hoverBrightness, 255 ),
+            math.min( bgColor.b * hoverBrightness, 255 ),
+            alpha * 255
+        )
         draw.RoundedBoxEx( 12, 0, 0, w, h, bgColor, true, false, true, false )
         local keyWidth = rRadio.interface.scale( 40 )
         local keyHeight = rRadio.interface.scale( 30 )
@@ -480,12 +519,29 @@ function rRadio.interface.DisplayVehicleEnterAnimation( argVehicle, isDriverOver
         local adjustedKeyHeight = keyHeight * pulseScale
         local adjustedKeyX = keyX - ( adjustedKeyWidth - keyWidth ) / 2
         local adjustedKeyY = keyY - ( adjustedKeyHeight - keyHeight ) / 2
-        draw.RoundedBox( 6, adjustedKeyX, adjustedKeyY, adjustedKeyWidth, adjustedKeyHeight, ColorAlpha( rRadio.config.UI.ButtonColor, alpha * 255 ) )
-        surface.SetDrawColor( ColorAlpha( rRadio.config.UI.TextColor, alpha * 50 ) )
-        surface.DrawLine( keyX + keyWidth + rRadio.interface.scale( 7 ), h * 0.3, keyX + keyWidth + rRadio.interface.scale( 7 ), h * 0.7 )
-        draw.SimpleText( keyName, "rRadio.Roboto5", keyX + keyWidth / 2, h / 2, ColorAlpha( rRadio.config.UI.TextColor, alpha * 255 ), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
+        draw.RoundedBox(
+            6, adjustedKeyX, adjustedKeyY,
+            adjustedKeyWidth, adjustedKeyHeight,
+            ColorAlpha( rRadio.config.UI.ButtonColor, alpha * 255 )
+        )
+        surface.SetDrawColor(
+            ColorAlpha( rRadio.config.UI.TextColor, alpha * 50 )
+        )
+        local lineX = keyX + keyWidth + rRadio.interface.scale( 7 )
+        surface.DrawLine( lineX, h * 0.3, lineX, h * 0.7 )
+        draw.SimpleText(
+            keyName, "rRadio.Roboto5",
+            keyX + keyWidth / 2, h / 2,
+            ColorAlpha( rRadio.config.UI.TextColor, alpha * 255 ),
+            TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER
+        )
         local messageX = keyX + keyWidth + rRadio.interface.scale( 15 )
-        draw.SimpleText( rRadio.L( "ToOpenRadio", "to open radio" ), "rRadio.Roboto5", messageX, h / 2, ColorAlpha( rRadio.config.UI.TextColor, alpha * 255 ), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER )
+        draw.SimpleText(
+            rRadio.L( "ToOpenRadio", "to open radio" ),
+            "rRadio.Roboto5", messageX, h / 2,
+            ColorAlpha( rRadio.config.UI.TextColor, alpha * 255 ),
+            TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER
+        )
     end
 
     panel.Think = function( self )
@@ -544,7 +600,12 @@ function rRadio.interface.updateStationCount()
 end
 
 function rRadio.interface.LerpColor( t, col1, col2 )
-    return Color( Lerp( t, col1.r, col2.r ), Lerp( t, col1.g, col2.g ), Lerp( t, col1.b, col2.b ), Lerp( t, col1.a or 255, col2.a or 255 ) )
+    return Color(
+        Lerp( t, col1.r, col2.r ),
+        Lerp( t, col1.g, col2.g ),
+        Lerp( t, col1.b, col2.b ),
+        Lerp( t, col1.a or 255, col2.a or 255 )
+    )
 end
 
 function rRadio.interface.ClampVolume( volume )
@@ -574,10 +635,16 @@ function rRadio.interface.loadFavorites()
             if type( country ) == "string" and type( stations ) == "table" then
                 favoriteStations[country] = {}
                 for stationName, isFavorite in pairs( stations ) do
-                    if type( stationName ) == "string" and type( isFavorite ) == "boolean" then favoriteStations[country][stationName] = isFavorite end
+                    if type( stationName ) == "string"
+                        and type( isFavorite ) == "boolean"
+                    then
+                        favoriteStations[country][stationName] = isFavorite
+                    end
                 end
 
-                if next( favoriteStations[country] ) == nil then favoriteStations[country] = nil end
+                if next( favoriteStations[country] ) == nil then
+                    favoriteStations[country] = nil
+                end
             end
         end
     elseif file.Exists( rRadio.interface.favoriteStationsFile, "DATA" ) then
@@ -604,10 +671,16 @@ local function writeFavorites()
         if type( country ) == "string" and type( stations ) == "table" then
             favStationsTable[country] = {}
             for stationName, isFavorite in pairs( stations ) do
-                if type( stationName ) == "string" and type( isFavorite ) == "boolean" then favStationsTable[country][stationName] = isFavorite end
+                if type( stationName ) == "string"
+                    and type( isFavorite ) == "boolean"
+                then
+                    favStationsTable[country][stationName] = isFavorite
+                end
             end
 
-            if next( favStationsTable[country] ) == nil then favStationsTable[country] = nil end
+            if next( favStationsTable[country] ) == nil then
+                favStationsTable[country] = nil
+            end
         end
     end
 
@@ -655,12 +728,22 @@ function rRadio.interface.CalculateVolume( entity, player, distanceSqr )
     if not IsValid( entity ) or not IsValid( player ) then return 0 end
     local entityConfig = rRadio.utils.GetEntityConfig( entity )
     if not entityConfig then return 0 end
-    local baseVolume = rRadio.cl.entityVolumes[entity] ~= nil and rRadio.cl.entityVolumes[entity] or entity:GetNWFloat( "Volume", entityConfig.Volume )
-    if player:GetVehicle() == entity or distanceSqr <= entityConfig.MinVolumeDistance ^ 2 then return baseVolume end
+    local baseVolume = rRadio.cl.entityVolumes[entity] ~= nil
+        and rRadio.cl.entityVolumes[entity]
+        or entity:GetNWFloat( "Volume", entityConfig.Volume )
+    if player:GetVehicle() == entity
+        or distanceSqr <= entityConfig.MinVolumeDistance ^ 2
+    then
+        return baseVolume
+    end
     local maxDist = entityConfig.MaxHearingDistance
     local distance = math.sqrt( distanceSqr )
     if distance >= maxDist then return 0 end
-    local falloff = 1 - math.Clamp( ( distance - entityConfig.MinVolumeDistance ) / ( maxDist - entityConfig.MinVolumeDistance ), 0, 1 )
+    local falloff = 1 - math.Clamp(
+        ( distance - entityConfig.MinVolumeDistance )
+            / ( maxDist - entityConfig.MinVolumeDistance ),
+        0, 1
+    )
     return baseVolume * falloff
 end
 
@@ -685,7 +768,10 @@ function rRadio.interface.updateRadioVolume( station, distanceSqr, isPlayerInCar
 
     local entityConfig = rRadio.interface.getEntityConfig( entity )
     if not entityConfig then return end
-    local userVolume = rRadio.interface.ClampVolume( rRadio.cl.entityVolumes[entity] or entity:GetNWFloat( "Volume", entityConfig.Volume ) )
+    local userVolume = rRadio.interface.ClampVolume(
+        rRadio.cl.entityVolumes[entity]
+            or entity:GetNWFloat( "Volume", entityConfig.Volume )
+    )
     if userVolume <= 0.02 then
         local prev = _lastVolumes[entity] or -1
         if prev ~= 0 then
@@ -776,26 +862,48 @@ loadLanguage()
 rRadio.interface.RefreshMenuFonts( true )
 cvars.AddChangeCallback( "gmod_language", function() loadLanguage() end )
 cvars.AddChangeCallback( MENU_SCALE_CVAR, function( _, _, new )
-    if rRadio.cl then rRadio.cl.menuScale = rRadio.interface.ClampMenuScale( new ) end
+    if rRadio.cl then
+        rRadio.cl.menuScale = rRadio.interface.ClampMenuScale( new )
+    end
     rRadio.interface.RefreshMenuFonts( true )
-    if rRadio.cl and rRadio.cl.uiState and rRadio.cl.uiState.radioMenuOpen and isfunction( rRadio.cl.relayoutRadioMenu ) then rRadio.cl.relayoutRadioMenu( true ) end
+    if rRadio.cl and rRadio.cl.uiState
+        and rRadio.cl.uiState.radioMenuOpen
+        and isfunction( rRadio.cl.relayoutRadioMenu )
+    then
+        rRadio.cl.relayoutRadioMenu( true )
+    end
 end, "rRadioMenuScaleCB" )
 
 cvars.AddChangeCallback( MENU_WIDTH_SCALE_CVAR, function( _, _, new )
-    if rRadio.cl then rRadio.cl.menuWidthScale = rRadio.interface.ClampMenuWidthScale( new ) end
-    if rRadio.cl and rRadio.cl.uiState and rRadio.cl.uiState.radioMenuOpen and isfunction( rRadio.cl.relayoutRadioMenu ) then rRadio.cl.relayoutRadioMenu( true ) end
+    if rRadio.cl then
+        rRadio.cl.menuWidthScale =
+            rRadio.interface.ClampMenuWidthScale( new )
+    end
+    if rRadio.cl and rRadio.cl.uiState
+        and rRadio.cl.uiState.radioMenuOpen
+        and isfunction( rRadio.cl.relayoutRadioMenu )
+    then
+        rRadio.cl.relayoutRadioMenu( true )
+    end
 end, "rRadioMenuWidthScaleCB" )
 
 hook.Add( "OnScreenSizeChanged", "rRadio.RecalcScale", function()
     scaleRatio = ScrW() / BASE_WIDTH
     rRadio.interface.RefreshMenuFonts( true )
-    if rRadio.cl and rRadio.cl.uiState and rRadio.cl.uiState.radioMenuOpen and isfunction( rRadio.cl.relayoutRadioMenu ) then rRadio.cl.relayoutRadioMenu( true ) end
+    if rRadio.cl and rRadio.cl.uiState
+        and rRadio.cl.uiState.radioMenuOpen
+        and isfunction( rRadio.cl.relayoutRadioMenu )
+    then
+        rRadio.cl.relayoutRadioMenu( true )
+    end
 end )
 
 function rRadio.GetKeyName( keyCode )
     local name = input.GetKeyName( keyCode )
     if not name then return "the Open Key" end
-    return name:gsub( "_", " " ):gsub( "(%a)([%w]*)", function( first, rest ) return first:upper() .. rest:lower() end )
+    return name:gsub( "_", " " ):gsub( "(%a)([%w]*)", function( first, rest )
+        return first:upper() .. rest:lower()
+    end )
 end
 
 local BLOCKED_MENU_KEYS = {
