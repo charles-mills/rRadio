@@ -1,6 +1,6 @@
 ﻿do
     local PANEL = {}
-    local Scale = rRadio.interface.scale
+    local Scale = rRadio.interface.scaleMenu
     local TEXT_FONT = "rRadio.Roboto5"
     local function paintArrow(dropdown, w, h)
         surface.SetDrawColor(rRadio.config.UI.TextColor)

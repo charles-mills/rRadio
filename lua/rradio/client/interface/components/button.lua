@@ -1,6 +1,6 @@
 ﻿do
     local PANEL = {}
-    local Scale = rRadio.interface.scale
+    local Scale = rRadio.interface.scaleMenu
     function PANEL:Init()
         self.label = ""
         self.leftChild = nil

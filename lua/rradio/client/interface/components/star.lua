@@ -1,6 +1,6 @@
 ﻿do
     local PANEL = {}
-    local Scale = rRadio.interface.scale
+    local Scale = rRadio.interface.scaleMenu
     local FULL_MAT = Material("hud/star_full.png", "smooth")
     local EMPTY_MAT = Material("hud/star.png", "smooth")
     function PANEL:Init()

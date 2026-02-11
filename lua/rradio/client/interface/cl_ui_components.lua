@@ -62,7 +62,10 @@ end
 
 function rRadio.cl.uiComponents.createPlayableStationButton(parent, station, displayText, updateList)
     local btn = vgui.Create("rRadioButton", parent)
-    btn:SetTextLabel(displayText)
+    local baseMax = rRadio.config.MaxNameChars or 40
+    local includesPrefix = displayText ~= station.name
+    local displayLimit = includesPrefix and (baseMax + 16) or baseMax
+    btn:SetTextLabel(rRadio.interface.TruncateCharsWithEllipsis(displayText, displayLimit))
     local star = createButtonStar(btn, updateList, rRadio.interface.favoriteStations, station.countryKey, station.name)
     btn:SetLeftChild(star)
     btn.DoClick = function()

@@ -9,7 +9,14 @@ local utf8Len = string.utf8Len or function(s) return #s end
 local utf8Sub = string.utf8Sub or function(s, i, j) return stringSub(s, i, j) end
 local IsValid = IsValid
 local BASE_WIDTH = 2560
+local MENU_SCALE_CVAR = "rammel_rradio_menu_scale"
+local MENU_SCALE_MIN = 0.75
+local MENU_SCALE_MAX = 2.00
+local MENU_WIDTH_SCALE_CVAR = "rammel_rradio_menu_width_scale"
+local MENU_WIDTH_SCALE_MIN = 0.80
+local MENU_WIDTH_SCALE_MAX = 2.20
 local scaleRatio = ScrW() / BASE_WIDTH
+local menuFontScaleKey
 function rRadio.cl.getEntityVolume(entity)
     if not IsValid(entity) then return 0.5 end
     local vol = rRadio.cl.entityVolumes[entity]
@@ -109,6 +116,78 @@ local _lastVolumes = {}
 local _volThreshold = 0.01
 function rRadio.interface.scale(val)
     return val * scaleRatio
+end
+
+function rRadio.interface.ClampMenuScale(scale)
+    local normalized = tonumber(scale) or 1
+    normalized = math.Clamp(normalized, MENU_SCALE_MIN, MENU_SCALE_MAX)
+    return math.Round(normalized, 2)
+end
+
+function rRadio.interface.GetMenuScale()
+    if rRadio.cl and rRadio.cl.menuScale then
+        return rRadio.interface.ClampMenuScale(rRadio.cl.menuScale)
+    end
+
+    local cvar = GetConVar(MENU_SCALE_CVAR)
+    if not cvar then return 1 end
+    return rRadio.interface.ClampMenuScale(cvar:GetFloat())
+end
+
+function rRadio.interface.scaleMenu(val)
+    return rRadio.interface.scale(val) * rRadio.interface.GetMenuScale()
+end
+
+function rRadio.interface.RefreshMenuFonts(force)
+    local menuScale = rRadio.interface.GetMenuScale()
+    local scaleKey = math.floor(menuScale * 100 + 0.5)
+    if (not force) and menuFontScaleKey == scaleKey then return end
+    menuFontScaleKey = scaleKey
+    surface.CreateFont("rRadio.Roboto5", {
+        font = "Roboto",
+        size = math.max(10, math.floor(ScreenScale(5) * menuScale)),
+        weight = 500,
+        antialias = true,
+        extended = true
+    })
+    surface.CreateFont("rRadio.Roboto8", {
+        font = "Roboto",
+        size = math.max(12, math.floor(ScreenScale(8) * menuScale)),
+        weight = 700,
+        antialias = true,
+        extended = true
+    })
+end
+
+function rRadio.interface.SetMenuScale(scale, persist)
+    local clamped = rRadio.interface.ClampMenuScale(scale)
+    if rRadio.cl then rRadio.cl.menuScale = clamped end
+    rRadio.interface.RefreshMenuFonts()
+    if persist then RunConsoleCommand(MENU_SCALE_CVAR, string.format("%.2f", clamped)) end
+    return clamped
+end
+
+function rRadio.interface.ClampMenuWidthScale(scale)
+    local normalized = tonumber(scale) or 1
+    normalized = math.Clamp(normalized, MENU_WIDTH_SCALE_MIN, MENU_WIDTH_SCALE_MAX)
+    return math.Round(normalized, 2)
+end
+
+function rRadio.interface.GetMenuWidthScale()
+    if rRadio.cl and rRadio.cl.menuWidthScale then
+        return rRadio.interface.ClampMenuWidthScale(rRadio.cl.menuWidthScale)
+    end
+
+    local cvar = GetConVar(MENU_WIDTH_SCALE_CVAR)
+    if not cvar then return 1 end
+    return rRadio.interface.ClampMenuWidthScale(cvar:GetFloat())
+end
+
+function rRadio.interface.SetMenuWidthScale(scale, persist)
+    local clamped = rRadio.interface.ClampMenuWidthScale(scale)
+    if rRadio.cl then rRadio.cl.menuWidthScale = clamped end
+    if persist then RunConsoleCommand(MENU_WIDTH_SCALE_CVAR, string.format("%.2f", clamped)) end
+    return clamped
 end
 
 function rRadio.interface.playSound(sound)
@@ -229,7 +308,7 @@ end
 rRadio.interface.fuzzyFilter = function(needle, items, keyFn, minScore, boostFn) return fuzzyFilterCore(needle, items, keyFn, minScore, boostFn) end
 function rRadio.interface.MakeIconButton(parent, materialPath, url, xOffset)
     local icon = vgui.Create("rRadioIconButton", parent)
-    local size = rRadio.interface.scale(32)
+    local size = rRadio.interface.scaleMenu(32)
     icon:SetSize(size, size)
     icon:SetPos(xOffset, (parent:GetTall() - size) / 2)
     icon:SetIcon(materialPath)
@@ -264,10 +343,18 @@ function rRadio.interface.TruncateChars(text, maxChars)
     return utf8Sub(text, 1, maxChars)
 end
 
+function rRadio.interface.TruncateCharsWithEllipsis(text, maxChars)
+    text = text or ""
+    maxChars = math.max(1, math.floor(tonumber(maxChars) or 1))
+    if utf8Len(text) <= maxChars then return text end
+    if maxChars <= 3 then return string.rep(".", maxChars) end
+    return rRadio.interface.TruncateChars(text, maxChars - 3) .. "..."
+end
+
 function rRadio.interface.StyleVBar(vbar)
     if not IsValid(vbar) then return end
-    vbar:SetWide(rRadio.interface.scale(8))
-    if vbar.DockMargin then vbar:DockMargin(0, rRadio.interface.scale(2), rRadio.interface.scale(2), rRadio.interface.scale(2)) end
+    vbar:SetWide(rRadio.interface.scaleMenu(8))
+    if vbar.DockMargin then vbar:DockMargin(0, rRadio.interface.scaleMenu(2), rRadio.interface.scaleMenu(2), rRadio.interface.scaleMenu(2)) end
     vbar.Paint = function(self, w, h) draw.RoundedBox(8, 0, 0, w, h, rRadio.config.UI.ScrollbarColor) end
     vbar.btnGrip.Paint = function(self, w, h) draw.RoundedBox(8, 0, 0, w, h, rRadio.config.UI.ScrollbarGripColor) end
     vbar.btnUp.Paint = function(self, w, h) end
@@ -666,8 +753,28 @@ local function loadLanguage()
 end
 
 loadLanguage()
+rRadio.interface.RefreshMenuFonts(true)
 cvars.AddChangeCallback("gmod_language", function() loadLanguage() end)
-hook.Add("OnScreenSizeChanged", "rRadio.RecalcScale", function() scaleRatio = ScrW() / BASE_WIDTH end)
+cvars.AddChangeCallback(MENU_SCALE_CVAR, function(_, _, new)
+    if rRadio.cl then rRadio.cl.menuScale = rRadio.interface.ClampMenuScale(new) end
+    rRadio.interface.RefreshMenuFonts(true)
+    if rRadio.cl and rRadio.cl.uiState and rRadio.cl.uiState.radioMenuOpen and isfunction(rRadio.cl.relayoutRadioMenu) then
+        rRadio.cl.relayoutRadioMenu(true)
+    end
+end, "rRadioMenuScaleCB")
+cvars.AddChangeCallback(MENU_WIDTH_SCALE_CVAR, function(_, _, new)
+    if rRadio.cl then rRadio.cl.menuWidthScale = rRadio.interface.ClampMenuWidthScale(new) end
+    if rRadio.cl and rRadio.cl.uiState and rRadio.cl.uiState.radioMenuOpen and isfunction(rRadio.cl.relayoutRadioMenu) then
+        rRadio.cl.relayoutRadioMenu(true)
+    end
+end, "rRadioMenuWidthScaleCB")
+hook.Add("OnScreenSizeChanged", "rRadio.RecalcScale", function()
+    scaleRatio = ScrW() / BASE_WIDTH
+    rRadio.interface.RefreshMenuFonts(true)
+    if rRadio.cl and rRadio.cl.uiState and rRadio.cl.uiState.radioMenuOpen and isfunction(rRadio.cl.relayoutRadioMenu) then
+        rRadio.cl.relayoutRadioMenu(true)
+    end
+end)
 function rRadio.GetKeyName(keyCode)
     local name = input.GetKeyName(keyCode)
     if not name then return "the Open Key" end

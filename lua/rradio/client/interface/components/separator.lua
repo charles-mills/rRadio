@@ -1,6 +1,6 @@
 ﻿do
     local PANEL = {}
-    local Scale = rRadio.interface.scale
+    local Scale = rRadio.interface.scaleMenu
     function PANEL:Init()
         self:Dock(TOP)
         self:DockMargin(Scale(5), Scale(5), Scale(5), Scale(5))

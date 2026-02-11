@@ -1,6 +1,6 @@
 ﻿do
     local PANEL = {}
-    local Scale = rRadio.interface.scale
+    local Scale = rRadio.interface.scaleMenu
     local HOVER_SPEED = 5
     function PANEL:Init()
         self.iconMaterial = nil

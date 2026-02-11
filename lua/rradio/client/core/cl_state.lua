@@ -43,12 +43,16 @@ rRadio.cl.performance = {
 rRadio.cl.pendingVolume = nil
 rRadio.cl.pendingEntity = nil
 rRadio.cl.MAX_SEARCH_RESULTS = 150
-rRadio.cl.Scale = rRadio.interface.scale
+rRadio.cl.Scale = rRadio.interface.scaleMenu
 rRadio.cl.cvars = {
     enabled = GetConVar("rammel_rradio_enabled"),
     maxVolume = GetConVar("rammel_rradio_max_volume"),
-    menuKey = GetConVar("rammel_rradio_menu_key")
+    menuKey = GetConVar("rammel_rradio_menu_key"),
+    menuScale = GetConVar("rammel_rradio_menu_scale"),
+    menuWidthScale = GetConVar("rammel_rradio_menu_width_scale")
 }
+rRadio.cl.menuScale = (rRadio.cl.cvars.menuScale and rRadio.cl.cvars.menuScale:GetFloat()) or 1
+rRadio.cl.menuWidthScale = (rRadio.cl.cvars.menuWidthScale and rRadio.cl.cvars.menuWidthScale:GetFloat()) or 1
 
 rRadio.cl.icons = {
     volume = {
