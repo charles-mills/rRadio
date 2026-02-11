@@ -10,11 +10,7 @@ local utf8Sub = string.utf8Sub or function(s, i, j) return stringSub(s, i, j) en
 local IsValid = IsValid
 local BASE_WIDTH = 2560
 local MENU_SCALE_CVAR = "rammel_rradio_menu_scale"
-local MENU_SCALE_MIN = 0.75
-local MENU_SCALE_MAX = 2.00
 local MENU_WIDTH_SCALE_CVAR = "rammel_rradio_menu_width_scale"
-local MENU_WIDTH_SCALE_MIN = 0.80
-local MENU_WIDTH_SCALE_MAX = 2.20
 local scaleRatio = ScrW() / BASE_WIDTH
 local menuFontScaleKey
 function rRadio.cl.getEntityVolume(entity)
@@ -118,9 +114,44 @@ function rRadio.interface.scale(val)
     return val * scaleRatio
 end
 
+local function getMenuScaleBounds()
+    local cfg = (rRadio.config and rRadio.config.MenuScale) or {}
+    local minVal = tonumber(cfg.Min) or tonumber(cfg.Default) or 1
+    local maxVal = tonumber(cfg.Max) or minVal
+    if maxVal < minVal then maxVal = minVal end
+    return minVal, maxVal
+end
+
+local function getMenuWidthScaleBounds()
+    local cfg = (rRadio.config and rRadio.config.MenuScale) or {}
+    local minVal = tonumber(cfg.WidthMin) or tonumber(cfg.WidthDefault) or 1
+    local maxVal = tonumber(cfg.WidthMax) or minVal
+    if maxVal < minVal then maxVal = minVal end
+    return minVal, maxVal
+end
+
+function rRadio.interface.GetMenuScaleRange()
+    return getMenuScaleBounds()
+end
+
+function rRadio.interface.GetMenuWidthScaleRange()
+    return getMenuWidthScaleBounds()
+end
+
+function rRadio.interface.GetMenuScaleDefault()
+    local cfg = (rRadio.config and rRadio.config.MenuScale) or {}
+    return tonumber(cfg.Default) or 1.0
+end
+
+function rRadio.interface.GetMenuWidthScaleDefault()
+    local cfg = (rRadio.config and rRadio.config.MenuScale) or {}
+    return tonumber(cfg.WidthDefault) or 1.0
+end
+
 function rRadio.interface.ClampMenuScale(scale)
     local normalized = tonumber(scale) or 1
-    normalized = math.Clamp(normalized, MENU_SCALE_MIN, MENU_SCALE_MAX)
+    local minVal, maxVal = getMenuScaleBounds()
+    normalized = math.Clamp(normalized, minVal, maxVal)
     return math.Round(normalized, 2)
 end
 
@@ -169,7 +200,8 @@ end
 
 function rRadio.interface.ClampMenuWidthScale(scale)
     local normalized = tonumber(scale) or 1
-    normalized = math.Clamp(normalized, MENU_WIDTH_SCALE_MIN, MENU_WIDTH_SCALE_MAX)
+    local minVal, maxVal = getMenuWidthScaleBounds()
+    normalized = math.Clamp(normalized, minVal, maxVal)
     return math.Round(normalized, 2)
 end
 
@@ -343,14 +375,6 @@ function rRadio.interface.TruncateChars(text, maxChars)
     return utf8Sub(text, 1, maxChars)
 end
 
-function rRadio.interface.TruncateCharsWithEllipsis(text, maxChars)
-    text = text or ""
-    maxChars = math.max(1, math.floor(tonumber(maxChars) or 1))
-    if utf8Len(text) <= maxChars then return text end
-    if maxChars <= 3 then return string.rep(".", maxChars) end
-    return rRadio.interface.TruncateChars(text, maxChars - 3) .. "..."
-end
-
 function rRadio.interface.StyleVBar(vbar)
     if not IsValid(vbar) then return end
     vbar:SetWide(rRadio.interface.scaleMenu(8))
@@ -465,7 +489,7 @@ function rRadio.interface.DisplayVehicleEnterAnimation(argVehicle, isDriverOverr
         surface.DrawLine(keyX + keyWidth + rRadio.interface.scale(7), h * 0.3, keyX + keyWidth + rRadio.interface.scale(7), h * 0.7)
         draw.SimpleText(keyName, "rRadio.Roboto5", keyX + keyWidth / 2, h / 2, ColorAlpha(rRadio.config.UI.TextColor, alpha * 255), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
         local messageX = keyX + keyWidth + rRadio.interface.scale(15)
-        draw.SimpleText(rRadio.config.Lang["ToOpenRadio"] or "to open radio", "rRadio.Roboto5", messageX, h / 2, ColorAlpha(rRadio.config.UI.TextColor, alpha * 255), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+        draw.SimpleText(rRadio.L("ToOpenRadio", "to open radio"), "rRadio.Roboto5", messageX, h / 2, ColorAlpha(rRadio.config.UI.TextColor, alpha * 255), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
     end
 
     panel.Think = function(self)

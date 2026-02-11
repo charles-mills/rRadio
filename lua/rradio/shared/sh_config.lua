@@ -70,6 +70,14 @@ rRadio.config.VehicleRadio = {
 
 --[[ ! Additional settings ! ]]
 rRadio.config.MaxNameChars = 40 -- Truncate station names sent to the server to this length
+rRadio.config.MenuScale = {
+    Min = 0.75,
+    Max = 2.00,
+    WidthMin = 0.80,
+    WidthMax = 2.20,
+    Default = 1.00,
+    WidthDefault = 1.00
+}
 rRadio.config.VehicleClassOverides = {"lvs_", "ses_", "sw_", "drs_"}
 --[[ ! Internal settings ! ]]
 rRadio.config.RadioStations = rRadio.config.RadioStations or {}

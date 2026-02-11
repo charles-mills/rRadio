@@ -109,10 +109,10 @@ local HUD_DIMS = {
 
 local function initTexts()
     STATIC_TEXTS = {
-        interact = rRadio.config.Lang["Interact"] or "Press E to Interact",
-        paused = rRadio.config.Lang["Paused"] or "Paused",
-        tuning = rRadio.config.Lang["TuningIn"] or "Tuning in",
-        error = rRadio.config.Lang["StationFailed"] or "Station Failed"
+        interact = rRadio.L("Interact", "Press E to Interact"),
+        paused = rRadio.L("Paused", "Paused"),
+        tuning = rRadio.L("TuningIn", "Tuning in"),
+        error = rRadio.L("StationFailed", "Station Failed")
     }
 
     surface_SetFont("rRadio.Roboto24")

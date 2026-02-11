@@ -30,10 +30,10 @@ local function getHeaderIcon()
 end
 
 local function getHeaderText()
-    if uiState.settingsMenuOpen then return rRadio.config.Lang["Settings"] or "Settings" end
-    if uiState.selectedCountry == "favorites" then return rRadio.config.Lang["FavoriteStations"] or "Favorite Stations" end
+    if uiState.settingsMenuOpen then return rRadio.L("Settings", "Settings") end
+    if uiState.selectedCountry == "favorites" then return rRadio.L("FavoriteStations", "Favorite Stations") end
     if uiState.selectedCountry then return rRadio.utils.FormatAndTranslateCountry(uiState.selectedCountry) end
-    return rRadio.config.Lang["SelectCountry"] or "Select Country"
+    return rRadio.L("SelectCountry", "Select Country")
 end
 
 local function getBaseFrameSize()
@@ -142,6 +142,7 @@ function rRadio.cl.openSettingsMenu(parentFrame, backButton, selectedTheme)
     rRadio.interface.StyleVBar(scrollPanel:GetVBar())
     rRadio.cl.settingsUI.addThemeSelector(scrollPanel, parentFrame, backButton, selectedTheme)
     rRadio.cl.settingsUI.addKeyBindSelector(scrollPanel)
+    rRadio.cl.settingsUI.addMenuScaleOptions(scrollPanel, parentFrame)
     rRadio.cl.settingsUI.addGeneralOptions(scrollPanel)
     rRadio.cl.settingsUI.addSuperadminOptions(scrollPanel, LocalPlayer().currentRadioEntity)
     rRadio.cl.settingsUI.buildFooter(uiState.settingsFrame)
@@ -185,13 +186,13 @@ end
 
 local function updateSizedButtonFonts(frame)
     if IsValid(frame.globalButton) then
-        local text = rRadio.config.Lang["Global"] or "GLOBAL"
+        local text = rRadio.L("Global", "GLOBAL")
         frame.globalButton:SetText(text)
         frame.globalButton:SetFont(rRadio.interface.calculateFontSizeForGlobalButton(text, frame.globalButton:GetWide(), frame.globalButton:GetTall()))
     end
 
     if IsValid(frame.stopButton) then
-        local text = rRadio.config.Lang["StopRadio"] or "STOP"
+        local text = rRadio.L("StopRadio", "STOP")
         frame.stopButton:SetText(text)
         frame.stopButton:SetFont(rRadio.interface.calculateFontSizeForStopButton(text, frame.stopButton:GetWide(), frame.stopButton:GetTall()))
     end
@@ -289,6 +290,9 @@ local function layoutRadioFrame(frame)
     if IsValid(uiState.settingsFrame) then
         uiState.settingsFrame:SetSize(frameW - Scale(20), frameH - Scale(50) - Scale(10))
         uiState.settingsFrame:SetPos(Scale(10), Scale(50))
+        if isfunction(uiState.settingsFrame.LayoutFooter) then
+            uiState.settingsFrame:LayoutFooter()
+        end
     end
 
     updateSizedButtonFonts(frame)
@@ -402,8 +406,11 @@ local function createResizeHandle(frame, resizeKey, cursor, mode)
     handle:SetCursor(cursor)
     handle:SetDrawBackground(false)
     handle.Paint = function(self, w, h)
-        if not (self:IsHovered() or frame.resizeState) then return end
-        local shade = ColorAlpha(rRadio.config.UI.TextColor, 35)
+        local active = frame.resizeState and frame.resizeState.resizeKey == resizeKey
+        local subtle = mode == "horizontal"
+        if not (self:IsHovered() or active or subtle) then return end
+        local alpha = (self:IsHovered() or active) and 35 or 12
+        local shade = ColorAlpha(rRadio.config.UI.TextColor, alpha)
         draw.RoundedBox(4, 0, 0, w, h, shade)
     end
     handle.OnMousePressed = function(_, code)
@@ -505,7 +512,7 @@ local function createSearchBox(parent, width, onChange)
     searchBox:SetPos(Scale(10), Scale(50))
     searchBox:SetSize(width, Scale(30))
     searchBox:SetFont("rRadio.Roboto5")
-    searchBox:SetPlaceholderText(rRadio.config.Lang["SearchPlaceholder"] or "Search")
+    searchBox:SetPlaceholderText(rRadio.L("SearchPlaceholder", "Search"))
     searchBox:SetDrawBackground(false)
     searchBox:SetTextColor(rRadio.config.UI.TextColor)
     searchBox.Paint = function(self, w, h)
@@ -524,7 +531,7 @@ end
 local function createGlobalButton(parent, searchBox, width)
     local margin = Scale(5)
     local height = Scale(30)
-    local text = rRadio.config.Lang["Global"] or "GLOBAL"
+    local text = rRadio.L("Global", "GLOBAL")
     local font = rRadio.interface.calculateFontSizeForGlobalButton(text, width, height)
     local btn = vgui.Create("DButton", parent)
     btn:SetText(text)
@@ -633,7 +640,7 @@ end
 local function createStopButton(frame, stationListPanel, backButton, searchBox)
     local height = Scale(rRadio.config.UI.FrameSize.width) / 8
     local width = Scale(rRadio.config.UI.FrameSize.width) / 4
-    local text = rRadio.config.Lang["StopRadio"] or "STOP"
+    local text = rRadio.L("StopRadio", "STOP")
     local font = rRadio.interface.calculateFontSizeForStopButton(text, width, height)
     local btn = vgui.Create("rRadioAnimatedButton", frame)
     btn:SetPos(Scale(10), frame:GetTall() - Scale(90))
@@ -765,7 +772,7 @@ local function toggleGlobalView(searchBox)
         }
 
         uiState.globalView = true
-        uiState.selectedCountry = rRadio.config.Lang["Global"] or "global"
+        uiState.selectedCountry = rRadio.L("Global", "global")
         uiState.favoritesMenuOpen = false
         uiState.settingsMenuOpen = false
         searchBox:SetText("")

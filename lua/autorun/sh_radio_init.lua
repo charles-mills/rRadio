@@ -40,7 +40,7 @@ local DEV_WORKSHOP_ID = "3465709662"
 local PUBLIC_WORKSHOP_ID = "3318060741"
 local CLIENT_DISTRIBUTION_DIRS = {"rradio/shared", "rradio/client", "rradio/client/core", "rradio/client/interface", "rradio/client/interface/components", "rradio/client/lang", "rradio/client/data/langpacks", "rradio/client/data/stationpacks", "entities/rammel_base_boombox", "entities/rammel_boombox", "entities/rammel_boombox_gold"}
 local SERVER_MODULES = {"rradio/shared/sh_config.lua", "rradio/shared/sh_utils.lua", "rradio/server/sv_utils.lua", "rradio/server/sv_core.lua", "rradio/server/sv_db.lua", "rradio/server/sv_permanent.lua", "rradio/server/sv_blogs.lua"}
-local CLIENT_BOOTSTRAP_FILES = {"shared/sh_config.lua", "shared/sh_utils.lua", "client/interface/cl_themes.lua", "client/lang/cl_language_manager.lua", "client/lang/cl_localisation_strings.lua"}
+local CLIENT_BOOTSTRAP_FILES = {"shared/sh_config.lua", "shared/sh_utils.lua", "client/interface/cl_themes.lua", "client/lang/cl_language_manager.lua"}
 local CLIENT_COMPONENT_FILES = {"client/interface/components/star.lua", "client/interface/components/button.lua", "client/interface/components/nav_button.lua", "client/interface/components/animated_button.lua", "client/interface/components/checkbox.lua", "client/interface/components/dropdown.lua", "client/interface/components/header.lua", "client/interface/components/icon_button.lua", "client/interface/components/separator.lua"}
 local CLIENT_PRE_COMPONENT_FILES = {"client/core/cl_utils.lua"}
 local CLIENT_POST_COMPONENT_FILES = {"client/core/cl_state.lua", "client/core/cl_station_data.lua", "client/core/cl_networking.lua", "client/core/cl_playback.lua", "client/interface/cl_ui_components.lua", "client/interface/cl_ui_settings.lua", "client/interface/cl_ui_menu.lua", "client/core/cl_hooks.lua", "client/core/cl_commands.lua", "client/interface/cl_tool_menu.lua"}
@@ -56,13 +56,16 @@ function rRadio.addClConVars()
     end
 
     if SERVER then return false end
+    local menuScaleConfig = rRadio.config.MenuScale or {}
+    local defaultMenuScale = tostring(menuScaleConfig.Default or 1.00)
+    local defaultMenuWidthScale = tostring(menuScaleConfig.WidthDefault or 1.00)
     CreateClientConVar("rammel_rradio_vehicle_animation", rRadio.config.AnimationDefaultOn and "1" or "0", true, false, "Toggle the animation upon entering a vehicle.")
     CreateClientConVar("rammel_rradio_boombox_hud", "1", true, false, "Show or hide the HUD for the boombox.")
     CreateClientConVar("rammel_rradio_basic_hud", "0", true, false, "Use the simplified boombox HUD.")
     CreateClientConVar("rammel_rradio_menu_key", "21", true, false, "Select the key to open the car radio menu.")
     CreateClientConVar("rammel_rradio_menu_theme", "dark", true, false, "Set the theme for the radio.")
-    CreateClientConVar("rammel_rradio_menu_scale", "1.00", true, false, "Scale factor for the rRadio menu size (0.75-2.00).")
-    CreateClientConVar("rammel_rradio_menu_width_scale", "1.00", true, false, "Horizontal scale factor for the rRadio menu width (0.80-2.20).")
+    CreateClientConVar("rammel_rradio_menu_scale", defaultMenuScale, true, false, "Scale factor for the rRadio menu size.")
+    CreateClientConVar("rammel_rradio_menu_width_scale", defaultMenuWidthScale, true, false, "Horizontal scale factor for the rRadio menu width.")
     CreateClientConVar("rammel_rradio_enabled", "1", true, false, "Enable or disable rRadio.")
     CreateClientConVar("rammel_rradio_max_volume", "1.0", true, false, "Maximum global radio volume (0.0-1.0)")
     return true

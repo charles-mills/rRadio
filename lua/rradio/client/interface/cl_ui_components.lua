@@ -62,10 +62,7 @@ end
 
 function rRadio.cl.uiComponents.createPlayableStationButton(parent, station, displayText, updateList)
     local btn = vgui.Create("rRadioButton", parent)
-    local baseMax = rRadio.config.MaxNameChars or 40
-    local includesPrefix = displayText ~= station.name
-    local displayLimit = includesPrefix and (baseMax + 16) or baseMax
-    btn:SetTextLabel(rRadio.interface.TruncateCharsWithEllipsis(displayText, displayLimit))
+    btn:SetTextLabel(displayText)
     local star = createButtonStar(btn, updateList, rRadio.interface.favoriteStations, station.countryKey, station.name)
     btn:SetLeftChild(star)
     btn.DoClick = function()
@@ -106,7 +103,7 @@ function rRadio.cl.uiComponents.populateFavorites(panel, updateList)
     if not hasFavoriteStations() then return items end
     items[#items + 1] = vgui.Create("rRadioSeparator", panel)
     local favBtn = vgui.Create("rRadioButton", panel)
-    favBtn:SetTextLabel(rRadio.config.Lang["FavoriteStations"] or "Favorite Stations")
+    favBtn:SetTextLabel(rRadio.L("FavoriteStations", "Favorite Stations"))
     favBtn:DockMargin(Scale(5), Scale(5), Scale(5), Scale(5))
     local headerIcon = createButtonStar(favBtn, updateList)
     headerIcon.Paint = function(self, w, h)
