@@ -1,5 +1,4 @@
-local LANG = {}
-
+﻿local LANG = {}
 local TRANSLATIONS = {
     en = {
         ["BasicBoomboxHUD"] = "Basic Boombox HUD",
@@ -1003,20 +1002,20 @@ local THEME_TRANSLATIONS = {
 
 local function applyTranslationFallbacks()
     local english = TRANSLATIONS.en or {}
-    for langCode, _ in pairs(THEME_TRANSLATIONS) do
+    for langCode, _ in pairs( THEME_TRANSLATIONS ) do
         LANG[langCode] = {}
         local source = TRANSLATIONS[langCode] or {}
-        for key, value in pairs(english) do
+        for key, value in pairs( english ) do
             LANG[langCode][key] = source[key] or value
         end
     end
 end
 
 local function applyThemeTranslations()
-    for langCode, translations in pairs(THEME_TRANSLATIONS) do
+    for langCode, translations in pairs( THEME_TRANSLATIONS ) do
         local langTable = LANG[langCode]
         if langTable then
-            for themeName, label in pairs(translations) do
+            for themeName, label in pairs( translations ) do
                 langTable[themeName] = label
             end
         end
@@ -1025,22 +1024,20 @@ end
 
 applyTranslationFallbacks()
 applyThemeTranslations()
-
-LANG.GetTranslation = function(langCode, key, fallbackLang)
+LANG.GetTranslation = function( langCode, key, fallbackLang )
     fallbackLang = fallbackLang or "en"
     if LANG[langCode] and LANG[langCode][key] then return LANG[langCode][key] end
     if LANG[fallbackLang] and LANG[fallbackLang][key] then return LANG[fallbackLang][key] end
     return key
 end
 
-LANG.FormatTranslation = function(langCode, key, replacements, fallbackLang)
-    local translation = LANG.GetTranslation(langCode, key, fallbackLang)
+LANG.FormatTranslation = function( langCode, key, replacements, fallbackLang )
+    local translation = LANG.GetTranslation( langCode, key, fallbackLang )
     if replacements then
-        for placeholder, value in pairs(replacements) do
-            translation = string.gsub(translation, "{" .. placeholder .. "}", tostring(value))
+        for placeholder, value in pairs( replacements ) do
+            translation = string.gsub( translation, "{" .. placeholder .. "}", tostring( value ) )
         end
     end
     return translation
 end
-
 return LANG

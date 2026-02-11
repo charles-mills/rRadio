@@ -78,7 +78,8 @@ rRadio.config.MenuScale = {
     Default = 1.00,
     WidthDefault = 1.00
 }
-rRadio.config.VehicleClassOverides = {"lvs_", "ses_", "sw_", "drs_"}
+
+rRadio.config.VehicleClassOverides = { "lvs_", "ses_", "sw_", "drs_" }
 --[[ ! Internal settings ! ]]
 rRadio.config.RadioStations = rRadio.config.RadioStations or {}
 rRadio.config.Lang = rRadio.config.Lang or {}
@@ -91,11 +92,11 @@ rRadio.status = {
 }
 
 local DEFAULT_UI = {
-    BackgroundColor = Color(0, 0, 0, 255),
-    AccentPrimary = Color(58, 114, 255),
-    Highlight = Color(58, 114, 255),
-    TextColor = Color(255, 255, 255, 255),
-    Disabled = Color(180, 180, 180, 255)
+    BackgroundColor = Color( 0, 0, 0, 255 ),
+    AccentPrimary = Color( 58, 114, 255 ),
+    Highlight = Color( 58, 114, 255 ),
+    TextColor = Color( 255, 255, 255, 255 ),
+    Disabled = Color( 180, 180, 180, 255 )
 }
 
 rRadio.config.UI = rRadio.config.UI or DEFAULT_UI
