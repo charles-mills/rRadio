@@ -2,25 +2,17 @@
 rRadio.sv = rRadio.sv or {}
 rRadio.sv.db = rRadio.sv.db or {}
 local db = rRadio.sv.db
-function db.Escape(value)
-    return sql.SQLStr(value)
-end
-
-function db.Query(q)
-    local result = sql.Query(q)
+function db.Query( q )
+    local result = sql.Query( q )
     if result == false then
         local err = sql.LastError() or "unknown"
-        rRadio.logger.ErrorScope("db", "SQL error:", err, "-- Query:", q)
+        rRadio.logger.ErrorScope( "db", "SQL error:", err, "-- Query:", q )
     end
     return result
 end
 
-function db.TableExists(name)
-    return sql.TableExists(name)
-end
-
 function db.EnsurePermanentTable()
-    if not db.TableExists("permanent_boomboxes") then
+    if not sql.TableExists( "permanent_boomboxes" ) then
         local query = [[
 CREATE TABLE permanent_boomboxes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -38,14 +30,14 @@ CREATE TABLE permanent_boomboxes (
     volume REAL NOT NULL,
     UNIQUE(map, permanent_id)
 );]]
-        db.Query(query)
+        db.Query( query )
         return
     end
 
     local columnCheckQuery = "PRAGMA table_info(permanent_boomboxes);"
-    local columns = db.Query(columnCheckQuery) or {}
+    local columns = db.Query( columnCheckQuery ) or {}
     local mapColumnExists = false
-    for _, column in ipairs(columns) do
+    for _, column in ipairs( columns ) do
         if column.name == "map" then
             mapColumnExists = true
             break
@@ -54,7 +46,7 @@ CREATE TABLE permanent_boomboxes (
 
     if not mapColumnExists then
         local alterTableQuery = "ALTER TABLE permanent_boomboxes ADD COLUMN map TEXT NOT NULL DEFAULT '';"
-        db.Query(alterTableQuery)
+        db.Query( alterTableQuery )
     end
 end
 return db

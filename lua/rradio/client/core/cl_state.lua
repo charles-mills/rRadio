@@ -10,6 +10,7 @@ rRadio.cl.entityVolumes = rRadio.cl.entityVolumes or {}
 rRadio.cl.currentlyPlayingStations = rRadio.cl.currentlyPlayingStations or {}
 rRadio.cl.stationLastPos = rRadio.cl.stationLastPos or {}
 rRadio.cl.errorTimestamps = rRadio.cl.errorTimestamps or {}
+rRadio.cl.mutedBoomboxes = rRadio.cl.mutedBoomboxes or {}
 rRadio.cl.uiState = {
     currentFrame = nil,
     settingsFrame = nil,
@@ -40,29 +41,60 @@ rRadio.cl.performance = {
     activeStationCount = 0
 }
 
+function rRadio.cl.cleanupEntity( ent, entIndex )
+    if rRadio.cl.radioSources[ent] then
+        if IsValid( rRadio.cl.radioSources[ent] ) then rRadio.cl.radioSources[ent]:Stop() end
+        rRadio.cl.radioSources[ent] = nil
+    end
+
+    rRadio.cl.currentlyPlayingStations[ent] = nil
+    rRadio.cl.queuedStations[ent] = nil
+    rRadio.cl.stationLastPos[ent] = nil
+    rRadio.cl.playbackNonce[ent] = nil
+    rRadio.cl.errorTimestamps[ent] = nil
+    rRadio.cl.entityVolumes[ent] = nil
+    rRadio.cl.connectedStations[ent] = nil
+    rRadio.cl.requestedStations[ent] = nil
+    rRadio.cl.mutedBoomboxes[ent] = nil
+    if rRadio.interface and rRadio.interface.ClearTrackedVolume then
+        rRadio.interface.ClearTrackedVolume( ent )
+    end
+    if entIndex == nil and ent and ent.EntIndex then entIndex = ent:EntIndex() end
+    if entIndex then
+        rRadio.cl.boomboxStatuses[entIndex] = nil
+        timer.Remove( "rRadio.ErrorClear_" .. entIndex )
+        timer.Remove( "rRadio.TuningTimeout_" .. entIndex )
+    end
+    if IsValid( ent ) and rRadio.utils.IsBoombox( ent ) then rRadio.utils.ClearRadioStatus( ent ) end
+end
+
 rRadio.cl.pendingVolume = nil
 rRadio.cl.pendingEntity = nil
 rRadio.cl.MAX_SEARCH_RESULTS = 150
-rRadio.cl.Scale = rRadio.interface.scale
+rRadio.cl.Scale = rRadio.interface.scaleMenu
 rRadio.cl.cvars = {
-    enabled = GetConVar("rammel_rradio_enabled"),
-    maxVolume = GetConVar("rammel_rradio_max_volume"),
-    menuKey = GetConVar("rammel_rradio_menu_key")
+    enabled = GetConVar( "rammel_rradio_enabled" ),
+    maxVolume = GetConVar( "rammel_rradio_max_volume" ),
+    menuKey = GetConVar( "rammel_rradio_menu_key" ),
+    menuScale = GetConVar( "rammel_rradio_menu_scale" ),
+    menuWidthScale = GetConVar( "rammel_rradio_menu_width_scale" )
 }
 
+rRadio.cl.menuScale = rRadio.cl.cvars.menuScale and rRadio.cl.cvars.menuScale:GetFloat() or 1
+rRadio.cl.menuWidthScale = rRadio.cl.cvars.menuWidthScale and rRadio.cl.cvars.menuWidthScale:GetFloat() or 1
 rRadio.cl.icons = {
     volume = {
-        MUTE = Material("hud/vol_mute.png", "smooth"),
-        LOW = Material("hud/vol_down.png", "smooth"),
-        HIGH = Material("hud/vol_up.png", "smooth")
+        MUTE = Material( "hud/vol_mute.png", "smooth" ),
+        LOW = Material( "hud/vol_down.png", "smooth" ),
+        HIGH = Material( "hud/vol_up.png", "smooth" )
     },
     star = {
-        FULL = Material("hud/star_full.png", "smooth"),
-        EMPTY = Material("hud/star.png", "smooth")
+        FULL = Material( "hud/star_full.png", "smooth" ),
+        EMPTY = Material( "hud/star.png", "smooth" )
     },
-    radio = Material("hud/radio.png", "smooth"),
-    settings = Material("hud/settings.png", "smooth"),
-    settings_b = Material("hud/settings_b.png", "smooth"),
-    globe = Material("hud/globe.png", "smooth"),
-    europe = Material("hud/europe.png", "smooth")
+    radio = Material( "hud/radio.png", "smooth" ),
+    settings = Material( "hud/settings.png", "smooth" ),
+    settings_b = Material( "hud/settings_b.png", "smooth" ),
+    globe = Material( "hud/globe.png", "smooth" ),
+    europe = Material( "hud/europe.png", "smooth" )
 }
