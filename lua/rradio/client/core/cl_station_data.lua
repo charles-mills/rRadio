@@ -21,9 +21,8 @@ function rRadio.cl.loadStationData()
                         url = station.u,
                         country = baseCountry,
                         countryKey = baseCountry,
-                        nameLower = string.lower( station.n ),
-                        charMap = rRadio.interface.buildCharMap( station.n )
                     }
+                    rRadio.interface.ensureSearchFields( entry )
 
                     table.insert( rRadio.cl.stationData[baseCountry], entry )
                     rRadio.cl.allowedUrlSet[station.u] = true
@@ -43,8 +42,7 @@ function rRadio.cl.rebuildNameIndex()
     for country, list in pairs( rRadio.cl.stationData ) do
         for _, station in ipairs( list ) do
             station.countryKey = country
-            station.nameLower = station.nameLower or string.lower( station.name or "" )
-            station.charMap = station.charMap or rRadio.interface.buildCharMap( station.name or "" )
+            rRadio.interface.ensureSearchFields( station )
             table.insert( nameIndex, {
                 key = station.nameLower,
                 ref = station,

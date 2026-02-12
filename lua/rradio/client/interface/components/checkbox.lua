@@ -1,6 +1,25 @@
 ﻿do
     local PANEL = {}
     local Scale = rRadio.interface.scaleMenu
+    local function getSurfaceColor( tier, fallback )
+        if rRadio.interface.GetSurfaceColor then
+            local color = rRadio.interface.GetSurfaceColor( tier )
+            if color then return color end
+        end
+
+        return fallback
+    end
+
+    local function drawControlSurface( radius, w, h, fillColor )
+        if rRadio.interface.DrawBorderedRoundedBox then
+            rRadio.interface.DrawBorderedRoundedBox(
+                radius, 0, 0, w, h, fillColor
+            )
+            return
+        end
+
+        draw.RoundedBox( radius, 0, 0, w, h, fillColor )
+    end
     function PANEL:Init()
         self:SetTall( Scale( 40 ) )
         self:Dock( TOP )
@@ -9,7 +28,12 @@
         self.checkbox:SetPos( Scale( 10 ), ( self:GetTall() - Scale( 20 ) ) / 2 )
         self.checkbox:SetSize( Scale( 20 ), Scale( 20 ) )
         self.checkbox.Paint = function( _, w, h )
-            draw.RoundedBox( 4, 0, 0, w, h, rRadio.config.UI.SearchBoxColor )
+            drawControlSurface(
+                4,
+                w,
+                h,
+                getSurfaceColor( "panel", rRadio.config.UI.SearchBoxColor )
+            )
             if self.checkbox:GetChecked() then
                 surface.SetDrawColor( rRadio.config.UI.TextColor )
                 surface.DrawRect( Scale( 4 ), Scale( 4 ), w - Scale( 8 ), h - Scale( 8 ) )
@@ -49,7 +73,12 @@
     end
 
     function PANEL:Paint( w, h )
-        draw.RoundedBox( 8, 0, 0, w, h, rRadio.config.UI.ButtonColor )
+        drawControlSurface(
+            8,
+            w,
+            h,
+            getSurfaceColor( "card", rRadio.config.UI.ButtonColor )
+        )
     end
 
     vgui.Register( "rRadioCheckbox", PANEL, "DPanel" )

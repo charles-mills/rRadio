@@ -1,5 +1,5 @@
 ﻿rRadio.config = rRadio.config or {}
-rRadio.config.RadioVersion = "1.2.6"
+rRadio.config.RadioVersion = "1.2.7"
 --[[ ! Server settings ! ]]
 rRadio.config.EnableLogging = true -- enable bLogs integration
 rRadio.config.SecureStationLoad = false -- block playing stations not in the client's list
@@ -78,6 +78,10 @@ rRadio.config.VehicleRadio = {
 
 --[[ ! Additional settings ! ]]
 rRadio.config.MaxNameChars = 40 -- Truncate station names sent to the server to this length
+rRadio.config.FrameSize = {
+    width = 600,
+    height = 800
+}
 rRadio.config.MenuScale = {
     Min = 0.75,
     Max = 2.00,

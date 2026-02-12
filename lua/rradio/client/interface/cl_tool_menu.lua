@@ -33,8 +33,17 @@ local function createGeneralForm( panel )
         form:Help( opt.help )
     end
 
-    form:NumSlider( "Global Volume Cap", "rammel_rradio_max_volume", 0, 1, 2 )
-    form:Help( "Maximum global radio volume (0.0 - 1.0)." )
+    form:NumSlider(
+        rRadio.L( "MaxVolumeCap", "Global Volume Cap" ),
+        "rammel_rradio_max_volume",
+        0, 1, 2
+    )
+    form:Help(
+        rRadio.L(
+            "MaxVolumeCapHelp",
+            "Maximum global radio volume (0.0 - 1.0)."
+        )
+    )
 end
 
 local function createMenuForm( panel )

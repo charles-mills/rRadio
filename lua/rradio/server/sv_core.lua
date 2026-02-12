@@ -127,7 +127,7 @@ net.Receive( "rRadio.PlayStation", function( _len, ply )
     end
 
     lastGlobalAction = now
-    local ent = rRadio.sv.utils.GetVehicleEntity( net.ReadEntity() )
+    local ent = rRadio.utils.GetVehicleEntity( net.ReadEntity() )
     local station = net.ReadString()
     local stationURL = net.ReadString()
     local volume = net.ReadFloat()
@@ -249,88 +249,67 @@ hook.Add( "PlayerInitialSpawn", "rRadio.SendActiveRadiosOnJoin", function( ply )
         end
     end )
 end )
+local function SendCustomStations( target )
+    net.Start( "rRadio.CustomStationsUpdate" )
+    net.WriteTable( rRadio.sv.CustomStations:GetAll() )
+    if target then net.Send( target ) else net.Broadcast() end
+end
+
 hook.Add( "PlayerInitialSpawn", "rRadio.SendCustomStations", function( ply )
     timer.Simple( 1, function()
-        if IsValid( ply ) then
-            net.Start( "rRadio.CustomStationsUpdate" )
-            net.WriteTable( rRadio.sv.CustomStations:GetAll() )
-            net.Send( ply )
-        end
+        if IsValid( ply ) then SendCustomStations( ply ) end
     end )
 end )
 
-local function AddCustomStation( ply, name, url )
-    if not name or not url then
-        local usage = "!" .. rRadio.config.CommandAddStation .. " \"name\" \"url\""
-        if IsValid( ply ) then
-            ply:ChatPrint( "[rRadio] Invalid command format. Usage: " .. usage )
-        else
-            rRadio.logger.WarnScope( "commands", "Invalid command format. Usage:", usage )
-        end
-        return
+local function notifyPlayerOrConsole( ply, msg, level )
+    if IsValid( ply ) then
+        ply:ChatPrint( msg )
+    else
+        local logFn = level == "info" and rRadio.logger.InfoScope or rRadio.logger.WarnScope
+        logFn( "commands", msg )
     end
+end
 
+local function checkCustomStationPermission( ply )
     if IsValid( ply ) and not CAMI.PlayerHasAccess( ply, "rradio.AddCustomStation", nil ) then
         ply:ChatPrint( "[rRadio] You don't have permission." )
+        return false
+    end
+    return true
+end
+
+local function AddCustomStation( ply, name, url )
+    if not name or not url then
+        notifyPlayerOrConsole( ply, "[rRadio] Invalid command format. Usage: !" .. rRadio.config.CommandAddStation .. " \"name\" \"url\"" )
         return
     end
 
+    if not checkCustomStationPermission( ply ) then return end
+
     if not url:match( "^https?://" ) then
-        if IsValid( ply ) then
-            ply:ChatPrint( "[rRadio] Invalid URL." )
-        else
-            rRadio.logger.WarnScope( "commands", "Invalid URL." )
-        end
+        notifyPlayerOrConsole( ply, "[rRadio] Invalid URL." )
         return
     end
 
     rRadio.sv.CustomStations:Add( name, url )
-    local msg = string.format( "[rRadio] Added custom station '%s'.", name )
-    if IsValid( ply ) then
-        ply:ChatPrint( msg )
-    else
-        rRadio.logger.InfoScope( "commands", msg )
-    end
-
-    net.Start( "rRadio.CustomStationsUpdate" )
-    net.WriteTable( rRadio.sv.CustomStations:GetAll() )
-    net.Broadcast()
+    notifyPlayerOrConsole( ply, string.format( "[rRadio] Added custom station '%s'.", name ), "info" )
+    SendCustomStations()
 end
 
 local function RemoveCustomStation( ply, key )
     if not key then
-        local usage = "!" .. rRadio.config.CommandRemoveStation .. " \"key\""
-        if IsValid( ply ) then
-            ply:ChatPrint( "[rRadio] Invalid command format. Usage: " .. usage )
-        else
-            rRadio.logger.WarnScope( "commands", "Invalid command format. Usage:", usage )
-        end
+        notifyPlayerOrConsole( ply, "[rRadio] Invalid command format. Usage: !" .. rRadio.config.CommandRemoveStation .. " \"key\"" )
         return
     end
 
-    if IsValid( ply ) and not CAMI.PlayerHasAccess( ply, "rradio.AddCustomStation", nil ) then
-        ply:ChatPrint( "[rRadio] You don't have permission." )
-        return
-    end
+    if not checkCustomStationPermission( ply ) then return end
 
     local removed = rRadio.sv.CustomStations:Remove( key )
     if removed then
-        local msg = string.format( "[rRadio] Removed custom station '%s'.", key )
-        if IsValid( ply ) then
-            ply:ChatPrint( msg )
-        else
-            rRadio.logger.InfoScope( "commands", msg )
-        end
-
-        net.Start( "rRadio.CustomStationsUpdate" )
-        net.WriteTable( rRadio.sv.CustomStations:GetAll() )
-        net.Broadcast()
+        notifyPlayerOrConsole( ply, string.format( "[rRadio] Removed custom station '%s'.", key ), "info" )
+        SendCustomStations()
     else
-        if IsValid( ply ) then
-            ply:ChatPrint( "[rRadio] No matching station found for " .. key )
-        else
-            rRadio.logger.WarnScope( "commands", "No matching station found for", tostring( key ) )
-        end
+        notifyPlayerOrConsole( ply, "[rRadio] No matching station found for " .. key )
     end
 end
 

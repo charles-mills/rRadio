@@ -14,6 +14,64 @@ local cornerResizeKeys = {
     br = true
 }
 
+local function paintMainControl( w, h, fillColor )
+    if rRadio.interface.DrawBorderedRoundedBox then
+        rRadio.interface.DrawBorderedRoundedBox(
+            rRadio.interface.GetControlCornerRadius(),
+            0, 0, w, h, fillColor
+        )
+        return
+    end
+
+    draw.RoundedBox( 8, 0, 0, w, h, fillColor )
+end
+
+local function getSurfaceColor( tier, fallback )
+    if rRadio.interface.GetSurfaceColor then
+        local color = rRadio.interface.GetSurfaceColor( tier )
+        if color then return color end
+    end
+
+    return fallback
+end
+
+local function getSearchTextInset()
+    return math.max( 10, Scale( 12 ) )
+end
+
+local function setSearchBoxVisible( searchBox, visible )
+    if not IsValid( searchBox ) then return end
+    if IsValid( searchBox.shell ) then
+        searchBox.shell:SetVisible( visible )
+    end
+
+    searchBox:SetVisible( visible )
+end
+
+local function createTieredContainerPanel( parent )
+    local panel = vgui.Create( "DPanel", parent )
+    panel.Paint = function( _self, w, h )
+        paintMainControl(
+            w,
+            h,
+            getSurfaceColor( "panel", rRadio.config.UI.HeaderColor )
+        )
+    end
+    return panel
+end
+
+local function configureTieredScrollPanel( scrollPanel, canvasRightPadding )
+    if not IsValid( scrollPanel ) then return end
+    scrollPanel:Dock( FILL )
+    scrollPanel:DockMargin( Scale( 6 ), Scale( 6 ), Scale( 6 ), Scale( 6 ) )
+    scrollPanel:SetPaintBackground( false )
+    rRadio.interface.StyleVBar( scrollPanel:GetVBar() )
+    local canvas = scrollPanel:GetCanvas()
+    if IsValid( canvas ) and canvas.DockPadding then
+        canvas:DockPadding( 0, 0, canvasRightPadding or 0, Scale( 6 ) )
+    end
+end
+
 local function isCornerResizeKey( resizeKey )
     return cornerResizeKeys[resizeKey] == true
 end
@@ -98,13 +156,13 @@ local function getHeaderText()
 end
 
 local function getBaseFrameSize()
-    return rRadio.interface.scale( rRadio.config.UI.FrameSize.width ),
-        rRadio.interface.scale( rRadio.config.UI.FrameSize.height )
+    return rRadio.interface.scale( rRadio.config.FrameSize.width ),
+        rRadio.interface.scale( rRadio.config.FrameSize.height )
 end
 
 local function getScaledFrameSize()
-    local width = Scale( rRadio.config.UI.FrameSize.width ) * rRadio.interface.GetMenuWidthScale()
-    local height = Scale( rRadio.config.UI.FrameSize.height )
+    local width = Scale( rRadio.config.FrameSize.width ) * rRadio.interface.GetMenuWidthScale()
+    local height = Scale( rRadio.config.FrameSize.height )
     return width, height
 end
 
@@ -204,20 +262,47 @@ function rRadio.cl.openSettingsMenu( parentFrame, backButton, selectedTheme )
     )
     uiState.settingsFrame:SetPos( Scale( 10 ), Scale( 50 ) )
     uiState.settingsFrame.Paint = function( _self, w, h )
-        surface.SetDrawColor( rRadio.config.UI.BackgroundColor )
-        surface.DrawRect( 0, 0, w, h )
+        local frameSurface = getSurfaceColor(
+            "frame",
+            rRadio.config.UI.BackgroundColor
+        )
+        local bodyHeight = h
+        if IsValid( _self.footer ) then
+            bodyHeight = math.max(
+                Scale( 40 ),
+                _self.footer:GetY()
+            )
+        end
+
+        bodyHeight = math.Clamp( bodyHeight, 0, h )
+        if bodyHeight >= h - 1 then
+            draw.RoundedBox( 10, 0, 0, w, h, frameSurface )
+            return
+        end
+
+        draw.RoundedBoxEx(
+            10, 0, 0, w, bodyHeight,
+            frameSurface,
+            true, true, false, false
+        )
     end
 
-    local scrollPanel = vgui.Create( "DScrollPanel", uiState.settingsFrame )
-    scrollPanel:Dock( FILL )
-    scrollPanel:DockMargin( Scale( 5 ), Scale( 5 ), Scale( 5 ), Scale( 5 ) )
-    rRadio.interface.StyleVBar( scrollPanel:GetVBar() )
+    rRadio.cl.settingsUI.buildFooter( uiState.settingsFrame )
+    local contentPanel = createTieredContainerPanel( uiState.settingsFrame )
+    uiState.settingsFrame.settingsContentPanel = contentPanel
+    contentPanel:Dock( FILL )
+    contentPanel:DockMargin( 0, Scale( 8 ), 0, Scale( 8 ) )
+
+    local scrollPanel = vgui.Create( "DScrollPanel", contentPanel )
+    uiState.settingsFrame.settingsScrollPanel = scrollPanel
+    configureTieredScrollPanel( scrollPanel, Scale( 14 ) )
     rRadio.cl.settingsUI.addThemeSelector( scrollPanel, parentFrame, backButton, selectedTheme )
     rRadio.cl.settingsUI.addKeyBindSelector( scrollPanel )
     rRadio.cl.settingsUI.addMenuScaleOptions( scrollPanel, parentFrame )
+    rRadio.cl.settingsUI.addAudioOptions( scrollPanel )
     rRadio.cl.settingsUI.addGeneralOptions( scrollPanel )
     rRadio.cl.settingsUI.addSuperadminOptions( scrollPanel, LocalPlayer().currentRadioEntity )
-    rRadio.cl.settingsUI.buildFooter( uiState.settingsFrame )
+    if isfunction( uiState.settingsFrame.LayoutFooter ) then uiState.settingsFrame:LayoutFooter() end
 end
 
 local function refreshScaledMenuContent( frame )
@@ -331,11 +416,21 @@ local function layoutRadioFrame( frame )
     local listY = Scale( 90 )
     local listHeight = frameH - Scale( 200 )
     local stopY = frameH - Scale( 90 )
-    local stopWidth = Scale( rRadio.config.UI.FrameSize.width ) / 4
-    local stopHeight = Scale( rRadio.config.UI.FrameSize.width ) / 8
+    local stopWidth = Scale( rRadio.config.FrameSize.width ) / 4
+    local stopHeight = Scale( rRadio.config.FrameSize.width ) / 8
     if IsValid( frame.searchBox ) then
-        frame.searchBox:SetPos( searchX, searchY )
-        frame.searchBox:SetSize( searchWidth, Scale( 30 ) )
+        if IsValid( frame.searchBox.shell ) then
+            frame.searchBox.shell:SetPos( searchX, searchY )
+            frame.searchBox.shell:SetSize( searchWidth, Scale( 30 ) )
+            frame.searchBox:DockMargin( getSearchTextInset(), 0, Scale( 6 ), 0 )
+        else
+            frame.searchBox:SetPos( searchX, searchY )
+            frame.searchBox:SetSize( searchWidth, Scale( 30 ) )
+            if frame.searchBox.SetTextInset then
+                frame.searchBox:SetTextInset( getSearchTextInset(), 0 )
+            end
+        end
+
         frame.searchBox:SetFont( "rRadio.Roboto5" )
     end
 
@@ -344,9 +439,16 @@ local function layoutRadioFrame( frame )
         frame.globalButton:SetSize( globalWidth, Scale( 30 ) )
     end
 
+    if IsValid( frame.stationListContainer ) then
+        frame.stationListContainer:SetPos( Scale( 10 ), listY )
+        frame.stationListContainer:SetSize( frameW - Scale( 20 ), listHeight )
+    end
+
     if IsValid( frame.stationListPanel ) then
-        frame.stationListPanel:SetPos( Scale( 5 ), listY )
-        frame.stationListPanel:SetSize( frameW - Scale( 20 ), listHeight )
+        if frame.stationListPanel.DockMargin then
+            frame.stationListPanel:DockMargin( Scale( 6 ), Scale( 6 ), Scale( 6 ), Scale( 6 ) )
+        end
+
         rRadio.interface.StyleVBar( frame.stationListPanel:GetVBar() )
     end
 
@@ -607,7 +709,10 @@ local function createRadioFrame()
     end
 
     frame.Paint = function( _self, w, h )
-        draw.RoundedBox( 8, 0, 0, w, h, rRadio.config.UI.BackgroundColor )
+        draw.RoundedBox(
+            8, 0, 0, w, h,
+            getSurfaceColor( "frame", rRadio.config.UI.BackgroundColor )
+        )
         draw.RoundedBoxEx(
             8, 0, 0, w, Scale( 40 ),
             rRadio.config.UI.HeaderColor,
@@ -633,38 +738,42 @@ local function createRadioFrame()
 end
 
 local function createStationListPanel( frame )
-    local panel = vgui.Create( "DScrollPanel", frame )
-    panel:SetPos( Scale( 5 ), Scale( 90 ) )
-    panel:SetSize( frame:GetWide() - Scale( 20 ), frame:GetTall() - Scale( 200 ) )
-    panel:SetVisible( not uiState.settingsMenuOpen )
-    rRadio.interface.StyleVBar( panel:GetVBar() )
+    local container = createTieredContainerPanel( frame )
+    container:SetPos( Scale( 10 ), Scale( 90 ) )
+    container:SetSize( frame:GetWide() - Scale( 20 ), frame:GetTall() - Scale( 200 ) )
+    container:SetVisible( not uiState.settingsMenuOpen )
+
+    local panel = vgui.Create( "DScrollPanel", container )
+    configureTieredScrollPanel( panel, 0 )
+    panel.container = container
     return panel
 end
 
 local function createSearchBox( parent, width, onChange )
-    local searchBox = vgui.Create( "DTextEntry", parent )
-    searchBox:SetPos( Scale( 10 ), Scale( 50 ) )
-    searchBox:SetSize( width, Scale( 30 ) )
+    local shell = vgui.Create( "DPanel", parent )
+    shell:SetPos( Scale( 10 ), Scale( 50 ) )
+    shell:SetSize( width, Scale( 30 ) )
+    shell.Paint = function( _self, w, h )
+        paintMainControl( w, h, rRadio.config.UI.SearchBoxColor )
+    end
+
+    local searchBox = vgui.Create( "DTextEntry", shell )
+    searchBox:Dock( FILL )
+    searchBox:DockMargin( getSearchTextInset(), 0, Scale( 6 ), 0 )
     searchBox:SetFont( "rRadio.Roboto5" )
     searchBox:SetPlaceholderText( rRadio.L( "SearchPlaceholder", "Search" ) )
     searchBox:SetPaintBackground( false )
+    searchBox:SetDrawBorder( false )
     searchBox:SetTextColor( rRadio.config.UI.TextColor )
-    searchBox.Paint = function( self, w, h )
-        draw.RoundedBox( 6, 0, 0, w, h, rRadio.config.UI.SearchBoxColor )
-        self:DrawTextEntryText( rRadio.config.UI.TextColor, Color( 120, 120, 120 ), rRadio.config.UI.TextColor )
-        if self:GetText() == "" then
-            draw.SimpleText(
-                self:GetPlaceholderText(), self:GetFont(),
-                Scale( 5 ), h / 2, rRadio.config.UI.TextColor,
-                TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER
-            )
-        end
-    end
+    searchBox:SetCursorColor( rRadio.config.UI.TextColor )
+    searchBox:SetHighlightColor( Color( 120, 120, 120 ) )
+    searchBox:SetPlaceholderColor( ColorAlpha( rRadio.config.UI.TextColor, 150 ) )
 
     searchBox.OnGetFocus = function() uiState.isSearching = true end
     searchBox.OnLoseFocus = function() uiState.isSearching = false end
     searchBox.OnValueChange = function() onChange() end
     searchBox.OnChange = searchBox.OnValueChange
+    searchBox.shell = shell
     return searchBox
 end
 
@@ -674,10 +783,11 @@ local function createGlobalButton( parent, searchBox, width )
     local text = rRadio.L( "Global", "GLOBAL" )
     local font = rRadio.interface.calculateFontSizeForGlobalButton( text, width, height )
     local btn = vgui.Create( "DButton", parent )
+    local anchor = IsValid( searchBox.shell ) and searchBox.shell or searchBox
     btn:SetText( text )
     btn:SetFont( font )
     btn:SetTextColor( rRadio.config.UI.TextColor )
-    btn:SetPos( searchBox:GetX() + searchBox:GetWide() + margin, searchBox:GetY() )
+    btn:SetPos( anchor:GetX() + anchor:GetWide() + margin, anchor:GetY() )
     btn:SetSize( width, height )
     btn.lerp = 0
     btn.Think = function( self )
@@ -690,7 +800,7 @@ local function createGlobalButton( parent, searchBox, width )
             self.lerp, rRadio.config.UI.ButtonColor,
             rRadio.config.UI.ButtonHoverColor
         )
-        draw.RoundedBox( 6, 0, 0, w, h, col )
+        paintMainControl( w, h, col )
     end
     return btn
 end
@@ -719,7 +829,7 @@ local function createSearchControls( frame, stationListPanel )
         function() queueSearchRefresh( stationListPanel, searchBox ) end
     )
     local globalBtn = createGlobalButton( frame, searchBox, btnWidth )
-    searchBox:SetVisible( not uiState.settingsMenuOpen )
+    setSearchBoxVisible( searchBox, not uiState.settingsMenuOpen )
     uiState.searchBox = searchBox
     return searchBox, globalBtn
 end
@@ -754,8 +864,9 @@ local function createNavigationButtons( frame, stationListPanel, searchBox )
         uiState.settingsMenuOpen = true
         rRadio.cl.openSettingsMenu( frame, buttons.back, nil )
         setButtonState( buttons.back, true )
-        searchBox:SetVisible( false )
+        setSearchBoxVisible( searchBox, false )
         stationListPanel:SetVisible( false )
+        if IsValid( stationListPanel.container ) then stationListPanel.container:SetVisible( false ) end
     end ) )
 
     xPos = xPos - buttonSize - buttonPadding
@@ -767,8 +878,9 @@ local function createNavigationButtons( frame, stationListPanel, searchBox )
                 uiState.settingsFrame = nil
             end
 
-            if IsValid( searchBox ) then searchBox:SetVisible( true ) end
+            if IsValid( searchBox ) then setSearchBoxVisible( searchBox, true ) end
             stationListPanel:SetVisible( true )
+            if IsValid( stationListPanel.container ) then stationListPanel.container:SetVisible( true ) end
         else
             uiState.globalView = false
             uiState.lastView = nil
@@ -787,8 +899,8 @@ local function createNavigationButtons( frame, stationListPanel, searchBox )
 end
 
 local function createStopButton( frame, stationListPanel, backButton, searchBox )
-    local height = Scale( rRadio.config.UI.FrameSize.width ) / 8
-    local width = Scale( rRadio.config.UI.FrameSize.width ) / 4
+    local height = Scale( rRadio.config.FrameSize.width ) / 8
+    local width = Scale( rRadio.config.FrameSize.width ) / 4
     local text = rRadio.L( "StopRadio", "STOP" )
     local font = rRadio.interface.calculateFontSizeForStopButton( text, width, height )
     local btn = vgui.Create( "rRadioAnimatedButton", frame )
@@ -823,7 +935,7 @@ local function createVolumeControls( frame, stopButton )
     panel:SetPos( Scale( 20 ) + stopButtonWidth, frame:GetTall() - Scale( 90 ) )
     panel:SetSize( frame:GetWide() - Scale( 30 ) - stopButtonWidth, stopButtonHeight )
     panel.Paint = function( _self, w, h )
-        draw.RoundedBox( 8, 0, 0, w, h, rRadio.config.UI.CloseButtonColor )
+        paintMainControl( w, h, rRadio.config.UI.CloseButtonColor )
     end
     local iconSize = Scale( 50 )
     local icon = vgui.Create( "DImage", panel )
@@ -851,7 +963,7 @@ local function createVolumeControls( frame, stopButton )
         currentVolume = 0.5
     end
 
-    rRadio.cl.updateVolumeIcon( icon, currentVolume )
+    rRadio.cl.updateVolumeIcon( icon, rRadio.interface.ClampVolume( currentVolume ) )
     local slider = vgui.Create( "DNumSlider", panel )
     slider:SetText( "" )
     slider:SetMin( 0 )
@@ -865,34 +977,18 @@ local function createVolumeControls( frame, stopButton )
         slider.Label:SetWide( 0 )
     end
 
-    slider.Slider.Paint = function( self, w, h )
-        local trackHeight = math.max( Scale( 4 ), math.floor( h * 0.26 ) )
-        local y = math.floor( ( h - trackHeight ) / 2 )
-        local knobInset = 0
-        if IsValid( self.Knob ) then knobInset = math.floor( self.Knob:GetWide() * 0.5 ) end
-        local trackW = math.max( Scale( 10 ), w - knobInset * 2 )
-        draw.RoundedBox(
-            math.floor( trackHeight / 2 ), knobInset, y,
-            trackW, trackHeight, rRadio.config.UI.TextColor
-        )
-    end
-
-    slider.Slider.Knob.Paint = function( _self, w, h )
-        draw.RoundedBox(
-            math.floor( math.min( w, h ) / 2 ),
-            0, 0, w, h, rRadio.config.UI.BackgroundColor
-        )
-    end
+    rRadio.interface.styleSliderPaint( slider, 0.26 )
     slider.OnValueChanged = function( _self, value )
         if not IsValid( entity ) then return end
         local ent = entity
         if not rRadio.utils.IsBoombox( ent ) then ent = rRadio.utils.GetVehicle( ent ) end
+        if not IsValid( ent ) then return end
         local maxVol = rRadio.config.MaxVolume or 1.0
         value = math.min( value, maxVol )
         rRadio.cl.entityVolumes[ent] = value
-        local src = rRadio.cl.radioSources[ent]
-        if src and IsValid( src ) then src:SetVolume( value ) end
-        rRadio.cl.updateVolumeIcon( icon, value )
+        rRadio.interface.refreshVolume( ent )
+        rRadio.cl.updateVolumeIcon( icon, rRadio.interface.ClampVolume( value ) )
+        if rRadio.cl.performance then rRadio.cl.performance.volumeChanged = true end
         rRadio.cl.pendingVolume = value
         rRadio.cl.pendingEntity = ent
     end
@@ -992,6 +1088,7 @@ function rRadio.cl.openRadioMenu( openSettings, opts )
     frame.settingsButton = buttons.settings
     frame.backButton = buttons.back
     frame.stopButton = stopButton
+    frame.stationListContainer = stationListPanel.container
     frame.stationListPanel = stationListPanel
     frame.searchBox = searchBox
     frame.globalButton = globalBtn

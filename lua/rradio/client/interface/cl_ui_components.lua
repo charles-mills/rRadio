@@ -12,8 +12,7 @@ local function getCountrySearchList( country )
     local list = {}
     for _, st in ipairs( source ) do
         if st and st.name then
-            st.nameLower = st.nameLower or string.lower( st.name )
-            st.charMap = st.charMap or rRadio.interface.buildCharMap( st.name )
+            rRadio.interface.ensureSearchFields( st )
             list[#list + 1] = {
                 station = st,
                 searchText = st.name,
@@ -87,7 +86,9 @@ function rRadio.cl.uiComponents.createPlayableStationButton( parent, station, di
         if updateList then updateList() end
     end
 
+    local oldThink = btn.Think
     btn.Think = function( self )
+        if oldThink then oldThink( self ) end
         local ent = LocalPlayer().currentRadioEntity
         local playing = rRadio.cl.currentlyPlayingStations[ent]
         local on = IsValid( ent ) and playing

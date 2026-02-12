@@ -4,7 +4,7 @@ rRadio.cl.networkHandlers["rRadio.SetRadioVolume"] = function()
     local ent = net.ReadEntity()
     local vol = net.ReadFloat()
     if not IsValid( ent ) then return end
-    local actual = rRadio.interface.GetVehicleEntity( ent ) or ent
+    local actual = rRadio.utils.GetVehicleEntity( ent ) or ent
     rRadio.cl.entityVolumes[ent] = vol
     rRadio.cl.entityVolumes[actual] = vol
     local patch = rRadio.cl.radioSources[actual]
@@ -66,14 +66,14 @@ rRadio.cl.networkHandlers["rRadio.CustomStationsUpdate"] = function()
     rRadio.cl.stationData[cat] = {}
     for _, st in ipairs( list ) do
         if type( st ) == "table" and type( st.name ) == "string" and type( st.url ) == "string" then
-            table.insert( rRadio.cl.stationData[cat], {
+            local entry = {
                 name = st.name,
                 url = st.url,
                 country = cat,
                 countryKey = cat,
-                nameLower = string.lower( st.name ),
-                charMap = rRadio.interface.buildCharMap( st.name )
-            } )
+            }
+            rRadio.interface.ensureSearchFields( entry )
+            table.insert( rRadio.cl.stationData[cat], entry )
 
             rRadio.cl.allowedUrlSet[st.url] = true
             rRadio.cl.customUrlSet[st.url] = true
@@ -87,7 +87,7 @@ end
 rRadio.cl.networkHandlers["rRadio.PlayStation"] = function()
     if not rRadio.cl.cvars.enabled:GetBool() then return end
     local entity = net.ReadEntity()
-    local actual = rRadio.interface.GetVehicleEntity( entity )
+    local actual = rRadio.utils.GetVehicleEntity( entity )
     if rRadio.cl.radioSources[actual] and IsValid( rRadio.cl.radioSources[actual] ) then
         rRadio.cl.radioSources[actual]:Stop()
         rRadio.cl.radioSources[actual] = nil
@@ -132,19 +132,8 @@ end
 rRadio.cl.networkHandlers["rRadio.StopStation"] = function()
     local entity = net.ReadEntity()
     if not IsValid( entity ) then return end
-    entity = rRadio.interface.GetVehicleEntity( entity )
-    if rRadio.cl.radioSources[entity] and IsValid( rRadio.cl.radioSources[entity] ) then
-        rRadio.cl.radioSources[entity]:Stop()
-        rRadio.cl.radioSources[entity] = nil
-        rRadio.cl.entityVolumes[entity] = nil
-    end
-
-    rRadio.cl.queuedStations[entity] = nil
-    rRadio.cl.connectedStations[entity] = nil
-    rRadio.cl.currentlyPlayingStations[entity] = nil
-    rRadio.cl.stationLastPos[entity] = nil
-    rRadio.cl.playbackNonce[entity] = nil
-    if IsValid( entity ) and rRadio.utils.IsBoombox( entity ) then rRadio.utils.ClearRadioStatus( entity ) end
+    entity = rRadio.utils.GetVehicleEntity( entity )
+    rRadio.cl.cleanupEntity( entity )
 end
 
 rRadio.cl.networkHandlers["rRadio.OpenMenu"] = function()

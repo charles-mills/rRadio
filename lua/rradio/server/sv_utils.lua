@@ -20,13 +20,6 @@ function utils.CanControlRadio( entity, player )
     return false
 end
 
-function utils.GetVehicleEntity( entity )
-    if not IsValid( entity ) then return entity end
-    if not entity:IsVehicle() then return entity end
-    local parent = entity:GetParent()
-    return IsValid( parent ) and parent or entity
-end
-
 function utils.UpdateVehicleStatus( vehicle )
     if not IsValid( vehicle ) then return end
     local veh = rUtils.GetVehicle( vehicle )
@@ -58,30 +51,21 @@ function utils.CountActiveRadios()
 end
 
 function utils.ClampVolume( volume )
-    if type( volume ) ~= "number" then return 0.5 end
-    local maxVolume = config.MaxVolume
-    return math.Clamp( volume, 0, maxVolume )
+    return rUtils.ClampVolume( volume )
 end
 
 function utils.GetDefaultVolume( entity )
-    if not IsValid( entity ) then return 0.5 end
-    local class = entity:GetClass()
-    if class == "rammel_boombox_gold" then
-        return config.GoldenBoombox.Volume
-    elseif class == "rammel_boombox" then
-        return config.Boombox.Volume
-    else
-        return config.VehicleRadio.Volume
-    end
+    local cfg = rUtils.GetEntityConfig( entity )
+    return cfg and cfg.Volume or 0.5
 end
 
-function utils.BroadcastPlay( entity, stationName, url, volume )
+function utils.BroadcastPlay( entity, stationName, url, volume, target )
     net.Start( "rRadio.PlayStation" )
     net.WriteEntity( entity )
     net.WriteString( stationName )
     net.WriteString( url )
     net.WriteFloat( volume )
-    net.Broadcast()
+    if target then net.Send( target ) else net.Broadcast() end
 end
 
 function utils.BroadcastStop( entity )
@@ -94,12 +78,7 @@ local function SendRadioToPlayer( player, entityIndex, radioData )
     local entity = Entity( entityIndex )
     LogDebug( "[sv-permanent] Sending radio info for entity " .. entityIndex .. " to " .. player:Nick() )
     LogDebug( "[sv-permanent] Radio station name: " .. radioData.stationName .. " URL: " .. radioData.url )
-    net.Start( "rRadio.PlayStation" )
-    net.WriteEntity( entity )
-    net.WriteString( radioData.stationName )
-    net.WriteString( radioData.url )
-    net.WriteFloat( radioData.volume )
-    net.Send( player )
+    utils.BroadcastPlay( entity, radioData.stationName, radioData.url, radioData.volume, player )
 end
 
 local function HandleRetryLogic( player, retryFunction )

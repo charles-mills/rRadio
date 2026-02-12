@@ -1,11 +1,22 @@
 ﻿do
     local PANEL = {}
     local Scale = rRadio.interface.scaleMenu
+    local function paintButtonFrame( w, h, fillColor, borderColor )
+        if rRadio.interface.DrawBorderedRoundedBox then
+            rRadio.interface.DrawBorderedRoundedBox(
+                rRadio.interface.GetControlCornerRadius(),
+                0, 0, w, h, fillColor, borderColor
+            )
+            return
+        end
+
+        draw.RoundedBox( 8, 0, 0, w, h, fillColor )
+    end
     function PANEL:Init()
         self.label = ""
         self.leftChild = nil
         self.playing = false
-        self.hoverColour = rRadio.config.UI.ButtonHoverColor
+        self.hoverColour = rRadio.interface.GetSurfaceColor( "card_hover" ) or rRadio.config.UI.ButtonHoverColor
         self.lerp = 0
         self:SetTall( Scale( 40 ) )
         self:SetText( "" )
@@ -35,15 +46,44 @@
     end
 
     function PANEL:Paint( w, h )
-        local base = self.playing and rRadio.config.UI.PlayingButtonColor or rRadio.config.UI.ButtonColor
+        local base = self.playing and rRadio.config.UI.PlayingButtonColor
+            or rRadio.interface.GetSurfaceColor( "card" )
+            or rRadio.config.UI.ButtonColor
         local bg = self.playing and base
             or rRadio.interface.LerpColor( self.lerp, base, self.hoverColour )
+        local border = rRadio.interface.GetControlBorderColor
+            and rRadio.interface.GetControlBorderColor()
+            or rRadio.config.UI.Border
         if self.errorFlash then
             local pulse = math.sin( CurTime() * 6 ) * 0.5 + 0.5
             bg = rRadio.interface.LerpColor( pulse, bg, rRadio.config.UI.Error or Color( 248, 81, 73 ) )
+            border = rRadio.interface.LerpColor(
+                pulse,
+                border,
+                rRadio.config.UI.Error or Color( 248, 81, 73 )
+            )
+        elseif not self.playing and self.lerp > 0.001 then
+            border = rRadio.interface.LerpColor( self.lerp, border, self.hoverColour )
         end
 
-        draw.RoundedBox( 8, 0, 0, w, h, bg )
+        paintButtonFrame( w, h, bg, border )
+        if not self.playing and self.lerp > 0.001 then
+            local radius = rRadio.interface.GetControlCornerRadius
+                and rRadio.interface.GetControlCornerRadius()
+                or 8
+            local overlay = ColorAlpha(
+                rRadio.config.UI.Highlight or self.hoverColour,
+                math.floor( 28 * self.lerp )
+            )
+            draw.RoundedBox(
+                math.max( 0, radius - 1 ),
+                1,
+                1,
+                math.max( 0, w - 2 ),
+                math.max( 0, h - 2 ),
+                overlay
+            )
+        end
         surface.SetFont( "rRadio.Roboto5" )
         local leftPad = self.leftChild and self.leftChild:GetWide() + Scale( 16 ) or Scale( 8 )
         local rightPad = Scale( 8 )

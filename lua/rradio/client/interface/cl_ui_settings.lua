@@ -2,6 +2,28 @@
 rRadio.cl.settingsUI = {}
 local Scale = rRadio.cl.Scale
 local uiState = rRadio.cl.uiState
+local SETTINGS_GAP = Scale( 6 )
+
+local function getSurfaceColor( tier, fallback )
+    if rRadio.interface.GetSurfaceColor then
+        local color = rRadio.interface.GetSurfaceColor( tier )
+        if color then return color end
+    end
+
+    return fallback
+end
+
+local function drawSettingsSurface( radius, w, h, fillColor )
+    if rRadio.interface.DrawBorderedRoundedBox then
+        rRadio.interface.DrawBorderedRoundedBox(
+            radius, 0, 0, w, h, fillColor
+        )
+        return
+    end
+
+    draw.RoundedBox( radius, 0, 0, w, h, fillColor )
+end
+
 local function updateTextColours( panel )
     if not IsValid( panel ) then return end
     if panel.SetTextColor then panel:SetTextColor( rRadio.config.UI.TextColor ) end
@@ -14,6 +36,7 @@ local function createSectionHeader( parent, text, isFirst )
     local header = vgui.Create( "rRadioHeader", parent )
     header:SetTextLabel( text )
     header:SetIsFirst( isFirst )
+    header:DockMargin( 0, isFirst and Scale( 5 ) or Scale( 10 ), 0, SETTINGS_GAP )
 end
 
 local function getThemeDisplayName( themeName )
@@ -89,35 +112,21 @@ local function styleScaleSlider( slider )
         updateKnobSize()
     end
 
-    slider.Slider.Paint = function( self, w, h )
-        local trackHeight = math.max( Scale( 4 ), math.floor( h * 0.24 ) )
-        local y = math.floor( ( h - trackHeight ) / 2 )
-        local knobInset = IsValid( self.Knob )
-            and math.floor( self.Knob:GetWide() * 0.5 ) or 0
-        local trackW = math.max( Scale( 10 ), w - knobInset * 2 )
-        draw.RoundedBox(
-            math.floor( trackHeight / 2 ),
-            knobInset, y, trackW, trackHeight,
-            rRadio.config.UI.TextColor
-        )
-    end
-
-    slider.Slider.Knob.Paint = function( _self, w, h )
-        draw.RoundedBox(
-            math.floor( math.min( w, h ) / 2 ),
-            0, 0, w, h,
-            rRadio.config.UI.BackgroundColor
-        )
-    end
+    rRadio.interface.styleSliderPaint( slider )
 end
 
 local function createScaleSlider( parent, titleText, minVal, maxVal, currentVal, onLive, onCommit )
     local container = vgui.Create( "DPanel", parent )
     container:Dock( TOP )
     container:SetTall( Scale( 58 ) )
-    container:DockMargin( 0, 0, 0, Scale( 5 ) )
+    container:DockMargin( 0, 0, 0, SETTINGS_GAP )
     container.Paint = function( _self, w, h )
-        draw.RoundedBox( 8, 0, 0, w, h, rRadio.config.UI.ButtonColor )
+        drawSettingsSurface(
+            8,
+            w,
+            h,
+            getSurfaceColor( "card", rRadio.config.UI.ButtonColor )
+        )
     end
 
     local header = vgui.Create( "DPanel", container )
@@ -212,7 +221,12 @@ local function styleMenuKeyBinder( binder )
     end
 
     binder.Paint = function( self, w, h )
-        draw.RoundedBox( 6, 0, 0, w, h, rRadio.config.UI.SearchBoxColor )
+        drawSettingsSurface(
+            6,
+            w,
+            h,
+            getSurfaceColor( "panel", rRadio.config.UI.SearchBoxColor )
+        )
         if self._waiting then return end
         draw.SimpleText(
             rRadio.GetKeyName( self:GetValue() ),
@@ -263,6 +277,7 @@ function rRadio.cl.settingsUI.addThemeSelector( scrollPanel, parentFrame, backBu
     local previousTheme
     local selectionMade = false
     local themeDropdown = vgui.Create( "rRadioDropdown", scrollPanel )
+    themeDropdown:DockMargin( 0, 0, 0, SETTINGS_GAP )
     themeDropdown:SetData(
         rRadio.L( "SelectTheme", "Select Theme" ),
         themeChoices, currentThemeName,
@@ -302,8 +317,11 @@ function rRadio.cl.settingsUI.addThemeSelector( scrollPanel, parentFrame, backBu
     )
 
     themeDropdown.Paint = function( _self, w, h )
-        draw.RoundedBox(
-            6, 0, 0, w, h, rRadio.config.UI.ButtonColor
+        drawSettingsSurface(
+            8,
+            w,
+            h,
+            getSurfaceColor( "card", rRadio.config.UI.ButtonColor )
         )
     end
 end
@@ -318,9 +336,14 @@ function rRadio.cl.settingsUI.addKeyBindSelector( scrollPanel )
     local container = vgui.Create( "DPanel", scrollPanel )
     container:Dock( TOP )
     container:SetTall( Scale( 50 ) )
-    container:DockMargin( 0, 0, 0, Scale( 5 ) )
+    container:DockMargin( 0, 0, 0, SETTINGS_GAP )
     container.Paint = function( _self, w, h )
-        draw.RoundedBox( 8, 0, 0, w, h, rRadio.config.UI.ButtonColor )
+        drawSettingsSurface(
+            8,
+            w,
+            h,
+            getSurfaceColor( "card", rRadio.config.UI.ButtonColor )
+        )
     end
 
     local label = vgui.Create( "DLabel", container )
@@ -395,7 +418,7 @@ function rRadio.cl.settingsUI.addMenuScaleOptions( scrollPanel, parentFrame )
     local resetButton = vgui.Create( "rRadioAnimatedButton", scrollPanel )
     resetButton:Dock( TOP )
     resetButton:SetTall( Scale( 36 ) )
-    resetButton:DockMargin( 0, 0, 0, Scale( 5 ) )
+    resetButton:DockMargin( 0, 0, 0, SETTINGS_GAP )
     resetButton:SetText(
         rRadio.L( "MenuScaleReset", "Reset Menu Scale" )
     )
@@ -426,6 +449,49 @@ function rRadio.cl.settingsUI.addMenuScaleOptions( scrollPanel, parentFrame )
 
         relayoutMenu()
         rRadio.interface.playSound( "SettingsMenuSuccess" )
+    end
+end
+
+function rRadio.cl.settingsUI.addAudioOptions( scrollPanel )
+    createSectionHeader(
+        scrollPanel,
+        rRadio.L( "AudioOptions", "Audio Options" ),
+        false
+    )
+
+    local function setGlobalVolumeCap( value )
+        local capped = math.Clamp( tonumber( value ) or 1, 0, 1 )
+        RunConsoleCommand(
+            "rammel_rradio_max_volume",
+            formatScaleValue( capped )
+        )
+    end
+
+    local maxVolumeCvar = GetConVar( "rammel_rradio_max_volume" )
+    local currentMaxVolume = maxVolumeCvar
+        and maxVolumeCvar:GetFloat()
+        or 1
+    local capSlider = createScaleSlider(
+        scrollPanel,
+        rRadio.L( "MaxVolumeCap", "Global Volume Cap" ),
+        0, 1,
+        math.Clamp( currentMaxVolume, 0, 1 ),
+        function( value )
+            setGlobalVolumeCap( value )
+        end,
+        function( value )
+            setGlobalVolumeCap( value )
+            rRadio.interface.playSound( "SettingsMenuSuccess" )
+        end
+    )
+
+    if IsValid( capSlider ) then
+        capSlider:SetTooltip(
+            rRadio.L(
+                "MaxVolumeCapHelp",
+                "Maximum global radio volume (0.0 - 1.0)."
+            )
+        )
     end
 end
 
@@ -462,6 +528,8 @@ function rRadio.cl.settingsUI.addGeneralOptions( scrollPanel )
                 rRadio.interface.playSound( "SettingsMenuSuccess" )
             end
         )
+
+        checkbox:DockMargin( 0, 0, 0, SETTINGS_GAP )
     end
 end
 
@@ -498,17 +566,19 @@ function rRadio.cl.settingsUI.addSuperadminOptions( scrollPanel, currentEntity )
         end
     )
 
+    permanentCheckbox:DockMargin( 0, 0, 0, SETTINGS_GAP )
     uiState.permanentCheckboxRef = permanentCheckbox
 end
 
 function rRadio.cl.settingsUI.buildFooter( settingsFrame )
     local footer = vgui.Create( "DPanel", settingsFrame )
+    footer:Dock( BOTTOM )
+    footer:DockMargin( 0, 0, 0, 0 )
     settingsFrame.footer = footer
     function settingsFrame:LayoutFooter()
         if not IsValid( self.footer ) then return end
-        local footerHeight = Scale( 60 )
-        self.footer:SetSize( self:GetWide(), footerHeight )
-        self.footer:SetPos( 0, self:GetTall() - footerHeight )
+        local footerHeight = Scale( rRadio.config.FrameSize.width ) / 8
+        self.footer:SetTall( footerHeight )
         if IsValid( self.footer.steamButton ) then
             local iconSize = rRadio.interface.scaleMenu( 32 )
             self.footer.steamButton:SetSize( iconSize, iconSize )
@@ -519,17 +589,30 @@ function rRadio.cl.settingsUI.buildFooter( settingsFrame )
     end
 
     footer.Paint = function( _self, w, h )
-        draw.RoundedBox( 8, 0, 0, w, h, rRadio.config.UI.ButtonColor )
+        local border = rRadio.interface.GetControlBorderColor
+            and rRadio.interface.GetControlBorderColor()
+            or rRadio.config.UI.Border
+        local fill = rRadio.config.UI.CloseButtonColor
+        draw.RoundedBoxEx(
+            8, 0, 0, w, h,
+            border,
+            false, false, true, true
+        )
+        draw.RoundedBoxEx(
+            8, 1, 1, math.max( 0, w - 2 ), math.max( 0, h - 2 ),
+            fill,
+            false, false, true, true
+        )
         local gap = Scale( 8 )
         draw.SimpleText(
-            "rRadio by Rammel", "Default",
+            "rRadio by Rammel", "rRadio.Roboto4",
             w - Scale( 10 ), h / 2 - gap,
             rRadio.config.UI.TextColor,
             TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER
         )
 
         draw.SimpleText(
-            "v" .. rRadio.config.RadioVersion, "Default",
+            "v" .. rRadio.config.RadioVersion, "rRadio.Roboto4",
             w - Scale( 10 ), h / 2 + gap,
             rRadio.config.UI.TextColor,
             TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER

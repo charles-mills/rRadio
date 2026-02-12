@@ -125,12 +125,7 @@ local function spawnPermanentBoombox( row )
         ent:SetNWInt( "Status", rRadio.status.PLAYING )
         ent:SetNWBool( "IsPlaying", true )
         timer.Simple( 0.1, function()
-            net.Start( "rRadio.PlayStation" )
-            net.WriteEntity( ent )
-            net.WriteString( row.station_name or "" )
-            net.WriteString( row.station_url )
-            net.WriteFloat( row.volume )
-            net.Broadcast()
+            rRadio.sv.utils.BroadcastPlay( ent, row.station_name or "", row.station_url, row.volume )
         end )
 
         rRadio.sv.utils.AddActiveRadio( ent, row.station_name or "", row.station_url, row.volume )
@@ -214,26 +209,34 @@ hook.Add( "PostCleanupMap", "rRadio.LoadPermanentBoomboxes", function()
     end )
 end )
 
-net.Receive( "rRadio.SetPersistent", function( _len, ply )
-    if not IsValid( ply ) or not ply:IsSuperAdmin() then
+local function validatePersistentRequest( ply )
+    if not IsValid( ply ) then return nil end
+    if not ply:IsSuperAdmin() then
         ply:ChatPrint( "[rRadio] You do not have permission to perform this action." )
-        return false
-    end
-
-    if not rRadio.config.AllowCreatePermanentBoombox then
-        ply:ChatPrint( "[rRadio] Creating permanent boomboxes is disabled by the server." )
-        return false
+        return nil
     end
 
     local ent = net.ReadEntity()
-    if not IsValid( ent ) or ent:GetClass() ~= "rammel_boombox" and ent:GetClass() ~= "rammel_boombox_gold" then
+    if not IsValid( ent ) or not rRadio.utils.IsBoombox( ent ) then
         ply:ChatPrint( "[rRadio] Invalid boombox entity." )
-        return false
+        return nil
+    end
+
+    return ent
+end
+
+net.Receive( "rRadio.SetPersistent", function( _len, ply )
+    local ent = validatePersistentRequest( ply )
+    if not ent then return end
+
+    if not rRadio.config.AllowCreatePermanentBoombox then
+        ply:ChatPrint( "[rRadio] Creating permanent boomboxes is disabled by the server." )
+        return
     end
 
     if ent.IsPermanent then
         ply:ChatPrint( "[rRadio] This boombox is already marked as permanent." )
-        return false
+        return
     end
 
     ent.IsPermanent = true
@@ -245,16 +248,8 @@ net.Receive( "rRadio.SetPersistent", function( _len, ply )
 end )
 
 net.Receive( "rRadio.RemovePersistent", function( _len, ply )
-    if not IsValid( ply ) or not ply:IsSuperAdmin() then
-        ply:ChatPrint( "[rRadio] You do not have permission to perform this action." )
-        return
-    end
-
-    local ent = net.ReadEntity()
-    if not IsValid( ent ) or ent:GetClass() ~= "rammel_boombox" and ent:GetClass() ~= "rammel_boombox_gold" then
-        ply:ChatPrint( "[rRadio] Invalid boombox entity." )
-        return
-    end
+    local ent = validatePersistentRequest( ply )
+    if not ent then return end
 
     if not ent.IsPermanent then
         ply:ChatPrint( "[rRadio] This boombox is not marked as permanent." )
@@ -270,21 +265,22 @@ net.Receive( "rRadio.RemovePersistent", function( _len, ply )
     net.Send( ply )
 end )
 
+local function requireSuperAdmin( ply )
+    if not IsValid( ply ) then return true end
+    if ply:IsSuperAdmin() then return true end
+    ply:ChatPrint( "[rRadio] You must be a superadmin to use this command." )
+    return false
+end
+
 concommand.Add( "rradio_clear_permanent_db", function( ply, _cmd, _args )
-    if IsValid( ply ) and not ply:IsSuperAdmin() then
-        ply:ChatPrint( "[rRadio] You must be a superadmin to use this command." )
-        return
-    end
+    if not requireSuperAdmin( ply ) then return end
 
     db.Query( "DELETE FROM permanent_boomboxes;" )
     if IsValid( ply ) then ply:ChatPrint( "[rRadio] Permanent boombox database has been cleared for all maps." ) end
 end )
 
 concommand.Add( "rradio_reload_permanent_boomboxes", function( ply, _cmd, _args )
-    if IsValid( ply ) and not ply:IsSuperAdmin() then
-        ply:ChatPrint( "[rRadio] You must be a superadmin to use this command." )
-        return
-    end
+    if not requireSuperAdmin( ply ) then return end
 
     for _, ent in ipairs( ents.FindByClass( "rammel_boombox" ) ) do
         if ent.IsPermanent then ent:Remove() end

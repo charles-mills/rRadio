@@ -16,19 +16,8 @@ end, nil, "Lists all active stations", FCVAR_CLIENTCMD_CAN_EXECUTE )
 concommand.Add( "rammel_rradio_disconnect_all", function()
     local count = 0
     for ent, station in pairs( rRadio.cl.radioSources ) do
-        if IsValid( station ) then
-            station:Stop()
-            count = count + 1
-        end
-
-        rRadio.utils.ClearRadioStatus( ent )
-        rRadio.cl.connectedStations[ent] = nil
-        rRadio.cl.requestedStations[ent] = nil
-        rRadio.cl.queuedStations[ent] = nil
-        rRadio.cl.entityVolumes[ent] = nil
-        rRadio.cl.stationLastPos[ent] = nil
-        rRadio.cl.currentlyPlayingStations[ent] = nil
-        rRadio.cl.radioSources[ent] = nil
+        if IsValid( station ) then count = count + 1 end
+        rRadio.cl.cleanupEntity( ent )
     end
 
     rRadio.cl.performance.activeStationCount = 0

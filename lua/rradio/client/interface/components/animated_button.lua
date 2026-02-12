@@ -1,6 +1,17 @@
 ﻿do
     local PANEL = {}
     local HOVER_SPEED = 10
+    local function paintButtonFrame( w, h, fillColor )
+        if rRadio.interface.DrawBorderedRoundedBox then
+            rRadio.interface.DrawBorderedRoundedBox(
+                rRadio.interface.GetControlCornerRadius(),
+                0, 0, w, h, fillColor
+            )
+            return
+        end
+
+        draw.RoundedBox( 8, 0, 0, w, h, fillColor )
+    end
     function PANEL:Init()
         self:SetText( "" )
         self:SetFont( "rRadio.Roboto5" )
@@ -22,7 +33,7 @@
 
     function PANEL:Paint( w, h )
         local col = rRadio.interface.LerpColor( self.lerp, self.baseColor, self.hoverColor )
-        draw.RoundedBox( 8, 0, 0, w, h, col )
+        paintButtonFrame( w, h, col )
     end
 
     vgui.Register( "rRadioAnimatedButton", PANEL, "DButton" )

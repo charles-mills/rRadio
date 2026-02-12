@@ -19,6 +19,18 @@ local SIT_ANYWHERE_SEATS = {
 local BOOMBOX_CLASS = "rammel_boombox"
 local GOLDEN_BOOMBOX_CLASS = "rammel_boombox_gold"
 local TIMER_PREFIX = "rRadio_UpdateStatus_"
+function rRadio.utils.ClampVolume( volume, maxVolume )
+    if type( volume ) ~= "number" then return 0.5 end
+    return math.Clamp( volume, 0, maxVolume or rRadio.config.MaxVolume )
+end
+
+function rRadio.utils.GetVehicleEntity( entity )
+    if not IsValid( entity ) then return entity end
+    if not entity:IsVehicle() then return entity end
+    local parent = entity:GetParent()
+    return IsValid( parent ) and parent or entity
+end
+
 function rRadio.utils.GetVehicle( entity )
     if not IsValid( entity ) then return nil end
     local parent = entity:GetParent()

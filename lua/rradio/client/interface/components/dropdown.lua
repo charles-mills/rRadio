@@ -2,6 +2,25 @@
     local PANEL = {}
     local Scale = rRadio.interface.scaleMenu
     local TEXT_FONT = "rRadio.Roboto5"
+    local function getSurfaceColor( tier, fallback )
+        if rRadio.interface.GetSurfaceColor then
+            local color = rRadio.interface.GetSurfaceColor( tier )
+            if color then return color end
+        end
+
+        return fallback
+    end
+
+    local function drawControlSurface( radius, w, h, fillColor )
+        if rRadio.interface.DrawBorderedRoundedBox then
+            rRadio.interface.DrawBorderedRoundedBox(
+                radius, 0, 0, w, h, fillColor
+            )
+            return
+        end
+
+        draw.RoundedBox( radius, 0, 0, w, h, fillColor )
+    end
     local function getScaleKey()
         return math.floor( rRadio.interface.GetMenuScale() * 100 + 0.5 )
     end
@@ -66,7 +85,7 @@
                 draw.RoundedBox(
                     radius, pad, padY,
                     pw - pad * 2, ph - padY * 2,
-                    rRadio.config.UI.ButtonHoverColor
+                    getSurfaceColor( "card_hover", rRadio.config.UI.ButtonHoverColor )
                 )
             end
 
@@ -124,7 +143,12 @@
         end
 
         function self.dropdown:Paint( w, h )
-            draw.RoundedBox( 6, 0, 0, w, h, rRadio.config.UI.SearchBoxColor )
+            drawControlSurface(
+                6,
+                w,
+                h,
+                getSurfaceColor( "panel", rRadio.config.UI.SearchBoxColor )
+            )
             paintArrow( self, w, h )
             self:DrawTextEntryText(
                 rRadio.config.UI.TextColor,
@@ -144,9 +168,11 @@
             self.Menu = menu
             menu:SetMaxHeight( Scale( 200 ) )
             menu.Paint = function( _, mw, mh )
-                draw.RoundedBox(
-                    6, 0, 0, mw, mh,
-                    rRadio.config.UI.SearchBoxColor
+                drawControlSurface(
+                    6,
+                    mw,
+                    mh,
+                    getSurfaceColor( "panel", rRadio.config.UI.SearchBoxColor )
                 )
             end
 
@@ -210,7 +236,12 @@
     end
 
     function PANEL:Paint( w, h )
-        draw.RoundedBox( 8, 0, 0, w, h, rRadio.config.UI.ButtonColor )
+        drawControlSurface(
+            8,
+            w,
+            h,
+            getSurfaceColor( "card", rRadio.config.UI.ButtonColor )
+        )
     end
 
     vgui.Register( "rRadioDropdown", PANEL, "DPanel" )

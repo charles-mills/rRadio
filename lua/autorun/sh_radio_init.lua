@@ -159,6 +159,16 @@ local function createFonts()
             }
         },
         {
+            Name = "rRadio.Roboto4",
+            Data = {
+                font = "Roboto",
+                size = ScreenScale( 4 ),
+                weight = 500,
+                antialias = true,
+                extended = true
+            }
+        },
+        {
             Name = "rRadio.Roboto8",
             Data = {
                 font = "Roboto",
@@ -277,9 +287,15 @@ local function initClient()
     end
     rRadio.addClConVars()
     cvars.AddChangeCallback( "rammel_rradio_max_volume", function( _cvar, _old, _new )
-        for ent in pairs( rRadio.cl.radioSources ) do
-            rRadio.interface.refreshVolume( ent )
+        if not rRadio.cl or not rRadio.cl.radioSources then return end
+        if not ( rRadio.interface and isfunction( rRadio.interface.refreshVolume ) ) then return end
+        for ent, source in pairs( rRadio.cl.radioSources ) do
+            if IsValid( ent ) and IsValid( source ) then
+                rRadio.interface.refreshVolume( ent )
+            end
         end
+
+        if rRadio.cl.performance then rRadio.cl.performance.volumeChanged = true end
     end, "rRadioMaxVolCB" )
 
     addClProperties()

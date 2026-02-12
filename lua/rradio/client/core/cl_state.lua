@@ -40,6 +40,30 @@ rRadio.cl.performance = {
     activeStationCount = 0
 }
 
+function rRadio.cl.cleanupEntity( ent )
+    if rRadio.cl.radioSources[ent] then
+        if IsValid( rRadio.cl.radioSources[ent] ) then rRadio.cl.radioSources[ent]:Stop() end
+        rRadio.cl.radioSources[ent] = nil
+    end
+
+    rRadio.cl.currentlyPlayingStations[ent] = nil
+    rRadio.cl.queuedStations[ent] = nil
+    rRadio.cl.stationLastPos[ent] = nil
+    rRadio.cl.playbackNonce[ent] = nil
+    rRadio.cl.errorTimestamps[ent] = nil
+    rRadio.cl.entityVolumes[ent] = nil
+    rRadio.cl.connectedStations[ent] = nil
+    rRadio.cl.requestedStations[ent] = nil
+    rRadio.cl.mutedBoomboxes[ent] = nil
+    if IsValid( ent ) and rRadio.utils.IsBoombox( ent ) then
+        local entIndex = ent:EntIndex()
+        rRadio.cl.boomboxStatuses[entIndex] = nil
+        rRadio.utils.ClearRadioStatus( ent )
+        timer.Remove( "rRadio.ErrorClear_" .. entIndex )
+        timer.Remove( "rRadio.TuningTimeout_" .. entIndex )
+    end
+end
+
 rRadio.cl.pendingVolume = nil
 rRadio.cl.pendingEntity = nil
 rRadio.cl.MAX_SEARCH_RESULTS = 150
