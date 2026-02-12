@@ -118,7 +118,7 @@ rRadio.cl.networkHandlers["rRadio.PlayStation"] = function()
 
         local ply = LocalPlayer()
         if IsValid( ply ) then
-            local cfg = rRadio.interface.getEntityConfig( actual )
+            local cfg = rRadio.utils.GetEntityConfig( actual )
             if cfg and rRadio.cl.isEntityWithinLoadRange( ply:GetPos(), actual:GetPos(), cfg ) then
                 rRadio.cl.startStationPlayback( actual, stationName, url, volume, nonce )
                 rRadio.cl.queuedStations[actual] = nil
@@ -175,17 +175,6 @@ rRadio.cl.networkHandlers["rRadio.PlayVehicleAnimation"] = function()
     local veh = net.ReadEntity()
     local isDriver = net.ReadBool()
     timer.Simple( 0, function() rRadio.interface.DisplayVehicleEnterAnimation( veh, isDriver ) end )
-end
-
-rRadio.cl.networkHandlers["rRadio.SetConfigUpdate"] = function()
-    for entity, source in pairs( rRadio.cl.radioSources ) do
-        if IsValid( entity ) and IsValid( source ) then
-            local fallback = rRadio.cl.entityVolumes[entity] or 0.5
-            local cfg = rRadio.interface.getEntityConfig( entity )
-            local volume = rRadio.interface.ClampVolume( cfg and cfg.Volume or fallback )
-            source:SetVolume( volume )
-        end
-    end
 end
 
 rRadio.cl.networkHandlers["rRadio.SendPersistentConfirmation"] = function()

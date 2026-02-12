@@ -20,13 +20,11 @@
         self.callback = fn
     end
 
-    function PANEL:SetSizePx( px )
-        self:SetSize( px, px )
-    end
-
     function PANEL:Think()
         local tgt = self:IsHovered() and 1 or 0
-        self.lerp = math.Approach( self.lerp, tgt, FrameTime() * HOVER_SPEED )
+        self.lerp = rRadio.interface.ApproachLerp(
+            self.lerp, tgt, HOVER_SPEED
+        )
     end
 
     function PANEL:DoClick()

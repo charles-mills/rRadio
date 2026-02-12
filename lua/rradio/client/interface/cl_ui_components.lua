@@ -4,31 +4,6 @@ local Scale = rRadio.cl.Scale
 local uiState = rRadio.cl.uiState
 local timing = rRadio.cl.timing
 local icons = rRadio.cl.icons
-local stationSearchListCache = {}
-local function getCountrySearchList( country )
-    local source = rRadio.cl.stationData[country] or {}
-    local cached = stationSearchListCache[country]
-    if cached and cached.source == source and cached.count == #source then return cached.list end
-    local list = {}
-    for _, st in ipairs( source ) do
-        if st and st.name then
-            rRadio.interface.ensureSearchFields( st )
-            list[#list + 1] = {
-                station = st,
-                searchText = st.name,
-                searchTextLower = st.nameLower,
-                charMap = st.charMap
-            }
-        end
-    end
-
-    stationSearchListCache[country] = {
-        source = source,
-        count = #source,
-        list = list
-    }
-    return list
-end
 
 local function createButtonStar( parent, updateList, categoryTable, key, subKey )
     local star = vgui.Create( "rRadioStar", parent )
@@ -244,7 +219,7 @@ function rRadio.cl.uiComponents.populateStations( panel, country, filterText, up
             )
         end
     else
-        local rawList = getCountrySearchList( country )
+        local rawList = rRadio.cl.countrySearchIndex and rRadio.cl.countrySearchIndex[country] or {}
         local sorted = rRadio.interface.fuzzyFilter(
             filterText, rawList,
             function( s ) return s.searchText end, 0,

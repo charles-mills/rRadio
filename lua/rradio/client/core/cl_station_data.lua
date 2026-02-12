@@ -2,8 +2,8 @@
 rRadio.cl.stationData = {}
 rRadio.cl.allowedUrlSet = {}
 rRadio.cl.customUrlSet = {}
-rRadio.cl.nameIndex = {}
 rRadio.cl.globalSearchIndex = {}
+rRadio.cl.countrySearchIndex = {}
 rRadio.cl.stationDataLoaded = false
 function rRadio.cl.loadStationData()
     if rRadio.cl.stationDataLoaded then return end
@@ -37,34 +37,33 @@ function rRadio.cl.loadStationData()
 end
 
 function rRadio.cl.rebuildNameIndex()
-    local nameIndex = {}
     local globalSearchIndex = {}
+    local countrySearchIndex = {}
     for country, list in pairs( rRadio.cl.stationData ) do
+        local countrySearchList = {}
         for _, station in ipairs( list ) do
             station.countryKey = country
             rRadio.interface.ensureSearchFields( station )
-            table.insert( nameIndex, {
-                key = station.nameLower,
-                ref = station,
-                country = country
-            } )
-
-            table.insert( globalSearchIndex, {
+            local searchEntry = {
                 station = station,
                 countryKey = country,
                 displayKey = station.name,
                 searchText = station.name,
                 searchTextLower = station.nameLower,
                 charMap = station.charMap
-            } )
+            }
+            table.insert( globalSearchIndex, searchEntry )
+            table.insert( countrySearchList, searchEntry )
         end
+
+        countrySearchIndex[country] = countrySearchList
     end
 
     table.sort( globalSearchIndex, function( a, b )
         return ( a.searchTextLower or "" ) < ( b.searchTextLower or "" )
     end )
-    rRadio.cl.nameIndex = nameIndex
     rRadio.cl.globalSearchIndex = globalSearchIndex
+    rRadio.cl.countrySearchIndex = countrySearchIndex
 end
 
 function rRadio.cl.isUrlAllowed( url )

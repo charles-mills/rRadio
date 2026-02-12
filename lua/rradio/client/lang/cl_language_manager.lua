@@ -32,12 +32,6 @@ function rRadio.LanguageManager:GetCountryTranslation( country_key )
     return translations and translations[country_key] or country_key
 end
 
-function rRadio.LanguageManager:GetTranslation( lang, key )
-    if self.translations[lang] and self.translations[lang][key] then return self.translations[lang][key] end
-    if self.translations.en and self.translations.en[key] then return self.translations.en[key] end
-    return key
-end
-
 function rRadio.LanguageManager:GetText( key, fallback )
     local lang = self.currentLanguage or "en"
     if self.translations[lang] and self.translations[lang][key] ~= nil then return self.translations[lang][key] end
@@ -47,10 +41,6 @@ end
 
 function rRadio.LanguageManager:Translate( key )
     return self:GetText( key, key )
-end
-
-function rRadio.LanguageManager:GetCustomKey()
-    return rRadio.config.CustomStationCategory or "Custom"
 end
 
 function rRadio.LanguageManager:GetCustomTranslation()

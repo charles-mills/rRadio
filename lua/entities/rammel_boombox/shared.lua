@@ -6,3 +6,4 @@ ENT.PrintName = "Boombox"
 ENT.Information = "Plays music!"
 ENT.Spawnable = true
 ENT.AdminSpawnable = true
+ENT.ConfigKey = "Boombox"

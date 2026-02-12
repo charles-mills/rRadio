@@ -3,10 +3,10 @@ rRadio.logger = rRadio.logger or {}
 local logger = rRadio.logger
 local DEBUG_CONVAR = "rammel_rradio_debug_logging"
 local LEVELS = {
-    DEBUG = 10,
-    INFO = 20,
-    WARN = 30,
-    ERROR = 40
+    DEBUG = true,
+    INFO = true,
+    WARN = true,
+    ERROR = true
 }
 
 local LEVEL_COLOURS = {
@@ -33,7 +33,7 @@ end
 
 function logger.ShouldLog( level )
     if level == "DEBUG" or level == "INFO" then return logger.IsDebugEnabled() end
-    return LEVELS[level] ~= nil
+    return LEVELS[level] == true
 end
 
 local function stringify( value )
@@ -72,34 +72,12 @@ function logger.Log( level, scope, ... )
     MsgC( levelColour, prefix .. " ", TEXT_COLOUR, message .. "\n" )
 end
 
-function logger.Debug( ... )
-    logger.Log( "DEBUG", nil, ... )
-end
-
-function logger.Info( ... )
-    logger.Log( "INFO", nil, ... )
-end
-
-function logger.Warn( ... )
-    logger.Log( "WARN", nil, ... )
-end
-
-function logger.Error( ... )
-    logger.Log( "ERROR", nil, ... )
-end
-
-function logger.DebugScope( scope, ... )
-    logger.Log( "DEBUG", scope, ... )
-end
-
-function logger.InfoScope( scope, ... )
-    logger.Log( "INFO", scope, ... )
-end
-
-function logger.WarnScope( scope, ... )
-    logger.Log( "WARN", scope, ... )
-end
-
-function logger.ErrorScope( scope, ... )
-    logger.Log( "ERROR", scope, ... )
+for _, levelName in ipairs( { "Debug", "Info", "Warn", "Error" } ) do
+    local levelKey = string.upper( levelName )
+    logger[levelName] = function( ... )
+        logger.Log( levelKey, nil, ... )
+    end
+    logger[levelName .. "Scope"] = function( scope, ... )
+        logger.Log( levelKey, scope, ... )
+    end
 end

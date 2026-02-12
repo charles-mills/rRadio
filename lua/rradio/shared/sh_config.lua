@@ -85,8 +85,6 @@ rRadio.config.FrameSize = {
 rRadio.config.MenuScale = {
     Min = 0.75,
     Max = 2.00,
-    WidthMin = 0.80,
-    WidthMax = 2.20,
     Default = 1.00,
     WidthDefault = 1.00
 }
@@ -95,7 +93,6 @@ rRadio.config.VehicleClassOverides = { "lvs_", "ses_", "sw_", "drs_" }
 --[[ ! Internal settings ! ]]
 rRadio.config.RadioStations = rRadio.config.RadioStations or {}
 rRadio.config.Lang = rRadio.config.Lang or {}
-rRadio.status = rRadio.status or {}
 rRadio.status = {
     STOPPED = 0,
     TUNING = 1,

@@ -131,41 +131,18 @@ end
 initTexts()
 local ENT = ENT
 local NWK = "_nw"
-local AnimMT = {
-    __index = function( s, k )
-        if k == "progress" then
-            s.progress = 0
-            return 0
-        end
-
-        if k == "lastStatus" then
-            s.lastStatus = 0
-            return 0
-        end
-
-        if k == "statusTransition" then
-            s.statusTransition = 0
-            return 0
-        end
-
-        if k == "tuningOffset" then
-            s.tuningOffset = 0
-            return 0
-        end
-
-        if k == "equaliser" then
-            local t = { 0, 0, 0, 0, 0 }
-            s.equaliser = t
-            return t
-        end
-    end
-}
 
 function ENT:Initialize()
     local mn, mx = self:GetModelBounds()
     mx.z = mx.z + 20
     self:SetRenderBounds( mn, mx )
-    self.anim = setmetatable( {}, AnimMT )
+    self.anim = {
+        progress = 0,
+        lastStatus = 0,
+        statusTransition = 0,
+        tuningOffset = 0,
+        equaliser = { 0, 0, 0, 0, 0 }
+    }
     self.nextAnimTick = 0
     self.cachedWidth = HUD_DIMS.MIN_WIDTH
     self.halfWidth = HUD_DIMS.MIN_WIDTH * 0.5

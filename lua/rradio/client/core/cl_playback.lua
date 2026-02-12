@@ -28,7 +28,7 @@ function cl.isEntityWithinLoadRange( plyPos, entPos, cfg )
 end
 
 function cl.configureStation3D( station, entity )
-    local cfg = iface.getEntityConfig( entity )
+    local cfg = utils.GetEntityConfig( entity )
     if cfg then station:Set3DFadeDistance( cfg.MinVolumeDistance, cfg.MaxHearingDistance ) end
 end
 
@@ -121,7 +121,7 @@ function cl.processPendingStations( _, plyPos )
             rRadio.logger.DebugScope( "cl_playback", "Removing invalid entity from queue:", tostring( seatEnt ) )
             cl.queuedStations[seatEnt] = nil
         else
-            local cfg = iface.getEntityConfig( entity )
+            local cfg = utils.GetEntityConfig( entity )
             if cfg and cl.isEntityWithinLoadRange( plyPos, entity:GetPos(), cfg ) then
                 rRadio.logger.DebugScope( "cl_playback", "Starting playback for queued station:", data.name )
                 cl.startStationPlayback( entity, data.name, data.url, data.volume, data.nonce )
@@ -143,7 +143,7 @@ function cl.unloadDistantStations( plyPos )
     for seatEnt, station in pairs( radioSources ) do
         local entity = utils.GetVehicleEntity( seatEnt )
         if IsValid( entity ) and IsValid( station ) then
-            local cfg = iface.getEntityConfig( entity )
+            local cfg = utils.GetEntityConfig( entity )
             if cfg and isBeyondUnloadRange( plyPos, entity:GetPos(), cfg ) then
                 local vol = cl.getEntityVolume( entity )
                 station:Stop()
@@ -173,18 +173,14 @@ function cl.unloadDistantStations( plyPos )
     if removed then iface.updateStationCount() end
 end
 
-function cl.refreshStation( ent, station )
-    local entity = utils.GetVehicleEntity( ent )
-    cl.syncStationPosition( station, entity )
-    iface.refreshVolume( entity )
-end
-
 function cl.cleanAndRefreshSources()
     for ent, station in pairs( cl.radioSources ) do
         if not ( IsValid( ent ) and IsValid( station ) ) then
             cl.radioSources[ent] = nil
         else
-            cl.refreshStation( ent, station )
+            local entity = utils.GetVehicleEntity( ent )
+            cl.syncStationPosition( station, entity )
+            iface.refreshVolume( entity )
         end
     end
 end

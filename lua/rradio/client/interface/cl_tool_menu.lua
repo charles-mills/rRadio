@@ -1,49 +1,51 @@
 ﻿rRadio.tools = rRadio.tools or {}
 local REPORT_URL = "https://steamcommunity.com/sharedfiles/filedetails/?id=3318060741"
-local GENERAL_CHECKBOXES = {
-    {
-        label = "Enable rRadio",
-        convar = "rammel_rradio_enabled",
-        help = "Toggle the rRadio addon globally on or off."
-    },
-    {
-        label = "Vehicle Animation",
-        convar = "rammel_rradio_vehicle_animation",
-        help = "Play an animation when you enter a vehicle."
-    },
-    {
-        label = "Boombox HUD",
-        convar = "rammel_rradio_boombox_hud",
-        help = "Display a HUD overlay on boomboxes when nearby."
-    },
-    {
-        label = "Basic Boombox HUD",
-        convar = "rammel_rradio_basic_hud",
-        help = "Simpler HUD without animations."
+local function getGeneralCheckboxes()
+    local options = {
+        {
+            label = "Enable rRadio",
+            convar = "rammel_rradio_enabled",
+            help = "Toggle the rRadio addon globally on or off."
+        }
     }
-}
+    local shared = rRadio.interface.GetGeneralOptionDefs
+        and rRadio.interface.GetGeneralOptionDefs()
+        or {}
+    for _, opt in ipairs( shared ) do
+        options[#options + 1] = {
+            label = opt.toolLabel or opt.labelFallback,
+            convar = opt.convar,
+            help = opt.toolHelp or ""
+        }
+    end
+
+    return options
+end
 
 local function createGeneralForm( panel )
     local form = vgui.Create( "DForm", panel )
     form:SetName( "General Settings" )
     form:Dock( TOP )
     form:DockMargin( 0, 10, 0, 10 )
-    for _, opt in ipairs( GENERAL_CHECKBOXES ) do
+    for _, opt in ipairs( getGeneralCheckboxes() ) do
         form:CheckBox( opt.label, opt.convar )
         form:Help( opt.help )
     end
 
+    local volumeMeta = rRadio.interface.GetMaxVolumeCapMeta
+        and rRadio.interface.GetMaxVolumeCapMeta()
+        or {
+            labelKey = "MaxVolumeCap",
+            labelFallback = "Global Volume Cap",
+            helpKey = "MaxVolumeCapHelp",
+            helpFallback = "Maximum global radio volume (0.0 - 1.0)."
+        }
     form:NumSlider(
-        rRadio.L( "MaxVolumeCap", "Global Volume Cap" ),
+        rRadio.L( volumeMeta.labelKey, volumeMeta.labelFallback ),
         "rammel_rradio_max_volume",
         0, 1, 2
     )
-    form:Help(
-        rRadio.L(
-            "MaxVolumeCapHelp",
-            "Maximum global radio volume (0.0 - 1.0)."
-        )
-    )
+    form:Help( rRadio.L( volumeMeta.helpKey, volumeMeta.helpFallback ) )
 end
 
 local function createMenuForm( panel )

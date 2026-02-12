@@ -7,3 +7,4 @@ ENT.Information = "Plays music! But it's gold! (Increased range)"
 ENT.Spawnable = true
 ENT.AdminSpawnable = true
 ENT.Color = Color( 255, 215, 0 )
+ENT.ConfigKey = "GoldenBoombox"

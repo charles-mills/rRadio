@@ -26,15 +26,6 @@ local function paintMainControl( w, h, fillColor )
     draw.RoundedBox( 8, 0, 0, w, h, fillColor )
 end
 
-local function getSurfaceColor( tier, fallback )
-    if rRadio.interface.GetSurfaceColor then
-        local color = rRadio.interface.GetSurfaceColor( tier )
-        if color then return color end
-    end
-
-    return fallback
-end
-
 local function getSearchTextInset()
     return math.max( 10, Scale( 12 ) )
 end
@@ -54,7 +45,8 @@ local function createTieredContainerPanel( parent )
         paintMainControl(
             w,
             h,
-            getSurfaceColor( "panel", rRadio.config.UI.HeaderColor )
+            rRadio.interface.GetSurfaceColor( "panel" )
+                or rRadio.config.UI.HeaderColor
         )
     end
     return panel
@@ -178,22 +170,6 @@ local function prepareList( stationListPanel, searchBox, resetSearch )
     return searchBox:GetText():lower()
 end
 
-local function buildRawGlobalList()
-    if rRadio.cl.globalSearchIndex then return rRadio.cl.globalSearchIndex end
-    local rawList = {}
-    for _, rec in ipairs( rRadio.cl.nameIndex or {} ) do
-        rawList[#rawList + 1] = {
-            station = rec.ref,
-            countryKey = rec.country,
-            displayKey = rec.ref.name,
-            searchText = rec.ref.name,
-            searchTextLower = rec.key,
-            charMap = rec.ref.charMap
-        }
-    end
-    return rawList
-end
-
 local function filterGlobalList( rawList, filterText )
     if filterText == "" then
         local limit, out = rRadio.cl.MAX_SEARCH_RESULTS, {}
@@ -229,7 +205,7 @@ function rRadio.cl.populateList( stationListPanel, backButton, searchBox, resetS
 
     local filterText = prepareList( stationListPanel, searchBox, resetSearch )
     if uiState.globalView then
-        local rawList = buildRawGlobalList()
+        local rawList = rRadio.cl.globalSearchIndex or {}
         local filtered = filterGlobalList( rawList, filterText )
         local showLimit = uiState.isSearching and rRadio.cl.MAX_SEARCH_RESULTS or #filtered
         addStationButtons( stationListPanel, filtered, showLimit, updateKeep )
@@ -262,10 +238,8 @@ function rRadio.cl.openSettingsMenu( parentFrame, backButton, selectedTheme )
     )
     uiState.settingsFrame:SetPos( Scale( 10 ), Scale( 50 ) )
     uiState.settingsFrame.Paint = function( _self, w, h )
-        local frameSurface = getSurfaceColor(
-            "frame",
-            rRadio.config.UI.BackgroundColor
-        )
+        local frameSurface = rRadio.interface.GetSurfaceColor( "frame" )
+            or rRadio.config.UI.BackgroundColor
         local bodyHeight = h
         if IsValid( _self.footer ) then
             bodyHeight = math.max(
@@ -711,7 +685,8 @@ local function createRadioFrame()
     frame.Paint = function( _self, w, h )
         draw.RoundedBox(
             8, 0, 0, w, h,
-            getSurfaceColor( "frame", rRadio.config.UI.BackgroundColor )
+            rRadio.interface.GetSurfaceColor( "frame" )
+                or rRadio.config.UI.BackgroundColor
         )
         draw.RoundedBoxEx(
             8, 0, 0, w, Scale( 40 ),
@@ -792,7 +767,7 @@ local function createGlobalButton( parent, searchBox, width )
     btn.lerp = 0
     btn.Think = function( self )
         local tgt = ( self:IsHovered() or uiState.globalView ) and 1 or 0
-        self.lerp = math.Approach( self.lerp, tgt, FrameTime() * 10 )
+        self.lerp = rRadio.interface.ApproachLerp( self.lerp, tgt, 10 )
     end
 
     btn.Paint = function( self, w, h )
@@ -954,7 +929,7 @@ local function createVolumeControls( frame, stopButton )
     local entity = LocalPlayer().currentRadioEntity
     local currentVolume
     if IsValid( entity ) then
-        local entityConfig = rRadio.interface.getEntityConfig( entity )
+        local entityConfig = rRadio.utils.GetEntityConfig( entity )
         local defaultVolume = entityConfig and entityConfig.Volume or 0.5
         currentVolume = entity:GetNWFloat( "Volume", defaultVolume )
         rRadio.cl.entityVolumes[entity] = currentVolume

@@ -38,7 +38,6 @@ hook.Add( "VehicleChanged", "rRadio.ClearRadioEntity", function( ply, _old, new 
 end )
 
 hook.Add( "InitPostEntity", "rRadio.ApplySettingsOnJoin", function()
-    rRadio.addClConVars()
     rRadio.interface.loadSavedSettings()
 end )
 

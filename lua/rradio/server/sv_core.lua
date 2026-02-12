@@ -13,7 +13,6 @@ rRadio.sv.CustomStations = rRadio.sv.CustomStations or {
     nameMap = {}
 }
 
-rRadio.sv.ActiveRadiosCount = rRadio.sv.ActiveRadiosCount or 0
 rRadio.sv.PlayerRadios = rRadio.sv.PlayerRadios or {}
 rRadio.sv.RadioTimers = { "VolumeUpdate_", "StationUpdate_", }
 rRadio.sv.RadioDataTables = { "volumeUpdateQueue", "stationUpdateQueue" }
@@ -118,39 +117,80 @@ function rRadio.sv.CustomStations:Remove( key )
 end
 
 rRadio.sv.CustomStations:Load()
-net.Receive( "rRadio.PlayStation", function( _len, ply )
-    rRadio.logger.DebugScope( "sv_core", "Server got rRadio.PlayStation from:", ply:Nick() )
-    local now = SysTime()
+
+local function isGlobalPlayOnCooldown( ply, now )
     if now - lastGlobalAction < GLOBAL_COOLDOWN then
         ply:ChatPrint( "The radio system is busy. Please try again in a moment." )
-        return
+        return true
     end
+    return false
+end
 
-    lastGlobalAction = now
+local function readPlayStationRequest()
     local ent = rRadio.utils.GetVehicleEntity( net.ReadEntity() )
     local station = net.ReadString()
     local stationURL = net.ReadString()
     local volume = net.ReadFloat()
-    if not IsValid( ent ) then return end
-    if hook.Run( "rRadio.PrePlayStation", ply, ent, station, stationURL, volume ) == false then return end
+    return ent, station, stationURL, volume
+end
+
+local function validatePlayStationRequest( ply, ent, station, stationURL, volume, now )
+    if not IsValid( ent ) then return false end
+    if hook.Run( "rRadio.PrePlayStation", ply, ent, station, stationURL, volume ) == false then return false end
     if not rRadio.utils.CanUseRadio( ent ) then
         ply:ChatPrint( "[rRADIO] This seat cannot use the radio." )
-        return
+        return false
     end
-
     if now - ( rRadio.sv.PlayerCooldowns[ply] or 0 ) < 0.25 then
         ply:ChatPrint( "You are changing stations too quickly." )
-        return
+        return false
     end
+    return true
+end
 
-    rRadio.sv.PlayerCooldowns[ply] = now
+local function ensurePlayStationCapacity( ply )
     if rRadio.sv.utils.CountActiveRadios() >= rRadio.config.MaxActiveRadios then
         rRadio.sv.utils.ClearOldestActiveRadio()
     end
     if rRadio.sv.utils.CountPlayerRadios( ply ) >= rRadio.config.MaxPlayerRadios then
         ply:ChatPrint( "You have reached your maximum number of active radios." )
-        return
+        return false
     end
+    return true
+end
+
+local function logActiveRadiosSnapshot()
+    rRadio.logger.DebugScope( "sv_core", "ActiveRadios now contains:" )
+    if not rRadio.logger.IsDebugEnabled() then return end
+    for k, v in pairs( rRadio.sv.ActiveRadios ) do
+        local entIndex = IsValid( v.entity ) and v.entity:EntIndex() or -1
+        rRadio.logger.DebugScope( "sv_core", string.format(
+            "ActiveRadio idx=%s ent=%d station=%s url=%s volume=%s",
+            tostring( k ), entIndex,
+            tostring( v.stationName ),
+            tostring( v.url ), tostring( v.volume )
+        ) )
+    end
+end
+
+local function queueStationUpdate( entityIndex, station, stationURL, volume )
+    rRadio.sv.stationUpdateQueue[entityIndex] = {
+        station = station,
+        url = stationURL,
+        volume = volume,
+        timestamp = SysTime()
+    }
+end
+
+net.Receive( "rRadio.PlayStation", function( _len, ply )
+    rRadio.logger.DebugScope( "sv_core", "Server got rRadio.PlayStation from:", ply:Nick() )
+    local now = SysTime()
+    if isGlobalPlayOnCooldown( ply, now ) then return end
+    lastGlobalAction = now
+    local ent, station, stationURL, volume = readPlayStationRequest()
+    if not validatePlayStationRequest( ply, ent, station, stationURL, volume, now ) then return end
+    rRadio.sv.PlayerCooldowns[ply] = now
+    if not ensurePlayStationCapacity( ply ) then return end
 
     local idx = ent:EntIndex()
     if not rRadio.sv.utils.CanControlRadio( ent, ply ) then
@@ -165,28 +205,10 @@ net.Receive( "rRadio.PlayStation", function( _len, ply )
     end
 
     rRadio.sv.utils.AddActiveRadio( ent, station, stationURL, volume, ply )
-    rRadio.logger.DebugScope( "sv_core", "ActiveRadios now contains:" )
-    if rRadio.logger.IsDebugEnabled() then
-        for k, v in pairs( rRadio.sv.ActiveRadios ) do
-            local entIndex = IsValid( v.entity ) and v.entity:EntIndex() or -1
-            rRadio.logger.DebugScope( "sv_core", string.format(
-                "ActiveRadio idx=%s ent=%d station=%s url=%s volume=%s",
-                tostring( k ), entIndex,
-                tostring( v.stationName ),
-                tostring( v.url ), tostring( v.volume )
-            ) )
-        end
-    end
-
+    logActiveRadiosSnapshot()
     rRadio.sv.utils.BroadcastPlay( ent, station, stationURL, volume )
     if ent.IsPermanent then rRadio.sv.permanent.SavePermanentBoombox( ent ) end
-    rRadio.sv.stationUpdateQueue[idx] = {
-        station = station,
-        url = stationURL,
-        volume = volume,
-        timestamp = SysTime()
-    }
-
+    queueStationUpdate( idx, station, stationURL, volume )
     hook.Run( "rRadio.PostPlayStation", ply, ent, station, stationURL, volume )
 end )
 
@@ -278,39 +300,48 @@ local function checkCustomStationPermission( ply )
     return true
 end
 
-local function AddCustomStation( ply, name, url )
-    if not name or not url then
-        notifyPlayerOrConsole( ply, "[rRadio] Invalid command format. Usage: !" .. rRadio.config.CommandAddStation .. " \"name\" \"url\"" )
+local function runCustomStationCommand( ply, hasRequiredArgs, usageMsg, actionFn )
+    if not hasRequiredArgs then
+        notifyPlayerOrConsole( ply, usageMsg )
         return
     end
-
     if not checkCustomStationPermission( ply ) then return end
 
-    if not url:match( "^https?://" ) then
-        notifyPlayerOrConsole( ply, "[rRadio] Invalid URL." )
-        return
+    local ok, msg = actionFn()
+    if msg and msg ~= "" then
+        notifyPlayerOrConsole( ply, msg, ok and "info" or nil )
     end
+    if ok then SendCustomStations() end
+end
 
-    rRadio.sv.CustomStations:Add( name, url )
-    notifyPlayerOrConsole( ply, string.format( "[rRadio] Added custom station '%s'.", name ), "info" )
-    SendCustomStations()
+local function AddCustomStation( ply, name, url )
+    runCustomStationCommand(
+        ply,
+        name and url,
+        "[rRadio] Invalid command format. Usage: !" .. rRadio.config.CommandAddStation .. " \"name\" \"url\"",
+        function()
+            if not url:match( "^https?://" ) then
+                return false, "[rRadio] Invalid URL."
+            end
+            rRadio.sv.CustomStations:Add( name, url )
+            return true, string.format( "[rRadio] Added custom station '%s'.", name )
+        end
+    )
 end
 
 local function RemoveCustomStation( ply, key )
-    if not key then
-        notifyPlayerOrConsole( ply, "[rRadio] Invalid command format. Usage: !" .. rRadio.config.CommandRemoveStation .. " \"key\"" )
-        return
-    end
-
-    if not checkCustomStationPermission( ply ) then return end
-
-    local removed = rRadio.sv.CustomStations:Remove( key )
-    if removed then
-        notifyPlayerOrConsole( ply, string.format( "[rRadio] Removed custom station '%s'.", key ), "info" )
-        SendCustomStations()
-    else
-        notifyPlayerOrConsole( ply, "[rRadio] No matching station found for " .. key )
-    end
+    runCustomStationCommand(
+        ply,
+        key,
+        "[rRadio] Invalid command format. Usage: !" .. rRadio.config.CommandRemoveStation .. " \"key\"",
+        function()
+            local removed = rRadio.sv.CustomStations:Remove( key )
+            if removed then
+                return true, string.format( "[rRadio] Removed custom station '%s'.", key )
+            end
+            return false, "[rRadio] No matching station found for " .. key
+        end
+    )
 end
 
 local function HandleAddStation( ply, text )
@@ -371,7 +402,7 @@ hook.Add( "PhysgunPickup", "rRadio.AllowBoomboxPhysgun", function( ply, ent )
 end )
 hook.Add( "InitPostEntity", "rRadio.initalizePostEntity", function()
     timer.Simple( 1, function()
-        if rRadio.sv.utils.IsDarkRP() then
+        if DarkRP ~= nil and DarkRP.getPhrase ~= nil then
             hook.Add(
                 "playerBoughtCustomEntity",
                 "rRadio.AssignBoomboxOwnerInDarkRP",

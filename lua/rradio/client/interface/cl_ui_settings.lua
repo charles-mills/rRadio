@@ -4,26 +4,6 @@ local Scale = rRadio.cl.Scale
 local uiState = rRadio.cl.uiState
 local SETTINGS_GAP = Scale( 6 )
 
-local function getSurfaceColor( tier, fallback )
-    if rRadio.interface.GetSurfaceColor then
-        local color = rRadio.interface.GetSurfaceColor( tier )
-        if color then return color end
-    end
-
-    return fallback
-end
-
-local function drawSettingsSurface( radius, w, h, fillColor )
-    if rRadio.interface.DrawBorderedRoundedBox then
-        rRadio.interface.DrawBorderedRoundedBox(
-            radius, 0, 0, w, h, fillColor
-        )
-        return
-    end
-
-    draw.RoundedBox( radius, 0, 0, w, h, fillColor )
-end
-
 local function updateTextColours( panel )
     if not IsValid( panel ) then return end
     if panel.SetTextColor then panel:SetTextColor( rRadio.config.UI.TextColor ) end
@@ -64,6 +44,23 @@ local function refreshThemeControls( parentFrame, backButton )
     local buttons = { parentFrame.closeButton, parentFrame.settingsButton, backButton }
     for _, btn in ipairs( buttons ) do
         if IsValid( btn ) then btn.hoverColour = rRadio.config.UI.ButtonHoverColor end
+    end
+
+    if IsValid( parentFrame.searchBox ) then
+        parentFrame.searchBox:SetTextColor( rRadio.config.UI.TextColor )
+        if parentFrame.searchBox.SetCursorColor then
+            parentFrame.searchBox:SetCursorColor( rRadio.config.UI.TextColor )
+        end
+
+        if parentFrame.searchBox.SetHighlightColor then
+            parentFrame.searchBox:SetHighlightColor( Color( 120, 120, 120 ) )
+        end
+
+        if parentFrame.searchBox.SetPlaceholderColor then
+            parentFrame.searchBox:SetPlaceholderColor(
+                ColorAlpha( rRadio.config.UI.TextColor, 150 )
+            )
+        end
     end
 end
 
@@ -116,16 +113,24 @@ local function styleScaleSlider( slider )
 end
 
 local function createScaleSlider( parent, titleText, minVal, maxVal, currentVal, onLive, onCommit )
+    local function applyScaledLayout( container, header, title, valueLabel, slider )
+        container:SetTall( Scale( 58 ) )
+        header:SetTall( Scale( 22 ) )
+        title:DockMargin( Scale( 10 ), 0, 0, 0 )
+        valueLabel:DockMargin( 0, 0, Scale( 10 ), 0 )
+        slider:DockMargin( Scale( 10 ), 0, Scale( 10 ), Scale( 6 ) )
+    end
+
     local container = vgui.Create( "DPanel", parent )
     container:Dock( TOP )
     container:SetTall( Scale( 58 ) )
     container:DockMargin( 0, 0, 0, SETTINGS_GAP )
     container.Paint = function( _self, w, h )
-        drawSettingsSurface(
+        rRadio.interface.DrawBorderedRoundedBox(
             8,
-            w,
-            h,
-            getSurfaceColor( "card", rRadio.config.UI.ButtonColor )
+            0, 0, w, h,
+            rRadio.interface.GetSurfaceColor( "card" )
+                or rRadio.config.UI.ButtonColor
         )
     end
 
@@ -153,14 +158,13 @@ local function createScaleSlider( parent, titleText, minVal, maxVal, currentVal,
     slider:SetMin( minVal )
     slider:SetMax( maxVal )
     styleScaleSlider( slider )
-    container.Think = function()
-        local rowHeight = Scale( 58 )
-        if container:GetTall() ~= rowHeight then container:SetTall( rowHeight ) end
-        header:SetTall( Scale( 22 ) )
-        title:DockMargin( Scale( 10 ), 0, 0, 0 )
-        valueLabel:DockMargin( 0, 0, Scale( 10 ), 0 )
-        slider:DockMargin( Scale( 10 ), 0, Scale( 10 ), Scale( 6 ) )
+
+    local oldPerformLayout = container.PerformLayout
+    container.PerformLayout = function( self, w, h )
+        if oldPerformLayout then oldPerformLayout( self, w, h ) end
+        applyScaledLayout( self, header, title, valueLabel, slider )
     end
+    applyScaledLayout( container, header, title, valueLabel, slider )
 
     local function updateValueLabel( v )
         valueLabel:SetText( formatScaleValue( v ) )
@@ -221,11 +225,11 @@ local function styleMenuKeyBinder( binder )
     end
 
     binder.Paint = function( self, w, h )
-        drawSettingsSurface(
+        rRadio.interface.DrawBorderedRoundedBox(
             6,
-            w,
-            h,
-            getSurfaceColor( "panel", rRadio.config.UI.SearchBoxColor )
+            0, 0, w, h,
+            rRadio.interface.GetSurfaceColor( "panel" )
+                or rRadio.config.UI.SearchBoxColor
         )
         if self._waiting then return end
         draw.SimpleText(
@@ -293,7 +297,10 @@ function rRadio.cl.settingsUI.addThemeSelector( scrollPanel, parentFrame, backBu
             RunConsoleCommand( "rammel_rradio_menu_theme", key )
             rRadio.interface.applyTheme( key )
             refreshThemeControls( parentFrame, backButton )
-            rRadio.cl.openSettingsMenu( parentFrame, backButton, key )
+            updateTextColours( parentFrame )
+            if IsValid( themeDropdown.dropdown.Menu ) then
+                updateTextColours( themeDropdown.dropdown.Menu )
+            end
         end,
         function( themeKey )
             applyThemePreview(
@@ -317,11 +324,11 @@ function rRadio.cl.settingsUI.addThemeSelector( scrollPanel, parentFrame, backBu
     )
 
     themeDropdown.Paint = function( _self, w, h )
-        drawSettingsSurface(
+        rRadio.interface.DrawBorderedRoundedBox(
             8,
-            w,
-            h,
-            getSurfaceColor( "card", rRadio.config.UI.ButtonColor )
+            0, 0, w, h,
+            rRadio.interface.GetSurfaceColor( "card" )
+                or rRadio.config.UI.ButtonColor
         )
     end
 end
@@ -338,11 +345,11 @@ function rRadio.cl.settingsUI.addKeyBindSelector( scrollPanel )
     container:SetTall( Scale( 50 ) )
     container:DockMargin( 0, 0, 0, SETTINGS_GAP )
     container.Paint = function( _self, w, h )
-        drawSettingsSurface(
+        rRadio.interface.DrawBorderedRoundedBox(
             8,
-            w,
-            h,
-            getSurfaceColor( "card", rRadio.config.UI.ButtonColor )
+            0, 0, w, h,
+            rRadio.interface.GetSurfaceColor( "card" )
+                or rRadio.config.UI.ButtonColor
         )
     end
 
@@ -471,9 +478,17 @@ function rRadio.cl.settingsUI.addAudioOptions( scrollPanel )
     local currentMaxVolume = maxVolumeCvar
         and maxVolumeCvar:GetFloat()
         or 1
+    local volumeMeta = rRadio.interface.GetMaxVolumeCapMeta
+        and rRadio.interface.GetMaxVolumeCapMeta()
+        or {
+            labelKey = "MaxVolumeCap",
+            labelFallback = "Global Volume Cap",
+            helpKey = "MaxVolumeCapHelp",
+            helpFallback = "Maximum global radio volume (0.0 - 1.0)."
+        }
     local capSlider = createScaleSlider(
         scrollPanel,
-        rRadio.L( "MaxVolumeCap", "Global Volume Cap" ),
+        rRadio.L( volumeMeta.labelKey, volumeMeta.labelFallback ),
         0, 1,
         math.Clamp( currentMaxVolume, 0, 1 ),
         function( value )
@@ -487,10 +502,7 @@ function rRadio.cl.settingsUI.addAudioOptions( scrollPanel )
 
     if IsValid( capSlider ) then
         capSlider:SetTooltip(
-            rRadio.L(
-                "MaxVolumeCapHelp",
-                "Maximum global radio volume (0.0 - 1.0)."
-            )
+            rRadio.L( volumeMeta.helpKey, volumeMeta.helpFallback )
         )
     end
 end
@@ -502,28 +514,17 @@ function rRadio.cl.settingsUI.addGeneralOptions( scrollPanel )
         false
     )
 
-    local options = {
-        {
-            label = rRadio.L(
-                "ShowCarMessages", "Show Car Radio Animation"
-            ),
-            convar = "rammel_rradio_vehicle_animation"
-        },
-        {
-            label = rRadio.L( "ShowBoomboxHUD", "Show Boombox HUD" ),
-            convar = "rammel_rradio_boombox_hud"
-        },
-        {
-            label = rRadio.L( "BasicBoomboxHUD", "Basic Boombox HUD" ),
-            convar = "rammel_rradio_basic_hud"
-        }
-    }
+    local options = rRadio.interface.GetGeneralOptionDefs
+        and rRadio.interface.GetGeneralOptionDefs()
+        or {}
 
     for _, opt in ipairs( options ) do
         local cvar = GetConVar( opt.convar )
         local checkbox = vgui.Create( "rRadioCheckbox", scrollPanel )
         checkbox:Setup(
-            opt.label, opt.convar, cvar:GetBool(),
+            rRadio.L( opt.labelKey, opt.labelFallback ),
+            opt.convar,
+            cvar:GetBool(),
             function()
                 rRadio.interface.playSound( "SettingsMenuSuccess" )
             end

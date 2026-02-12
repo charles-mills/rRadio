@@ -137,49 +137,28 @@ local function addClientFiles( paths )
 end
 
 local function createFonts()
-    local fonts = {
-        {
-            Name = "rRadio.Roboto24",
-            Data = {
-                font = "Roboto",
-                size = 24,
-                weight = 500,
-                antialias = true,
-                extended = true
-            }
-        },
-        {
-            Name = "rRadio.Roboto5",
-            Data = {
-                font = "Roboto",
-                size = ScreenScale( 5 ),
-                weight = 500,
-                antialias = true,
-                extended = true
-            }
-        },
-        {
-            Name = "rRadio.Roboto4",
-            Data = {
-                font = "Roboto",
-                size = ScreenScale( 4 ),
-                weight = 500,
-                antialias = true,
-                extended = true
-            }
-        },
-        {
-            Name = "rRadio.Roboto8",
-            Data = {
-                font = "Roboto",
-                size = ScreenScale( 8 ),
-                weight = 700
-            }
+    local function roboto( size, weight, withFlags )
+        local data = {
+            font = "Roboto",
+            size = size,
+            weight = weight
         }
+        if withFlags then
+            data.antialias = true
+            data.extended = true
+        end
+        return data
+    end
+
+    local fonts = {
+        { name = "rRadio.Roboto24", data = roboto( 24, 500, true ) },
+        { name = "rRadio.Roboto5", data = roboto( ScreenScale( 5 ), 500, true ) },
+        { name = "rRadio.Roboto4", data = roboto( ScreenScale( 4 ), 500, true ) },
+        { name = "rRadio.Roboto8", data = roboto( ScreenScale( 8 ), 700, false ) }
     }
 
     for _, fontDef in ipairs( fonts ) do
-        surface.CreateFont( fontDef.Name, fontDef.Data )
+        surface.CreateFont( fontDef.name, fontDef.data )
     end
 end
 
@@ -249,7 +228,7 @@ local function registerNetStrings()
         "rRadio.PlayVehicleAnimation", "rRadio.UpdateRadioStatus",
         "rRadio.SetRadioVolume", "rRadio.SetPersistent",
         "rRadio.RemovePersistent", "rRadio.SendPersistentConfirmation",
-        "rRadio.SetConfigUpdate", "rRadio.CustomStationsUpdate",
+        "rRadio.CustomStationsUpdate",
         "rRadio.ListCustomStations"
     }
     for _, netString in ipairs( netStrings ) do

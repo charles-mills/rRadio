@@ -1,17 +1,6 @@
 ﻿do
     local PANEL = {}
     local Scale = rRadio.interface.scaleMenu
-    local function paintButtonFrame( w, h, fillColor, borderColor )
-        if rRadio.interface.DrawBorderedRoundedBox then
-            rRadio.interface.DrawBorderedRoundedBox(
-                rRadio.interface.GetControlCornerRadius(),
-                0, 0, w, h, fillColor, borderColor
-            )
-            return
-        end
-
-        draw.RoundedBox( 8, 0, 0, w, h, fillColor )
-    end
     function PANEL:Init()
         self.label = ""
         self.leftChild = nil
@@ -36,13 +25,9 @@
         self.playing = b and true or false
     end
 
-    function PANEL:SetHoverColour( c )
-        if c then self.hoverColour = c end
-    end
-
     function PANEL:Think()
         local tgt = self:IsHovered() and not self.playing and 1 or 0
-        self.lerp = math.Approach( self.lerp, tgt, FrameTime() * 10 )
+        self.lerp = rRadio.interface.ApproachLerp( self.lerp, tgt, 10 )
     end
 
     function PANEL:Paint( w, h )
@@ -66,7 +51,10 @@
             border = rRadio.interface.LerpColor( self.lerp, border, self.hoverColour )
         end
 
-        paintButtonFrame( w, h, bg, border )
+        rRadio.interface.DrawBorderedRoundedBox(
+            rRadio.interface.GetControlCornerRadius(),
+            0, 0, w, h, bg, border
+        )
         if not self.playing and self.lerp > 0.001 then
             local radius = rRadio.interface.GetControlCornerRadius
                 and rRadio.interface.GetControlCornerRadius()

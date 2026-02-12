@@ -2,10 +2,6 @@
 rRadio.sv = rRadio.sv or {}
 rRadio.sv.db = rRadio.sv.db or {}
 local db = rRadio.sv.db
-function db.Escape( value )
-    return sql.SQLStr( value )
-end
-
 function db.Query( q )
     local result = sql.Query( q )
     if result == false then
@@ -15,12 +11,8 @@ function db.Query( q )
     return result
 end
 
-function db.TableExists( name )
-    return sql.TableExists( name )
-end
-
 function db.EnsurePermanentTable()
-    if not db.TableExists( "permanent_boomboxes" ) then
+    if not sql.TableExists( "permanent_boomboxes" ) then
         local query = [[
 CREATE TABLE permanent_boomboxes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

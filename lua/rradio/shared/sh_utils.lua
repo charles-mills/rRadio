@@ -158,23 +158,6 @@ function rRadio.utils.CanUseRadio( entity )
     return true
 end
 
-function rRadio.utils.PrintVehicleClassInfo( entity )
-    if not IsValid( entity ) then
-        rRadio.logger.DebugScope( "utils", "Invalid entity passed to PrintVehicleClassInfo." )
-        return
-    end
-
-    local entityClass = entity:GetClass()
-    rRadio.logger.DebugScope( "utils", "Entity Class:", entityClass )
-    local parent = entity:GetParent()
-    if IsValid( parent ) then
-        local parentClass = parent:GetClass()
-        rRadio.logger.DebugScope( "utils", "Parent Class:", parentClass )
-    else
-        rRadio.logger.DebugScope( "utils", "Entity has no valid parent." )
-    end
-end
-
 function rRadio.utils.FormatAndTranslateCountry( rawKey )
     if rRadio.utils.IsCustomCategory( rawKey ) then return rRadio.LanguageManager:GetCustomTranslation() end
     local formatted = rRadio.utils.FormatCountryKey( rawKey )

@@ -17,7 +17,7 @@ function rRadio.cl.getEntityVolume( entity )
     if not IsValid( entity ) then return 0.5 end
     local vol = rRadio.cl.entityVolumes[entity]
     if vol then return vol end
-    local cfg = rRadio.interface.getEntityConfig( entity )
+    local cfg = rRadio.utils.GetEntityConfig( entity )
     return cfg and cfg.Volume or 0.5
 end
 
@@ -111,6 +111,45 @@ local function radioEnabled()
     return enabledCvar:GetBool()
 end
 
+local GENERAL_OPTION_DEFS = {
+    {
+        labelKey = "ShowCarMessages",
+        labelFallback = "Show Car Radio Animation",
+        convar = "rammel_rradio_vehicle_animation",
+        toolLabel = "Vehicle Animation",
+        toolHelp = "Play an animation when you enter a vehicle."
+    },
+    {
+        labelKey = "ShowBoomboxHUD",
+        labelFallback = "Show Boombox HUD",
+        convar = "rammel_rradio_boombox_hud",
+        toolLabel = "Boombox HUD",
+        toolHelp = "Display a HUD overlay on boomboxes when nearby."
+    },
+    {
+        labelKey = "BasicBoomboxHUD",
+        labelFallback = "Basic Boombox HUD",
+        convar = "rammel_rradio_basic_hud",
+        toolLabel = "Basic Boombox HUD",
+        toolHelp = "Simpler HUD without animations."
+    }
+}
+
+local MAX_VOLUME_CAP_META = {
+    labelKey = "MaxVolumeCap",
+    labelFallback = "Global Volume Cap",
+    helpKey = "MaxVolumeCapHelp",
+    helpFallback = "Maximum global radio volume (0.0 - 1.0)."
+}
+
+function rRadio.interface.GetGeneralOptionDefs()
+    return GENERAL_OPTION_DEFS
+end
+
+function rRadio.interface.GetMaxVolumeCapMeta()
+    return MAX_VOLUME_CAP_META
+end
+
 if not file.IsDir( DATA_DIR, "DATA" ) then file.CreateDir( DATA_DIR ) end
 local scaledFontCache = {}
 hook.Add( "LanguageUpdated", "rRadio.ClearScaledFontCache", function() scaledFontCache = {} end )
@@ -120,17 +159,25 @@ function rRadio.interface.scale( val )
     return val * scaleRatio
 end
 
-local function getScaleBounds( minKey, maxKey, defaultKey )
+local function getScaleBounds( minKey, maxKey, defaultKey, fallbackMinKey, fallbackMaxKey )
     local cfg = rRadio.config and rRadio.config.MenuScale or {}
-    local minVal = tonumber( cfg[minKey] ) or tonumber( cfg[defaultKey] ) or 1
-    local maxVal = tonumber( cfg[maxKey] ) or minVal
+    local minVal = tonumber( cfg[minKey] )
+        or ( fallbackMinKey and tonumber( cfg[fallbackMinKey] ) )
+        or tonumber( cfg[defaultKey] )
+        or 1
+    local maxVal = tonumber( cfg[maxKey] )
+        or ( fallbackMaxKey and tonumber( cfg[fallbackMaxKey] ) )
+        or minVal
     if maxVal < minVal then maxVal = minVal end
     return minVal, maxVal
 end
 
-local function clampScale( scale, minKey, maxKey, defaultKey )
+local function clampScale( scale, minKey, maxKey, defaultKey, fallbackMinKey, fallbackMaxKey )
     local normalized = tonumber( scale ) or 1
-    local minVal, maxVal = getScaleBounds( minKey, maxKey, defaultKey )
+    local minVal, maxVal = getScaleBounds(
+        minKey, maxKey, defaultKey,
+        fallbackMinKey, fallbackMaxKey
+    )
     return math.Round( math.Clamp( normalized, minVal, maxVal ), 2 )
 end
 
@@ -139,7 +186,10 @@ function rRadio.interface.GetMenuScaleRange()
 end
 
 function rRadio.interface.GetMenuWidthScaleRange()
-    return getScaleBounds( "WidthMin", "WidthMax", "WidthDefault" )
+    return getScaleBounds(
+        "WidthMin", "WidthMax", "WidthDefault",
+        "Min", "Max"
+    )
 end
 
 function rRadio.interface.GetMenuScaleDefault()
@@ -157,7 +207,11 @@ function rRadio.interface.ClampMenuScale( scale )
 end
 
 function rRadio.interface.ClampMenuWidthScale( scale )
-    return clampScale( scale, "WidthMin", "WidthMax", "WidthDefault" )
+    return clampScale(
+        scale,
+        "WidthMin", "WidthMax", "WidthDefault",
+        "Min", "Max"
+    )
 end
 
 function rRadio.interface.GetMenuScale()
@@ -249,10 +303,63 @@ function rRadio.interface.styleSliderPaint( slider, trackRatio )
         local y = math.floor( ( h - trackHeight ) / 2 )
         local knobInset = IsValid( self.Knob ) and math.floor( self.Knob:GetWide() * 0.5 ) or 0
         local trackW = math.max( Scale( 10 ), w - knobInset * 2 )
-        draw.RoundedBox( math.floor( trackHeight / 2 ), knobInset, y, trackW, trackHeight, rRadio.config.UI.TextColor )
+        local trackX = knobInset
+        local radius = math.max( 1, math.floor( trackHeight / 2 ) )
+        local panelTrack = rRadio.interface.GetSurfaceColor( "panel" )
+            or rRadio.config.UI.SearchBoxColor
+            or rRadio.config.UI.ButtonColor
+        local contrastTrack = rRadio.config.UI.Disabled
+            or rRadio.config.UI.ScrollbarColor
+            or panelTrack
+        local borderColor = ColorAlpha(
+            rRadio.interface.GetControlBorderColor(),
+            200
+        )
+        local accent = rRadio.config.UI.AccentPrimary
+            or rRadio.config.UI.TextColor
+        local progress = math.Clamp( tonumber( self:GetSlideX() ) or 0, 0, 1 )
+        local fillW = math.floor( trackW * progress + 0.5 )
+        local fillInset = trackHeight >= 6 and 1 or 0
+
+        rRadio.interface.DrawBorderedRoundedBox(
+            radius,
+            trackX, y, trackW, trackHeight,
+            rRadio.interface.LerpColor( 0.6, panelTrack, contrastTrack ),
+            borderColor
+        )
+        if fillW > 0 then
+            draw.RoundedBox(
+                math.min( radius, math.floor( fillW / 2 ) ),
+                trackX + fillInset,
+                y + fillInset,
+                math.max( 0, fillW - fillInset * 2 ),
+                math.max( 0, trackHeight - fillInset * 2 ),
+                accent
+            )
+        end
     end
-    slider.Slider.Knob.Paint = function( _self, w, h )
-        draw.RoundedBox( math.floor( math.min( w, h ) / 2 ), 0, 0, w, h, rRadio.config.UI.BackgroundColor )
+
+    slider.Slider.Knob.Paint = function( self, w, h )
+        local radius = math.floor( math.min( w, h ) / 2 )
+        local fillColor = rRadio.interface.GetSurfaceColor( "card" )
+            or rRadio.config.UI.ButtonColor
+        local borderColor = rRadio.interface.GetControlBorderColor()
+        local active = self:IsHovered() or self.Depressed
+            or ( IsValid( self:GetParent() ) and self:GetParent():GetDragging() )
+        if active then
+            borderColor = rRadio.interface.LerpColor(
+                0.65,
+                borderColor,
+                rRadio.config.UI.AccentPrimary or rRadio.config.UI.TextColor
+            )
+        end
+
+        rRadio.interface.DrawBorderedRoundedBox(
+            radius,
+            0, 0, w, h,
+            fillColor,
+            borderColor
+        )
     end
 end
 
@@ -450,18 +557,13 @@ function rRadio.interface.StyleVBar( vbar )
     vbar.btnDown.Paint = function( _self, _w, _h ) end
 end
 
-function rRadio.interface.DisplayVehicleEnterAnimation( argVehicle, isDriverOverride )
-    rRadio.logger.DebugScope( "cl_utils", "Displaying vehicle enter animation" )
-    if not radioEnabled() then
-        rRadio.logger.DebugScope( "cl_utils", "Radio disabled" )
-        return
-    end
+local isMessageAnimating = false
+local lastMessageTime
+local VEHICLE_ANIM_DURATION = 1
+local VEHICLE_SHOW_DURATION = 2
+local VEHICLE_ANIM_Y_FACTOR = 0.2
 
-    if not GetConVar( "rammel_rradio_vehicle_animation" ):GetBool() then
-        rRadio.logger.DebugScope( "cl_utils", "Vehicle animation disabled" )
-        return
-    end
-
+local function resolveVehicleForAnimation( argVehicle, isDriverOverride )
     local ply = LocalPlayer()
     rRadio.logger.DebugScope(
         "cl_utils", "argVehicle:", tostring( argVehicle ),
@@ -510,111 +612,149 @@ function rRadio.interface.DisplayVehicleEnterAnimation( argVehicle, isDriverOver
 
     if rRadio.utils.IsSitAnywhereSeat( mainVehicle ) then
         rRadio.logger.DebugScope( "cl_utils", "Player is in a sit anywhere seat" )
-        return
+        return nil
     end
 
-    ply.currentRadioEntity = mainVehicle
-    rRadio.logger.DebugScope( "cl_utils", "Vehicle animation conditions met" )
+    return ply, mainVehicle
+end
+
+local function canStartVehicleAnimation()
     local currentTime = CurTime()
     local cooldownTime = rRadio.config.MessageCooldown
-    if isMessageAnimating or lastMessageTime and currentTime - lastMessageTime < cooldownTime then
+    if isMessageAnimating or ( lastMessageTime and currentTime - lastMessageTime < cooldownTime ) then
         rRadio.logger.DebugScope( "cl_utils", "Animation is already playing or cooldown not met" )
-        return
+        return false
     end
 
     rRadio.logger.DebugScope( "cl_utils", "Animation cooldown met" )
     lastMessageTime = currentTime
     isMessageAnimating = true
-    local openKey = GetConVar( "rammel_rradio_menu_key" ):GetInt()
-    local keyName = rRadio.GetKeyName( openKey )
+    return true
+end
+
+local function paintVehicleEnterAnimationPanel( self, w, h, state, keyName )
+    local bgColor = rRadio.config.UI.HeaderColor
+    local hoverBrightness = self:IsHovered() and 1.2 or 1
+    bgColor = Color(
+        math.min( bgColor.r * hoverBrightness, 255 ),
+        math.min( bgColor.g * hoverBrightness, 255 ),
+        math.min( bgColor.b * hoverBrightness, 255 ),
+        state.alpha * 255
+    )
+    draw.RoundedBoxEx( 12, 0, 0, w, h, bgColor, true, false, true, false )
+    local keyWidth = rRadio.interface.scale( 40 )
+    local keyHeight = rRadio.interface.scale( 30 )
+    local keyX = rRadio.interface.scale( 20 )
+    local keyY = h / 2 - keyHeight / 2
+    local pulseScale = 1 + math.sin( state.pulseValue * math.pi * 2 ) * 0.05
+    local adjustedKeyWidth = keyWidth * pulseScale
+    local adjustedKeyHeight = keyHeight * pulseScale
+    local adjustedKeyX = keyX - ( adjustedKeyWidth - keyWidth ) / 2
+    local adjustedKeyY = keyY - ( adjustedKeyHeight - keyHeight ) / 2
+    draw.RoundedBox(
+        6, adjustedKeyX, adjustedKeyY,
+        adjustedKeyWidth, adjustedKeyHeight,
+        ColorAlpha( rRadio.config.UI.ButtonColor, state.alpha * 255 )
+    )
+    surface.SetDrawColor(
+        ColorAlpha( rRadio.config.UI.TextColor, state.alpha * 50 )
+    )
+    local lineX = keyX + keyWidth + rRadio.interface.scale( 7 )
+    surface.DrawLine( lineX, h * 0.3, lineX, h * 0.7 )
+    draw.SimpleText(
+        keyName, "rRadio.Roboto5",
+        keyX + keyWidth / 2, h / 2,
+        ColorAlpha( rRadio.config.UI.TextColor, state.alpha * 255 ),
+        TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER
+    )
+    local messageX = keyX + keyWidth + rRadio.interface.scale( 15 )
+    draw.SimpleText(
+        rRadio.L( "ToOpenRadio", "to open radio" ),
+        "rRadio.Roboto5", messageX, h / 2,
+        ColorAlpha( rRadio.config.UI.TextColor, state.alpha * 255 ),
+        TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER
+    )
+end
+
+local function thinkVehicleEnterAnimationPanel( self, state )
+    local time = CurTime() - state.startTime
+    state.pulseValue = ( state.pulseValue + FrameTime() * 1.5 ) % 1
+    if time < state.animDuration then
+        local progress = time / state.animDuration
+        local easedProgress = math.ease.OutQuint( progress )
+        self:SetPos( Lerp( easedProgress, state.scrW, state.scrW - state.panelWidth ), state.panelY )
+        state.alpha = math.ease.InOutQuad( progress )
+    elseif time < state.animDuration + state.showDuration and not state.isDismissed then
+        state.alpha = 1
+        self:SetPos( state.scrW - state.panelWidth, state.panelY )
+    elseif not state.isDismissed or time >= state.animDuration + state.showDuration then
+        local progress = ( time - ( state.animDuration + state.showDuration ) ) / state.animDuration
+        local easedProgress = math.ease.InOutQuint( progress )
+        self:SetPos( Lerp( easedProgress, state.scrW - state.panelWidth, state.scrW ), state.panelY )
+        state.alpha = 1 - math.ease.InOutQuad( progress )
+        if progress >= 1 then
+            isMessageAnimating = false
+            self:Remove()
+        end
+    end
+end
+
+local function createVehicleEnterAnimationPanel( keyName )
     local scrW, scrH = ScrW(), ScrH()
     local panelWidth = rRadio.interface.scale( 300 )
     local panelHeight = rRadio.interface.scale( 70 )
+    local panelY = scrH * VEHICLE_ANIM_Y_FACTOR
     local panel = vgui.Create( "DButton" )
     panel:SetSize( panelWidth, panelHeight )
-    panel:SetPos( scrW, scrH * 0.2 )
+    panel:SetPos( scrW, panelY )
     panel:SetText( "" )
     panel:MoveToFront()
-    local animDuration = 1
-    local showDuration = 2
-    local startTime = CurTime()
-    local alpha = 0
-    local pulseValue = 0
-    local isDismissed = false
+    local state = {
+        scrW = scrW,
+        panelWidth = panelWidth,
+        panelY = panelY,
+        animDuration = VEHICLE_ANIM_DURATION,
+        showDuration = VEHICLE_SHOW_DURATION,
+        startTime = CurTime(),
+        alpha = 0,
+        pulseValue = 0,
+        isDismissed = false
+    }
     panel.DoClick = function()
         rRadio.interface.playSound( "ButtonPressMain" )
         rRadio.cl.openRadioMenu()
-        isDismissed = true
+        state.isDismissed = true
     end
 
     panel.Paint = function( self, w, h )
-        local bgColor = rRadio.config.UI.HeaderColor
-        local hoverBrightness = self:IsHovered() and 1.2 or 1
-        bgColor = Color(
-            math.min( bgColor.r * hoverBrightness, 255 ),
-            math.min( bgColor.g * hoverBrightness, 255 ),
-            math.min( bgColor.b * hoverBrightness, 255 ),
-            alpha * 255
-        )
-        draw.RoundedBoxEx( 12, 0, 0, w, h, bgColor, true, false, true, false )
-        local keyWidth = rRadio.interface.scale( 40 )
-        local keyHeight = rRadio.interface.scale( 30 )
-        local keyX = rRadio.interface.scale( 20 )
-        local keyY = h / 2 - keyHeight / 2
-        local pulseScale = 1 + math.sin( pulseValue * math.pi * 2 ) * 0.05
-        local adjustedKeyWidth = keyWidth * pulseScale
-        local adjustedKeyHeight = keyHeight * pulseScale
-        local adjustedKeyX = keyX - ( adjustedKeyWidth - keyWidth ) / 2
-        local adjustedKeyY = keyY - ( adjustedKeyHeight - keyHeight ) / 2
-        draw.RoundedBox(
-            6, adjustedKeyX, adjustedKeyY,
-            adjustedKeyWidth, adjustedKeyHeight,
-            ColorAlpha( rRadio.config.UI.ButtonColor, alpha * 255 )
-        )
-        surface.SetDrawColor(
-            ColorAlpha( rRadio.config.UI.TextColor, alpha * 50 )
-        )
-        local lineX = keyX + keyWidth + rRadio.interface.scale( 7 )
-        surface.DrawLine( lineX, h * 0.3, lineX, h * 0.7 )
-        draw.SimpleText(
-            keyName, "rRadio.Roboto5",
-            keyX + keyWidth / 2, h / 2,
-            ColorAlpha( rRadio.config.UI.TextColor, alpha * 255 ),
-            TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER
-        )
-        local messageX = keyX + keyWidth + rRadio.interface.scale( 15 )
-        draw.SimpleText(
-            rRadio.L( "ToOpenRadio", "to open radio" ),
-            "rRadio.Roboto5", messageX, h / 2,
-            ColorAlpha( rRadio.config.UI.TextColor, alpha * 255 ),
-            TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER
-        )
+        paintVehicleEnterAnimationPanel( self, w, h, state, keyName )
     end
 
     panel.Think = function( self )
-        local time = CurTime() - startTime
-        pulseValue = ( pulseValue + FrameTime() * 1.5 ) % 1
-        if time < animDuration then
-            local progress = time / animDuration
-            local easedProgress = math.ease.OutQuint( progress )
-            self:SetPos( Lerp( easedProgress, scrW, scrW - panelWidth ), scrH * 0.2 )
-            alpha = math.ease.InOutQuad( progress )
-        elseif time < animDuration + showDuration and not isDismissed then
-            alpha = 1
-            self:SetPos( scrW - panelWidth, scrH * 0.2 )
-        elseif not isDismissed or time >= animDuration + showDuration then
-            local progress = ( time - ( animDuration + showDuration ) ) / animDuration
-            local easedProgress = math.ease.InOutQuint( progress )
-            self:SetPos( Lerp( easedProgress, scrW - panelWidth, scrW ), scrH * 0.2 )
-            alpha = 1 - math.ease.InOutQuad( progress )
-            if progress >= 1 then
-                isMessageAnimating = false
-                self:Remove()
-            end
-        end
+        thinkVehicleEnterAnimationPanel( self, state )
     end
 
     panel.OnRemove = function() isMessageAnimating = false end
+end
+
+function rRadio.interface.DisplayVehicleEnterAnimation( argVehicle, isDriverOverride )
+    rRadio.logger.DebugScope( "cl_utils", "Displaying vehicle enter animation" )
+    if not radioEnabled() then
+        rRadio.logger.DebugScope( "cl_utils", "Radio disabled" )
+        return
+    end
+
+    if not GetConVar( "rammel_rradio_vehicle_animation" ):GetBool() then
+        rRadio.logger.DebugScope( "cl_utils", "Vehicle animation disabled" )
+        return
+    end
+
+    local ply, mainVehicle = resolveVehicleForAnimation( argVehicle, isDriverOverride )
+    if not ( IsValid( ply ) and IsValid( mainVehicle ) ) then return end
+    ply.currentRadioEntity = mainVehicle
+    rRadio.logger.DebugScope( "cl_utils", "Vehicle animation conditions met" )
+    if not canStartVehicleAnimation() then return end
+    createVehicleEnterAnimationPanel( rRadio.GetKeyName( GetConVar( "rammel_rradio_menu_key" ):GetInt() ) )
 end
 
 function rRadio.interface.applyTheme( themeName )
@@ -642,7 +782,7 @@ function rRadio.interface.updateStationCount()
         end
     end
 
-    activeStationCount = count
+    rRadio.cl.performance.activeStationCount = count
     return count
 end
 
@@ -653,6 +793,10 @@ function rRadio.interface.LerpColor( t, col1, col2 )
         Lerp( t, col1.b, col2.b ),
         Lerp( t, col1.a or 255, col2.a or 255 )
     )
+end
+
+function rRadio.interface.ApproachLerp( current, target, speed )
+    return math.Approach( current, target, FrameTime() * speed )
 end
 
 function rRadio.interface.ClampVolume( volume )
@@ -742,10 +886,6 @@ function rRadio.interface.toggleFavorite( list, key, subkey )
     rRadio.interface.saveFavorites()
 end
 
-function rRadio.interface.getEntityConfig( entity )
-    return rRadio.utils.GetEntityConfig( entity )
-end
-
 function rRadio.interface.CalculateVolume( entity, player, distanceSqr )
     if not IsValid( entity ) or not IsValid( player ) then return 0 end
     local entityConfig = rRadio.utils.GetEntityConfig( entity )
@@ -788,7 +928,7 @@ function rRadio.interface.updateRadioVolume( station, distanceSqr, isPlayerInCar
         return
     end
 
-    local entityConfig = rRadio.interface.getEntityConfig( entity )
+    local entityConfig = rRadio.utils.GetEntityConfig( entity )
     if not entityConfig then return end
     local userVolume = rRadio.interface.ClampVolume(
         rRadio.cl.entityVolumes[entity]

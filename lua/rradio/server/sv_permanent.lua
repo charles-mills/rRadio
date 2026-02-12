@@ -1,23 +1,19 @@
 ﻿rRadio.sv.permanent = rRadio.sv.permanent or {}
 local db = rRadio.sv.db or include( "rradio/server/sv_db.lua" )
-local _initialLoadComplete = false
 local spawnedBoomboxesByPosition = {}
 local spawnedBoomboxes = {}
 local currentMap = game.GetMap()
 rRadio.sv.BoomboxStatuses = rRadio.sv.BoomboxStatuses or {}
 db.EnsurePermanentTable()
-local function sanitize( str )
-    return string.gsub( str, "'", "''" )
-end
 
 local function GeneratePermanentID()
     return os.time() .. "_" .. math.random( 1000, 9999 )
 end
 
 local function ensurePermanentTable()
-    if db.TableExists( "permanent_boomboxes" ) then return true end
+    if sql.TableExists( "permanent_boomboxes" ) then return true end
     db.EnsurePermanentTable()
-    return db.TableExists( "permanent_boomboxes" )
+    return sql.TableExists( "permanent_boomboxes" )
 end
 
 local function fetchStationData( ent, entIndex )
@@ -25,20 +21,20 @@ local function fetchStationData( ent, entIndex )
     local stationURL = ""
     local volume = ent:GetNWFloat( "Volume", 1.0 )
     if rRadio.sv.ActiveRadios and rRadio.sv.ActiveRadios[entIndex] then
-        stationName = sanitize( rRadio.sv.ActiveRadios[entIndex].stationName or "" )
-        stationURL = sanitize( rRadio.sv.ActiveRadios[entIndex].url or "" )
+        stationName = rRadio.sv.ActiveRadios[entIndex].stationName or ""
+        stationURL = rRadio.sv.ActiveRadios[entIndex].url or ""
     end
 
     if ( stationURL == "" or stationName == "" )
         and rRadio.sv.BoomboxStatuses
         and rRadio.sv.BoomboxStatuses[entIndex] then
-        if stationURL == "" then stationURL = sanitize( rRadio.sv.BoomboxStatuses[entIndex].url or "" ) end
-        if stationName == "" then stationName = sanitize( rRadio.sv.BoomboxStatuses[entIndex].stationName or "" ) end
+        if stationURL == "" then stationURL = rRadio.sv.BoomboxStatuses[entIndex].url or "" end
+        if stationName == "" then stationName = rRadio.sv.BoomboxStatuses[entIndex].stationName or "" end
     end
 
     if stationURL == "" or stationName == "" then
-        if stationName == "" then stationName = sanitize( ent:GetNWString( "StationName", "" ) ) end
-        if stationURL == "" then stationURL = sanitize( ent:GetNWString( "StationURL", "" ) ) end
+        if stationName == "" then stationName = ent:GetNWString( "StationName", "" ) end
+        if stationURL == "" then stationURL = ent:GetNWString( "StationURL", "" ) end
     end
     return stationName, stationURL, volume
 end
@@ -48,7 +44,7 @@ local function upsertBoombox( permanentID, model, pos, ang, stationName, station
         SELECT id FROM permanent_boomboxes
         WHERE map = %s AND permanent_id = %s
         LIMIT 1;
-    ]], db.Escape( currentMap ), db.Escape( permanentID ) )
+    ]], sql.SQLStr( currentMap ), sql.SQLStr( permanentID ) )
     local result = db.Query( query )
     if result == false then return end
     if result and #result > 0 then
@@ -66,11 +62,11 @@ local function upsertBoombox( permanentID, model, pos, ang, stationName, station
                 station_url  = %s,
                 volume       = %f
             WHERE id = %d;
-        ]], db.Escape( model ),
+        ]], sql.SQLStr( model ),
             pos.x, pos.y, pos.z,
             ang.p, ang.y, ang.r,
-            db.Escape( stationName ),
-            db.Escape( stationURL ),
+            sql.SQLStr( stationName ),
+            sql.SQLStr( stationURL ),
             volume, tonumber( id ) )
         db.Query( updateQuery )
     else
@@ -85,13 +81,13 @@ local function upsertBoombox( permanentID, model, pos, ang, stationName, station
                  %f, %f, %f,
                  %f, %f, %f,
                  %s, %s, %f);
-        ]], db.Escape( currentMap ),
-            db.Escape( permanentID ),
-            db.Escape( model ),
+        ]], sql.SQLStr( currentMap ),
+            sql.SQLStr( permanentID ),
+            sql.SQLStr( model ),
             pos.x, pos.y, pos.z,
             ang.p, ang.y, ang.r,
-            db.Escape( stationName ),
-            db.Escape( stationURL ), volume )
+            sql.SQLStr( stationName ),
+            sql.SQLStr( stationURL ), volume )
         db.Query( insertQuery )
     end
 end
@@ -138,7 +134,7 @@ end
 function rRadio.sv.permanent.SavePermanentBoombox( ent )
     if not IsValid( ent ) then return end
     if not ensurePermanentTable() then return end
-    local model = sanitize( ent:GetModel() )
+    local model = ent:GetModel()
     local pos = ent:GetPos()
     local ang = ent:GetAngles()
     local entIndex = ent:EntIndex()
@@ -150,7 +146,7 @@ function rRadio.sv.permanent.SavePermanentBoombox( ent )
     end
 
     upsertBoombox( permanentID, model, pos, ang, stationName, stationURL, volume )
-    db.Query( string.format( "SELECT * FROM permanent_boomboxes WHERE permanent_id = %s", db.Escape( permanentID ) ) )
+    db.Query( string.format( "SELECT * FROM permanent_boomboxes WHERE permanent_id = %s", sql.SQLStr( permanentID ) ) )
 end
 
 function rRadio.sv.permanent.ClearSavedStation( ent )
@@ -162,7 +158,7 @@ function rRadio.sv.permanent.ClearSavedStation( ent )
         return
     end
 
-    local model = sanitize( ent:GetModel() )
+    local model = ent:GetModel()
     local pos = ent:GetPos()
     local ang = ent:GetAngles()
     local volume = ent:GetNWFloat( "Volume", rRadio.config.DefaultVolume or 1.0 )
@@ -180,7 +176,7 @@ local function RemovePermanentBoombox( ent )
     local deleteQuery = string.format( [[
         DELETE FROM permanent_boomboxes
         WHERE map = %s AND permanent_id = %s;
-    ]], db.Escape( currentMap ), db.Escape( permanentID ) )
+    ]], sql.SQLStr( currentMap ), sql.SQLStr( permanentID ) )
     db.Query( deleteQuery )
 end
 
@@ -191,8 +187,8 @@ function rRadio.sv.permanent.LoadPermanentBoomboxes( _isReload )
         if ent.IsPermanent then ent:Remove() end
     end
 
-    if not db.TableExists( "permanent_boomboxes" ) then return end
-    local loadQuery = string.format( "SELECT * FROM permanent_boomboxes WHERE map = %s;", db.Escape( currentMap ) )
+    if not sql.TableExists( "permanent_boomboxes" ) then return end
+    local loadQuery = string.format( "SELECT * FROM permanent_boomboxes WHERE map = %s;", sql.SQLStr( currentMap ) )
     local result = db.Query( loadQuery )
     if not result then return end
     for _, row in ipairs( result ) do
@@ -205,7 +201,6 @@ hook.Remove( "PostCleanupMap", "rRadio.ReloadPermanentBoomboxes" )
 hook.Add( "PostCleanupMap", "rRadio.LoadPermanentBoomboxes", function()
     timer.Simple( 5, function()
         rRadio.sv.permanent.LoadPermanentBoomboxes()
-        _initialLoadComplete = true
     end )
 end )
 

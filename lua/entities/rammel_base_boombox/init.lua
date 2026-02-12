@@ -1,7 +1,6 @@
 ﻿AddCSLuaFile( "cl_init.lua" )
 AddCSLuaFile( "shared.lua" )
 include( "shared.lua" )
-SavedBoomboxStates = SavedBoomboxStates or {}
 local lastPermissionMessageTime = lastPermissionMessageTime or {}
 local PERMISSION_MESSAGE_COOLDOWN = 3
 local DEFAULT_MODEL = "models/rammel/boombox.mdl"
@@ -15,6 +14,11 @@ function ENT:Initialize()
     self:SetSolid( SOLID_VPHYSICS )
     self:SetUseType( SIMPLE_USE )
     if self.Color then self:SetColor( self.Color ) end
+    local cfg = self.Config
+    if not cfg and self.ConfigKey and rRadio.config then
+        cfg = rRadio.config[self.ConfigKey]
+        self.Config = cfg
+    end
     local phys = self:GetPhysicsObject()
     if phys:IsValid() then phys:Wake() end
     self:SetNWString( "StationName", "" )
@@ -22,7 +26,7 @@ function ENT:Initialize()
     self:SetNWInt( "Status", rRadio.status.STOPPED )
     self:SetNWBool( "IsPlaying", false )
     self:SetNWBool( "IsPermanent", false )
-    if self.Config and self.Config.Volume then self:SetNWFloat( "Volume", self.Config.Volume ) end
+    if cfg and cfg.Volume then self:SetNWFloat( "Volume", cfg.Volume ) end
     self[NEXT_USE_KEY] = 0
     self.InteractCooldown = INTERACT_COOLDOWN
 end
