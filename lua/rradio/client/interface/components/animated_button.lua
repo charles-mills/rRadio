@@ -7,6 +7,7 @@
         self.baseColor = rRadio.config.UI.ButtonColor
         self.hoverColor = rRadio.config.UI.ButtonHoverColor
         self.lerp = 0
+        self.lerpColor = Color( 0, 0, 0, 255 )
     end
 
     function PANEL:SetColors( text, base, hover )
@@ -23,7 +24,7 @@
     end
 
     function PANEL:Paint( w, h )
-        local col = rRadio.interface.LerpColor( self.lerp, self.baseColor, self.hoverColor )
+        local col = rRadio.interface.LerpColor( self.lerp, self.baseColor, self.hoverColor, self.lerpColor )
         rRadio.interface.DrawBorderedRoundedBox(
             rRadio.interface.GetControlCornerRadius(),
             0, 0, w, h, col

@@ -58,8 +58,7 @@ end
 function rRadio.utils.IsSitAnywhereSeat( vehicle )
     if not IsValid( vehicle ) then return false end
     if SIT_ANYWHERE_SEATS[vehicle:GetClass()] then return true end
-    local nwValue = vehicle:GetNWBool( "IsSitAnywhereSeat", nil )
-    if nwValue ~= nil then return nwValue end
+    if vehicle:GetNWBool( "IsSitAnywhereSeat", false ) then return true end
     if SERVER then return vehicle.playerdynseat or false end
     return false
 end

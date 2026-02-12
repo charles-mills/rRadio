@@ -99,11 +99,8 @@ function utils.SendActiveRadiosToPlayer( player )
 
     local activeRadios = sv.ActiveRadios
     if next( activeRadios ) == nil then
-        LogDebug(
-        "[sv-permanent] SendActiveRadiosToPlayer: No active radios found, attempt "
-        .. ( sv.PlayerRetryAttempts[player] or 1 )
-    )
-        HandleRetryLogic( player, utils.SendActiveRadiosToPlayer )
+        LogDebug( "[sv-permanent] SendActiveRadiosToPlayer: No active radios found" )
+        sv.PlayerRetryAttempts[player] = nil
         return
     end
 
@@ -112,17 +109,28 @@ function utils.SendActiveRadiosToPlayer( player )
         .. ( utils.CountActiveRadios() or 0 )
         .. " active radios to " .. player:Nick()
     )
+    local staleEntityIndices = {}
     for entityIndex, radioData in pairs( activeRadios ) do
         local entity = Entity( entityIndex )
-        LogDebug( "[sv-permanent] Sending radio info for entity " .. entityIndex .. " to " .. player:Nick() )
-        LogDebug( "[sv-permanent] Radio station name: " .. radioData.stationName .. " URL: " .. radioData.url )
-        utils.BroadcastPlay(
-            entity,
-            radioData.stationName,
-            radioData.url,
-            radioData.volume,
-            player
-        )
+        if not IsValid( entity ) then
+            staleEntityIndices[#staleEntityIndices + 1] = entityIndex
+        else
+            LogDebug( "[sv-permanent] Sending radio info for entity " .. entityIndex .. " to " .. player:Nick() )
+            LogDebug( "[sv-permanent] Radio station name: " .. radioData.stationName .. " URL: " .. radioData.url )
+            utils.BroadcastPlay(
+                entity,
+                radioData.stationName,
+                radioData.url,
+                radioData.volume,
+                player
+            )
+        end
+    end
+
+    for i = 1, #staleEntityIndices do
+        local staleIndex = staleEntityIndices[i]
+        LogDebug( "[sv-permanent] Removing stale ActiveRadio entry idx=" .. staleIndex )
+        utils.RemoveActiveRadio( staleIndex )
     end
 
     LogDebug( "[sv-permanent] SendActiveRadiosToPlayer: Completed for " .. player:Nick() )
@@ -213,7 +221,12 @@ function utils.RemoveActiveRadio( entityOrIndex )
     if not entityIndex then return end
     local activeRadioData = sv.ActiveRadios[entityIndex]
     if not activeRadioData then return end
-    local entity = IsValid( entityOrIndex ) and entityOrIndex or activeRadioData.entity
+    local entity
+    if type( entityOrIndex ) ~= "number" and IsValid( entityOrIndex ) then
+        entity = entityOrIndex
+    else
+        entity = activeRadioData.entity
+    end
     if IsValid( entity ) and rRadio.utils.IsBoombox( entity ) then
         LogDebug( "[sv-permanent] Removing ActiveRadio entry idx=" .. entityIndex )
     end

@@ -27,7 +27,7 @@ else
 end
 
 hook.Add( "EntityRemoved", "rRadio.EntityCleanup", function( ent )
-    rRadio.cl.cleanupEntity( ent )
+    rRadio.cl.cleanupEntity( ent, ent:EntIndex() )
     local ply = LocalPlayer()
     if ent == ply.currentRadioEntity then ply.currentRadioEntity = nil end
 end )

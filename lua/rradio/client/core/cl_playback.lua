@@ -27,9 +27,8 @@ function cl.isEntityWithinLoadRange( plyPos, entPos, cfg )
     return distSq( plyPos, entPos ) <= d * d
 end
 
-function cl.configureStation3D( station, entity )
-    local cfg = utils.GetEntityConfig( entity )
-    if cfg then station:Set3DFadeDistance( cfg.MinVolumeDistance, cfg.MaxHearingDistance ) end
+function cl.configureStation3D( station, _entity )
+    station:Set3DFadeDistance( 1e6, 1e7 )
 end
 
 function cl.applyInitialVolume( station, volume, entity )

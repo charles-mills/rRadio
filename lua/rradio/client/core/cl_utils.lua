@@ -155,6 +155,9 @@ local scaledFontCache = {}
 hook.Add( "LanguageUpdated", "rRadio.ClearScaledFontCache", function() scaledFontCache = {} end )
 local _lastVolumes = {}
 local _volThreshold = 0.01
+function rRadio.interface.ClearTrackedVolume( entity )
+    _lastVolumes[entity] = nil
+end
 function rRadio.interface.scale( val )
     return val * scaleRatio
 end
@@ -298,6 +301,8 @@ end
 
 function rRadio.interface.styleSliderPaint( slider, trackRatio )
     local Scale = rRadio.interface.scaleMenu
+    local trackLerpColor = Color( 0, 0, 0, 255 )
+    local activeBorderLerpColor = Color( 0, 0, 0, 255 )
     slider.Slider.Paint = function( self, w, h )
         local trackHeight = math.max( Scale( 4 ), math.floor( h * ( trackRatio or 0.24 ) ) )
         local y = math.floor( ( h - trackHeight ) / 2 )
@@ -324,7 +329,7 @@ function rRadio.interface.styleSliderPaint( slider, trackRatio )
         rRadio.interface.DrawBorderedRoundedBox(
             radius,
             trackX, y, trackW, trackHeight,
-            rRadio.interface.LerpColor( 0.6, panelTrack, contrastTrack ),
+            rRadio.interface.LerpColor( 0.6, panelTrack, contrastTrack, trackLerpColor ),
             borderColor
         )
         if fillW > 0 then
@@ -350,7 +355,8 @@ function rRadio.interface.styleSliderPaint( slider, trackRatio )
             borderColor = rRadio.interface.LerpColor(
                 0.65,
                 borderColor,
-                rRadio.config.UI.AccentPrimary or rRadio.config.UI.TextColor
+                rRadio.config.UI.AccentPrimary or rRadio.config.UI.TextColor,
+                activeBorderLerpColor
             )
         end
 
@@ -424,6 +430,121 @@ local function fuzzyMatchLowered( lowerNeedle, lowerHaystack )
     return scoreSum / nLen
 end
 
+local function boundedLevenshtein( a, b, maxDist )
+    local aLen = #a
+    local bLen = #b
+    if math.abs( aLen - bLen ) > maxDist then return nil end
+    if aLen == 0 then return bLen <= maxDist and bLen or nil end
+    if bLen == 0 then return aLen <= maxDist and aLen or nil end
+
+    local prev = {}
+    local curr = {}
+    for j = 0, bLen do
+        prev[j] = j
+    end
+
+    for i = 1, aLen do
+        curr[0] = i
+        local minRow = curr[0]
+        local ai = stringSub( a, i, i )
+        local jStart = math.max( 1, i - maxDist )
+        local jEnd = math.min( bLen, i + maxDist )
+        for j = 1, jStart - 1 do
+            curr[j] = maxDist + 1
+        end
+
+        for j = jStart, jEnd do
+            local cost = ai == stringSub( b, j, j ) and 0 or 1
+            local del = prev[j] + 1
+            local ins = curr[j - 1] + 1
+            local sub = prev[j - 1] + cost
+            local best = del < ins and del or ins
+            if sub < best then best = sub end
+            curr[j] = best
+            if best < minRow then minRow = best end
+        end
+
+        for j = jEnd + 1, bLen do
+            curr[j] = maxDist + 1
+        end
+        if minRow > maxDist then return nil end
+        prev, curr = curr, prev
+    end
+
+    local dist = prev[bLen]
+    if dist <= maxDist then return dist end
+    return nil
+end
+
+local function typoScore( lowerNeedle, lowerText )
+    local nLen = #lowerNeedle
+    local hLen = #lowerText
+    if nLen < 3 or nLen > 24 or hLen == 0 then return nil end
+    if stringSub( lowerNeedle, 1, 1 ) ~= stringSub( lowerText, 1, 1 ) then return nil end
+    local candidateLen = math.min( hLen, nLen + 2 )
+    local candidate = candidateLen < hLen and stringSub( lowerText, 1, candidateLen ) or lowerText
+    local dist = boundedLevenshtein( lowerNeedle, candidate, 2 )
+    if dist == nil then return nil end
+    return 1 + ( 2 - dist ) * 0.4
+end
+
+local function computeSearchScore( lowerNeedle, lowerText, map, mode )
+    local needleLen = #lowerNeedle
+    if needleLen == 0 then return 1 end
+    local textLen = #lowerText
+    if lowerText == lowerNeedle then return 10 end
+
+    if textLen >= needleLen and stringSub( lowerText, 1, needleLen ) == lowerNeedle then
+        return 8 + needleLen / math.max( textLen, 1 )
+    end
+
+    local foundPos = stringFind( lowerText, lowerNeedle, 1, true )
+    if foundPos then
+        return 6 + ( 1 - ( foundPos - 1 ) / math.max( textLen, 1 ) ) * 0.5
+    end
+
+    if mode == "fast" then return nil end
+
+    local hasSubsequence = map and rRadio.interface.subsequenceTest( lowerNeedle, map )
+
+    if hasSubsequence then
+        return 2 + fuzzyMatchLowered( lowerNeedle, lowerText )
+    end
+    return typoScore( lowerNeedle, lowerText )
+end
+
+local function isCandidateBetter( aScore, aKey, bScore, bKey )
+    if aScore ~= bScore then return aScore > bScore end
+    return aKey < bKey
+end
+
+local function insertBoundedMatch( topMatches, limit, candidate )
+    local count = #topMatches
+    if count == 0 then
+        topMatches[1] = candidate
+        return
+    end
+
+    local low = 1
+    local high = count + 1
+    while low < high do
+        local mid = math.floor( ( low + high ) * 0.5 )
+        local current = topMatches[mid]
+        if isCandidateBetter(
+            candidate.score, candidate.sortKey,
+            current.score, current.sortKey
+        ) then
+            high = mid
+        else
+            low = mid + 1
+        end
+    end
+
+    if low > limit then return end
+    table.insert( topMatches, low, candidate )
+    if #topMatches > limit then topMatches[#topMatches] = nil end
+end
+
 local function ensureSearchMetadata( item, keyFn )
     local text = item.searchText
     if text == nil then
@@ -445,55 +566,94 @@ local function ensureSearchMetadata( item, keyFn )
     return text, lower, map
 end
 
-local function fuzzyFilterCore( needle, items, keyFn, minScore, boostFn )
+local function fuzzyFilterCore( needle, items, keyFn, minScore, boostFn, mode, topK )
     local lowerNeedle = stringLower( needle or "" )
     local hasNeedle = #lowerNeedle > 0
-    local matches = {}
+    mode = mode or "fuzzy"
+    local useTopK = isnumber( topK ) and topK > 0
+    topK = useTopK and math.floor( topK ) or nil
+    local bestByKey = {}
+    local uniqueCount = 0
     for _, item in ipairs( items ) do
         local _, lowerText, map = ensureSearchMetadata( item, keyFn )
-        if not hasNeedle or map and rRadio.interface.subsequenceTest( lowerNeedle, map ) then
-            local score = hasNeedle and fuzzyMatchLowered( lowerNeedle, lowerText ) or 1
+        local score = not hasNeedle and 1 or computeSearchScore( lowerNeedle, lowerText, map, mode )
+        if score then
             if boostFn then score = score + ( boostFn( item ) or 0 ) end
             if score >= ( minScore or 0 ) then
-                matches[#matches + 1] = {
-                    item = item,
-                    score = score,
-                    sortKey = lowerText
-                }
+                local existing = bestByKey[lowerText]
+                if not existing or isCandidateBetter(
+                    score, lowerText,
+                    existing.score, existing.sortKey
+                ) then
+                    if not existing then uniqueCount = uniqueCount + 1 end
+                    bestByKey[lowerText] = {
+                        item = item,
+                        score = score,
+                        sortKey = lowerText
+                    }
+                end
             end
         end
     end
 
-    if #matches == 0 then
+    if uniqueCount == 0 then
+        -- Fallback behavior for no-match queries in bounded list views:
+        -- fast mode yields true zero results; fuzzy mode offers bounded suggestions.
+        if hasNeedle and useTopK then
+            if mode == "fast" then return {}, 0 end
+            local fallback = {}
+            local seen = {}
+            for _, item in ipairs( items ) do
+                local _, lowerText = ensureSearchMetadata( item, keyFn )
+                if not seen[lowerText] then
+                    seen[lowerText] = true
+                    fallback[#fallback + 1] = item
+                    if #fallback >= topK then break end
+                end
+            end
+            return fallback, #fallback
+        end
+
         for _, item in ipairs( items ) do
             local _, lowerText = ensureSearchMetadata( item, keyFn )
-            matches[#matches + 1] = {
-                item = item,
-                score = 0,
-                sortKey = lowerText
-            }
+            if not bestByKey[lowerText] then
+                bestByKey[lowerText] = {
+                    item = item,
+                    score = 0,
+                    sortKey = lowerText
+                }
+                uniqueCount = uniqueCount + 1
+            end
         end
     end
 
-    table.sort( matches, function( a, b )
-        if a.score ~= b.score then return a.score > b.score end
-        return a.sortKey < b.sortKey
-    end )
-
-    local results, seen = {}, {}
-    for _, v in ipairs( matches ) do
-        if not seen[v.sortKey] then
-            seen[v.sortKey] = true
-            results[#results + 1] = v.item
+    local matches = {}
+    if useTopK and topK < uniqueCount then
+        for _, entry in pairs( bestByKey ) do
+            insertBoundedMatch( matches, topK, entry )
         end
+    else
+        for _, entry in pairs( bestByKey ) do
+            matches[#matches + 1] = entry
+        end
+        table.sort( matches, function( a, b )
+            if a.score ~= b.score then return a.score > b.score end
+            return a.sortKey < b.sortKey
+        end )
     end
-    return results
+
+    local results = {}
+    for i = 1, #matches do
+        local v = matches[i]
+        results[#results + 1] = v.item
+    end
+    return results, uniqueCount
 end
 
 rRadio.interface.fuzzyFilter = function(
-    needle, items, keyFn, minScore, boostFn
+    needle, items, keyFn, minScore, boostFn, mode, topK
 )
-    return fuzzyFilterCore( needle, items, keyFn, minScore, boostFn )
+    return fuzzyFilterCore( needle, items, keyFn, minScore, boostFn, mode, topK )
 end
 
 function rRadio.interface.MakeIconButton( parent, materialPath, url, xOffset )
@@ -786,13 +946,13 @@ function rRadio.interface.updateStationCount()
     return count
 end
 
-function rRadio.interface.LerpColor( t, col1, col2 )
-    return Color(
-        Lerp( t, col1.r, col2.r ),
-        Lerp( t, col1.g, col2.g ),
-        Lerp( t, col1.b, col2.b ),
-        Lerp( t, col1.a or 255, col2.a or 255 )
-    )
+function rRadio.interface.LerpColor( t, col1, col2, out )
+    out = out or Color( 0, 0, 0, 255 )
+    out.r = Lerp( t, col1.r, col2.r )
+    out.g = Lerp( t, col1.g, col2.g )
+    out.b = Lerp( t, col1.b, col2.b )
+    out.a = Lerp( t, col1.a or 255, col2.a or 255 )
+    return out
 end
 
 function rRadio.interface.ApproachLerp( current, target, speed )
@@ -802,7 +962,7 @@ end
 function rRadio.interface.ClampVolume( volume )
     local clientMax = GetConVar( "rammel_rradio_max_volume" ):GetFloat()
     local limit = math.min( rRadio.config.MaxVolume, clientMax )
-    return rRadio.utils.ClampVolume( volume, limit )
+    return math.Clamp( volume * limit, 0, rRadio.config.MaxVolume )
 end
 
 local function sanitizeFavoriteStations( source )
@@ -950,9 +1110,7 @@ function rRadio.interface.updateRadioVolume( station, distanceSqr, isPlayerInCar
     end
 
     station:Set3DEnabled( true )
-    local minDist = entityConfig.MinVolumeDistance
-    local maxDist = entityConfig.MaxHearingDistance
-    station:Set3DFadeDistance( minDist, maxDist )
+    station:Set3DFadeDistance( 1e6, 1e7 )
     local finalVolume = rRadio.interface.CalculateVolume( entity, LocalPlayer(), distanceSqr )
     finalVolume = rRadio.interface.ClampVolume( finalVolume )
     local prev = _lastVolumes[entity] or -1
@@ -1018,7 +1176,7 @@ end
 
 loadLanguage()
 rRadio.interface.RefreshMenuFonts( true )
-cvars.AddChangeCallback( "gmod_language", function() loadLanguage() end )
+cvars.AddChangeCallback( "gmod_language", function() loadLanguage() end, "rRadioLanguageCB" )
 local function relayoutIfOpen()
     if rRadio.cl and rRadio.cl.uiState
         and rRadio.cl.uiState.radioMenuOpen

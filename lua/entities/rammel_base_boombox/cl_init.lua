@@ -7,6 +7,11 @@ local FADE_START_SQR, FADE_END_SQR = 400 * 400, 500 * 500
 local FADE_RANGE_INV = 1 / ( FADE_END_SQR - FADE_START_SQR )
 local MODEL_CULL_DISTANCE_SQR = 7500 * 7500
 local HUD_OFFSET_FORWARD, HUD_OFFSET_UP, HUD_SCALE = 4.6, 14.5, 0.06
+local HUD_LOCAL_OFFSET = Vector( HUD_OFFSET_FORWARD, 0, HUD_OFFSET_UP )
+local HUD_ANG_OFFSET = Angle( 0, 0, 0 )
+HUD_ANG_OFFSET:RotateAroundAxis( HUD_ANG_OFFSET:Up(), -90 )
+HUD_ANG_OFFSET:RotateAroundAxis( HUD_ANG_OFFSET:Forward(), 90 )
+HUD_ANG_OFFSET:RotateAroundAxis( HUD_ANG_OFFSET:Right(), 180 )
 local ACCENT_ALPHA_BRIGHT, ACCENT_ALPHA_DIM = 0.8, 0.2
 local HUD_TICK = 1 / 25
 local TUNING_SPEED = 1.5
@@ -363,13 +368,8 @@ function ENT:RenderHUD( eyePos )
     local bg = Premul( sch.BG, a )
     local accBright = Premul( sch.ACCENT, a * ACCENT_ALPHA_BRIGHT )
     local txt = Premul( sch.TEXT, a * ( isBasicHud and 1 or self.anim.statusTransition ) )
-    local pos = self:GetPos()
-    pos:Add( self:GetForward() * HUD_OFFSET_FORWARD )
-    pos:Add( self:GetUp() * HUD_OFFSET_UP )
-    local ang = self:GetAngles()
-    ang:RotateAroundAxis( ang:Up(), -90 )
-    ang:RotateAroundAxis( ang:Forward(), 90 )
-    ang:RotateAroundAxis( ang:Right(), 180 )
+    local pos = self:LocalToWorld( HUD_LOCAL_OFFSET )
+    local ang = self:LocalToWorldAngles( HUD_ANG_OFFSET )
     if isBasicHud then
         self:RenderBasicHUD( st, station, a, pos, ang, sch )
         return

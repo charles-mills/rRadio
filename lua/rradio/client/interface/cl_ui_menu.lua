@@ -7,6 +7,12 @@ local cvars = rRadio.cl.cvars
 local RESIZE_HANDLE_SIZE = 12
 local CORNER_RESIZE_SEGMENTS = 12
 local cornerResizePolyCache = {}
+local cornerResizePolyCacheSize = 0
+local MAX_CORNER_RESIZE_POLY_CACHE = 128
+local VIRTUAL_SCROLL_THRESHOLD = 120
+local VIRTUAL_OVERSCAN_ROWS = 8
+local INITIAL_RESULTS_LIMIT = 100
+local LOAD_MORE_STEP = 100
 local cornerResizeKeys = {
     tl = true,
     tr = true,
@@ -103,7 +109,12 @@ local function getCornerResizePolys( resizeKey, w, h )
         }
     end
 
+    if cornerResizePolyCacheSize >= MAX_CORNER_RESIZE_POLY_CACHE then
+        cornerResizePolyCache = {}
+        cornerResizePolyCacheSize = 0
+    end
     cornerResizePolyCache[cacheKey] = poly
+    cornerResizePolyCacheSize = cornerResizePolyCacheSize + 1
     return poly
 end
 
@@ -128,8 +139,21 @@ end
 
 local function addItems( panel, items )
     for _, item in ipairs( items or {} ) do
+        if item.SetViewportPaintCulling then
+            item:SetViewportPaintCulling( true, panel )
+        end
         panel:Add( item )
     end
+end
+
+local function clearVirtualStationRows( stationListPanel )
+    local state = stationListPanel and stationListPanel.virtualState
+    if not state then return end
+    for _, row in pairs( state.rows or {} ) do
+        if IsValid( row ) then row:Remove() end
+    end
+    if IsValid( state.spacer ) then state.spacer:Remove() end
+    stationListPanel.virtualState = nil
 end
 
 local function getHeaderIcon()
@@ -159,6 +183,7 @@ local function getScaledFrameSize()
 end
 
 local function prepareList( stationListPanel, searchBox, resetSearch )
+    clearVirtualStationRows( stationListPanel )
     stationListPanel:Clear()
     searchBox = searchBox or uiState.searchBox
     if not IsValid( searchBox ) then
@@ -170,61 +195,345 @@ local function prepareList( stationListPanel, searchBox, resetSearch )
     return searchBox:GetText():lower()
 end
 
-local function filterGlobalList( rawList, filterText )
-    if filterText == "" then
-        local limit, out = rRadio.cl.MAX_SEARCH_RESULTS, {}
-        for i = 1, math.min( limit, #rawList ) do
-            out[i] = rawList[i]
-        end
-        return out
-    end
-    return rRadio.interface.fuzzyFilter( filterText, rawList, function( item ) return item.searchText end, 0 )
+local function filterGlobalList( rawList, filterText, searchStage, topK )
+    if filterText == "" then return rawList, #rawList end
+    local filtered, total = rRadio.interface.fuzzyFilter(
+        filterText,
+        rawList,
+        function( item ) return item.searchText end,
+        0,
+        nil,
+        searchStage,
+        topK
+    )
+    return filtered, total or #filtered
 end
 
-local function addStationButtons( parent, stations, limit, updateCallback )
-    for i = 1, math.min( limit, #stations ) do
-        local entry = stations[i]
-        local btn = rRadio.cl.uiComponents.createPlayableStationButton(
-            parent, entry.station, entry.displayKey, updateCallback
-        )
+local function createLoadMoreEntryButton( parent, entry )
+    local btn = vgui.Create( "rRadioButton", parent )
+    local label = rRadio.Lf(
+        "LoadMoreProgress",
+        {
+            shown = entry.shown or 0,
+            total = entry.total or 0
+        },
+        "Load More ({shown}/{total})"
+    )
+    btn:SetTextLabel( label )
+    btn.DoClick = function()
+        rRadio.interface.playSound( "ButtonPressMain" )
+        if isfunction( entry.onClick ) then entry.onClick() end
+    end
+    return btn
+end
+
+local function addStationEntryButtons( parent, entries, updateCallback )
+    for i = 1, #entries do
+        local entry = entries[i]
+        local btn
+        if entry.kind == "load_more" then
+            btn = createLoadMoreEntryButton( parent, entry )
+        else
+            if entry.countryKey then entry.station.countryKey = entry.countryKey end
+            btn = rRadio.cl.uiComponents.createPlayableStationButton(
+                parent, entry.station, entry.displayKey, updateCallback
+            )
+        end
+        if btn.SetViewportPaintCulling then
+            btn:SetViewportPaintCulling( true, parent )
+        end
         parent:Add( btn )
     end
 end
 
-function rRadio.cl.populateList( stationListPanel, backButton, searchBox, resetSearch )
-    if not IsValid( stationListPanel ) then return end
-    if not IsValid( backButton ) and uiState.currentFrame then backButton = uiState.currentFrame.backButton end
-    searchBox = searchBox or uiState.searchBox
-    local function updateKeep()
-        rRadio.cl.populateList( stationListPanel, backButton, searchBox, false )
+local function getResultsWindowKey( filterText )
+    if uiState.globalView then return "global:" .. ( filterText or "" ) end
+    if uiState.selectedCountry then return "country:" .. tostring( uiState.selectedCountry ) .. ":" .. ( filterText or "" ) end
+    return nil
+end
+
+local function limitGlobalEntriesForWindow( stationListPanel, filtered, filteredTotal, filterText, refreshFn )
+    local key = getResultsWindowKey( filterText )
+    if not key then
+        stationListPanel.resultsWindowState = nil
+        return filtered
     end
 
-    local function updateClear()
-        rRadio.cl.populateList( stationListPanel, backButton, searchBox, true )
+    local total = filteredTotal or #filtered
+    local state = stationListPanel.resultsWindowState
+    local limit = total
+    if total > INITIAL_RESULTS_LIMIT then
+        if not state or state.key ~= key then
+            state = {
+                key = key,
+                limit = math.min( INITIAL_RESULTS_LIMIT, total )
+            }
+            stationListPanel.resultsWindowState = state
+        end
+        local minimumWindow = math.min( INITIAL_RESULTS_LIMIT, total )
+        if state.limit < minimumWindow then state.limit = minimumWindow end
+        if state.limit > total then state.limit = total end
+
+        limit = math.min( state.limit, total )
+    else
+        stationListPanel.resultsWindowState = {
+            key = key,
+            limit = total
+        }
+    end
+
+    if limit >= total then return filtered end
+    local out = {}
+    for i = 1, limit do
+        out[i] = filtered[i]
+    end
+
+    out[#out + 1] = {
+        kind = "load_more",
+        shown = limit,
+        total = total,
+        onClick = function()
+            state.limit = math.min( total, state.limit + LOAD_MORE_STEP )
+            local scroll = 0
+            local vbar = stationListPanel:GetVBar()
+            if IsValid( vbar ) then scroll = vbar:GetScroll() or 0 end
+            refreshFn( {
+                preserveScroll = true,
+                scroll = scroll
+            } )
+        end
+    }
+    return out
+end
+
+local function getRequestedResultsLimit( stationListPanel, filterText )
+    local key = getResultsWindowKey( filterText )
+    if not key then return nil end
+    local state = stationListPanel.resultsWindowState
+    if not state or state.key ~= key then return INITIAL_RESULTS_LIMIT end
+    local limit = tonumber( state.limit ) or INITIAL_RESULTS_LIMIT
+    limit = math.floor( limit )
+    return math.max( INITIAL_RESULTS_LIMIT, limit )
+end
+
+local function limitEntriesForWindow( stationListPanel, entries, filterText, refreshFn )
+    local key = getResultsWindowKey( filterText )
+    if not key then
+        stationListPanel.resultsWindowState = nil
+        return entries
+    end
+
+    local total = #entries
+    if total <= INITIAL_RESULTS_LIMIT then
+        stationListPanel.resultsWindowState = {
+            key = key,
+            limit = total
+        }
+        return entries
+    end
+
+    local state = stationListPanel.resultsWindowState
+    if not state or state.key ~= key then
+        state = {
+            key = key,
+            limit = math.min( INITIAL_RESULTS_LIMIT, total )
+        }
+        stationListPanel.resultsWindowState = state
+    end
+    local minimumWindow = math.min( INITIAL_RESULTS_LIMIT, total )
+    if state.limit < minimumWindow then state.limit = minimumWindow end
+    if state.limit > total then state.limit = total end
+
+    local limit = math.min( state.limit, total )
+    local out = {}
+    for i = 1, limit do
+        out[i] = entries[i]
+    end
+
+    if limit < total then
+        out[#out + 1] = {
+            kind = "load_more",
+            shown = limit,
+            total = total,
+            onClick = function()
+                state.limit = math.min( total, state.limit + LOAD_MORE_STEP )
+                local scroll = 0
+                local vbar = stationListPanel:GetVBar()
+                if IsValid( vbar ) then scroll = vbar:GetScroll() or 0 end
+                refreshFn( {
+                    preserveScroll = true,
+                    scroll = scroll
+                } )
+            end
+        }
+    end
+    return out
+end
+
+local function updateVirtualStationRows( stationListPanel, state )
+    if not IsValid( stationListPanel ) then return end
+    local canvas = stationListPanel:GetCanvas()
+    local vbar = stationListPanel:GetVBar()
+    if not IsValid( canvas ) or not IsValid( vbar ) then return end
+    if not IsValid( state.spacer ) then
+        local spacer = vgui.Create( "DPanel", canvas )
+        spacer:Dock( TOP )
+        spacer:SetTall( 0 )
+        spacer:SetMouseInputEnabled( false )
+        spacer.Paint = nil
+        state.spacer = spacer
+    end
+    local spacer = state.spacer
+    local count = #state.entries
+    local rowHeight = Scale( 40 )
+    local rowGap = Scale( 5 )
+    local rowStride = rowHeight + rowGap
+    local topPad = Scale( 5 )
+    local sidePad = Scale( 5 )
+    local scroll = vbar:GetScroll()
+    local viewHeight = stationListPanel:GetTall()
+    local totalHeight = 0
+    if count > 0 then totalHeight = topPad + rowHeight + ( count - 1 ) * rowStride end
+    local targetCanvasTall = math.max( viewHeight, totalHeight )
+    if state.canvasTall ~= targetCanvasTall then
+        state.canvasTall = targetCanvasTall
+        spacer:SetTall( targetCanvasTall )
+        stationListPanel:InvalidateLayout( true )
+    end
+    if count == 0 then return end
+    local first = math.max( 1, math.floor( scroll / rowStride ) + 1 - VIRTUAL_OVERSCAN_ROWS )
+    local last = math.min( count, math.floor( ( scroll + viewHeight ) / rowStride ) + 1 + VIRTUAL_OVERSCAN_ROWS )
+
+    for idx, row in pairs( state.rows ) do
+        if idx < first or idx > last or not IsValid( row ) then
+            if IsValid( row ) then row:Remove() end
+            state.rows[idx] = nil
+        end
+    end
+
+    local rowWidth = math.max( 0, canvas:GetWide() - sidePad * 2 )
+    local noDock = NODOCK or 0
+    for idx = first, last do
+        local row = state.rows[idx]
+        if not IsValid( row ) then
+            local entry = state.entries[idx]
+            if entry and entry.kind == "load_more" then
+                row = createLoadMoreEntryButton( canvas, entry )
+            else
+                if entry and entry.countryKey then entry.station.countryKey = entry.countryKey end
+                row = rRadio.cl.uiComponents.createPlayableStationButton(
+                    canvas,
+                    entry.station,
+                    entry.displayKey,
+                    state.updateCallback
+                )
+            end
+            if row.SetViewportPaintCulling then
+                row:SetViewportPaintCulling( true, stationListPanel )
+            end
+            row:Dock( noDock )
+            row:DockMargin( 0, 0, 0, 0 )
+            state.rows[idx] = row
+        end
+
+        row:SetPos( sidePad, topPad + ( idx - 1 ) * rowStride )
+        row:SetSize( rowWidth, rowHeight )
+    end
+end
+
+local function setVirtualStationRows( stationListPanel, entries, updateCallback, restoreScroll )
+    stationListPanel.virtualState = {
+        rows = {},
+        entries = entries,
+        updateCallback = updateCallback,
+        canvasTall = nil,
+        lastScroll = nil,
+        lastTall = nil,
+        lastCanvasWide = nil
+    }
+    local vbar = stationListPanel:GetVBar()
+    if IsValid( vbar ) then vbar:SetScroll( math.max( 0, restoreScroll or 0 ) ) end
+    updateVirtualStationRows( stationListPanel, stationListPanel.virtualState )
+end
+
+local function restoreScrollIfRequested( stationListPanel, opts )
+    if not opts or not opts.preserveScroll then return end
+    local scroll = math.max( 0, opts.scroll or 0 )
+    timer.Simple( 0, function()
+        if not IsValid( stationListPanel ) then return end
+        local vbar = stationListPanel:GetVBar()
+        if IsValid( vbar ) then vbar:SetScroll( scroll ) end
+    end )
+end
+
+function rRadio.cl.populateList( stationListPanel, backButton, searchBox, resetSearch, opts )
+    if not IsValid( stationListPanel ) then return end
+    opts = opts or {}
+    local searchStage = opts.searchStage or "fuzzy"
+    if not IsValid( backButton ) and uiState.currentFrame then backButton = uiState.currentFrame.backButton end
+    searchBox = searchBox or uiState.searchBox
+    local function updateKeep( nextOpts )
+        nextOpts = nextOpts or {}
+        if nextOpts.searchStage == nil then nextOpts.searchStage = searchStage end
+        rRadio.cl.populateList( stationListPanel, backButton, searchBox, false, nextOpts )
+    end
+
+    local function updateClear( nextOpts )
+        nextOpts = nextOpts or {}
+        if nextOpts.searchStage == nil then nextOpts.searchStage = searchStage end
+        rRadio.cl.populateList( stationListPanel, backButton, searchBox, true, nextOpts )
     end
 
     local filterText = prepareList( stationListPanel, searchBox, resetSearch )
     if uiState.globalView then
         local rawList = rRadio.cl.globalSearchIndex or {}
-        local filtered = filterGlobalList( rawList, filterText )
-        local showLimit = uiState.isSearching and rRadio.cl.MAX_SEARCH_RESULTS or #filtered
-        addStationButtons( stationListPanel, filtered, showLimit, updateKeep )
+        local requestedLimit = getRequestedResultsLimit( stationListPanel, filterText )
+        local filtered, filteredTotal = filterGlobalList(
+            rawList, filterText, searchStage, requestedLimit
+        )
+        local stationEntries = limitGlobalEntriesForWindow(
+            stationListPanel, filtered, filteredTotal, filterText, updateKeep
+        )
+        if #stationEntries >= VIRTUAL_SCROLL_THRESHOLD then
+            setVirtualStationRows(
+                stationListPanel,
+                stationEntries,
+                updateKeep,
+                opts.preserveScroll and opts.scroll or nil
+            )
+        else
+            addStationEntryButtons( stationListPanel, stationEntries, updateKeep )
+        end
         setButtonState( backButton, true )
+        restoreScrollIfRequested( stationListPanel, opts )
         return
     end
 
     if not uiState.selectedCountry then
         addItems( stationListPanel, rRadio.cl.uiComponents.populateFavorites( stationListPanel, updateClear ) )
         addItems( stationListPanel, rRadio.cl.uiComponents.populateCountries(
-            stationListPanel, filterText, updateClear
+            stationListPanel, filterText, updateClear, searchStage
         ) )
     else
-        addItems( stationListPanel, rRadio.cl.uiComponents.populateStations(
-            stationListPanel, uiState.selectedCountry,
-            filterText, updateKeep, backButton
-        ) )
+        local stationEntries = rRadio.cl.uiComponents.collectStationEntries(
+            uiState.selectedCountry,
+            filterText,
+            searchStage
+        )
+        stationEntries = limitEntriesForWindow( stationListPanel, stationEntries, filterText, updateKeep )
+        if #stationEntries >= VIRTUAL_SCROLL_THRESHOLD then
+            setVirtualStationRows(
+                stationListPanel,
+                stationEntries,
+                updateKeep,
+                opts.preserveScroll and opts.scroll or nil
+            )
+        else
+            addStationEntryButtons( stationListPanel, stationEntries, updateKeep )
+        end
     end
 
+    restoreScrollIfRequested( stationListPanel, opts )
     syncBackButton( backButton )
 end
 
@@ -720,6 +1029,23 @@ local function createStationListPanel( frame )
 
     local panel = vgui.Create( "DScrollPanel", container )
     configureTieredScrollPanel( panel, 0 )
+    local oldThink = panel.Think
+    panel.Think = function( self )
+        if oldThink then oldThink( self ) end
+        local state = self.virtualState
+        if not state then return end
+        local canvas = self:GetCanvas()
+        local vbar = self:GetVBar()
+        if not IsValid( canvas ) or not IsValid( vbar ) then return end
+        local scroll = vbar:GetScroll()
+        local tall = self:GetTall()
+        local canvasWide = canvas:GetWide()
+        if scroll == state.lastScroll and tall == state.lastTall and canvasWide == state.lastCanvasWide then return end
+        state.lastScroll = scroll
+        state.lastTall = tall
+        state.lastCanvasWide = canvasWide
+        updateVirtualStationRows( self, state )
+    end
     panel.container = container
     return panel
 end
@@ -765,6 +1091,7 @@ local function createGlobalButton( parent, searchBox, width )
     btn:SetPos( anchor:GetX() + anchor:GetWide() + margin, anchor:GetY() )
     btn:SetSize( width, height )
     btn.lerp = 0
+    btn.lerpColor = Color( 0, 0, 0, 255 )
     btn.Think = function( self )
         local tgt = ( self:IsHovered() or uiState.globalView ) and 1 or 0
         self.lerp = rRadio.interface.ApproachLerp( self.lerp, tgt, 10 )
@@ -773,7 +1100,8 @@ local function createGlobalButton( parent, searchBox, width )
     btn.Paint = function( self, w, h )
         local col = rRadio.interface.LerpColor(
             self.lerp, rRadio.config.UI.ButtonColor,
-            rRadio.config.UI.ButtonHoverColor
+            rRadio.config.UI.ButtonHoverColor,
+            self.lerpColor
         )
         paintMainControl( w, h, col )
     end
@@ -781,6 +1109,16 @@ local function createGlobalButton( parent, searchBox, width )
 end
 
 local function queueSearchRefresh( stationListPanel, searchBox )
+    if not IsValid( stationListPanel ) then return end
+    rRadio.cl.populateList(
+        stationListPanel,
+        nil,
+        searchBox,
+        false,
+        {
+            searchStage = "fast"
+        }
+    )
     local timerName = "rRadio.SearchDebounce"
     local delay = rRadio.config.SearchDebounceSeconds
     if timer.Exists( timerName ) then
@@ -790,7 +1128,15 @@ local function queueSearchRefresh( stationListPanel, searchBox )
 
     timer.Create( timerName, delay, 1, function()
         if not IsValid( stationListPanel ) or not uiState.isSearching then return end
-        rRadio.cl.populateList( stationListPanel, nil, searchBox, false )
+        rRadio.cl.populateList(
+            stationListPanel,
+            nil,
+            searchBox,
+            false,
+            {
+                searchStage = "fuzzy"
+            }
+        )
     end )
 end
 

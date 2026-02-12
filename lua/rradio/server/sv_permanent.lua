@@ -41,55 +41,35 @@ end
 
 local function upsertBoombox( permanentID, model, pos, ang, stationName, stationURL, volume )
     local query = string.format( [[
-        SELECT id FROM permanent_boomboxes
-        WHERE map = %s AND permanent_id = %s
-        LIMIT 1;
-    ]], sql.SQLStr( currentMap ), sql.SQLStr( permanentID ) )
-    local result = db.Query( query )
-    if result == false then return end
-    if result and #result > 0 then
-        local id = result[1].id
-        local updateQuery = string.format( [[
-            UPDATE permanent_boomboxes
-            SET model        = %s,
-                pos_x        = %f,
-                pos_y        = %f,
-                pos_z        = %f,
-                angle_pitch  = %f,
-                angle_yaw    = %f,
-                angle_roll   = %f,
-                station_name = %s,
-                station_url  = %s,
-                volume       = %f
-            WHERE id = %d;
-        ]], sql.SQLStr( model ),
-            pos.x, pos.y, pos.z,
-            ang.p, ang.y, ang.r,
-            sql.SQLStr( stationName ),
-            sql.SQLStr( stationURL ),
-            volume, tonumber( id ) )
-        db.Query( updateQuery )
-    else
-        local insertQuery = string.format( [[
-            INSERT INTO permanent_boomboxes
-                (map, permanent_id, model,
-                 pos_x, pos_y, pos_z,
-                 angle_pitch, angle_yaw, angle_roll,
-                 station_name, station_url, volume)
-            VALUES
-                (%s, %s, %s,
-                 %f, %f, %f,
-                 %f, %f, %f,
-                 %s, %s, %f);
-        ]], sql.SQLStr( currentMap ),
-            sql.SQLStr( permanentID ),
-            sql.SQLStr( model ),
-            pos.x, pos.y, pos.z,
-            ang.p, ang.y, ang.r,
-            sql.SQLStr( stationName ),
-            sql.SQLStr( stationURL ), volume )
-        db.Query( insertQuery )
-    end
+        INSERT INTO permanent_boomboxes
+            (map, permanent_id, model,
+             pos_x, pos_y, pos_z,
+             angle_pitch, angle_yaw, angle_roll,
+             station_name, station_url, volume)
+        VALUES
+            (%s, %s, %s,
+             %f, %f, %f,
+             %f, %f, %f,
+             %s, %s, %f)
+        ON CONFLICT(map, permanent_id) DO UPDATE SET
+            model        = excluded.model,
+            pos_x        = excluded.pos_x,
+            pos_y        = excluded.pos_y,
+            pos_z        = excluded.pos_z,
+            angle_pitch  = excluded.angle_pitch,
+            angle_yaw    = excluded.angle_yaw,
+            angle_roll   = excluded.angle_roll,
+            station_name = excluded.station_name,
+            station_url  = excluded.station_url,
+            volume       = excluded.volume;
+    ]], sql.SQLStr( currentMap ),
+        sql.SQLStr( permanentID ),
+        sql.SQLStr( model ),
+        pos.x, pos.y, pos.z,
+        ang.p, ang.y, ang.r,
+        sql.SQLStr( stationName ),
+        sql.SQLStr( stationURL ), volume )
+    db.Query( query )
 end
 
 local function spawnPermanentBoombox( row )
@@ -121,6 +101,7 @@ local function spawnPermanentBoombox( row )
         ent:SetNWInt( "Status", rRadio.status.PLAYING )
         ent:SetNWBool( "IsPlaying", true )
         timer.Simple( 0.1, function()
+            if not IsValid( ent ) then return end
             rRadio.sv.utils.BroadcastPlay( ent, row.station_name or "", row.station_url, row.volume )
         end )
 
@@ -146,7 +127,6 @@ function rRadio.sv.permanent.SavePermanentBoombox( ent )
     end
 
     upsertBoombox( permanentID, model, pos, ang, stationName, stationURL, volume )
-    db.Query( string.format( "SELECT * FROM permanent_boomboxes WHERE permanent_id = %s", sql.SQLStr( permanentID ) ) )
 end
 
 function rRadio.sv.permanent.ClearSavedStation( ent )

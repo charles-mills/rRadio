@@ -8,6 +8,7 @@
         self.lerp = 0
         self.baseColour = Color( 0, 0, 0, 0 )
         self.hoverColour = rRadio.config.UI.ButtonHoverColor
+        self.lerpColor = Color( 0, 0, 0, 255 )
         self:SetSize( Scale( 25 ), Scale( 25 ) )
         self:SetText( "" )
     end
@@ -32,7 +33,7 @@
     end
 
     function PANEL:Paint( w, h )
-        local c = rRadio.interface.LerpColor( self.lerp, self.baseColour, self.hoverColour )
+        local c = rRadio.interface.LerpColor( self.lerp, self.baseColour, self.hoverColour, self.lerpColor )
         draw.RoundedBox( 8, 0, 0, w, h, c )
         if self.iconMaterial then
             surface.SetMaterial( self.iconMaterial )

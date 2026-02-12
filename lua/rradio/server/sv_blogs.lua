@@ -48,7 +48,8 @@ end )
 
 if loggingEnabled then GAS.Logging:AddModule( MODULE_STOPS ) end
 cvars.AddChangeCallback( "rammel_rradio_logging", function( _convar_name, _old_value, new_value )
-    if tobool( new_value ) then
+    loggingEnabled = tobool( new_value )
+    if loggingEnabled then
         GAS.Logging:AddModule( MODULE_PLAYS )
         GAS.Logging:AddModule( MODULE_STOPS )
         rRadio.logger.InfoScope( "blogs", "Enabled rRadio bLogs integration." )

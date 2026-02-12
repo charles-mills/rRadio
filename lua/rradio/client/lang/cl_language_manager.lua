@@ -39,6 +39,16 @@ function rRadio.LanguageManager:GetText( key, fallback )
     return fallback or key
 end
 
+function rRadio.LanguageManager:FormatText( key, replacements, fallback )
+    local text = self:GetText( key, fallback or key )
+    if replacements then
+        for placeholder, value in pairs( replacements ) do
+            text = string.Replace( text, "{" .. placeholder .. "}", tostring( value ) )
+        end
+    end
+    return text
+end
+
 function rRadio.LanguageManager:Translate( key )
     return self:GetText( key, key )
 end
@@ -49,5 +59,9 @@ end
 
 function rRadio.L( key, fallback )
     return rRadio.LanguageManager:GetText( key, fallback )
+end
+
+function rRadio.Lf( key, replacements, fallback )
+    return rRadio.LanguageManager:FormatText( key, replacements, fallback )
 end
 return rRadio.LanguageManager

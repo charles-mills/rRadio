@@ -10,6 +10,7 @@ rRadio.cl.entityVolumes = rRadio.cl.entityVolumes or {}
 rRadio.cl.currentlyPlayingStations = rRadio.cl.currentlyPlayingStations or {}
 rRadio.cl.stationLastPos = rRadio.cl.stationLastPos or {}
 rRadio.cl.errorTimestamps = rRadio.cl.errorTimestamps or {}
+rRadio.cl.mutedBoomboxes = rRadio.cl.mutedBoomboxes or {}
 rRadio.cl.uiState = {
     currentFrame = nil,
     settingsFrame = nil,
@@ -40,7 +41,7 @@ rRadio.cl.performance = {
     activeStationCount = 0
 }
 
-function rRadio.cl.cleanupEntity( ent )
+function rRadio.cl.cleanupEntity( ent, entIndex )
     if rRadio.cl.radioSources[ent] then
         if IsValid( rRadio.cl.radioSources[ent] ) then rRadio.cl.radioSources[ent]:Stop() end
         rRadio.cl.radioSources[ent] = nil
@@ -55,13 +56,16 @@ function rRadio.cl.cleanupEntity( ent )
     rRadio.cl.connectedStations[ent] = nil
     rRadio.cl.requestedStations[ent] = nil
     rRadio.cl.mutedBoomboxes[ent] = nil
-    if IsValid( ent ) and rRadio.utils.IsBoombox( ent ) then
-        local entIndex = ent:EntIndex()
+    if rRadio.interface and rRadio.interface.ClearTrackedVolume then
+        rRadio.interface.ClearTrackedVolume( ent )
+    end
+    if entIndex == nil and ent and ent.EntIndex then entIndex = ent:EntIndex() end
+    if entIndex then
         rRadio.cl.boomboxStatuses[entIndex] = nil
-        rRadio.utils.ClearRadioStatus( ent )
         timer.Remove( "rRadio.ErrorClear_" .. entIndex )
         timer.Remove( "rRadio.TuningTimeout_" .. entIndex )
     end
+    if IsValid( ent ) and rRadio.utils.IsBoombox( ent ) then rRadio.utils.ClearRadioStatus( ent ) end
 end
 
 rRadio.cl.pendingVolume = nil

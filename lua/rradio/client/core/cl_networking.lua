@@ -56,7 +56,7 @@ rRadio.cl.networkHandlers["rRadio.UpdateRadioStatus"] = function()
 end
 
 rRadio.cl.networkHandlers["rRadio.CustomStationsUpdate"] = function()
-    local list = net.ReadTable()
+    local count = net.ReadUInt( 16 )
     local cat = rRadio.config.CustomStationCategory or "Custom"
     for url in pairs( rRadio.cl.customUrlSet ) do
         rRadio.cl.allowedUrlSet[url] = nil
@@ -64,19 +64,22 @@ rRadio.cl.networkHandlers["rRadio.CustomStationsUpdate"] = function()
 
     rRadio.cl.customUrlSet = {}
     rRadio.cl.stationData[cat] = {}
-    for _, st in ipairs( list ) do
-        if type( st ) == "table" and type( st.name ) == "string" and type( st.url ) == "string" then
+    local stationList = rRadio.cl.stationData[cat]
+    for i = 1, count do
+        local name = net.ReadString()
+        local url = net.ReadString()
+        if type( name ) == "string" and type( url ) == "string" and name ~= "" and url ~= "" then
             local entry = {
-                name = st.name,
-                url = st.url,
+                name = name,
+                url = url,
                 country = cat,
                 countryKey = cat,
             }
             rRadio.interface.ensureSearchFields( entry )
-            table.insert( rRadio.cl.stationData[cat], entry )
+            stationList[#stationList + 1] = entry
 
-            rRadio.cl.allowedUrlSet[st.url] = true
-            rRadio.cl.customUrlSet[st.url] = true
+            rRadio.cl.allowedUrlSet[url] = true
+            rRadio.cl.customUrlSet[url] = true
         end
     end
 
@@ -98,6 +101,7 @@ rRadio.cl.networkHandlers["rRadio.PlayStation"] = function()
     local stationName = net.ReadString()
     local url = net.ReadString()
     local volume = net.ReadFloat()
+    rRadio.cl.entityVolumes[actual] = volume
     local nonce = ( rRadio.cl.playbackNonce[actual] or 0 ) + 1
     rRadio.cl.playbackNonce[actual] = nonce
     rRadio.utils.SetRadioStatus( actual, rRadio.status.TUNING, stationName )

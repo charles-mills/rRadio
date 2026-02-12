@@ -265,16 +265,21 @@ local function initClient()
         rRadio.config.UsePlayerBindHook = not game.SinglePlayer()
     end
     rRadio.addClConVars()
+    local maxVolumeRefreshTimer = "rRadioMaxVolRefresh"
+    local maxVolumeRefreshDelay = 0.08
     cvars.AddChangeCallback( "rammel_rradio_max_volume", function( _cvar, _old, _new )
-        if not rRadio.cl or not rRadio.cl.radioSources then return end
-        if not ( rRadio.interface and isfunction( rRadio.interface.refreshVolume ) ) then return end
-        for ent, source in pairs( rRadio.cl.radioSources ) do
-            if IsValid( ent ) and IsValid( source ) then
-                rRadio.interface.refreshVolume( ent )
+        timer.Remove( maxVolumeRefreshTimer )
+        timer.Create( maxVolumeRefreshTimer, maxVolumeRefreshDelay, 1, function()
+            if not rRadio.cl or not rRadio.cl.radioSources then return end
+            if not ( rRadio.interface and isfunction( rRadio.interface.refreshVolume ) ) then return end
+            for ent, source in pairs( rRadio.cl.radioSources ) do
+                if IsValid( ent ) and IsValid( source ) then
+                    rRadio.interface.refreshVolume( ent )
+                end
             end
-        end
 
-        if rRadio.cl.performance then rRadio.cl.performance.volumeChanged = true end
+            if rRadio.cl.performance then rRadio.cl.performance.volumeChanged = true end
+        end )
     end, "rRadioMaxVolCB" )
 
     addClProperties()

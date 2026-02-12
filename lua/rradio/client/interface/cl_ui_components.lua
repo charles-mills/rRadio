@@ -107,7 +107,7 @@ function rRadio.cl.uiComponents.populateFavorites( panel, updateList )
     return items
 end
 
-function rRadio.cl.uiComponents.populateCountries( panel, filterText, updateList )
+function rRadio.cl.uiComponents.populateCountries( panel, filterText, updateList, searchStage )
     local items = {}
     local raw = {}
     local customKey = rRadio.config.CustomStationCategory or "Custom"
@@ -152,7 +152,8 @@ function rRadio.cl.uiComponents.populateCountries( panel, filterText, updateList
     local countries = rRadio.interface.fuzzyFilter(
         filterText, raw,
         function( c ) return c.translated end, 0,
-        function( c ) return c.isPrioritized and 0.1 or 0 end
+        function( c ) return c.isPrioritized and 0.1 or 0 end,
+        searchStage
     )
     if not wantsHeader and rRadio.config.PrioritiseCustom and filterText == "" then
         for i, c in ipairs( countries ) do
@@ -186,8 +187,8 @@ function rRadio.cl.uiComponents.populateCountries( panel, filterText, updateList
     return items
 end
 
-function rRadio.cl.uiComponents.populateStations( panel, country, filterText, updateList, backButton )
-    local items = {}
+function rRadio.cl.uiComponents.collectStationEntries( country, filterText, searchStage )
+    local entries = {}
     if country == "favorites" then
         local rawFav = {}
         for c, stations in pairs( rRadio.interface.favoriteStations ) do
@@ -207,16 +208,17 @@ function rRadio.cl.uiComponents.populateStations( panel, country, filterText, up
         local favList = rRadio.interface.fuzzyFilter(
             filterText, rawFav,
             function( f ) return f.countryName .. " - " .. f.station.name end,
-            0
+            0,
+            nil,
+            searchStage
         )
-        local favLimit = uiState.isSearching and rRadio.cl.MAX_SEARCH_RESULTS or #favList
-        for i = 1, math.min( favLimit, #favList ) do
+        for i = 1, #favList do
             local f = favList[i]
-            local displayName = f.countryName .. " - " .. f.station.name
-            addPlayableStation(
-                items, panel, f.station, f.country,
-                displayName, updateList
-            )
+            entries[#entries + 1] = {
+                station = f.station,
+                countryKey = f.country,
+                displayKey = f.countryName .. " - " .. f.station.name
+            }
         end
     else
         local rawList = rRadio.cl.countrySearchIndex and rRadio.cl.countrySearchIndex[country] or {}
@@ -226,15 +228,36 @@ function rRadio.cl.uiComponents.populateStations( panel, country, filterText, up
             function( s )
             local favorites = rRadio.interface.favoriteStations[country]
             return favorites and favorites[s.station.name] and 0.1 or 0
-        end )
+        end,
+            searchStage
+        )
 
-        local resultLimit = uiState.isSearching and rRadio.cl.MAX_SEARCH_RESULTS or #sorted
-        for i = 1, math.min( resultLimit, #sorted ) do
+        for i = 1, #sorted do
             local d = sorted[i]
-            addPlayableStation( items, panel, d.station, country, d.station.name, updateList )
+            entries[#entries + 1] = {
+                station = d.station,
+                countryKey = country,
+                displayKey = d.station.name
+            }
         end
     end
+    return entries
+end
 
+function rRadio.cl.uiComponents.populateStations( panel, country, filterText, updateList, backButton, searchStage )
+    local items = {}
+    local entries = rRadio.cl.uiComponents.collectStationEntries( country, filterText, searchStage )
+    for i = 1, #entries do
+        local entry = entries[i]
+        addPlayableStation(
+            items,
+            panel,
+            entry.station,
+            entry.countryKey,
+            entry.displayKey,
+            updateList
+        )
+    end
     if backButton then
         backButton:SetVisible( true )
         backButton:SetEnabled( true )
