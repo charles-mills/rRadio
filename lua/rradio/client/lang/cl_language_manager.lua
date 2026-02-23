@@ -1,19 +1,68 @@
-﻿rRadio.LanguageManager = {}
+rRadio.LanguageManager = {}
 rRadio.LanguageManager.currentLanguage = "en"
-rRadio.LanguageManager.translations = include( "rradio/client/lang/cl_localisation_strings.lua" )
-rRadio.LanguageManager.countryTranslationsA = include( "rradio/client/data/langpacks/data_1.lua" )
-rRadio.LanguageManager.countryTranslationsB = include( "rradio/client/data/langpacks/data_2.lua" )
-rRadio.LanguageManager.countryTranslationsC = include( "rradio/client/data/langpacks/data_3.lua" )
 rRadio.LanguageManager.countryTranslations = {}
-local _langPacks = {
-    rRadio.LanguageManager.countryTranslationsA,
-    rRadio.LanguageManager.countryTranslationsB,
-    rRadio.LanguageManager.countryTranslationsC
-}
 
-for _, pack in ipairs( _langPacks ) do
-    table.Merge( rRadio.LanguageManager.countryTranslations, pack )
+local TRANSLATIONS = {}
+local THEME_TRANSLATIONS = {}
+
+local localeFiles = file.Find( "rradio/client/lang/locales/*.lua", "LUA" )
+table.sort( localeFiles )
+for _, f in ipairs( localeFiles ) do
+    local data = include( "rradio/client/lang/locales/" .. f )
+    if data then
+        for lang, langData in pairs( data ) do
+            if langData.ui then
+                TRANSLATIONS[lang] = langData.ui
+            end
+            if langData.themes then
+                THEME_TRANSLATIONS[lang] = langData.themes
+            end
+            if langData.countries then
+                rRadio.LanguageManager.countryTranslations[lang] = langData.countries
+            end
+        end
+    end
 end
+
+local function applyTranslationFallbacks()
+    local english = TRANSLATIONS.en or {}
+    local langs = {}
+    for langCode in pairs( TRANSLATIONS ) do
+        langs[langCode] = true
+    end
+    for langCode in pairs( THEME_TRANSLATIONS ) do
+        langs[langCode] = true
+    end
+
+    for langCode in pairs( langs ) do
+        local source = TRANSLATIONS[langCode] or {}
+        local merged = {}
+        for key, value in pairs( source ) do
+            merged[key] = value
+        end
+        for key, value in pairs( english ) do
+            if merged[key] == nil then
+                merged[key] = value
+            end
+        end
+        rRadio.LanguageManager.translations[langCode] = merged
+    end
+end
+
+local function applyThemeTranslations()
+    for langCode, translations in pairs( THEME_TRANSLATIONS ) do
+        local langTable = rRadio.LanguageManager.translations[langCode]
+        if langTable then
+            for themeName, label in pairs( translations ) do
+                langTable[themeName] = label
+            end
+        end
+    end
+end
+
+rRadio.LanguageManager.translations = {}
+applyTranslationFallbacks()
+applyThemeTranslations()
 
 local gmodLang = GetConVar( "gmod_language" )
 function rRadio.LanguageManager:GetClientLanguageCode()

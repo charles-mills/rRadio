@@ -1,0 +1,13 @@
+# Editor / OS junk
+*.swp
+*.swo
+*~
+.DS_Store
+changelog
+Thumbs.db
+
+# Python
+__pycache__/
+
+# Stream validation results
+scripts/stream_results.json

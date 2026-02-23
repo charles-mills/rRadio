@@ -1,0 +1,50 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Validate data files
+        run: python scripts/validate.py
+
+      - name: Pack data files for release
+        run: python scripts/pack.py pack
+
+      - name: Create release zip
+        run: |
+          REPO_DIR=$(basename "$GITHUB_WORKSPACE")
+          cd "$GITHUB_WORKSPACE/.."
+          zip -r release.zip \
+            "${REPO_DIR}/lua" \
+            "${REPO_DIR}/materials" \
+            "${REPO_DIR}/models" \
+            -x "${REPO_DIR}/scripts/*" \
+            -x "${REPO_DIR}/.github/*" \
+            -x "${REPO_DIR}/.gitignore"
+          mv release.zip "$GITHUB_WORKSPACE/rradio.zip"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${{ github.ref_name }}" \
+            rradio.zip \
+            --generate-notes \
+            --title "${{ github.ref_name }}"

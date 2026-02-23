@@ -8,9 +8,9 @@ rRadio.cl.stationDataLoaded = false
 function rRadio.cl.loadStationData()
     if rRadio.cl.stationDataLoaded then return end
     rRadio.cl.stationData = {}
-    local files = file.Find( "rradio/client/data/stationpacks/*.lua", "LUA" )
+    local files = file.Find( "rradio/client/stations/*.lua", "LUA" )
     for _, f in ipairs( files ) do
-        local data = include( "rradio/client/data/stationpacks/" .. f )
+        local data = include( "rradio/client/stations/" .. f )
         if data then
             for country, stations in pairs( data ) do
                 local baseCountry = country:gsub( "_(%d+)$", "" )

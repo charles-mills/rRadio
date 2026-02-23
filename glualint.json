@@ -26,7 +26,8 @@
     "lint_spaceBetweenBrackets": true,
     "lint_spaceBetweenBraces": true,
     "lint_ignoreFiles": [
-        "lua/rradio/client/data/**"
+        "lua/rradio/client/stations/**",
+        "lua/rradio/client/lang/locales/**"
     ],
     "prettyprint_spaceBetweenParens": true,
     "prettyprint_spaceBetweenBrackets": false,

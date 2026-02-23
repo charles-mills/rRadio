@@ -1,0 +1,35 @@
+name: Lint & Validate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install glualint
+        run: |
+          curl -fsSL -o glualint.zip https://github.com/FPtje/GLuaFixer/releases/download/1.29.0/glualint-linux.zip
+          unzip glualint.zip
+          chmod +x glualint
+          sudo mv glualint /usr/local/bin/
+
+      - name: Run glualint
+        run: glualint lua/
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Validate data files
+        run: python scripts/validate.py

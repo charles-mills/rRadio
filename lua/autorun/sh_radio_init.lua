@@ -41,8 +41,8 @@ local PUBLIC_WORKSHOP_ID = "3318060741"
 local CLIENT_DISTRIBUTION_DIRS = {
     "rradio/shared", "rradio/client", "rradio/client/core",
     "rradio/client/interface", "rradio/client/interface/components",
-    "rradio/client/lang", "rradio/client/data/langpacks",
-    "rradio/client/data/stationpacks", "entities/rammel_base_boombox",
+    "rradio/client/lang", "rradio/client/lang/locales",
+    "rradio/client/stations", "entities/rammel_base_boombox",
     "entities/rammel_boombox", "entities/rammel_boombox_gold"
 }
 local SERVER_MODULES = {
