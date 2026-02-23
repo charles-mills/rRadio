@@ -1,16 +1,11 @@
 return {
     ['united_republic_of_tanzania'] = {
         { n = 'Capital Radio', u = 'https://capitalradio.radioca.st/stream' },
-        { n = 'Daniel Edward', u = 'http://stream.zeno.fm/ex6ng25chfhvv' },
-        { n = 'DFM Radio', u = 'https://stream.zeno.fm/mtrcigb9yhitv' },
-        { n = 'DFM Radio Rwanda', u = 'https://stream.zeno.fm/fygodpmrgcquv' },
         { n = 'Dodoma FM', u = 'https://radiotadio.co.tz/dodoma-fm-stream' },
         { n = 'East Africa Radio FM', u = 'https://eatv.radioca.st/stream' },
         { n = 'Heaven FM Radio Burundi', u = 'http://stream.zeno.fm/eequgfw72hhvv' },
         { n = 'Imbanasi', u = 'https://stream.zeno.fm/dsfhivkawjiuv' },
         { n = 'Ishizwe FM', u = 'https://stream.zeno.fm/zhhawbqoikatv' },
-        { n = 'Kipiti Radio', u = 'http://stream.zeno.fm/7ebq5q3tcv8uv' },
-        { n = 'Magic FM Dar Es Salaam', u = 'https://stream.rcast.net/69241/;' },
         { n = 'Nuru FM', u = 'https://radiotadio.co.tz/nuru-fm-stream' },
         { n = 'Radio Kwizera', u = 'http://uk4-vn.mixstream.net:8052/;listen.mp3' },
         { n = 'RADIO MARIA TANZANIA', u = 'http://dreamsiteradiocp2.com:8034/stream' },
@@ -19,8 +14,6 @@ return {
         { n = 'Radio One Stereo', u = 'https://radioonetanzania.radioca.st/stream' },
         { n = 'Radio Uhai', u = 'https://s2.citrus3.com:8050/stream' },
         { n = 'Street One Radio', u = 'http://stream.zeno.fm/d3as2fmadnruv' },
-        { n = 'Sunsee Fm', u = 'https://stream.zeno.fm/pjyrau0imf3uv' },
-        { n = 'Tzgospel Radio', u = 'https://stream.zeno.fm/ex6ng25chfhvv' },
         { n = 'Wasafi Fm', u = 'http://streaming.radionomy.com/JamendoLounge' },
     }
 }

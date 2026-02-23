@@ -1,6 +1,5 @@
 return {
     ['qatar'] = {
-        { n = 'Dagher', u = 'https://stream.zeno.fm/iafq9jbztjluv' },
         { n = 'Qabayan Radio 943 FM', u = 'https://c2.radioboss.fm:18478/stream' },
         { n = 'Radio Olive 1063', u = 'https://playerservices.streamtheworld.com/api/livestream-redirect/OLIVE1063AAC.aac' },
         { n = 'Suno Malayalam FM', u = 'https://playerservices.streamtheworld.com/api/livestream-redirect/SUNO917.mp3' },

@@ -9,6 +9,5 @@ return {
         { n = 'Radio AYK', u = 'http://s3.streammonster.com:8117/;' },
         { n = 'Radio Mariam Armenia', u = 'http://dreamsiteradiocp.com:8056/stream' },
         { n = 'Radio Marshall', u = 'https://eu.stream4cast.com/proxy/marshallfm/stream' },
-        { n = 'Radio Van', u = 'http://media.radiovan.am:8000/96_stereo.m3u' },
     }
 }

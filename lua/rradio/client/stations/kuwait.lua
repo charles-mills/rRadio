@@ -1,10 +1,6 @@
 return {
     ['kuwait'] = {
-        { n = 'Konoz Alsira - كنوز السيرة عثمان الخميس', u = 'https://radio.mp3islam.com/listen/othman_sira/radio.mp3' },
-        { n = 'Marina FM', u = 'http://31.14.40.102:8006/stream.ogg' },
-        { n = 'Marina FM 904', u = 'http://31.14.40.102:8006/MarinaFM%2090.4.mp3' },
         { n = 'MC Doualiya', u = 'https://montecarlodoualiya128k.ice.infomaniak.ch/mc-doualiya.mp3' },
-        { n = 'Othman Alkhamis - قصص الانبياء عثمان الخميس', u = 'https://radio.mp3islam.com/listen/othman_anbia/radio.mp3' },
         { n = 'Quran Radio راديو القرآن - Abdulrahman Alsudais - عبدالرحمن السديس', u = 'https://radio.mp3islam.com/listen/sudais/radio.mp3' },
         { n = 'Quran Radio راديو القرآن - Ali Alhuthaifi - علي الحذيفي', u = 'https://radio.mp3islam.com/listen/alhuthaifi/radio.mp3' },
         { n = 'Quran Radio راديو القرآن - Kuwait الكويت', u = 'https://radio.mp3islam.com/listen/quran_radio/radio.mp3' },

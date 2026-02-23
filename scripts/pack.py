@@ -721,7 +721,7 @@ def cmd_pack(_args: argparse.Namespace) -> int:
 
 def cmd_validate(_args: argparse.Namespace) -> int:
     """Validate all unpacked data files (delegates to scripts/validate.py)."""
-    from validate import validate
+    from validate_localisation import validate
 
     return validate()
 

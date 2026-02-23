@@ -3,6 +3,5 @@ return {
         { n = 'BDS NICE RADIO SVG', u = 'http://us1.carihost.com:8380/stream' },
         { n = 'Reggae141', u = 'http://hestia2.cdnstream.com/1301_128' },
         { n = 'Star FM 983 1047 Kingstown', u = 'http://starradio.serverroom.net:6688/' },
-        { n = 'We FM 999 Kingstown', u = 'http://mountain2.serverroom.net:6266/;' },
     }
 }

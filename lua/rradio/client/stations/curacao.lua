@@ -1,6 +1,5 @@
 return {
     ['curacao'] = {
-        { n = 'Dolfijn FM 973 Seaquarium Beach', u = 'http://85.214.231.253:8080/stream.mp3' },
         { n = 'Easy 979 FM', u = 'http://64.150.176.42:8011/live' },
         { n = 'Hitradio 915 Curacao', u = 'http://stream.paradisefm.cw/HITradio915' },
         { n = 'Paradise FM 1031 Curacao', u = 'http://stream.paradisefm.cw/ParadiseFM' },

@@ -2,7 +2,6 @@ return {
     ['kosovo'] = {
         { n = '921 Capital FM', u = 'http://cfm.albaservers.com:8010/' },
         { n = 'Glamradio', u = 'https://stream.glamradio.fm:8443/glamradio' },
-        { n = 'KLAN Kosova FM', u = 'http://s4.radio.co/sd1d1904dc/listen.m3u' },
         { n = 'Kolektiv Radio', u = 'https://studio28.radiolize.com/radio/8100/radio.mp3' },
         { n = 'Radio K4 Shqip', u = 'http://fm.radiokfor.com:8080/;' },
         { n = 'Radio Kosova E Lire', u = 'http://quasar.shoutca.st:8018/' },

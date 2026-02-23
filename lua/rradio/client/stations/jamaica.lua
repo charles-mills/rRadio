@@ -1,6 +1,5 @@
 return {
     ['jamaica'] = {
-        { n = '13Radio', u = 'https://c34.radioboss.fm:18099/stream' },
         { n = '808 Live Reggaecast', u = 'http://808.rastamusic.com/rastamusic.mp3' },
         { n = 'Alpha Boys School Radio', u = 'http://alphaboys-live.streamguys1.com/alphaboys.mp3' },
         { n = 'Dimusic Club Lesotho', u = 'http://stream1.dimusic.club:11496/live?type=.aac' },
@@ -10,7 +9,6 @@ return {
         { n = 'GGFM 901 Discovery Bay', u = 'http://usa14.fastcast4u.com:5192/;' },
         { n = 'Ghetto Vibes Radio', u = 'https://www.radioking.com/play/ghetto-vibes-radio-station' },
         { n = 'Gospel FM Jamaica', u = 'https://stream-37.zeno.fm/zpksre88rm0uv' },
-        { n = 'Gospel JA FM', u = 'https://media.usamogul.com:7001/stream' },
         { n = 'Irie FM', u = 'https://usa19.fastcast4u.com:7430/;' },
         { n = 'IRIE Storm Radio', u = 'https://auds1.intacs.com/iriestormradio' },
         { n = 'KLAS ESPN Sports FM 89', u = 'http://stream.zenolive.com/4uw093pbyvduv' },
@@ -25,10 +23,8 @@ return {
         { n = 'Rebel Radio', u = 'https://streamer.radio.co/s830ce6f36/listen' },
         { n = 'Reggae King Radio', u = 'http://198.178.123.17:10196/stream/1/' },
         { n = 'Roots 961 FM Jamaica', u = 'http://stream.zeno.fm/pnp236t7nbruv' },
-        { n = 'Stylz FM 961', u = 'http://ice6.securenetsystems.net/STYLZFM' },
         { n = 'Suncity 1049 FM', u = 'https://edge.mixlr.com/channel/ibrdq' },
         { n = 'The Edge 105 FM', u = 'https://listen.radioking.com/radio/331171/stream/387835' },
-        { n = 'Unityxm Radio', u = 'https://my5.radiolize.com/radio/8070/radio.mp3' },
         { n = 'WORLDWYDE OUTERNATIONAL', u = 'http://stream.zeno.fm/g4gf4u13k0hvv' },
         { n = 'Worlvybz Radio', u = 'http://stream.zeno.fm/mkg0g0t2td0uv' },
         { n = 'Zip FM 103 FM', u = 'https://stream-145.zeno.fm/4fazmm93yceuv?zs=Q57QkCjgT7axxG5KKVdiBg' },

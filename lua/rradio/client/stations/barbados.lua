@@ -1,6 +1,5 @@
 return {
     ['barbados'] = {
-        { n = 'Capital Media HD 993 FM', u = 'http://www.surfmusic.de/m3u/capital-media-hd-99-3-fm,19163.m3u' },
         { n = 'CBC 947 FM', u = 'http://108.178.16.190:8000/947fm.mp3' },
         { n = 'Dimusic Club Lesotho', u = 'http://stream1.dimusic.club:11496/live?type=.aac' },
         { n = 'Q1007 FM', u = 'http://108.178.16.190:8000/1007fm.mp3' },

@@ -4,7 +4,6 @@ return {
         { n = 'Dimusic Club Lesotho', u = 'http://stream1.dimusic.club:11496/live?type=.aac' },
         { n = 'Huna Aden FM', u = 'https://c30.radioboss.fm:18267/stream' },
         { n = 'Noor Al-Eman', u = 'http://edge.mixlr.com/channel/boaht' },
-        { n = 'Quran', u = 'https://backup.qurango.net/radio/ahmad_khader_altarabulsi' },
         { n = 'Radio Bandar Aden', u = 'https://r.fm-radio.net/bndr/;' },
         { n = 'Radio Lana FM', u = 'http://node-24.zeno.fm/542gubz258quv' },
         { n = 'Sam FM', u = 'http://edge.mixlr.com/channel/kijwr' },
