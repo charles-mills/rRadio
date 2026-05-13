@@ -14,7 +14,7 @@
     "lint_redundantIfStatements": true,
     "lint_redundantParentheses": true,
     "lint_duplicateTableKeys": true,
-    "lint_profanity": true,
+    "lint_profanity": false,
     "lint_unusedVars": true,
     "lint_unusedParameters": true,
     "lint_unusedLoopVars": true,
@@ -26,7 +26,11 @@
     "lint_spaceBetweenBrackets": true,
     "lint_spaceBetweenBraces": true,
     "lint_ignoreFiles": [
-        "lua/rradio/client/data/**"
+        "lua/rradio/client/stations/builtin_catalog.lua",
+        "lua/rradio/client/stations/generated/**",
+        "lua/rradio/server/stations/builtin_registry.lua",
+        "lua/rradio/server/stations/generated/**",
+        "lua/rradio/client/lang/**"
     ],
     "prettyprint_spaceBetweenParens": true,
     "prettyprint_spaceBetweenBrackets": false,

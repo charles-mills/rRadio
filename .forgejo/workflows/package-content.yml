@@ -1,0 +1,95 @@
+name: Package Content
+
+on:
+  workflow_dispatch:
+
+env:
+  FORGEJO_INSTANCE_URL: https://git.charlesmills.tech
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  package-content:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          workspace="${FORGEJO_WORKSPACE:-${GITHUB_WORKSPACE:-$PWD}}"
+          checkout_server="$FORGEJO_INSTANCE_URL"
+          checkout_repository="${FORGEJO_REPOSITORY:-${GITHUB_REPOSITORY:-}}"
+          checkout_ref="${FORGEJO_REF:-${GITHUB_REF:-}}"
+          checkout_sha="${FORGEJO_SHA:-${GITHUB_SHA:-}}"
+          checkout_token="${FORGEJO_TOKEN:-${GITHUB_TOKEN:-}}"
+
+          if [ -z "$checkout_server" ] || [ -z "$checkout_repository" ] || [ -z "$checkout_token" ]; then
+            echo "Missing Forgejo checkout environment." >&2
+            exit 1
+          fi
+
+          git init "$workspace"
+          cd "$workspace"
+          git config --global --add safe.directory "$workspace"
+          git remote remove origin 2>/dev/null || true
+          git remote add origin "${checkout_server%/}/${checkout_repository}.git"
+
+          auth_header="$(printf 'x-access-token:%s' "$checkout_token" | base64 | tr -d '\n')"
+
+          if [ -n "$checkout_ref" ]; then
+            git -c "http.extraHeader=Authorization: basic $auth_header" \
+              fetch --depth=1 origin "+$checkout_ref:refs/remotes/origin/checkout"
+            git checkout --force refs/remotes/origin/checkout
+          elif [ -n "$checkout_sha" ]; then
+            git -c "http.extraHeader=Authorization: basic $auth_header" fetch --depth=1 origin "$checkout_sha"
+            git checkout --force FETCH_HEAD
+          else
+            echo "Missing Forgejo checkout ref and SHA." >&2
+            exit 1
+          fi
+
+      - name: Stage content-only addon artifact
+        run: |
+          set -euo pipefail
+
+          mkdir -p dist/content
+
+          content_paths=()
+          for path in \
+            addon.json \
+            materials \
+            models \
+            particles \
+            resource \
+            sound \
+            sounds \
+            maps
+          do
+            if [ -e "$path" ]; then
+              content_paths+=("$path")
+            fi
+          done
+
+          if [ "${#content_paths[@]}" -eq 0 ]; then
+            echo "No addon content paths found to package." >&2
+            exit 1
+          fi
+
+          cp -a "${content_paths[@]}" dist/content/
+          find dist/content \
+            \( -name '.DS_Store' -o -name 'Thumbs.db' -o -name '*.swp' -o -name '*.swo' -o -name '*~' \) \
+            -type f -delete
+
+          if [ -e dist/content/lua ]; then
+            echo "Content artifact unexpectedly includes lua/." >&2
+            exit 1
+          fi
+
+      - name: Upload content zip artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: rradio-content
+          path: dist/content/*

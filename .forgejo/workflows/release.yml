@@ -1,0 +1,139 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Optional version for the release zip, for example 1.0 or v1.0"
+        required: false
+        type: string
+
+env:
+  FORGEJO_INSTANCE_URL: https://git.charlesmills.tech
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          workspace="${FORGEJO_WORKSPACE:-${GITHUB_WORKSPACE:-$PWD}}"
+          checkout_server="$FORGEJO_INSTANCE_URL"
+          checkout_repository="${FORGEJO_REPOSITORY:-${GITHUB_REPOSITORY:-}}"
+          checkout_ref="${FORGEJO_REF:-${GITHUB_REF:-}}"
+          checkout_sha="${FORGEJO_SHA:-${GITHUB_SHA:-}}"
+          checkout_token="${FORGEJO_TOKEN:-${GITHUB_TOKEN:-}}"
+
+          if [ -z "$checkout_server" ] || [ -z "$checkout_repository" ] || [ -z "$checkout_token" ]; then
+            echo "Missing Forgejo checkout environment." >&2
+            exit 1
+          fi
+
+          git init "$workspace"
+          cd "$workspace"
+          git config --global --add safe.directory "$workspace"
+          git remote remove origin 2>/dev/null || true
+          git remote add origin "${checkout_server%/}/${checkout_repository}.git"
+
+          auth_header="$(printf 'x-access-token:%s' "$checkout_token" | base64 | tr -d '\n')"
+
+          if [ -n "$checkout_ref" ]; then
+            git -c "http.extraHeader=Authorization: basic $auth_header" \
+              fetch --depth=1 origin "+$checkout_ref:refs/remotes/origin/checkout"
+            git checkout --force refs/remotes/origin/checkout
+          elif [ -n "$checkout_sha" ]; then
+            git -c "http.extraHeader=Authorization: basic $auth_header" fetch --depth=1 origin "$checkout_sha"
+            git checkout --force FETCH_HEAD
+          else
+            echo "Missing Forgejo checkout ref and SHA." >&2
+            exit 1
+          fi
+
+      - name: Install workflow tools
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends python3 zip
+
+      - name: Validate data files
+        run: python3 scripts/pack.py validate
+
+      - name: Pack data files for release
+        run: python3 scripts/pack.py pack
+
+      - name: Validate packed release artifacts
+        run: python3 scripts/pack.py validate
+
+      - name: Create release zip
+        id: release_zip
+        env:
+          RELEASE_TAG: ${{ forgejo.ref_name }}
+          RELEASE_VERSION_INPUT: ${{ inputs.version }}
+        run: |
+          release_source="${RELEASE_VERSION_INPUT:-$RELEASE_TAG}"
+          release_version="${release_source#v}"
+
+          if [ -n "$release_version" ]; then
+            release_file="rradio-${release_version}.zip"
+          else
+            release_file="rradio.zip"
+          fi
+
+          mkdir -p dist/release
+          zip -r "dist/release/${release_file}" \
+            lua \
+            materials \
+            models \
+            resource \
+            addon.json \
+            -x 'lua/tests/*' \
+               'lua/tests/**' \
+               '.DS_Store' \
+               '*/.DS_Store' \
+               'Thumbs.db' \
+               '*/Thumbs.db' \
+               '*.swp' \
+               '*.swo' \
+               '*~'
+
+          echo "file=${release_file}" >> "$FORGEJO_OUTPUT"
+          echo "artifact=${release_file%.zip}" >> "$FORGEJO_OUTPUT"
+
+      - name: Stage release artifact contents
+        if: ${{ forgejo.event_name == 'workflow_dispatch' }}
+        run: |
+          set -euo pipefail
+
+          mkdir -p dist/release-artifact
+          cp -a lua materials models resource addon.json dist/release-artifact/
+          rm -rf dist/release-artifact/lua/tests
+          find dist/release-artifact \
+            \( -name '.DS_Store' -o -name 'Thumbs.db' -o -name '*.swp' -o -name '*.swo' -o -name '*~' \) \
+            -type f -delete
+
+      - name: Upload release zip artifact
+        if: ${{ forgejo.event_name == 'workflow_dispatch' }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ steps.release_zip.outputs.artifact }}
+          path: dist/release-artifact/*
+
+      - name: Publish Forgejo release
+        if: ${{ forgejo.event_name == 'push' }}
+        uses: actions/forgejo-release@v2.11.1
+        with:
+          direction: upload
+          url: ${{ env.FORGEJO_INSTANCE_URL }}
+          repo: ${{ forgejo.repository }}
+          token: ${{ secrets.FORGEJO_TOKEN }}
+          tag: ${{ forgejo.ref_name }}
+          release-dir: dist/release
+          release-notes: Release ${{ forgejo.ref_name }}.

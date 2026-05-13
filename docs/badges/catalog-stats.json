@@ -1,0 +1,8 @@
+{
+  "stationCount": 42880,
+  "countryCount": 216,
+  "languageCount": 30,
+  "excludedCountryKeys": [
+    "unknown"
+  ]
+}

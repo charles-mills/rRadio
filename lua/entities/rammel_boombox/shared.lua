@@ -1,5 +1,5 @@
-﻿ENT.Type = "anim"
-ENT.Base = "rammel_base_boombox"
+ENT.Type = "anim"
+ENT.Base = "base_gmodentity"
 ENT.Category = "rRadio"
 ENT.Author = "Rammel"
 ENT.PrintName = "Boombox"
@@ -7,3 +7,7 @@ ENT.Information = "Plays music!"
 ENT.Spawnable = true
 ENT.AdminSpawnable = true
 ENT.ConfigKey = "Boombox"
+
+function ENT:SetupDataTables()
+    self:NetworkVar( "Entity", 0, "owning_ent" )
+end

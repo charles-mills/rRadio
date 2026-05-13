@@ -1,0 +1,116 @@
+name: Catalog Badges
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - data/stations.json
+      - data/locales/**
+      - docs/badges/**
+      - scripts/build_catalog_badges.py
+      - .forgejo/workflows/catalog-badges.yml
+  pull_request:
+    branches: [main]
+    paths:
+      - data/stations.json
+      - data/locales/**
+      - docs/badges/**
+      - scripts/build_catalog_badges.py
+      - .forgejo/workflows/catalog-badges.yml
+
+env:
+  FORGEJO_INSTANCE_URL: https://git.charlesmills.tech
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  catalog-badges:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          workspace="${FORGEJO_WORKSPACE:-${GITHUB_WORKSPACE:-$PWD}}"
+          checkout_server="$FORGEJO_INSTANCE_URL"
+          checkout_repository="${FORGEJO_REPOSITORY:-${GITHUB_REPOSITORY:-}}"
+          checkout_ref="${FORGEJO_REF:-${GITHUB_REF:-}}"
+          checkout_sha="${FORGEJO_SHA:-${GITHUB_SHA:-}}"
+          checkout_token="${FORGEJO_TOKEN:-${GITHUB_TOKEN:-}}"
+
+          if [ -z "$checkout_server" ] || [ -z "$checkout_repository" ] || [ -z "$checkout_token" ]; then
+            echo "Missing Forgejo checkout environment." >&2
+            exit 1
+          fi
+
+          git init "$workspace"
+          cd "$workspace"
+          git config --global --add safe.directory "$workspace"
+          git remote remove origin 2>/dev/null || true
+          git remote add origin "${checkout_server%/}/${checkout_repository}.git"
+
+          auth_header="$(printf 'x-access-token:%s' "$checkout_token" | base64 | tr -d '\n')"
+
+          if [ -n "$checkout_ref" ]; then
+            git -c "http.extraHeader=Authorization: basic $auth_header" \
+              fetch --depth=1 origin "+$checkout_ref:refs/remotes/origin/checkout"
+            git checkout --force refs/remotes/origin/checkout
+          elif [ -n "$checkout_sha" ]; then
+            git -c "http.extraHeader=Authorization: basic $auth_header" fetch --depth=1 origin "$checkout_sha"
+            git checkout --force FETCH_HEAD
+          else
+            echo "Missing Forgejo checkout ref and SHA." >&2
+            exit 1
+          fi
+
+      - name: Verify Python
+        run: python3 --version
+
+      - name: Check catalog badges
+        if: ${{ forgejo.event_name == 'pull_request' }}
+        run: python3 scripts/build_catalog_badges.py --check
+
+      - name: Generate catalog badges
+        if: ${{ forgejo.event_name != 'pull_request' }}
+        run: python3 scripts/build_catalog_badges.py
+
+      - name: Show catalog stats
+        if: ${{ forgejo.event_name != 'pull_request' }}
+        run: cat docs/badges/catalog-stats.json
+
+      - name: Commit catalog badge updates
+        if: ${{ forgejo.event_name == 'push' }}
+        env:
+          PUSH_TOKEN: ${{ secrets.FORGEJO_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "$(git status --porcelain -- docs/badges)" ]; then
+            echo "Catalog badge files are current."
+            exit 0
+          fi
+
+          push_token="${PUSH_TOKEN:-${FORGEJO_TOKEN:-${GITHUB_TOKEN:-}}}"
+          if [ -z "$push_token" ]; then
+            echo "Missing token for pushing catalog badge updates." >&2
+            exit 1
+          fi
+
+          branch="${FORGEJO_REF:-${GITHUB_REF:-}}"
+          branch="${branch#refs/heads/}"
+          if [ -z "$branch" ] || [ "$branch" = "${FORGEJO_REF:-${GITHUB_REF:-}}" ]; then
+            echo "Could not determine branch for badge update push." >&2
+            exit 1
+          fi
+
+          git config user.name "Forgejo Actions"
+          git config user.email "forgejo-actions@git.charlesmills.tech"
+          git add docs/badges
+          git commit -m "Update catalog badges"
+
+          auth_header="$(printf 'x-access-token:%s' "$push_token" | base64 | tr -d '\n')"
+          git -c "http.extraHeader=Authorization: basic $auth_header" push origin "HEAD:$branch"

@@ -1,0 +1,21 @@
+# Editor / OS junk
+*.swp
+*.swo
+*~
+.DS_Store
+changelog
+Thumbs.db
+
+# Python
+__pycache__/
+
+# Local CI tool cache
+.ci-tools/
+dist/
+
+# Stream validation results
+scripts/stream_results.json
+scripts/safe_browsing_results.json
+
+Justfile
+.gluatest/

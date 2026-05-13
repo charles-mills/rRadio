@@ -6,5 +6,30 @@
     "roleplay",
     "realism"
   ],
-  "ignore": []
+  "ignore": [
+    ".ci-tools/*",
+    ".forgejo/*",
+    ".git/*",
+    ".github/*",
+    ".gitignore",
+    ".gluatest/*",
+    ".DS_Store",
+    "*.DS_Store",
+    "*.swo",
+    "*.swp",
+    "AGENTS.md",
+    "Justfile",
+    "*~",
+    "data/*",
+    "dist/*",
+    "docs/*",
+    "glualint.json",
+    "lua/tests/*",
+    "lua/tests/**",
+    "LICENSE",
+    "README.md",
+    "references/*",
+    "scripts/*",
+    "Thumbs.db"
+  ]
 }
