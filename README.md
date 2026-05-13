@@ -19,8 +19,12 @@ It is recommended to install via the [Steam Workshop](https://steamcommunity.com
 
 ## Screenshots
 
-![The rRadio boombox next to a vehicle](https://github.com/user-attachments/assets/6461ae96-7deb-4da8-8c82-398e0adff39a)
-![The rRadio main interface, listing available countries](https://github.com/user-attachments/assets/371abaf1-a5ee-4863-b3e2-bf46d510f848)
+<img width="3840" height="2160" alt="20260514005549_1" src="https://github.com/user-attachments/assets/636e5b56-e402-4b4c-9d2d-7dab28af5e12" />
+
+<img width="3839" height="2160" alt="image" src="https://github.com/user-attachments/assets/dfef0327-6dee-4ad3-963d-c4fcb83ab83c" />
+
+
+
 
 ## Support
 
