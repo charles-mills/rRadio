@@ -8,13 +8,6 @@ rRadio is an internet-radio add-on for Garry's Mod. Stream thousands of live sta
 [countries-badge]: https://img.shields.io/endpoint?url=https%3A%2F%2Fgit.charlesmills.tech%2Fcharles%2FrRadio%2Fraw%2Fbranch%2Fmain%2Fdocs%2Fbadges%2Fcountries.json
 [languages-badge]: https://img.shields.io/endpoint?url=https%3A%2F%2Fgit.charlesmills.tech%2Fcharles%2FrRadio%2Fraw%2Fbranch%2Fmain%2Fdocs%2Fbadges%2Flanguages.json
 
-## Key Features
-
-- **Global Stations:** Tune in to live stations from around the world.
-- **Favourites:** Bookmark your go-to stations for quick access.
-- **Modern UI with Themes:** Pick from several client-side themes.
-- **Persistent Boomboxes:** Have your boombox persist through restarts.
-
 It is recommended to install via the [Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=3318060741) for automatic updates. 
 
 ## Screenshots
@@ -23,17 +16,14 @@ It is recommended to install via the [Steam Workshop](https://steamcommunity.com
 
 <img width="3839" height="2160" alt="image" src="https://github.com/user-attachments/assets/dfef0327-6dee-4ad3-963d-c4fcb83ab83c" />
 
-
-
-
 ## Support
 
 If you encounter any issues or have any questions, please open an issue on this repository. Alternatively, contact me on [Steam](https://steamcommunity.com/id/rammel/).
 
 ## General Credits
 
-- Boombox Model by [Lemoin890](https://sketchfab.com/3d-models/90s-style-boombox-radio-low-poly-ripped-db9105533ca54470b74c48d3e3a62b49)
-- Default stations list sourced from [Radio-Browser.info](https://www.radio-browser.info/)
+- Boombox model by [Lemoin890](https://sketchfab.com/3d-models/90s-style-boombox-radio-low-poly-ripped-db9105533ca54470b74c48d3e3a62b49)
+- Default station list sourced from [radio-browser.info](https://www.radio-browser.info/)
 
 ## Translation Credits
 
