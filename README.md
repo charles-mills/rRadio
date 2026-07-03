@@ -10,7 +10,9 @@ If you encounter any issues or have any questions, please open an issue on this 
 
 ## Stations
 
-All default radio stations URLs are pulled directly from a public API of internet radio stations. If your station appears unexpectedly or you'd like it removed, please open a GitHub issue.
+All default radio station URLs are pulled directly from a public API of internet radio stations. No stations are hosted, cached, or rebroadcasted by rRadio and clients connect directly to stream URLs provided by the API.
+
+If your station appears unexpectedly or you'd like it removed, please open a GitHub issue.
 
 ## General Credits
 
