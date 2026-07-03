@@ -35,7 +35,7 @@ if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
 import build_station_artifacts
-from validate_streams import COUNTRY_TO_ISO
+from country_codes import COUNTRY_TO_ISO
 
 REPO_ROOT = SCRIPT_DIR.parent
 DEFAULT_SOURCE_PATH = REPO_ROOT / "data" / "stations.json"
